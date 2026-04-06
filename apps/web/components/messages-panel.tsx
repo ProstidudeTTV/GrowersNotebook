@@ -2,6 +2,15 @@
 
 import * as MatrixCryptoWasm from "@matrix-org/matrix-sdk-crypto-wasm";
 import { apiFetch } from "@/lib/api-public";
+import {
+  clearPersistedMatrixDevice,
+  deleteMatrixRustCryptoDbs,
+  isMatrixCryptoStoreMismatchError,
+  loadPersistedMatrixDevice,
+  matrixCryptoStorePrefix,
+  matrixHomeserverJwtLogin,
+  savePersistedMatrixDevice,
+} from "@/lib/matrix-session-storage";
 import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -309,73 +318,108 @@ export function MessagesPanel() {
         }
         await MatrixCryptoWasm.initAsync(wasmAsset);
 
-        const loginUrl = `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`;
-        const loginRes = await fetch(loginUrl, {
-          method: "POST",
-          redirect: "manual",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            type: "org.matrix.login.jwt",
-            token: bundle.jwt,
-          }),
-        });
-        if (loginRes.status >= 300 && loginRes.status < 400) {
-          const loc = loginRes.headers.get("Location") ?? "";
-          throw new Error(
-            `Homeserver returned redirect ${loginRes.status}${loc ? ` → ${loc}` : ""} on login. ` +
-              `Set SYNAPSE_PUBLIC_BASE_URL to the exact HTTPS URL of the Synapse service (no trailing slash).`,
+        const cryptoPrefix = matrixCryptoStorePrefix(bundle.userId);
+        let deviceHint = loadPersistedMatrixDevice(bundle.userId);
+        let loginResult = await matrixHomeserverJwtLogin(
+          bundle.homeserverUrl,
+          bundle.jwt,
+          deviceHint,
+        );
+
+        if (!loginResult.ok && deviceHint) {
+          clearPersistedMatrixDevice();
+          await deleteMatrixRustCryptoDbs(cryptoPrefix);
+          deviceHint = undefined;
+          loginResult = await matrixHomeserverJwtLogin(
+            bundle.homeserverUrl,
+            bundle.jwt,
+            undefined,
           );
         }
-        const loginRaw = await loginRes.text();
-        let loginJson: {
-          access_token?: string;
-          user_id?: string;
-          device_id?: string;
-          errcode?: string;
-          error?: string;
-        };
-        try {
-          loginJson = loginRaw ? (JSON.parse(loginRaw) as typeof loginJson) : {};
-        } catch {
+
+        if (!loginResult.ok) {
+          if (loginResult.status >= 300 && loginResult.status < 400) {
+            const loc = loginResult.redirectLocation ?? "";
+            throw new Error(
+              `Homeserver returned redirect ${loginResult.status}${loc ? ` → ${loc}` : ""} on login. ` +
+                `Set SYNAPSE_PUBLIC_BASE_URL to the exact HTTPS URL of the Synapse service (no trailing slash).`,
+            );
+          }
           throw new Error(
-            `Homeserver login returned non-JSON (${loginRes.status}): ${loginRaw.slice(0, 200)}${loginRaw.length > 200 ? "…" : ""}`,
+            loginResult.error ||
+              loginResult.errcode ||
+              (loginResult.raw.length > 0 && loginResult.raw.length < 400
+                ? loginResult.raw
+                : `Could not sign in to messaging (${loginResult.status})`),
           );
         }
-        if (!loginRes.ok) {
-          throw new Error(
-            loginJson.error ||
-              loginJson.errcode ||
-              `Could not sign in to messaging (${loginRes.status})`,
-          );
-        }
-        if (
-          !loginJson.access_token ||
-          !loginJson.user_id ||
-          !loginJson.device_id
-        ) {
-          throw new Error("Messaging login response missing credentials.");
-        }
+
+        savePersistedMatrixDevice(
+          loginResult.data.user_id,
+          loginResult.data.device_id,
+        );
 
         mx = createMatrixClient({
           baseUrl: bundle.homeserverUrl.replace(/\/+$/, ""),
-          accessToken: loginJson.access_token,
-          userId: loginJson.user_id,
-          deviceId: loginJson.device_id,
+          accessToken: loginResult.data.access_token,
+          userId: loginResult.data.user_id,
+          deviceId: loginResult.data.device_id,
         });
 
+        const initRustOrThrow = async (
+          client: MatrixClient,
+          prefix: string,
+        ) => {
+          try {
+            await client.initRustCrypto({ cryptoDatabasePrefix: prefix });
+          } catch (e) {
+            console.error("Matrix initRustCrypto failed", e);
+            const detail = e instanceof Error ? e.message : String(e);
+            throw new Error(
+              detail
+                ? `Could not initialize encryption: ${detail.slice(0, 280)}`
+                : "Could not initialize encryption. Try refreshing the page.",
+            );
+          }
+        };
+
         try {
-          await mx.initRustCrypto();
-        } catch (e) {
-          console.error("Matrix initRustCrypto failed", e);
-          const detail =
-            e instanceof Error ? e.message : String(e);
-          throw new Error(
-            detail
-              ? `Could not initialize encryption: ${detail.slice(0, 280)}`
-              : "Could not initialize encryption. Try refreshing the page.",
+          await initRustOrThrow(mx, cryptoPrefix);
+        } catch (firstCryptoErr) {
+          if (!isMatrixCryptoStoreMismatchError(firstCryptoErr)) {
+            throw firstCryptoErr;
+          }
+          mx.stopClient();
+          mx = null;
+          clearPersistedMatrixDevice();
+          await deleteMatrixRustCryptoDbs(cryptoPrefix);
+          const bundle2 = await apiFetch<LoginBundle>("/matrix/login-token", {
+            method: "POST",
+            body: JSON.stringify({}),
+            token: session.access_token,
+          });
+          const login2 = await matrixHomeserverJwtLogin(
+            bundle2.homeserverUrl,
+            bundle2.jwt,
+            undefined,
+          );
+          if (!login2.ok) {
+            throw new Error(
+              login2.error ||
+                login2.errcode ||
+                `Could not sign in after encryption reset (${login2.status})`,
+            );
+          }
+          savePersistedMatrixDevice(login2.data.user_id, login2.data.device_id);
+          mx = createMatrixClient({
+            baseUrl: bundle2.homeserverUrl.replace(/\/+$/, ""),
+            accessToken: login2.data.access_token,
+            userId: login2.data.user_id,
+            deviceId: login2.data.device_id,
+          });
+          await initRustOrThrow(
+            mx,
+            matrixCryptoStorePrefix(login2.data.user_id),
           );
         }
         if (!cancelled) setCryptoReady(true);

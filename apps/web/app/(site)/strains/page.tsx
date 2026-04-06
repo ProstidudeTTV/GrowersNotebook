@@ -3,6 +3,7 @@ import Link from "next/link";
 import { StrainDetailBody } from "@/components/catalog/strain-detail-body";
 import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
 import { StarDisplay } from "@/components/catalog/star-display";
+import { StrainsCatalogToolbar } from "@/components/catalog/strains-catalog-toolbar";
 import { apiFetch } from "@/lib/api-public";
 import {
   strainPreviewPath,
@@ -42,6 +43,8 @@ export default async function StrainsPage({
     sort?: string;
     page?: string;
     breederSlug?: string;
+    minRating?: string;
+    minReviews?: string;
     detail?: string;
     reviewsPage?: string;
   }>;
@@ -49,6 +52,8 @@ export default async function StrainsPage({
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const breederSlug = sp.breederSlug?.trim() ?? "";
+  const minRatingRaw = sp.minRating?.trim() ?? "";
+  const minReviewsRaw = sp.minReviews?.trim() ?? "";
   const sort = sp.sort === "rating" ? "rating" : "name";
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
@@ -61,6 +66,14 @@ export default async function StrainsPage({
   });
   if (q) qs.set("q", q);
   if (breederSlug) qs.set("breederSlug", breederSlug);
+  const minRatingN = Number(minRatingRaw);
+  if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+    qs.set("minRating", minRatingRaw);
+  }
+  const minReviewsN = Number(minReviewsRaw);
+  if (minReviewsRaw && minReviewsN >= 1) {
+    qs.set("minReviews", minReviewsRaw);
+  }
 
   let data: ListJson = {
     items: [],
@@ -81,6 +94,12 @@ export default async function StrainsPage({
     if (q) p.set("q", q);
     if (sort !== "name") p.set("sort", sort);
     if (breederSlug) p.set("breederSlug", breederSlug);
+    if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+      p.set("minRating", minRatingRaw);
+    }
+    if (minReviewsRaw && minReviewsN >= 1) {
+      p.set("minReviews", minReviewsRaw);
+    }
     p.set("page", String(nextPage));
     return `/strains?${p.toString()}`;
   };
@@ -105,6 +124,12 @@ export default async function StrainsPage({
     sort: sort === "rating" ? "rating" : undefined,
     page: page > 1 ? String(page) : undefined,
     breederSlug: breederSlug || undefined,
+    minRating:
+      minRatingRaw && minRatingN >= 1 && minRatingN <= 5
+        ? minRatingRaw
+        : undefined,
+    minReviews:
+      minReviewsRaw && minReviewsN >= 1 ? minReviewsRaw : undefined,
   };
 
   return (
@@ -120,47 +145,7 @@ export default async function StrainsPage({
           </p>
         </div>
 
-        <form
-          className="flex w-full flex-wrap items-end gap-2 sm:gap-3 lg:max-w-2xl lg:flex-1 lg:justify-end"
-          action="/strains"
-          method="get"
-        >
-          {breederSlug ? (
-            <input type="hidden" name="breederSlug" value={breederSlug} />
-          ) : null}
-          <div className="min-w-0 flex-1 basis-[12rem]">
-            <label htmlFor="q" className="sr-only">
-              Search
-            </label>
-            <input
-              id="q"
-              name="q"
-              defaultValue={q}
-              placeholder="Search by name…"
-              className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-            />
-          </div>
-          <div className="shrink-0">
-            <label htmlFor="sort" className="sr-only">
-              Sort
-            </label>
-            <select
-              id="sort"
-              name="sort"
-              defaultValue={sort}
-              className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-            >
-              <option value="name">Name</option>
-              <option value="rating">Rating</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="shrink-0 rounded-lg bg-[#ff6a38] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ff7d4c] sm:px-4 sm:py-2"
-          >
-            Search
-          </button>
-        </form>
+        <StrainsCatalogToolbar breederLabelResolved={filterBreederName} />
       </div>
 
       {breederSlug ? (

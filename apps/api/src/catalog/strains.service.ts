@@ -4,7 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, isNull, or } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  or,
+} from 'drizzle-orm';
 import { getDb } from '../db';
 import { breeders, profiles, strainReviews, strains } from '../db/schema';
 import { refreshStrainAggregates } from './catalog-aggregates';
@@ -16,6 +27,10 @@ export type ListStrainsQuery = {
   breederId?: string;
   /** Resolve published breeder by slug and filter strains to that breeder */
   breederSlug?: string;
+  /** Minimum average rating (1–5); requires non-null avg_rating. */
+  minRating?: number;
+  /** Minimum review count (>= 1). */
+  minReviews?: number;
   page?: number;
   pageSize?: number;
   publishedOnly?: boolean;
@@ -55,6 +70,15 @@ export class StrainsService {
       conditions.push(
         or(ilike(strains.name, term), ilike(strains.slug, term)),
       );
+    }
+    const mr = query.minRating;
+    if (mr != null && Number.isFinite(mr) && mr >= 1 && mr <= 5) {
+      conditions.push(isNotNull(strains.avgRating));
+      conditions.push(gte(strains.avgRating, String(mr)));
+    }
+    const mrev = query.minReviews;
+    if (mrev != null && Number.isFinite(mrev) && mrev >= 1) {
+      conditions.push(gte(strains.reviewCount, Math.floor(mrev)));
     }
     const whereClause =
       conditions.length > 0 ? and(...conditions) : undefined;

@@ -4,7 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, isNull, or } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  or,
+} from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   breederReviews,
@@ -18,6 +29,10 @@ import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 export type ListBreedersQuery = {
   q?: string;
   sort?: 'name' | 'rating';
+  /** Case-insensitive partial match on country. */
+  country?: string;
+  minRating?: number;
+  minReviews?: number;
   page?: number;
   pageSize?: number;
   /** When false, include unpublished (admin). */
@@ -44,6 +59,20 @@ export class BreedersService {
       conditions.push(
         or(ilike(breeders.name, term), ilike(breeders.slug, term)),
       );
+    }
+    const countryQ = query.country?.trim();
+    if (countryQ) {
+      const term = `%${countryQ.replace(/%/g, '\\%')}%`;
+      conditions.push(ilike(breeders.country, term));
+    }
+    const mr = query.minRating;
+    if (mr != null && Number.isFinite(mr) && mr >= 1 && mr <= 5) {
+      conditions.push(isNotNull(breeders.avgRating));
+      conditions.push(gte(breeders.avgRating, String(mr)));
+    }
+    const mrev = query.minReviews;
+    if (mrev != null && Number.isFinite(mrev) && mrev >= 1) {
+      conditions.push(gte(breeders.reviewCount, Math.floor(mrev)));
     }
     const whereClause =
       conditions.length > 0 ? and(...conditions) : undefined;

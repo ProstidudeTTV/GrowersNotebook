@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BreederDetailBody } from "@/components/catalog/breeder-detail-body";
+import { BreedersCatalogToolbar } from "@/components/catalog/breeders-catalog-toolbar";
 import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
 import { StarDisplay } from "@/components/catalog/star-display";
 import { apiFetch } from "@/lib/api-public";
@@ -41,12 +42,18 @@ export default async function BreedersPage({
     q?: string;
     sort?: string;
     page?: string;
+    country?: string;
+    minRating?: string;
+    minReviews?: string;
     detail?: string;
     reviewsPage?: string;
   }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
+  const country = sp.country?.trim() ?? "";
+  const minRatingRaw = sp.minRating?.trim() ?? "";
+  const minReviewsRaw = sp.minReviews?.trim() ?? "";
   const sort = sp.sort === "rating" ? "rating" : "name";
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
@@ -58,6 +65,15 @@ export default async function BreedersPage({
     pageSize: String(pageSize),
   });
   if (q) qs.set("q", q);
+  if (country) qs.set("country", country);
+  const minRatingN = Number(minRatingRaw);
+  if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+    qs.set("minRating", minRatingRaw);
+  }
+  const minReviewsN = Number(minReviewsRaw);
+  if (minReviewsRaw && minReviewsN >= 1) {
+    qs.set("minReviews", minReviewsRaw);
+  }
 
   let data: ListJson = {
     items: [],
@@ -77,6 +93,13 @@ export default async function BreedersPage({
     const p = new URLSearchParams();
     if (q) p.set("q", q);
     if (sort !== "name") p.set("sort", sort);
+    if (country) p.set("country", country);
+    if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+      p.set("minRating", minRatingRaw);
+    }
+    if (minReviewsRaw && minReviewsN >= 1) {
+      p.set("minReviews", minReviewsRaw);
+    }
     p.set("page", String(nextPage));
     return `/breeders?${p.toString()}`;
   };
@@ -87,6 +110,13 @@ export default async function BreedersPage({
     q: q || undefined,
     sort: sort === "rating" ? "rating" : undefined,
     page: page > 1 ? String(page) : undefined,
+    country: country || undefined,
+    minRating:
+      minRatingRaw && minRatingN >= 1 && minRatingN <= 5
+        ? minRatingRaw
+        : undefined,
+    minReviews:
+      minReviewsRaw && minReviewsN >= 1 ? minReviewsRaw : undefined,
   };
 
   return (
@@ -101,44 +131,7 @@ export default async function BreedersPage({
           </p>
         </div>
 
-        <form
-          className="flex w-full flex-wrap items-end gap-2 sm:gap-3 lg:max-w-2xl lg:flex-1 lg:justify-end"
-          action="/breeders"
-          method="get"
-        >
-          <div className="min-w-0 flex-1 basis-[12rem]">
-            <label htmlFor="bq" className="sr-only">
-              Search
-            </label>
-            <input
-              id="bq"
-              name="q"
-              defaultValue={q}
-              placeholder="Search by name…"
-              className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-            />
-          </div>
-          <div className="shrink-0">
-            <label htmlFor="bsort" className="sr-only">
-              Sort
-            </label>
-            <select
-              id="bsort"
-              name="sort"
-              defaultValue={sort}
-              className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-            >
-              <option value="name">Name</option>
-              <option value="rating">Rating</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="shrink-0 rounded-lg bg-[#ff6a38] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ff7d4c] sm:px-4 sm:py-2"
-          >
-            Search
-          </button>
-        </form>
+        <BreedersCatalogToolbar />
       </div>
 
       <ul className="mt-5 grid list-none grid-cols-2 gap-3 sm:mt-6 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">

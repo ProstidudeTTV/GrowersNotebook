@@ -57,6 +57,8 @@ def main() -> None:
 
     cfg["database"] = {
         "name": "psycopg2",
+        # Render (and many hosts) use en_US.UTF8; Synapse expects C unless:
+        "allow_unsafe_locale": True,
         "args": db_args,
     }
 

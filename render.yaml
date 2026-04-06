@@ -1,0 +1,37 @@
+# Render Blueprint: https://docs.render.com/infrastructure-as-code
+# After linking https://github.com/ProstidudeTTV/GrowersNotebook, set secrets in the dashboard
+# (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API; NEXT_PUBLIC_* on web).
+#
+# Synapse is run via Docker Compose locally (infra/synapse) or as a separate Render Docker service;
+# use growers-matrix-postgres from this blueprint for the homeserver DB.
+
+services:
+  - type: web
+    name: growers-notebook-api
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @growers/api build
+    startCommand: pnpm --filter @growers/api start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LISTEN_HOST
+        value: "0.0.0.0"
+
+  - type: web
+    name: growers-notebook-web
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @growers/web build
+    startCommand: pnpm --filter @growers/web start
+    healthCheckPath: /
+
+databases:
+  - name: growers-matrix-postgres
+    databaseName: synapse
+    user: synapse
+    region: oregon
+    plan: basic_256mb

@@ -1,0 +1,19 @@
+---
+description: Keep Supabase MCP context and docs in sync when changing schema or persistence-related API behavior
+globs: apps/api/src/db/schema.ts, apps/api/drizzle/**, supabase/migrations/**, apps/api/src/**/follows/**, apps/api/src/**/posts/**
+alwaysApply: false
+---
+
+# Supabase MCP & schema sync
+
+When you add or change **tables**, **columns**, **migrations**, or **follow/feed/vote** domain behavior:
+
+1. **Maintain the handbook** — Update `docs/supabase-mcp-handbook.md` (table list, Realtime notes, endpoint summary) in the same change set whenever the database or related API contract changes.
+
+2. **Hosted Supabase** — If the user’s project is linked, prefer **Supabase MCP** `apply_migration` with the same SQL as `supabase/migrations/` (name in `snake_case`, full `query` string). Alternatively ensure **`pnpm db:migrate`** is run with `DATABASE_URL` pointing at that project.
+
+3. **Do not assume** the Dashboard or CLI stayed in sync; agents should treat **`docs/supabase-mcp-handbook.md`** plus **`schema.ts`** as the contract MCP tools should respect.
+
+4. **Realtime** — New tables are **not** replicated until documented and added via `ALTER PUBLICATION` (see existing migrations); note that in the handbook when you add one.
+
+MCP descriptor JSON under the Cursor project `mcps/` folder is tooling metadata, not the schema source of truth — edit the repo files above, not generated tool stubs.

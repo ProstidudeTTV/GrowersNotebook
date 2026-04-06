@@ -1,0 +1,46 @@
+# Local Matrix (Synapse) + Postgres for development.
+# First run generates config:
+#   docker compose -f infra/synapse/docker-compose.yml run --rm synapse generate
+# Then add jwt_config to data/homeserver.yaml (see README), start:
+#   docker compose -f infra/synapse/docker-compose.yml up -d
+#
+# Point apps/api .env at this stack, e.g.:
+#   SYNAPSE_BASE_URL=http://localhost:8010
+#   SYNAPSE_PUBLIC_BASE_URL=http://localhost:8010
+#   SYNAPSE_SERVER_NAME=localhost
+# and create an admin user + access token for SYNAPSE_ADMIN_ACCESS_TOKEN.
+
+services:
+  synapse-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse_local_dev
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - synapse-db-data:/var/lib/postgresql/data
+    ports:
+      - "54333:5432"
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    restart: unless-stopped
+    depends_on:
+      - synapse-db
+    volumes:
+      - synapse-app-data:/data
+    ports:
+      - "8010:8008"
+    environment:
+      SYNAPSE_SERVER_NAME: localhost
+      SYNAPSE_REPORT_STATS: "no"
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse_local_dev
+      POSTGRES_DB: synapse
+      POSTGRES_HOST: synapse-db
+
+volumes:
+  synapse-db-data:
+  synapse-app-data:

@@ -1,0 +1,22 @@
+{
+  "name": "growers-notebook",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.cjs",
+    "ports:free": "node scripts/free-dev-ports.cjs",
+    "build": "node scripts/build.cjs",
+    "lint": "npx turbo lint",
+    "install:all": "npx pnpm@9.15.9 install",
+    "db:generate": "npx pnpm@9.15.9 --filter @growers/api db:generate",
+    "db:migrate": "npx pnpm@9.15.9 --filter @growers/api db:migrate",
+    "db:seed": "npx pnpm@9.15.9 --filter @growers/api db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -16,6 +17,23 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const roleEnum = pgEnum('role', ['member', 'moderator', 'admin']);
+
+export const catalogSuggestionKindEnum = pgEnum('catalog_suggestion_kind', [
+  'new_strain',
+  'new_breeder',
+  'edit_strain',
+  'edit_breeder',
+]);
+
+export const catalogSuggestionStatusEnum = pgEnum('catalog_suggestion_status', [
+  'pending',
+  'approved',
+  'rejected',
+]);
+
+/** Drizzle pgEnum helper type for suggestion kinds */
+export type CatalogSuggestionKind =
+  (typeof catalogSuggestionKindEnum.enumValues)[number];
 
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
@@ -322,5 +340,158 @@ export const communityPins = pgTable(
       t.postId,
     ),
     index('community_pins_community_idx').on(t.communityId),
+  ],
+);
+
+/** Seed banks / sources (catalog). */
+export const breeders = pgTable(
+  'breeders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description'),
+    website: text('website'),
+    country: text('country'),
+    published: boolean('published').notNull().default(true),
+    reviewCount: integer('review_count').notNull().default(0),
+    avgRating: numeric('avg_rating', { precision: 4, scale: 2 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('breeders_published_name_idx').on(t.published, t.name),
+    index('breeders_slug_idx').on(t.slug),
+  ],
+);
+
+/** Cultivars (catalog). */
+export const strains = pgTable(
+  'strains',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description'),
+    breederId: uuid('breeder_id').references(() => breeders.id, {
+      onDelete: 'set null',
+    }),
+    /** Tag list, e.g. effect labels */
+    effects: jsonb('effects')
+      .notNull()
+      .$type<string[]>()
+      .default(sql`'[]'::jsonb`),
+    effectsNotes: text('effects_notes'),
+    published: boolean('published').notNull().default(true),
+    reviewCount: integer('review_count').notNull().default(0),
+    avgRating: numeric('avg_rating', { precision: 4, scale: 2 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('strains_published_name_idx').on(t.published, t.name),
+    index('strains_breeder_idx').on(t.breederId),
+    index('strains_slug_idx').on(t.slug),
+  ],
+);
+
+export const breederReviews = pgTable(
+  'breeder_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    breederId: uuid('breeder_id')
+      .notNull()
+      .references(() => breeders.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    rating: numeric('rating', { precision: 3, scale: 2 }).notNull(),
+    body: text('body').notNull().default(''),
+    hiddenAt: timestamp('hidden_at', { withTimezone: true }),
+    hiddenBy: uuid('hidden_by').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    hiddenReason: text('hidden_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('breeder_reviews_breeder_author_uq').on(t.breederId, t.authorId),
+    index('breeder_reviews_breeder_idx').on(t.breederId),
+    check(
+      'breeder_reviews_rating_range',
+      sql`${t.rating} >= 1 AND ${t.rating} <= 5`,
+    ),
+  ],
+);
+
+export const strainReviews = pgTable(
+  'strain_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    strainId: uuid('strain_id')
+      .notNull()
+      .references(() => strains.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    rating: numeric('rating', { precision: 3, scale: 2 }).notNull(),
+    body: text('body').notNull().default(''),
+    hiddenAt: timestamp('hidden_at', { withTimezone: true }),
+    hiddenBy: uuid('hidden_by').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    hiddenReason: text('hidden_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('strain_reviews_strain_author_uq').on(t.strainId, t.authorId),
+    index('strain_reviews_strain_idx').on(t.strainId),
+    check(
+      'strain_reviews_rating_range',
+      sql`${t.rating} >= 1 AND ${t.rating} <= 5`,
+    ),
+  ],
+);
+
+export const catalogSuggestions = pgTable(
+  'catalog_suggestions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: catalogSuggestionKindEnum('kind').notNull(),
+    payload: jsonb('payload').notNull().$type<Record<string, unknown>>(),
+    suggestedBy: uuid('suggested_by')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    status: catalogSuggestionStatusEnum('status').notNull().default('pending'),
+    rejectReason: text('reject_reason'),
+    moderatedAt: timestamp('moderated_at', { withTimezone: true }),
+    moderatedBy: uuid('moderated_by').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('catalog_suggestions_status_created_idx').on(t.status, t.createdAt),
+    index('catalog_suggestions_suggested_by_idx').on(t.suggestedBy),
   ],
 );

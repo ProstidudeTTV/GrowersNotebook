@@ -2,6 +2,13 @@
 
 import "@ant-design/v5-patch-for-react-19";
 
+import {
+  BarChartOutlined,
+  ExperimentOutlined,
+  InboxOutlined,
+  MessageOutlined,
+  ShopOutlined,
+} from "@ant-design/icons";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import {
   RefineThemes,
@@ -76,6 +83,11 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         notificationProvider={notificationProvider as NotificationProvider}
         resources={[
           {
+            name: "analytics",
+            list: "/admin/analytics",
+            meta: { label: "Site analytics", icon: <BarChartOutlined /> },
+          },
+          {
             name: "posts",
             list: "/admin/posts",
             meta: { label: "Posts" },
@@ -108,6 +120,55 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             list: "/admin/disallowed-names",
             create: "/admin/disallowed-names/create",
             meta: { label: "Blocked names" },
+          },
+          {
+            name: "strains",
+            list: "/admin/strains",
+            create: "/admin/strains/create",
+            edit: "/admin/strains/edit/:id",
+            meta: {
+              label: "Cultivars",
+              parent: "catalog",
+              icon: <ExperimentOutlined />,
+            },
+          },
+          {
+            name: "breeders",
+            list: "/admin/breeders",
+            create: "/admin/breeders/create",
+            edit: "/admin/breeders/edit/:id",
+            meta: {
+              label: "Seed sources",
+              parent: "catalog",
+              icon: <ShopOutlined />,
+            },
+          },
+          {
+            name: "catalog-suggestions",
+            list: "/admin/catalog-suggestions",
+            meta: {
+              label: "Catalog suggestions inbox",
+              parent: "catalog-inbox",
+              icon: <InboxOutlined />,
+            },
+          },
+          {
+            name: "strain-reviews",
+            list: "/admin/strain-reviews",
+            meta: {
+              label: "Cultivar reviews",
+              parent: "catalog-moderation",
+              icon: <MessageOutlined />,
+            },
+          },
+          {
+            name: "breeder-reviews",
+            list: "/admin/breeder-reviews",
+            meta: {
+              label: "Source reviews",
+              parent: "catalog-moderation",
+              icon: <MessageOutlined />,
+            },
           },
         ]}
         options={{ syncWithLocation: true }}

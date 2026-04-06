@@ -48,6 +48,20 @@ services:
       # Example: https://growers-notebook-web.onrender.com
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
+      # Nest API origin (no trailing slash). Required for the app + dynamic sitemap entries.
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      # Optional: https://plausible.io — set domain to your public hostname (e.g. growers.example.com)
+      - key: NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL
+        sync: false
+      # Optional: shared analytics URL to embed on /admin/analytics
+      - key: NEXT_PUBLIC_ANALYTICS_DASHBOARD_URL
+        sync: false
+      # Optional: Google Search Console HTML tag verification value
+      - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+        sync: false
 
   - type: web
     name: growers-synapse

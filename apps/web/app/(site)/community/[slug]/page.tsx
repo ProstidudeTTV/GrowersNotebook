@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { FollowCommunityButton } from "@/components/follow-buttons";
 import { RecentCommunitiesTracker } from "@/components/recent-communities-tracker";
 import { apiFetch } from "@/lib/api-public";
+import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import {
   CommunityPostList,
   type FeedPost,
@@ -20,6 +22,40 @@ type PostListResponse = {
   page: number;
   pageSize: number;
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const safeSlug = slug?.trim();
+  if (!safeSlug) return { title: "Community" };
+  try {
+    const community = await apiFetch<{
+      name: string;
+      description: string | null;
+    }>(`/communities/${encodeURIComponent(safeSlug)}`, {
+      timeoutMs: 10_000,
+    });
+    const name = community.name?.trim() || safeSlug;
+    const description =
+      community.description?.trim() ||
+      `${name} — cannabis home grow community on ${SITE_NAME}.`;
+    return {
+      title: name,
+      description,
+      openGraph: {
+        title: `${name} · ${SITE_NAME}`,
+        description,
+        url: canonicalPath(`/community/${safeSlug}`),
+      },
+      alternates: { canonical: canonicalPath(`/community/${safeSlug}`) },
+    };
+  } catch {
+    return { title: "Community" };
+  }
+}
 
 export default async function CommunityPage({
   params,

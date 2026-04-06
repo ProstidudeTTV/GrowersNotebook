@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { PlausibleAnalytics } from "@/components/plausible-analytics";
+import { SeoJsonLd } from "@/components/seo-json-ld";
+import { defaultSiteMetadata } from "@/lib/site-config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,10 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Growers Notebook",
-  description: "Community notes, long-form posts, and discussion.",
-};
+export const metadata: Metadata = defaultSiteMetadata();
 
 const themeInitScript = `
 (function(){
@@ -42,6 +42,8 @@ export default function RootLayout({
         <Script id="gn-theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
+        <SeoJsonLd />
+        <PlausibleAnalytics />
         {children}
       </body>
     </html>

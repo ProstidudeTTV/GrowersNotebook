@@ -2,6 +2,7 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -39,6 +40,7 @@ const repoRoot = join(apiRoot, '..', '..');
     CommentsModule,
     VotesModule,
     AdminModule,
+    CatalogModule,
     MatrixModule,
   ],
   controllers: [AppController],

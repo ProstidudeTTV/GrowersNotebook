@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProfileView } from "./profile-view";
 import { apiFetch } from "@/lib/api-public";
 import { isUuid } from "@/lib/is-uuid";
+import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import type { FeedPost } from "@/lib/feed-post";
 import type { ProfileCommentRow } from "@/components/profile-comments-list";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +33,40 @@ type CommentsResponse = {
   page: number;
   pageSize: number;
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}): Promise<Metadata> {
+  const { userId } = await params;
+  if (!isUuid(userId)) return { title: "Profile" };
+  try {
+    const profile = await apiFetch<{
+      displayName: string | null;
+      description: string | null;
+      profileFeedHiddenFromViewer?: boolean;
+    }>(`/profiles/${userId}`, { timeoutMs: 10_000 });
+    const display = profile.displayName?.trim() || "Grower";
+    const description =
+      profile.description?.trim() ||
+      `${display}'s grower profile on ${SITE_NAME}.`;
+    const hidden = profile.profileFeedHiddenFromViewer === true;
+    return {
+      title: display,
+      description,
+      robots: hidden ? { index: false, follow: false } : undefined,
+      openGraph: {
+        title: `${display} · ${SITE_NAME}`,
+        description,
+        url: canonicalPath(`/u/${userId}`),
+      },
+      alternates: { canonical: canonicalPath(`/u/${userId}`) },
+    };
+  } catch {
+    return { title: "Profile" };
+  }
+}
 
 export default async function UserProfilePage({
   params,

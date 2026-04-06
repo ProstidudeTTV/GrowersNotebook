@@ -1,6 +1,23 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-public";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import {
+  SITE_NAME,
+  SITE_TAGLINE,
+  canonicalPath,
+} from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Cannabis home grower communities",
+  description: SITE_TAGLINE,
+  openGraph: {
+    title: `Cannabis home grower communities · ${SITE_NAME}`,
+    description: SITE_TAGLINE,
+    url: canonicalPath("/"),
+  },
+  alternates: { canonical: canonicalPath("/") },
+};
 
 type Community = {
   id: string;

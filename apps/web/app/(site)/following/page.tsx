@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import { FollowingFeed } from "@/components/following-feed";
+import { SITE_NAME, canonicalPath } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Following",
+  description: `Posts from growers and communities you follow on ${SITE_NAME}.`,
+  openGraph: {
+    title: `Following · ${SITE_NAME}`,
+    url: canonicalPath("/following"),
+  },
+  alternates: { canonical: canonicalPath("/following") },
+};
 
 export default async function FollowingPage({
   searchParams,

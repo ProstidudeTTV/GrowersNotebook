@@ -1,0 +1,61 @@
+"use client";
+
+import { CreateButton, List, useTable } from "@refinedev/antd";
+import { Button, Table } from "antd";
+import Link from "next/link";
+import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
+
+export default function AdminBreedersPage() {
+  const { tableProps, searchFormProps } = useTable({
+    resource: "breeders",
+    syncWithLocation: true,
+    pagination: { pageSize: 20 },
+  });
+
+  return (
+    <List title="Seed sources (catalog)" headerButtons={<CreateButton />}>
+      <RefineHiddenSearchForm searchFormProps={searchFormProps} />
+      <Table {...tableProps} rowKey="id">
+        <Table.Column dataIndex="name" title="Name" />
+        <Table.Column dataIndex="slug" title="Slug" />
+        <Table.Column
+          dataIndex="published"
+          title="Published"
+          render={(v: boolean) => (v ? "Yes" : "No")}
+        />
+        <Table.Column
+          dataIndex="avgRating"
+          title="Avg"
+          render={(v: string | null) => v ?? "—"}
+        />
+        <Table.Column dataIndex="reviewCount" title="Reviews" />
+        <Table.Column<{ id: string; slug: string }>
+          title="Actions"
+          render={(_, record) => (
+            <span className="flex flex-wrap gap-2">
+              <Link href={`/admin/breeders/edit/${record.id}`}>
+                <Button type="link" size="small">
+                  Edit
+                </Button>
+              </Link>
+              <Link
+                href={`/breeders/${encodeURIComponent(record.slug)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+              >
+                View
+              </Link>
+              <Link
+                href={`/admin/breeder-reviews?breederId=${record.id}`}
+                className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+              >
+                Reviews
+              </Link>
+            </span>
+          )}
+        />
+      </Table>
+    </List>
+  );
+}

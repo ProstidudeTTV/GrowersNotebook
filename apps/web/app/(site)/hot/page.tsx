@@ -1,9 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PostFeedList } from "@/components/post-feed-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { SITE_NAME, SITE_TAGLINE, canonicalPath } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "Hot posts this week",
+  description: `Trending cannabis home grow posts — ${SITE_TAGLINE}`,
+  openGraph: {
+    title: `Hot this week · ${SITE_NAME}`,
+    description: SITE_TAGLINE,
+    url: canonicalPath("/hot"),
+  },
+  alternates: { canonical: canonicalPath("/hot") },
+};
 
 type FeedResponse = {
   items: FeedPost[];

@@ -1,5 +1,9 @@
 import path from "path";
 import type { NextConfig } from "next";
+import {
+  plausibleEventDestination,
+  plausibleScriptDestination,
+} from "./lib/plausible-proxy";
 
 const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
@@ -24,6 +28,18 @@ const nextConfig: NextConfig = {
       {
         source: "/wasm/:path*.wasm",
         headers: [{ key: "Content-Type", value: "application/wasm" }],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/gnpx/s.js",
+        destination: plausibleScriptDestination(),
+      },
+      {
+        source: "/gnpx/e",
+        destination: plausibleEventDestination(),
       },
     ];
   },

@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api-public";
 import { isUuid } from "@/lib/is-uuid";
+import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import { PostView } from "./post-view";
 import type { PostMediaItem } from "@/lib/feed-post";
 
@@ -44,6 +46,40 @@ type CommentRow = {
     growerLevel: string;
   };
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!isUuid(id)) return { title: "Post" };
+  try {
+    const post = await apiFetch<{ title: string }>(`/posts/${id}`, {
+      timeoutMs: 10_000,
+    });
+    const title = post.title?.trim() || "Post";
+    const description = `${title} — cannabis home grow discussion on ${SITE_NAME}.`;
+    return {
+      title,
+      description,
+      openGraph: {
+        title: `${title} · ${SITE_NAME}`,
+        description,
+        type: "article",
+        url: canonicalPath(`/p/${id}`),
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${title} · ${SITE_NAME}`,
+        description,
+      },
+      alternates: { canonical: canonicalPath(`/p/${id}`) },
+    };
+  } catch {
+    return { title: "Post" };
+  }
+}
 
 export default async function PostPage({
   params,

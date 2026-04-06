@@ -14,6 +14,7 @@ import {
   refreshMatrixAccessTokenForDevice,
   savePersistedMatrixDevice,
 } from "@/lib/matrix-session-storage";
+import { setMessagesUnreadAny } from "@/lib/messages-unread-store";
 import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -23,7 +24,9 @@ import {
   KnownMembership,
   MatrixEventEvent,
   MsgType,
+  NotificationCountType,
   Preset,
+  ReceiptType,
   type MatrixClient,
   type MatrixEvent,
   type Room,
@@ -141,6 +144,42 @@ function dmLabel(client: MatrixClient, room: Room): string {
   return room.name || room.getCanonicalAlias() || "Chat";
 }
 
+/** Unread for sidebar + nav: invites, server counts, or last others' message vs read receipt. */
+function roomHasVisualUnread(
+  room: Room,
+  myUserId: string,
+  isActiveInUi: boolean,
+): boolean {
+  if (isActiveInUi) return false;
+  if (room.getMyMembership() === KnownMembership.Invite) return true;
+  if (room.getMyMembership() !== KnownMembership.Join) return false;
+  if (
+    room.getRoomUnreadNotificationCount(NotificationCountType.Total) > 0 ||
+    room.getRoomUnreadNotificationCount(NotificationCountType.Highlight) > 0
+  ) {
+    return true;
+  }
+  const timeline = room.getLiveTimeline();
+  const events = timeline.getEvents();
+  for (let i = events.length - 1; i >= 0; i--) {
+    const ev = events[i];
+    if (!ev) continue;
+    const t = ev.getType();
+    if (t !== EventType.RoomMessage && t !== EventType.RoomMessageEncrypted) {
+      continue;
+    }
+    if (ev.getSender() === myUserId) continue;
+    const eid = ev.getId();
+    if (!eid) continue;
+    try {
+      return !room.hasUserReadEvent(myUserId, eid);
+    } catch {
+      return true;
+    }
+  }
+  return false;
+}
+
 function findDmWithPeer(client: MatrixClient, peerMxid: string): Room | null {
   const me = client.getUserId();
   if (!me) return null;
@@ -168,7 +207,7 @@ export function MessagesPanel() {
   const [cryptoReady, setCryptoReady] = useState(false);
   const [client, setClient] = useState<MatrixClient | null>(null);
   const [conversations, setConversations] = useState<
-    { id: string; label: string; ts: number }[]
+    { id: string; label: string; ts: number; unread: boolean }[]
   >([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [lines, setLines] = useState<
@@ -185,14 +224,19 @@ export function MessagesPanel() {
   }, [activeRoomId]);
 
   const refreshConversations = useCallback((c: MatrixClient) => {
+    const me = c.getUserId();
+    const activeId = activeRoomIdRef.current;
     const list = listDmRooms(c)
       .map((r) => ({
         id: r.roomId,
         label: dmLabel(c, r),
         ts: roomLastTs(r),
+        unread:
+          !!me && roomHasVisualUnread(r, me, activeId === r.roomId),
       }))
       .sort((a, b) => b.ts - a.ts);
     setConversations(list);
+    setMessagesUnreadAny(list.some((x) => x.unread));
   }, []);
 
   const senderLineLabel = useCallback((room: Room, senderId: string) => {
@@ -274,6 +318,7 @@ export function MessagesPanel() {
         const existing = findDmWithPeer(client, peerMxid);
         if (existing) {
           await existing.loadMembersIfNeeded();
+          activeRoomIdRef.current = existing.roomId;
           setActiveRoomId(existing.roomId);
           loadTimeline(client, existing.roomId);
           refreshConversations(client);
@@ -287,13 +332,6 @@ export function MessagesPanel() {
               preset: Preset.TrustedPrivateChat,
               is_direct: true,
               invite: [peerMxid],
-              initial_state: [
-                {
-                  type: EventType.RoomEncryption,
-                  state_key: "",
-                  content: { algorithm: "m.megolm.v1.aes-sha2" },
-                },
-              ],
             }),
             new Promise<never>((_, reject) => {
               window.setTimeout(
@@ -332,7 +370,14 @@ export function MessagesPanel() {
         }
 
         const roomId = raced.room_id;
+        await client.sendStateEvent(
+          roomId,
+          EventType.RoomEncryption,
+          { algorithm: "m.megolm.v1.aes-sha2" },
+          "",
+        );
         await client.getRoom(roomId)?.loadMembersIfNeeded();
+        activeRoomIdRef.current = roomId;
         setActiveRoomId(roomId);
         loadTimeline(client, roomId);
         refreshConversations(client);
@@ -633,6 +678,47 @@ export function MessagesPanel() {
     };
   }, [client, activeRoomId, loadTimeline, refreshConversations]);
 
+  useEffect(() => {
+    if (!client || !activeRoomId || !cryptoReady) return;
+    const room = client.getRoom(activeRoomId);
+    if (!room || room.getMyMembership() !== KnownMembership.Join) return;
+    const last = room.getLastLiveEvent();
+    if (!last?.getId()) return;
+    let cancelled = false;
+    void client
+      .sendReadReceipt(last, ReceiptType.Read, true)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) refreshConversations(client);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, activeRoomId, cryptoReady, refreshConversations]);
+
+  async function leaveActiveChat() {
+    if (!client || !activeRoomId) return;
+    if (
+      !window.confirm(
+        "Leave this chat? It disappears from your list; you can start a new one from their profile with Message.",
+      )
+    )
+      return;
+    setActionError(null);
+    try {
+      const id = activeRoomId;
+      await client.leave(id);
+      activeRoomIdRef.current = null;
+      setActiveRoomId(null);
+      setLines([]);
+      refreshConversations(client);
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : "Could not leave this chat.",
+      );
+    }
+  }
+
   async function sendMessage() {
     if (!client || !activeRoomId) return;
     const text = draft.trim();
@@ -680,7 +766,7 @@ export function MessagesPanel() {
           role="alert"
         >
           <p className="font-medium text-red-700 dark:text-red-400">
-            Couldn&apos;t open this chat
+            Messaging
           </p>
           <p className="mt-1 text-[var(--gn-text-muted)]">{actionError}</p>
           <button
@@ -741,6 +827,7 @@ export function MessagesPanel() {
                         }
                       }
                       await client.getRoom(r.id)?.loadMembersIfNeeded();
+                      activeRoomIdRef.current = r.id;
                       setActiveRoomId(r.id);
                       setActionError(null);
                       loadTimeline(client, r.id);
@@ -748,7 +835,15 @@ export function MessagesPanel() {
                     })();
                   }}
                 >
-                  {r.label}
+                  <span className="flex w-full items-start gap-2 text-left">
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                        r.unread ? "bg-[#ff6a38]" : "invisible"
+                      }`}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1">{r.label}</span>
+                  </span>
                 </button>
               </li>
             ))
@@ -776,37 +871,54 @@ export function MessagesPanel() {
           ) : (
             lines.map((ln) => (
               <div key={ln.id} className="text-sm">
-                <span className="font-medium text-[#ff6a38]">
-                  {ln.sender.split(":")[0]!.replace("@", "")}
-                </span>
+                <span className="font-medium text-[#ff6a38]">{ln.sender}</span>
                 <span className="text-[var(--gn-text-muted)]"> · </span>
                 <span className="text-[var(--gn-text)]">{ln.body}</span>
               </div>
             ))
           )}
         </div>
-        <div className="flex gap-2">
-          <input
-            className="min-w-0 flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Type a message…"
-            disabled={!activeRoomId}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void sendMessage();
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
-            disabled={!activeRoomId || !draft.trim()}
-            onClick={() => void sendMessage()}
-          >
-            Send
-          </button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              className="min-w-0 flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Type a message…"
+              disabled={!activeRoomId}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendMessage();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
+              disabled={!activeRoomId || !draft.trim()}
+              onClick={() => void sendMessage()}
+            >
+              Send
+            </button>
+          </div>
+          {activeRoomId &&
+          client?.getRoom(activeRoomId)?.getMyMembership() ===
+            KnownMembership.Join ? (
+            <p className="text-xs text-[var(--gn-text-muted)]">
+              <button
+                type="button"
+                className="font-medium text-[#ff6a38] hover:underline"
+                onClick={() => void leaveActiveChat()}
+              >
+                Leave this chat
+              </button>
+              <span className="text-[var(--gn-text-muted)]">
+                {" "}
+                — removes it from your list (the thread stays on the server).
+              </span>
+            </p>
+          ) : null}
         </div>
         </div>
       </div>

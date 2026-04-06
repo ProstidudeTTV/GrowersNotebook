@@ -108,7 +108,7 @@ export default async function StrainsPage({
   };
 
   return (
-    <main className="mx-auto w-full max-w-[90rem] px-5 py-5 sm:px-7 sm:py-6 md:px-9 lg:px-12 xl:px-16 2xl:px-20">
+    <main className="w-full max-w-none px-3 py-5 sm:px-4 sm:py-6 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-10 2xl:pl-5 2xl:pr-14">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="min-w-0 lg:max-w-xl">
           <h1 className="text-xl font-bold tracking-tight text-[var(--gn-text)] sm:text-2xl">
@@ -185,7 +185,7 @@ export default async function StrainsPage({
         </p>
       ) : null}
 
-      <ul className="mt-5 grid list-none grid-cols-2 gap-2 sm:mt-6 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <ul className="mt-5 grid list-none grid-cols-2 gap-3 sm:mt-6 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
         {data.items.length === 0 ? (
           <li className="col-span-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-10 text-center text-sm text-[var(--gn-text-muted)]">
             No strains match yet. Check back as the catalog grows.
@@ -196,10 +196,10 @@ export default async function StrainsPage({
               <Link
                 href={strainPreviewPath(s.slug, listPreview)}
                 scroll={false}
-                className="block h-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-2.5 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-3"
+                className="block h-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-4"
               >
-                <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#ff6a38] sm:text-[0.9375rem]">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#ff6a38] sm:text-base">
                     {s.name}
                   </h2>
                   <StarDisplay
@@ -209,11 +209,11 @@ export default async function StrainsPage({
                   />
                 </div>
                 {s.description?.trim() ? (
-                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-2 sm:text-sm">
+                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-3 sm:text-sm">
                     {s.description.trim()}
                   </p>
                 ) : (
-                  <p className="mt-1.5 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+                  <p className="mt-2 text-xs text-[var(--gn-text-muted)] sm:text-sm">
                     View details…
                   </p>
                 )}

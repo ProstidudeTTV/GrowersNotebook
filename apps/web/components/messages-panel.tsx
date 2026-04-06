@@ -7,9 +7,11 @@ import {
   deleteLegacyMatrixRustCryptoDbs,
   deleteMatrixRustCryptoDbs,
   isMatrixCryptoStoreMismatchError,
+  isMatrixTokenUnauthorizedError,
   loadPersistedMatrixDevice,
   matrixCryptoStorePrefix,
   matrixHomeserverJwtLogin,
+  refreshMatrixAccessTokenForDevice,
   savePersistedMatrixDevice,
 } from "@/lib/matrix-session-storage";
 import { peerMxidForProfileId } from "@/lib/matrix-mxid";
@@ -233,32 +235,57 @@ export function MessagesPanel() {
           router.replace("/messages", { scroll: false });
           return;
         }
-        const createPromise = client.createRoom({
-          preset: Preset.TrustedPrivateChat,
-          is_direct: true,
-          invite: [peerMxid],
-          initial_state: [
-            {
-              type: EventType.RoomEncryption,
-              state_key: "",
-              content: { algorithm: "m.megolm.v1.aes-sha2" },
-            },
-          ],
-        });
-        const raced = await Promise.race([
-          createPromise,
-          new Promise<never>((_, reject) => {
-            window.setTimeout(
-              () =>
-                reject(
-                  new Error(
-                    "Creating the chat timed out. Check your connection and try again.",
+
+        const createRoomWithTimeout = () =>
+          Promise.race([
+            client.createRoom({
+              preset: Preset.TrustedPrivateChat,
+              is_direct: true,
+              invite: [peerMxid],
+              initial_state: [
+                {
+                  type: EventType.RoomEncryption,
+                  state_key: "",
+                  content: { algorithm: "m.megolm.v1.aes-sha2" },
+                },
+              ],
+            }),
+            new Promise<never>((_, reject) => {
+              window.setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      "Creating the chat timed out. Check your connection and try again.",
+                    ),
                   ),
-                ),
-              CREATE_ROOM_TIMEOUT_MS,
-            );
-          }),
-        ]);
+                CREATE_ROOM_TIMEOUT_MS,
+              );
+            }),
+          ]);
+
+        let raced: { room_id: string };
+        try {
+          raced = await createRoomWithTimeout();
+        } catch (firstCreateErr) {
+          if (!isMatrixTokenUnauthorizedError(firstCreateErr)) {
+            throw firstCreateErr;
+          }
+          const deviceId = client.getDeviceId();
+          if (!deviceId) throw firstCreateErr;
+          const bundleFresh = await apiFetch<LoginBundle>("/matrix/login-token", {
+            method: "POST",
+            body: JSON.stringify({}),
+            token: session.access_token,
+          });
+          const creds = await refreshMatrixAccessTokenForDevice(
+            bundleFresh.homeserverUrl,
+            bundleFresh.jwt,
+            deviceId,
+          );
+          client.setAccessToken(creds.access_token);
+          raced = await createRoomWithTimeout();
+        }
+
         const roomId = raced.room_id;
         setActiveRoomId(roomId);
         loadTimeline(client, roomId);

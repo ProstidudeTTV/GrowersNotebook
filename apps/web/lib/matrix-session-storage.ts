@@ -1,3 +1,5 @@
+import { MatrixError } from "matrix-js-sdk";
+
 /** localStorage: stable Matrix device_id per MXID (JWT login otherwise mints a new device every visit). */
 const DEVICE_LS_KEY = "gn-matrix-device-v1";
 
@@ -68,6 +70,45 @@ export type MatrixHomeserverLoginOk = {
   user_id: string;
   device_id: string;
 };
+
+export function isMatrixTokenUnauthorizedError(e: unknown): boolean {
+  if (e instanceof MatrixError) {
+    if (e.httpStatus === 401) return true;
+    if (e.errcode === "M_UNKNOWN_TOKEN") return true;
+  }
+  if (e instanceof Error && /invalid access token/i.test(e.message)) {
+    return true;
+  }
+  return false;
+}
+
+/** New Matrix access token for an existing device (Synapse JWT login). */
+export async function refreshMatrixAccessTokenForDevice(
+  homeserverUrl: string,
+  jwt: string,
+  deviceId: string,
+): Promise<MatrixHomeserverLoginOk> {
+  const loginResult = await matrixHomeserverJwtLogin(
+    homeserverUrl,
+    jwt,
+    deviceId,
+  );
+  if (!loginResult.ok) {
+    throw new Error(
+      loginResult.error ||
+        loginResult.errcode ||
+        `Could not refresh messaging session (${loginResult.status})`,
+    );
+  }
+  const { data } = loginResult;
+  if (data.device_id !== deviceId) {
+    throw new Error(
+      "Messaging session changed on the server. Reload the page to continue.",
+    );
+  }
+  savePersistedMatrixDevice(data.user_id, data.device_id);
+  return data;
+}
 
 export async function matrixHomeserverJwtLogin(
   homeserverUrl: string,

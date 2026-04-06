@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GuestLanding } from "@/components/marketing/guest-landing";
 import { apiFetch } from "@/lib/api-public";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { createClient } from "@/lib/supabase/server";
 import {
   SITE_NAME,
   SITE_TAGLINE,
@@ -61,6 +64,9 @@ function CommunityColumn({ items }: { items: Community[] }) {
 }
 
 export default async function Home() {
+  const supabase = await createClient();
+  const token = await getAccessTokenForApi(supabase);
+
   let communities: Community[] = [];
   let loadError: string | null = null;
   try {
@@ -76,6 +82,16 @@ export default async function Home() {
     apiBase = getPublicApiUrl();
   } catch {
     apiBase = "";
+  }
+
+  if (!token) {
+    return (
+      <GuestLanding
+        communities={communities}
+        loadError={loadError}
+        apiBase={apiBase}
+      />
+    );
   }
 
   const mid = Math.ceil(communities.length / 2);

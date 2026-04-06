@@ -6,6 +6,10 @@
 # (created via Render MCP). Use its **Internal Database URL** in Synapse `homeserver.yaml`, not Supabase.
 # Synapse itself is not defined here—run it via `infra/synapse/docker-compose.yml` locally or add a
 # Render **Docker** Web Service separately (MCP `create_web_service` is Node-only).
+#
+# Build: Render sets NODE_ENV=production, which makes pnpm skip devDependencies (@nestjs/cli, typescript,
+# etc.). Install with NODE_ENV=development only for the install subprocess; the build step then uses the
+# service's normal env.
 
 services:
   - type: web
@@ -13,7 +17,7 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    buildCommand: npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
+    buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
@@ -27,7 +31,7 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    buildCommand: npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/web build
+    buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/web build
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
 

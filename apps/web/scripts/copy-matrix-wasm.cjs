@@ -7,14 +7,54 @@ const fs = require("fs");
 const path = require("path");
 
 const webRoot = path.join(__dirname, "..");
-const src = path.join(
-  webRoot,
-  "node_modules",
-  "@matrix-org",
-  "matrix-sdk-crypto-wasm",
-  "pkg",
-  "matrix_sdk_crypto_wasm_bg.wasm",
-);
+const repoRoot = path.join(webRoot, "..", "..");
+const resolveRoots = [webRoot, path.join(webRoot, ".."), repoRoot];
+
+let pkgRoot;
+for (const root of resolveRoots) {
+  try {
+    pkgRoot = path.dirname(
+      require.resolve("@matrix-org/matrix-sdk-crypto-wasm/package.json", {
+        paths: [root],
+      }),
+    );
+    break;
+  } catch {
+    /* try next */
+  }
+}
+if (!pkgRoot) {
+  const guessPkgs = [
+    path.join(
+      webRoot,
+      "node_modules",
+      "@matrix-org",
+      "matrix-sdk-crypto-wasm",
+      "package.json",
+    ),
+    path.join(
+      repoRoot,
+      "node_modules",
+      "@matrix-org",
+      "matrix-sdk-crypto-wasm",
+      "package.json",
+    ),
+  ];
+  for (const pkgJson of guessPkgs) {
+    if (fs.existsSync(pkgJson)) {
+      pkgRoot = path.dirname(pkgJson);
+      break;
+    }
+  }
+}
+if (!pkgRoot) {
+  console.error(
+    "copy-matrix-wasm: cannot resolve @matrix-org/matrix-sdk-crypto-wasm; tried:\n  " +
+      resolveRoots.join("\n  "),
+  );
+  process.exit(1);
+}
+const src = path.join(pkgRoot, "pkg", "matrix_sdk_crypto_wasm_bg.wasm");
 const destDir = path.join(webRoot, "public", "wasm");
 const dest = path.join(destDir, "matrix_sdk_crypto_wasm_bg.wasm");
 

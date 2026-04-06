@@ -1,5 +1,6 @@
 "use client";
 
+import * as MatrixCryptoWasm from "@matrix-org/matrix-sdk-crypto-wasm";
 import { apiFetch } from "@/lib/api-public";
 import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { createClient } from "@/lib/supabase/client";
@@ -264,17 +265,16 @@ export function MessagesPanel() {
           token: session.access_token,
         });
 
-        const wasmMod = await import("@matrix-org/matrix-sdk-crypto-wasm");
-        /** Bundled JS cannot resolve pkg/*.wasm via import.meta.url; copy is in public/wasm/. */
+        /**
+         * Must use the same module instance as matrix-js-sdk (rust-crypto calls initAsync() with no URL).
+         * Dynamic import can duplicate the package so pre-init never applies — use static import above.
+         * WASM file is copied to /public/wasm/ during build (see copy-matrix-wasm.cjs).
+         */
         const wasmAsset = new URL(
           "/wasm/matrix_sdk_crypto_wasm_bg.wasm",
           window.location.origin,
         );
-        if (typeof wasmMod.initAsync === "function") {
-          await wasmMod.initAsync(wasmAsset);
-        } else if (typeof wasmMod.start === "function") {
-          wasmMod.start();
-        }
+        await MatrixCryptoWasm.initAsync(wasmAsset);
 
         const loginUrl = `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`;
         const loginRes = await fetch(loginUrl, {

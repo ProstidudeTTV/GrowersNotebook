@@ -1,0 +1,11 @@
+---
+description: When verifying production (Render) for Growers Notebook, use the Render MCP after selecting the correct workspace (My Workspace / team that owns this repo).
+globs:
+alwaysApply: false
+---
+
+- Use `get_selected_workspace`; if unset, `list_workspaces` then `select_workspace` with the right `ownerID`.
+- Use `list_services` to find `growers-notebook-web` / `growers-notebook-api` / `growers-synapse`.
+- Use `list_deploys` with the service id to confirm latest commit is **live** and trace build regressions.
+- Use `list_logs` when investigating failed deploys or runtime errors.
+- Prefer fixing production/Web issues in-repo and pushing to `main` (auto-deploy) rather than relying on uncommitted local-only changes.

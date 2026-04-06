@@ -236,7 +236,7 @@ export function ProfileView({
                     setProfile((p) => ({ ...p, viewerFollowing: v }))
                   }
                 />
-                {viewerId ? (
+                {viewerId && profile.viewerFollowing ? (
                   <Link
                     href={`/messages?with=${encodeURIComponent(profile.id)}`}
                     className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"

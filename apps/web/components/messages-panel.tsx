@@ -27,7 +27,7 @@ type LoginBundle = {
   expiresIn: number;
 };
 
-type FollowingUser = { id: string; displayName: string | null };
+const CREATE_ROOM_TIMEOUT_MS = 90_000;
 
 function pickThreadRoot(client: MatrixClient, ev: MatrixEvent): MatrixEvent {
   const relates = ev.getContent()?.["m.relates_to"] as
@@ -139,10 +139,8 @@ export function MessagesPanel() {
     { id: string; sender: string; body: string }[]
   >([]);
   const [draft, setDraft] = useState("");
-  const [following, setFollowing] = useState<FollowingUser[]>([]);
-  const [followingLoading, setFollowingLoading] = useState(false);
-  const [followingError, setFollowingError] = useState<string | null>(null);
   const [busyPeer, setBusyPeer] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const openedForWith = useRef<string | null>(null);
 
   const refreshConversations = useCallback((c: MatrixClient) => {
@@ -194,12 +192,14 @@ export function MessagesPanel() {
   const openOrCreateDm = useCallback(
     async (peerProfileId: string) => {
       if (!client) return;
+      setActionError(null);
       const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        throw new Error("Sign in to start a chat.");
+        setActionError("Sign in to start a chat.");
+        return;
       }
       setBusyPeer(peerProfileId);
       try {
@@ -209,7 +209,10 @@ export function MessagesPanel() {
           token: session.access_token,
         });
         const me = client.getUserId();
-        if (!me) throw new Error("Messaging session not ready.");
+        if (!me) {
+          setActionError("Messaging session not ready.");
+          return;
+        }
         const peerMxid = await peerMxidForProfileId(peerProfileId, me);
         const existing = findDmWithPeer(client, peerMxid);
         if (existing) {
@@ -219,7 +222,7 @@ export function MessagesPanel() {
           router.replace("/messages", { scroll: false });
           return;
         }
-        const { room_id: roomId } = await client.createRoom({
+        const createPromise = client.createRoom({
           preset: Preset.TrustedPrivateChat,
           is_direct: true,
           invite: [peerMxid],
@@ -231,10 +234,33 @@ export function MessagesPanel() {
             },
           ],
         });
+        const raced = await Promise.race([
+          createPromise,
+          new Promise<never>((_, reject) => {
+            window.setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    "Creating the chat timed out. Check your connection and try again.",
+                  ),
+                ),
+              CREATE_ROOM_TIMEOUT_MS,
+            );
+          }),
+        ]);
+        const roomId = raced.room_id;
         setActiveRoomId(roomId);
         loadTimeline(client, roomId);
         refreshConversations(client);
         router.replace("/messages", { scroll: false });
+      } catch (e) {
+        let msg = e instanceof Error ? e.message : String(e);
+        if (/403|forbidden|only start a chat|only message people you follow/i.test(msg)) {
+          msg =
+            "You can only message people you follow. Follow them on their profile, then use Message.";
+        }
+        setActionError(msg);
+        openedForWith.current = null;
       } finally {
         setBusyPeer(null);
       }
@@ -406,43 +432,8 @@ export function MessagesPanel() {
     if (!uuidRe.test(withParam)) return;
     if (openedForWith.current === withParam) return;
     openedForWith.current = withParam;
-    void openOrCreateDm(withParam).catch((e) => {
-      openedForWith.current = null;
-      setError(e instanceof Error ? e.message : String(e));
-    });
+    void openOrCreateDm(withParam);
   }, [withParam, client, cryptoReady, openOrCreateDm]);
-
-  useEffect(() => {
-    if (status !== "ready") return;
-    let cancelled = false;
-    (async () => {
-      setFollowingLoading(true);
-      setFollowingError(null);
-      try {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.access_token || cancelled) return;
-        const data = await apiFetch<{ items: FollowingUser[] }>("/follows/users", {
-          token: session.access_token,
-        });
-        if (!cancelled) setFollowing(data.items ?? []);
-      } catch (e) {
-        if (!cancelled) {
-          setFollowing([]);
-          setFollowingError(
-            e instanceof Error ? e.message : String(e),
-          );
-        }
-      } finally {
-        if (!cancelled) setFollowingLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
 
   useEffect(() => {
     if (!client) return;
@@ -501,66 +492,43 @@ export function MessagesPanel() {
 
   return (
     <div className="space-y-4 border-t border-[var(--gn-divide)] pt-4">
+      {actionError ? (
+        <div
+          className="rounded-lg border border-red-300/50 bg-red-500/10 px-4 py-3 text-sm text-[var(--gn-text)]"
+          role="alert"
+        >
+          <p className="font-medium text-red-700 dark:text-red-400">
+            Couldn&apos;t open this chat
+          </p>
+          <p className="mt-1 text-[var(--gn-text-muted)]">{actionError}</p>
+          <button
+            type="button"
+            className="mt-2 text-xs font-semibold text-[#ff6a38] hover:underline"
+            onClick={() => setActionError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
       {hasNoChatHistory ? (
         <div className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3 text-sm">
-          <p className="font-medium text-[var(--gn-text)]">Your inbox is quiet</p>
+          <p className="font-medium text-[var(--gn-text)]">No conversations yet</p>
           <p className="mt-1.5 leading-relaxed text-[var(--gn-text-muted)]">
-            You don&apos;t have any messages, chat history, or open invites yet.
-            Send someone a message first—pick a person you follow below, or open
-            their profile and use Message—then your conversations and history
-            will show up here.
+            New chats start from a profile: follow someone, then use{" "}
+            <span className="font-medium text-[var(--gn-text)]">Message</span> on
+            their page. Open chats will show in the list here.
           </p>
         </div>
       ) : null}
       <div className="flex min-h-[420px] flex-col gap-4 lg:flex-row">
         <div className="flex w-full shrink-0 flex-col border-[var(--gn-divide)] lg:w-64 lg:border-r lg:pr-3">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-          People you follow
-        </p>
-        <div className="mb-4 max-h-44 overflow-y-auto rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-2">
-          {followingLoading ? (
-            <p className="px-2 py-1 text-xs text-[var(--gn-text-muted)]">
-              Loading people you follow…
-            </p>
-          ) : followingError ? (
-            <p className="px-2 py-1 text-xs text-red-600" role="alert">
-              {followingError}
-            </p>
-          ) : following.length === 0 ? (
-            <p className="px-2 py-1 text-xs text-[var(--gn-text-muted)]">
-              Follow people from their profiles to list them here, or use
-              Message on their profile. (Chats with pending invites appear under
-              Conversations.)
-            </p>
-          ) : (
-            <ul className="space-y-0.5">
-              {following.map((u) => (
-                <li key={u.id}>
-                  <button
-                    type="button"
-                    disabled={busyPeer === u.id}
-                    className="w-full rounded-md px-2 py-1.5 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                    onClick={() => {
-                      void openOrCreateDm(u.id).catch((e) => {
-                        setError(e instanceof Error ? e.message : String(e));
-                      });
-                    }}
-                  >
-                    {u.displayName ?? u.id.slice(0, 8)}
-                    {busyPeer === u.id ? "…" : ""}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
           Conversations
         </p>
         <ul className="max-h-64 space-y-1 overflow-y-auto lg:max-h-[min(60vh,520px)]">
           {conversations.length === 0 ? (
             <li className="text-xs text-[var(--gn-text-muted)]">
-              No conversations yet—start one from the list above.
+              No open chats—use Message on a profile you follow to start one.
             </li>
           ) : (
             conversations.map((r) => (
@@ -572,7 +540,10 @@ export function MessagesPanel() {
                       ? "bg-[var(--gn-surface-hover)] text-[var(--gn-text)]"
                       : "text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
                   }`}
-                  onClick={() => setActiveRoomId(r.id)}
+                  onClick={() => {
+                    setActiveRoomId(r.id);
+                    setActionError(null);
+                  }}
                 >
                   {r.label}
                 </button>
@@ -582,16 +553,16 @@ export function MessagesPanel() {
         </ul>
         </div>
         <div className="min-w-0 flex-1">
-        {busyPeer && !activeRoomId ? (
+        {busyPeer ? (
           <p className="mb-2 text-xs text-[var(--gn-text-muted)]">
-            Opening chat…
+            Opening chat… (this can take up to a minute)
           </p>
         ) : null}
         <div className="mb-3 max-h-[340px] space-y-2 overflow-y-auto rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3">
           {!activeRoomId ? (
             <p className="text-xs text-[var(--gn-text-muted)]">
               {hasNoChatHistory
-                ? "Once you send a message, open that chat here to see your history."
+                ? "After you start a chat from someone’s profile, select it here to read and reply."
                 : "Select a conversation to read and reply."}
             </p>
           ) : lines.length === 0 ? (

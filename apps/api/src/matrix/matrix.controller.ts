@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Post,
   ServiceUnavailableException,
   UseGuards,
@@ -9,11 +10,15 @@ import {
 import type { JwtUser } from '../auth/jwt-user';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
+import { FollowsService } from '../follows/follows.service';
 import { MatrixService } from './matrix.service';
 
 @Controller('matrix')
 export class MatrixController {
-  constructor(private readonly matrix: MatrixService) {}
+  constructor(
+    private readonly matrix: MatrixService,
+    private readonly follows: FollowsService,
+  ) {}
 
   @Post('ensure-account')
   @UseGuards(SupabaseAuthGuard)
@@ -49,6 +54,12 @@ export class MatrixController {
     }
     if (peer === user.sub) {
       throw new BadRequestException('Cannot open a chat with yourself.');
+    }
+    const allowed = await this.follows.getFollowingUserIds(user.sub, [peer]);
+    if (!allowed.has(peer)) {
+      throw new ForbiddenException(
+        'You can only start a chat with someone you follow.',
+      );
     }
     await this.matrix.ensureSynapseUser(user.sub);
     await this.matrix.ensureSynapseUser(peer);

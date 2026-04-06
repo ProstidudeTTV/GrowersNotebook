@@ -8,8 +8,9 @@ export default function MessagesPage() {
         Messages
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Private chats with people you follow. Conversations are end-to-end
-        encrypted on the homeserver.
+        Your open conversations. To start a new chat, open someone you follow
+        and use Message on their profile. Chats are end-to-end encrypted on the
+        homeserver.
       </p>
       <div className="mt-6">
         <Suspense

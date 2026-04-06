@@ -53,6 +53,37 @@ export class MatrixService {
     return (pub || base).replace(/\/+$/, '');
   }
 
+  /**
+   * Push Growers profile display name to the homeserver so Matrix clients show matching names.
+   * Call after ensureSynapseUser. Safe to call repeatedly.
+   */
+  async syncHomeserverDisplayName(
+    profileUserId: string,
+    displayName: string | null | undefined,
+  ): Promise<void> {
+    const base = this.required('SYNAPSE_BASE_URL').replace(/\/+$/, '');
+    const adminTok = this.required('SYNAPSE_ADMIN_ACCESS_TOKEN');
+    const serverName = this.required('SYNAPSE_SERVER_NAME');
+    const lp = this.localpartForUserId(profileUserId);
+    const mxid = `@${lp}:${serverName}`;
+    const name = (displayName ?? '').trim() || 'Grower';
+    const url = `${base}/_synapse/admin/v2/users/${encodeURIComponent(mxid)}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${adminTok}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ displayname: name }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `Synapse profile sync failed (${res.status}) for ${redactBase(base)}: ${text.slice(0, 400)}`,
+      );
+    }
+  }
+
   async ensureSynapseUser(userId: string): Promise<void> {
     const base = this.required('SYNAPSE_BASE_URL').replace(/\/+$/, '');
     const adminTok = this.required('SYNAPSE_ADMIN_ACCESS_TOKEN');

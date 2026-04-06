@@ -11,6 +11,7 @@ import type { JwtUser } from '../auth/jwt-user';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
 import { FollowsService } from '../follows/follows.service';
+import { ProfilesService } from '../profiles/profiles.service';
 import { MatrixService } from './matrix.service';
 
 @Controller('matrix')
@@ -18,7 +19,15 @@ export class MatrixController {
   constructor(
     private readonly matrix: MatrixService,
     private readonly follows: FollowsService,
+    private readonly profiles: ProfilesService,
   ) {}
+
+  /** Create Synapse user if needed and push current Growers display name. */
+  private async ensureMessagingUserWithDisplayName(profileId: string) {
+    await this.matrix.ensureSynapseUser(profileId);
+    const p = await this.profiles.findById(profileId);
+    await this.matrix.syncHomeserverDisplayName(profileId, p?.displayName ?? null);
+  }
 
   @Post('ensure-account')
   @UseGuards(SupabaseAuthGuard)
@@ -28,7 +37,7 @@ export class MatrixController {
         'Messaging is not available on this server.',
       );
     }
-    await this.matrix.ensureSynapseUser(user.sub);
+    await this.ensureMessagingUserWithDisplayName(user.sub);
     return { ok: true as const };
   }
 
@@ -61,8 +70,8 @@ export class MatrixController {
         'You can only start a chat with someone you follow.',
       );
     }
-    await this.matrix.ensureSynapseUser(user.sub);
-    await this.matrix.ensureSynapseUser(peer);
+    await this.ensureMessagingUserWithDisplayName(user.sub);
+    await this.ensureMessagingUserWithDisplayName(peer);
     return { ok: true as const };
   }
 
@@ -74,7 +83,7 @@ export class MatrixController {
         'Messaging is not available on this server.',
       );
     }
-    await this.matrix.ensureSynapseUser(user.sub);
+    await this.ensureMessagingUserWithDisplayName(user.sub);
     const { jwt, expiresInSec } = await this.matrix.mintLoginJwt(user.sub);
     return {
       homeserverUrl: this.matrix.homeserverUrlForClient(),

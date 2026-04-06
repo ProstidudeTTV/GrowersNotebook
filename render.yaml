@@ -35,7 +35,8 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/web build
+    # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
+    buildCommand: export NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/web build
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:

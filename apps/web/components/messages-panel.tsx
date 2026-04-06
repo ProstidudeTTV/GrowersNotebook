@@ -42,6 +42,8 @@ type LoginBundle = {
 
 const CREATE_ROOM_TIMEOUT_MS = 90_000;
 
+const matrixClientStoreOpts = { timelineSupport: true as const };
+
 function pickThreadRoot(client: MatrixClient, ev: MatrixEvent): MatrixEvent {
   const relates = ev.getContent()?.["m.relates_to"] as
     | { rel_type?: string; event_id?: string }
@@ -78,13 +80,19 @@ function directRoomIds(client: MatrixClient): Set<string> {
 
 function listDmRooms(client: MatrixClient): Room[] {
   const direct = directRoomIds(client);
-  const rooms = client.getRooms().filter((r) => r.getMyMembership() === "join");
-  return rooms.filter((r) => {
+  return client.getRooms().filter((r) => {
+    const my = r.getMyMembership();
+    if (my === KnownMembership.Invite) {
+      if (direct.has(r.roomId)) return true;
+      const joined = r.getJoinedMemberCount();
+      const invited = r.getInvitedMemberCount();
+      return joined >= 1 && invited >= 1 && joined + invited <= 3;
+    }
+    if (my !== KnownMembership.Join) return false;
     if (direct.size > 0 && direct.has(r.roomId)) return true;
     const joined = r.getJoinedMemberCount();
     const invited = r.getInvitedMemberCount();
     if (joined === 2) return true;
-    // DM we created while the other person is still invited (not joined yet)
     if (joined === 1 && invited >= 1) return true;
     return false;
   });
@@ -99,6 +107,16 @@ function roomLastTs(r: Room): number {
 function dmLabel(client: MatrixClient, room: Room): string {
   const me = client.getUserId();
   if (!me) return room.name || room.roomId;
+  if (room.getMyMembership() === KnownMembership.Invite) {
+    const inviter =
+      room.getJoinedMembers().find((m) => m.userId !== me) ??
+      room.getJoinedMembers()[0];
+    const raw =
+      inviter?.rawDisplayName ||
+      inviter?.name ||
+      inviter?.userId.split(":")[0]?.replace("@", "");
+    return raw ? `${raw} (invited)` : "Invited chat";
+  }
   const others = room.getJoinedMembers().filter((m) => m.userId !== me);
   if (others.length === 1) {
     const m = others[0]!;
@@ -155,6 +173,11 @@ export function MessagesPanel() {
   const [busyPeer, setBusyPeer] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const openedForWith = useRef<string | null>(null);
+  const activeRoomIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
 
   const refreshConversations = useCallback((c: MatrixClient) => {
     const list = listDmRooms(c)
@@ -167,40 +190,56 @@ export function MessagesPanel() {
     setConversations(list);
   }, []);
 
-  const loadTimeline = useCallback((c: MatrixClient, roomId: string) => {
-    const room = c.getRoom(roomId);
-    if (!room) {
-      setLines([]);
-      return;
-    }
-    const live = room.getLiveTimeline();
-    const events = live.getEvents();
-    const out: { id: string; sender: string; body: string }[] = [];
-    for (const ev of events) {
-      const t = ev.getType();
-      if (t === EventType.RoomMessageEncrypted) {
-        let body: string;
-        if (ev.isBeingDecrypted()) body = "Decrypting…";
-        else if (ev.isDecryptionFailure()) body = "Unable to decrypt this message.";
-        else body = "Encrypted message…";
+  const senderLineLabel = useCallback((room: Room, senderId: string) => {
+    const m = room.getMember(senderId);
+    return (
+      m?.rawDisplayName ||
+      m?.name ||
+      senderId.split(":")[0]?.replace("@", "") ||
+      "?"
+    );
+  }, []);
+
+  const loadTimeline = useCallback(
+    (c: MatrixClient, roomId: string) => {
+      const room = c.getRoom(roomId);
+      if (!room) {
+        setLines([]);
+        return;
+      }
+      const live = room.getLiveTimeline();
+      const events = live.getEvents();
+      const out: { id: string; sender: string; body: string }[] = [];
+      for (const ev of events) {
+        const t = ev.getType();
+        if (t === EventType.RoomMessageEncrypted) {
+          let body: string;
+          if (ev.isBeingDecrypted()) body = "Decrypting…";
+          else if (ev.isDecryptionFailure())
+            body = "Unable to decrypt this message.";
+          else body = "Encrypted message…";
+          const sid = ev.getSender() ?? "?";
+          out.push({
+            id: ev.getId()!,
+            sender: senderLineLabel(room, sid),
+            body,
+          });
+          continue;
+        }
+        if (t !== EventType.RoomMessage) continue;
+        if (ev.getContent()?.msgtype !== MsgType.Text) continue;
+        const root = pickThreadRoot(c, ev);
+        const sid = root.getSender() ?? "?";
         out.push({
           id: ev.getId()!,
-          sender: ev.getSender() ?? "?",
-          body,
+          sender: senderLineLabel(room, sid),
+          body: eventBody(root),
         });
-        continue;
       }
-      if (t !== EventType.RoomMessage) continue;
-      if (ev.getContent()?.msgtype !== MsgType.Text) continue;
-      const root = pickThreadRoot(c, ev);
-      out.push({
-        id: ev.getId()!,
-        sender: root.getSender() ?? "?",
-        body: eventBody(root),
-      });
-    }
-    setLines(out);
-  }, []);
+      setLines(out);
+    },
+    [senderLineLabel],
+  );
 
   const openOrCreateDm = useCallback(
     async (peerProfileId: string) => {
@@ -310,6 +349,15 @@ export function MessagesPanel() {
     let mx: MatrixClient | null = null;
     let cancelled = false;
     let debounceRefresh: number | undefined;
+    let liveBumpTimer: number | undefined;
+    let timelineHandler:
+      | ((
+          ev: MatrixEvent,
+          room: Room | undefined,
+          toStartOfTimeline?: boolean,
+        ) => void)
+      | undefined;
+    let membershipHandler: (() => void) | undefined;
 
     (async () => {
       setStatus("loading");
@@ -392,6 +440,7 @@ export function MessagesPanel() {
         savePersistedMatrixDevice(loginResult.data.user_id, loginDeviceId);
 
         mx = createMatrixClient({
+          ...matrixClientStoreOpts,
           baseUrl: bundle.homeserverUrl.replace(/\/+$/, ""),
           accessToken: loginResult.data.access_token,
           userId: loginResult.data.user_id,
@@ -445,6 +494,7 @@ export function MessagesPanel() {
           }
           savePersistedMatrixDevice(login2.data.user_id, login2.data.device_id);
           mx = createMatrixClient({
+            ...matrixClientStoreOpts,
             baseUrl: bundle2.homeserverUrl.replace(/\/+$/, ""),
             accessToken: login2.data.access_token,
             userId: login2.data.user_id,
@@ -471,7 +521,27 @@ export function MessagesPanel() {
           debouncedListRefresh();
         });
 
-        await mx.startClient();
+        timelineHandler = (_ev, _room, toStartOfTimeline) => {
+          if (toStartOfTimeline) return;
+          if (liveBumpTimer) window.clearTimeout(liveBumpTimer);
+          liveBumpTimer = window.setTimeout(() => {
+            refreshConversations(mx!);
+            const ar = activeRoomIdRef.current;
+            if (ar) loadTimeline(mx!, ar);
+          }, 120);
+        };
+        membershipHandler = () => {
+          refreshConversations(mx!);
+          const ar = activeRoomIdRef.current;
+          if (ar) loadTimeline(mx!, ar);
+        };
+        mx.on(RoomEvent.Timeline, timelineHandler);
+        mx.on(RoomEvent.MyMembership, membershipHandler);
+
+        await mx.startClient({
+          lazyLoadMembers: true,
+          resolveInvitesToProfiles: true,
+        });
         await new Promise<void>((resolve, reject) => {
           const t = window.setTimeout(
             () => reject(new Error("Messaging sync timed out.")),
@@ -504,9 +574,16 @@ export function MessagesPanel() {
     return () => {
       cancelled = true;
       if (debounceRefresh) window.clearTimeout(debounceRefresh);
+      if (liveBumpTimer) window.clearTimeout(liveBumpTimer);
+      if (mx && timelineHandler) {
+        mx.removeListener(RoomEvent.Timeline, timelineHandler);
+      }
+      if (mx && membershipHandler) {
+        mx.removeListener(RoomEvent.MyMembership, membershipHandler);
+      }
       mx?.stopClient();
     };
-  }, [refreshConversations]);
+  }, [refreshConversations, loadTimeline]);
 
   useEffect(() => {
     if (!withParam) {
@@ -628,8 +705,28 @@ export function MessagesPanel() {
                       : "text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
                   }`}
                   onClick={() => {
-                    setActiveRoomId(r.id);
-                    setActionError(null);
+                    if (!client) return;
+                    void (async () => {
+                      const room = client.getRoom(r.id);
+                      if (
+                        room?.getMyMembership() === KnownMembership.Invite
+                      ) {
+                        try {
+                          await client.joinRoom(r.id);
+                        } catch (e) {
+                          setActionError(
+                            e instanceof Error
+                              ? e.message
+                              : "Could not accept the invite.",
+                          );
+                          return;
+                        }
+                      }
+                      setActiveRoomId(r.id);
+                      setActionError(null);
+                      loadTimeline(client, r.id);
+                      refreshConversations(client);
+                    })();
                   }}
                 >
                   {r.label}

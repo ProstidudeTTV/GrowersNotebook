@@ -264,11 +264,16 @@ export function MessagesPanel() {
           token: session.access_token,
         });
 
-        const wasm = await import("@matrix-org/matrix-sdk-crypto-wasm");
-        if (typeof wasm.initAsync === "function") {
-          await wasm.initAsync();
-        } else if (typeof wasm.start === "function") {
-          wasm.start();
+        const wasmMod = await import("@matrix-org/matrix-sdk-crypto-wasm");
+        /** Bundled JS cannot resolve pkg/*.wasm via import.meta.url; copy is in public/wasm/. */
+        const wasmAsset = new URL(
+          "/wasm/matrix_sdk_crypto_wasm_bg.wasm",
+          window.location.origin,
+        );
+        if (typeof wasmMod.initAsync === "function") {
+          await wasmMod.initAsync(wasmAsset);
+        } else if (typeof wasmMod.start === "function") {
+          wasmMod.start();
         }
 
         const loginUrl = `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`;
@@ -331,7 +336,8 @@ export function MessagesPanel() {
 
         try {
           await mx.initRustCrypto();
-        } catch {
+        } catch (e) {
+          console.error("Matrix initRustCrypto failed", e);
           throw new Error(
             "Could not initialize encryption. Try refreshing the page or another browser.",
           );

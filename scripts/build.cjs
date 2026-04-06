@@ -13,4 +13,8 @@ function run(title, cmd, cwd) {
 }
 
 run("API (Nest)", "npx nest build", path.join(root, "apps", "api"));
-run("Web (Next)", "npx next build", path.join(root, "apps", "web"));
+run(
+  "Web (Next)",
+  "node scripts/copy-matrix-wasm.cjs && npx next build",
+  path.join(root, "apps", "web"),
+);

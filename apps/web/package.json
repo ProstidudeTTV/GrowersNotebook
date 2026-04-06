@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node ../../scripts/next-dev.cjs",
-    "build": "next build --turbopack",
+    "dev": "node scripts/copy-matrix-wasm.cjs && node ../../scripts/next-dev.cjs",
+    "build": "node scripts/copy-matrix-wasm.cjs && next build --turbopack",
     "start": "next start",
     "lint": "eslint"
   },

@@ -2,8 +2,10 @@
 # After linking https://github.com/ProstidudeTTV/GrowersNotebook, set secrets in the dashboard
 # (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API; NEXT_PUBLIC_* on web).
 #
-# Synapse is run via Docker Compose locally (infra/synapse) or as a separate Render Docker service;
-# use growers-matrix-postgres from this blueprint for the homeserver DB.
+# Matrix Postgres: a DB named `growers-matrix-postgres` may already exist on your workspace
+# (created via Render MCP). Use its **Internal Database URL** in Synapse `homeserver.yaml`, not Supabase.
+# Synapse itself is not defined here—run it via `infra/synapse/docker-compose.yml` locally or add a
+# Render **Docker** Web Service separately (MCP `create_web_service` is Node-only).
 
 services:
   - type: web
@@ -29,9 +31,3 @@ services:
     startCommand: pnpm --filter @growers/web start
     healthCheckPath: /
 
-databases:
-  - name: growers-matrix-postgres
-    databaseName: synapse
-    user: synapse
-    region: oregon
-    plan: basic_256mb

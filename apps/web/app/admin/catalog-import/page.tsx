@@ -23,11 +23,11 @@ export default function AdminCatalogImportPage() {
   return (
     <List title="Catalog CSV import">
       <Paragraph type="secondary">
-        Upload the same strain dataset you use with{" "}
-        <Text code>pnpm db:import-strains</Text>. Requires a header row with{" "}
-        <Text code>strain_name</Text> and <Text code>breeder</Text>. Duplicate
-        strain + breeder rows in the file are skipped. Existing slugs are left
-        unchanged (only new breeders/strains are inserted).
+        Upload a CSV with headers <Text code>strain_name</Text> and{" "}
+        <Text code>breeder</Text> (see bundled{" "}
+        <Text code>apps/api/scripts/data/cannabis-strains-final.csv</Text>).
+        Duplicate strain + breeder rows are skipped; existing slugs are not
+        changed. Large imports can take a minute — keep this tab open.
       </Paragraph>
       <Upload.Dragger
         name="file"
@@ -43,6 +43,7 @@ export default function AdminCatalogImportPage() {
             const { data } = await adminAxios.post<ImportResult>(
               "/catalog/import-strains-csv",
               form,
+              { timeout: 600_000, maxContentLength: 50 * 1024 * 1024, maxBodyLength: 50 * 1024 * 1024 },
             );
             message.success(
               `Import complete: ${data.strainsInserted} new strains, ${data.breedersInserted} new breeders (${data.rowsParsed} rows parsed).`,

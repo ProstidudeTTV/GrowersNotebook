@@ -1,10 +1,36 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
 import type { InferInsertModel } from 'drizzle-orm';
 import { count } from 'drizzle-orm';
 import type { DbClient } from '../db';
 import { getDb } from '../db';
 import { breeders, strains } from '../db/schema';
+
+function normalizeHeaderKey(k: string): string {
+  return k
+    .replace(/^\ufeff/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+}
+
+/** Trim BOM/spaces from headers; lower-case snake_case (handles Excel headers). */
+export function normalizeCsvRecords(
+  records: Record<string, string>[],
+): Record<string, string>[] {
+  return records.map((row) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(row)) {
+      out[normalizeHeaderKey(k)] = v ?? '';
+    }
+    return out;
+  });
+}
 
 export type StrainCsvImportResult = {
   rowsParsed: number;
@@ -140,6 +166,7 @@ export async function importStrainCsvRecords(
   db: DbClient,
   records: Record<string, string>[],
 ): Promise<StrainCsvImportResult> {
+  const normalized = normalizeCsvRecords(records);
   let rowsSkippedNoStrainName = 0;
   let rowsSkippedDuplicateStrainBreeder = 0;
 
@@ -151,7 +178,7 @@ export async function importStrainCsvRecords(
     .from(strains);
 
   const breederCanonical = new Map<string, string>();
-  for (const row of records) {
+  for (const row of normalized) {
     const name = (row.breeder || '').trim();
     if (!name) continue;
     const bslug = slugify(name);
@@ -166,8 +193,8 @@ export async function importStrainCsvRecords(
     }),
   );
 
-  for (let i = 0; i < breederList.length; i += 200) {
-    const chunk = breederList.slice(i, i + 200);
+  for (let i = 0; i < breederList.length; i += 500) {
+    const chunk = breederList.slice(i, i + 500);
     await db.insert(breeders).values(chunk).onConflictDoNothing({
       target: breeders.slug,
     });
@@ -186,7 +213,7 @@ export async function importStrainCsvRecords(
   const seenPair = new Set<string>();
   const strainValues: InferInsertModel<typeof strains>[] = [];
 
-  for (const row of records) {
+  for (const row of normalized) {
     const strainName = (row.strain_name || '').trim();
     if (!strainName) {
       rowsSkippedNoStrainName += 1;
@@ -219,8 +246,8 @@ export async function importStrainCsvRecords(
     });
   }
 
-  for (let i = 0; i < strainValues.length; i += 100) {
-    const chunk = strainValues.slice(i, i + 100);
+  for (let i = 0; i < strainValues.length; i += 400) {
+    const chunk = strainValues.slice(i, i + 400);
     await db.insert(strains).values(chunk).onConflictDoNothing({
       target: strains.slug,
     });
@@ -234,7 +261,7 @@ export async function importStrainCsvRecords(
     .from(strains);
 
   return {
-    rowsParsed: records.length,
+    rowsParsed: normalized.length,
     rowsSkippedNoStrainName,
     rowsSkippedDuplicateStrainBreeder,
     uniqueBreedersInCsv: breederCanonical.size,
@@ -244,20 +271,31 @@ export async function importStrainCsvRecords(
   };
 }
 
-function parseCsvText(text: string): Record<string, string>[] {
-  return parse(text, {
-    columns: true,
-    skip_empty_lines: true,
-    relax_column_count: true,
-    trim: true,
-    bom: true,
-  }) as Record<string, string>[];
+function parseCsvRaw(text: string): Record<string, string>[] {
+  try {
+    return parse(text, {
+      columns: true,
+      skip_empty_lines: true,
+      relax_column_count: true,
+      trim: true,
+      bom: true,
+    }) as Record<string, string>[];
+  } catch (e) {
+    throw new BadRequestException(
+      `Invalid CSV: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
 }
 
 @Injectable()
 export class StrainCsvImportService {
+  private readonly log = new Logger(StrainCsvImportService.name);
+
   async importFromCsvText(text: string): Promise<StrainCsvImportResult> {
-    const records = parseCsvText(text);
+    if (!text || !text.trim()) {
+      throw new BadRequestException('CSV file is empty.');
+    }
+    const records = parseCsvRaw(text);
     if (records.length === 0) {
       return {
         rowsParsed: 0,
@@ -269,12 +307,26 @@ export class StrainCsvImportService {
         strainsInserted: 0,
       };
     }
-    const headerKeys = Object.keys(records[0]!);
-    if (!headerKeys.some((k) => k.toLowerCase() === 'strain_name')) {
+    const [firstNorm] = normalizeCsvRecords(records.slice(0, 1));
+    if (!firstNorm || !Object.keys(firstNorm).includes('strain_name')) {
+      const sample = Object.keys(records[0]!)
+        .slice(0, 15)
+        .join(', ');
       throw new BadRequestException(
-        'CSV must include a strain_name column (header row required).',
+        `CSV must include a strain_name column. Raw headers (first 15): ${sample}`,
       );
     }
-    return importStrainCsvRecords(getDb(), records);
+    try {
+      return await importStrainCsvRecords(getDb(), records);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.log.error(`Strain CSV import failed: ${msg}`, e instanceof Error ? e.stack : undefined);
+      const isProd = process.env.NODE_ENV === 'production';
+      throw new InternalServerErrorException(
+        isProd
+          ? 'Import failed. Check API service logs on your host.'
+          : `Import failed: ${msg.slice(0, 320)}`,
+      );
+    }
   }
 }

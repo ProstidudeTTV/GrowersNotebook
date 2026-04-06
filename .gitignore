@@ -13,5 +13,6 @@ coverage
 supabase/.branches
 supabase/.temp
 
-# Large strain CSV import (keep local; run pnpm db:import-strains in apps/api)
+# Strain CSV: ignore ad-hoc dumps except the bundled canonical file
 apps/api/scripts/data/*.csv
+!apps/api/scripts/data/cannabis-strains-final.csv

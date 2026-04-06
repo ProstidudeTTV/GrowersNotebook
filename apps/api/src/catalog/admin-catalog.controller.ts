@@ -16,6 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import type { JwtUser } from '../auth/jwt-user';
 import { Roles } from '../auth/roles.decorator';
@@ -257,20 +258,24 @@ export class AdminCatalogController {
   @Post('catalog/import-strains-csv')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 35 * 1024 * 1024 },
+      storage: memoryStorage(),
+      limits: { fileSize: 45 * 1024 * 1024 },
     }),
   )
-  importStrainsCsv(
+  async importStrainsCsv(
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
-    if (!file?.buffer?.length) {
-      throw new BadRequestException('Upload a CSV file (field name: file).');
+    const buf = file?.buffer;
+    if (!buf?.length) {
+      throw new BadRequestException(
+        'Upload a CSV file (field name: file). If this persists, try a smaller file or run pnpm db:import-strains from apps/api.',
+      );
     }
-    const name = (file.originalname || '').toLowerCase();
-    if (!name.endsWith('.csv')) {
-      throw new BadRequestException('File must have a .csv extension.');
+    const name = (file?.originalname || '').toLowerCase();
+    if (!name.includes('.csv')) {
+      throw new BadRequestException('File name should include .csv');
     }
-    const text = file.buffer.toString('utf8');
-    return this.strainCsvImport.importFromCsvText(text);
+    const text = buf.toString('utf8');
+    return await this.strainCsvImport.importFromCsvText(text);
   }
 }

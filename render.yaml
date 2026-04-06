@@ -60,6 +60,9 @@ services:
         value: https://growers-synapse.onrender.com
       - key: SYNAPSE_JWT_SECRET
         sync: false
+      # Optional bootstrap: set in dashboard; patch_config writes registration_shared_secret to homeserver.yaml
+      - key: SYNAPSE_REGISTRATION_SHARED_SECRET
+        sync: false
 
 databases:
   - name: growers-synapse-db

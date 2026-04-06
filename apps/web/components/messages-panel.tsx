@@ -113,24 +113,41 @@ export function MessagesPanel() {
           /* WASM init optional; encrypted rooms may not decrypt without this */
         }
 
-        const loginRes = await fetch(
-          `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "org.matrix.login.jwt",
-              token: bundle.jwt,
-            }),
+        const loginUrl = `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`;
+        const loginRes = await fetch(loginUrl, {
+          method: "POST",
+          redirect: "manual",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
-        );
-        const loginJson = (await loginRes.json()) as {
+          body: JSON.stringify({
+            type: "org.matrix.login.jwt",
+            token: bundle.jwt,
+          }),
+        });
+        if (loginRes.status >= 300 && loginRes.status < 400) {
+          const loc = loginRes.headers.get("Location") ?? "";
+          throw new Error(
+            `Homeserver returned redirect ${loginRes.status}${loc ? ` → ${loc}` : ""} on login. ` +
+              `Set SYNAPSE_PUBLIC_BASE_URL to the exact HTTPS URL of the Synapse service (no trailing slash).`,
+          );
+        }
+        const loginRaw = await loginRes.text();
+        let loginJson: {
           access_token?: string;
           user_id?: string;
           device_id?: string;
           errcode?: string;
           error?: string;
         };
+        try {
+          loginJson = loginRaw ? (JSON.parse(loginRaw) as typeof loginJson) : {};
+        } catch {
+          throw new Error(
+            `Homeserver login returned non-JSON (${loginRes.status}): ${loginRaw.slice(0, 200)}${loginRaw.length > 200 ? "…" : ""}`,
+          );
+        }
         if (!loginRes.ok) {
           throw new Error(
             loginJson.error ||

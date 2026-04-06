@@ -75,6 +75,13 @@ def main() -> None:
 
     cfg["federation_domain_whitelist"] = []
 
+    reg_secret = os.environ.get("SYNAPSE_REGISTRATION_SHARED_SECRET", "").strip()
+    if reg_secret:
+        cfg["registration_shared_secret"] = reg_secret
+    else:
+        # Do not leave a stale secret in yaml if env was removed.
+        cfg.pop("registration_shared_secret", None)
+
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.safe_dump(
             cfg,

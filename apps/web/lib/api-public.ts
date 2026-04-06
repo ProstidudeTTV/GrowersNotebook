@@ -40,6 +40,14 @@ export async function apiFetch<T>(
 
   const text = await res.text();
 
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get("Location") ?? "";
+    throw new Error(
+      `API returned redirect ${res.status}${loc ? ` → ${loc}` : ""}. ` +
+        `Check NEXT_PUBLIC_API_URL is the Nest API origin (e.g. …-api.onrender.com), not the Next site.`,
+    );
+  }
+
   if (!res.ok) {
     const hint = text.trimStart().startsWith("<")
       ? " (response is HTML — check NEXT_PUBLIC_API_URL points at the API, not the Next dev server)"

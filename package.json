@@ -9,7 +9,8 @@
     "install:all": "npx pnpm@9.15.9 install",
     "db:generate": "npx pnpm@9.15.9 --filter @growers/api db:generate",
     "db:migrate": "npx pnpm@9.15.9 --filter @growers/api db:migrate",
-    "db:seed": "npx pnpm@9.15.9 --filter @growers/api db:seed"
+    "db:seed": "npx pnpm@9.15.9 --filter @growers/api db:seed",
+    "synapse:provision-admin": "node scripts/provision-synapse-admin.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

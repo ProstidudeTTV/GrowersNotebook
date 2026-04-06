@@ -8,6 +8,7 @@ import { CatalogSuggestionsService } from './catalog-suggestions.service';
 import { PublicBreedersController } from './public-breeders.controller';
 import { PublicCatalogSuggestionsController } from './public-catalog-suggestions.controller';
 import { PublicStrainsController } from './public-strains.controller';
+import { StrainCsvImportService } from './strain-csv-import.service';
 import { StrainsService } from './strains.service';
 
 @Module({
@@ -23,6 +24,7 @@ import { StrainsService } from './strains.service';
     StrainsService,
     CatalogSuggestionsService,
     CatalogReviewModerationService,
+    StrainCsvImportService,
   ],
   exports: [
     BreedersService,

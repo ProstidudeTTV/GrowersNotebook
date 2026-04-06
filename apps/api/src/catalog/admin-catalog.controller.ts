@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,8 +11,11 @@ import {
   Post,
   Query,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import type { JwtUser } from '../auth/jwt-user';
 import { Roles } from '../auth/roles.decorator';
@@ -22,6 +26,7 @@ import { BreedersService } from './breeders.service';
 import { CatalogReviewModerationService } from './catalog-review-moderation.service';
 import { CatalogSuggestionsService } from './catalog-suggestions.service';
 import { ModerateSuggestionDto } from './dto/moderate-suggestion.dto';
+import { StrainCsvImportService } from './strain-csv-import.service';
 import { StrainsService } from './strains.service';
 
 function range(skip: string | undefined, take: string | undefined) {
@@ -39,6 +44,7 @@ export class AdminCatalogController {
     private readonly strains: StrainsService,
     private readonly suggestions: CatalogSuggestionsService,
     private readonly reviewMod: CatalogReviewModerationService,
+    private readonly strainCsvImport: StrainCsvImportService,
   ) {}
 
   @Get('strains')
@@ -246,5 +252,25 @@ export class AdminCatalogController {
   @Post('breeder-reviews/:id/restore')
   restoreBreederReview(@Param('id', ParseUUIDPipe) id: string) {
     return this.reviewMod.restoreBreederReview(id);
+  }
+
+  @Post('catalog/import-strains-csv')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 35 * 1024 * 1024 },
+    }),
+  )
+  importStrainsCsv(
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Upload a CSV file (field name: file).');
+    }
+    const name = (file.originalname || '').toLowerCase();
+    if (!name.endsWith('.csv')) {
+      throw new BadRequestException('File must have a .csv extension.');
+    }
+    const text = file.buffer.toString('utf8');
+    return this.strainCsvImport.importFromCsvText(text);
   }
 }

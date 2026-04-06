@@ -8,6 +8,7 @@ import {
   InboxOutlined,
   MessageOutlined,
   ShopOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import {
@@ -141,6 +142,15 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
               label: "Breeders",
               parent: "catalog",
               icon: <ShopOutlined />,
+            },
+          },
+          {
+            name: "catalog-import",
+            list: "/admin/catalog-import",
+            meta: {
+              label: "Catalog CSV import",
+              parent: "catalog",
+              icon: <UploadOutlined />,
             },
           },
           {

@@ -14,6 +14,8 @@ export SYNAPSE_REPORT_STATS="${SYNAPSE_REPORT_STATS:-no}"
 : "${SYNAPSE_JWT_SECRET:?Set SYNAPSE_JWT_SECRET (must match Nest API SYNAPSE_JWT_SECRET)}"
 : "${DATABASE_URL:?Set DATABASE_URL (Render Postgres link)}"
 
+mkdir -p /data
+
 if [[ ! -f "${SYNAPSE_CONFIG_PATH}" ]]; then
   echo "First boot: generating ${SYNAPSE_CONFIG_PATH}"
   /usr/local/bin/python /start.py generate

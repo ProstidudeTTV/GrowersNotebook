@@ -135,7 +135,7 @@ export function MessagesPanel() {
           throw new Error(
             loginJson.error ||
               loginJson.errcode ||
-              `Matrix login failed (${loginRes.status})`,
+              `Could not sign in to messaging (${loginRes.status})`,
           );
         }
         if (
@@ -143,7 +143,7 @@ export function MessagesPanel() {
           !loginJson.user_id ||
           !loginJson.device_id
         ) {
-          throw new Error("Matrix login response missing credentials.");
+          throw new Error("Messaging login response missing credentials.");
         }
 
         const sdk = await import("matrix-js-sdk");
@@ -168,7 +168,7 @@ export function MessagesPanel() {
         await mx.startClient();
         await new Promise<void>((resolve, reject) => {
           const t = window.setTimeout(
-            () => reject(new Error("Matrix initial sync timed out.")),
+            () => reject(new Error("Messaging sync timed out.")),
             120_000,
           );
           const done = () => {
@@ -223,7 +223,7 @@ export function MessagesPanel() {
 
   if (status === "loading" || status === "idle") {
     return (
-      <p className="text-sm text-[var(--gn-text-muted)]">Connecting to Matrix…</p>
+      <p className="text-sm text-[var(--gn-text-muted)]">Connecting…</p>
     );
   }
 
@@ -247,8 +247,8 @@ export function MessagesPanel() {
         <ul className="space-y-1">
           {rooms.length === 0 ? (
             <li className="text-xs text-[var(--gn-text-muted)]">
-              No rooms yet. Join or create one in a Matrix client, or invite
-              this account.
+              No rooms yet. Join or create one in another messaging app, or
+              invite this account.
             </li>
           ) : (
             rooms.map((r) => (

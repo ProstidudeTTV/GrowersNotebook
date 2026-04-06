@@ -18,7 +18,7 @@ export class MatrixController {
   async loginToken(@CurrentUser() user: JwtUser) {
     if (!this.matrix.matrixConfigured()) {
       throw new ServiceUnavailableException(
-        'Matrix is not configured on this server.',
+        'Messaging is not available on this server.',
       );
     }
     await this.matrix.ensureSynapseUser(user.sub);

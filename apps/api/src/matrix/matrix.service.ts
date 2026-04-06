@@ -20,7 +20,7 @@ export class MatrixService {
     const v = this.config.get<string>(name)?.trim();
     if (!v) {
       throw new ServiceUnavailableException(
-        `Matrix is not configured: missing ${name}`,
+        'Messaging service is not fully configured.',
       );
     }
     return v;
@@ -74,7 +74,7 @@ export class MatrixService {
     if (res.ok || res.status === 409) return;
     const text = await res.text();
     throw new Error(
-      `Synapse create user failed ${res.status} for ${redactBase(base)}: ${text.slice(0, 500)}`,
+      `Messaging account setup failed (${res.status}) for ${redactBase(base)}: ${text.slice(0, 500)}`,
     );
   }
 

@@ -7,8 +7,8 @@ export default function MessagesPage() {
         Messages
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Matrix-powered direct messages and rooms (end-to-end encryption when
-        enabled on the homeserver and room).
+        Direct messages and group chats. End-to-end encryption may be available
+        depending on room settings.
       </p>
       <div className="mt-6">
         <MessagesPanel />

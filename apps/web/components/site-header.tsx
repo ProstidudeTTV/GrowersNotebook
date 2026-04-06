@@ -10,6 +10,37 @@ const DISCORD_INVITE_URL = "https://discord.gg/qGvv9knhdA";
 const discordNavLinkClass =
   "inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[#5865F2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5865F2]";
 
+const messagesNavLinkClass =
+  "inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[#ff6a38] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff6a38]";
+
+function IconMessage({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+    </svg>
+  );
+}
+
+function MessagesNavLink() {
+  return (
+    <Link href="/messages" className={messagesNavLinkClass}>
+      <IconMessage className="h-[1.125rem] w-[1.125rem] shrink-0" />
+      Messages
+    </Link>
+  );
+}
+
 function IconDiscord({ className }: { className?: string }) {
   return (
     <svg
@@ -53,6 +84,7 @@ export function SiteHeader({ leading }: { leading?: ReactNode }) {
           </Link>
         </div>
         <div className="flex min-h-14 min-w-0 flex-1 items-center justify-end gap-3 px-4 py-3">
+          <MessagesNavLink />
           <DiscordNavLink />
           <AuthNav />
         </div>
@@ -69,6 +101,7 @@ export function SiteHeader({ leading }: { leading?: ReactNode }) {
           </Link>
         </div>
         <nav className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+          <MessagesNavLink />
           <DiscordNavLink />
           <AuthNav />
         </nav>

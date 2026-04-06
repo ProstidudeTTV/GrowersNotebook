@@ -1,15 +1,12 @@
 # Render Blueprint: https://docs.render.com/infrastructure-as-code
-# After linking https://github.com/ProstidudeTTV/GrowersNotebook, set secrets in the dashboard
-# (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API; NEXT_PUBLIC_* on web).
+# Secrets: set in dashboard (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API;
+# NEXT_PUBLIC_* on web; SYNAPSE_* on API for messaging; SYNAPSE_JWT_SECRET on both API + Synapse).
 #
-# Matrix Postgres: a DB named `growers-matrix-postgres` may already exist on your workspace
-# (created via Render MCP). Use its **Internal Database URL** in Synapse `homeserver.yaml`, not Supabase.
-# Synapse itself is not defined here—run it via `infra/synapse/docker-compose.yml` locally or add a
-# Render **Docker** Web Service separately (MCP `create_web_service` is Node-only).
+# Messaging homeserver: `growers-synapse` (Docker) + Postgres `growers-synapse-db`.
+# Runbook: infra/render/synapse/README.md
 #
-# Build: Render sets NODE_ENV=production, which makes pnpm skip devDependencies (@nestjs/cli, typescript,
-# etc.). Install with NODE_ENV=development only for the install subprocess; the build step then uses the
-# service's normal env.
+# Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
+# env NODE_ENV=development … (see build commands below).
 
 services:
   - type: web
@@ -25,6 +22,9 @@ services:
         value: production
       - key: LISTEN_HOST
         value: "0.0.0.0"
+      # Messaging (after Synapse is live — same values as in infra/render/synapse/README.md):
+      # SYNAPSE_BASE_URL, SYNAPSE_PUBLIC_BASE_URL, SYNAPSE_SERVER_NAME, SYNAPSE_JWT_SECRET,
+      # SYNAPSE_ADMIN_ACCESS_TOKEN
 
   - type: web
     name: growers-notebook-web
@@ -35,3 +35,34 @@ services:
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
 
+  - type: web
+    name: growers-synapse
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./infra/render/synapse/Dockerfile
+    dockerContext: ./infra/render/synapse
+    healthCheckPath: /_matrix/client/versions
+    disk:
+      name: synapse-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: growers-synapse-db
+          property: connectionString
+      - key: SYNAPSE_REPORT_STATS
+        value: no
+      - key: SYNAPSE_SERVER_NAME
+        value: growers-synapse.onrender.com
+      - key: SYNAPSE_PUBLIC_BASE_URL
+        value: https://growers-synapse.onrender.com
+      - key: SYNAPSE_JWT_SECRET
+        sync: false
+
+databases:
+  - name: growers-synapse-db
+    databaseName: synapse
+    user: synapse
+    region: oregon

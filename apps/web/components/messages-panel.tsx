@@ -268,6 +268,7 @@ export function MessagesPanel() {
         const peerMxid = await peerMxidForProfileId(peerProfileId, me);
         const existing = findDmWithPeer(client, peerMxid);
         if (existing) {
+          await existing.loadMembersIfNeeded();
           setActiveRoomId(existing.roomId);
           loadTimeline(client, existing.roomId);
           refreshConversations(client);
@@ -326,6 +327,7 @@ export function MessagesPanel() {
         }
 
         const roomId = raced.room_id;
+        await client.getRoom(roomId)?.loadMembersIfNeeded();
         setActiveRoomId(roomId);
         loadTimeline(client, roomId);
         refreshConversations(client);
@@ -538,8 +540,9 @@ export function MessagesPanel() {
         mx.on(RoomEvent.Timeline, timelineHandler);
         mx.on(RoomEvent.MyMembership, membershipHandler);
 
+        // Do not use lazyLoadMembers: encrypted sends need the full member/device
+        // list or recipients may get no session key (one-way "they don't get my messages").
         await mx.startClient({
-          lazyLoadMembers: true,
           resolveInvitesToProfiles: true,
         });
         await new Promise<void>((resolve, reject) => {
@@ -630,9 +633,19 @@ export function MessagesPanel() {
     const text = draft.trim();
     if (!text) return;
     setDraft("");
-    await client.sendTextMessage(activeRoomId, text);
-    loadTimeline(client, activeRoomId);
-    refreshConversations(client);
+    setActionError(null);
+    try {
+      const room = client.getRoom(activeRoomId);
+      if (room) await room.loadMembersIfNeeded();
+      await client.sendTextMessage(activeRoomId, text);
+      loadTimeline(client, activeRoomId);
+      refreshConversations(client);
+    } catch (e) {
+      setDraft(text);
+      setActionError(
+        e instanceof Error ? e.message : "Could not send this message.",
+      );
+    }
   }
 
   if (status === "loading" || status === "idle") {
@@ -722,6 +735,7 @@ export function MessagesPanel() {
                           return;
                         }
                       }
+                      await client.getRoom(r.id)?.loadMembersIfNeeded();
                       setActiveRoomId(r.id);
                       setActionError(null);
                       loadTimeline(client, r.id);

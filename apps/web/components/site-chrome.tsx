@@ -7,7 +7,6 @@ import {
   type SidebarHotPost,
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
-import { MatrixSessionBootstrap } from "@/components/matrix-session-bootstrap";
 import { SiteHeader } from "@/components/site-header";
 
 function MenuIcon({ className }: { className?: string }) {
@@ -50,7 +49,6 @@ export function SiteChrome({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <MatrixSessionBootstrap />
       <AppVersionRefresh />
       <SiteHeader
         leading={

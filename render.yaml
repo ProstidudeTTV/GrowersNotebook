@@ -11,6 +11,10 @@
 #
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
+#
+# Latency: Free/spun-down web services cold-start (~30–60s). Starter “always on” reduces
+# first-byte time for the API, web app, and Synapse. The web app also uses parallel sidebar
+# fetches + timeouts so a sleeping API does not hang navigation indefinitely.
 
 services:
   - type: web

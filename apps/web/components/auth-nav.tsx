@@ -90,6 +90,7 @@ export function AuthNav() {
       try {
         const profile = await apiFetch<Me>("/profiles/me", {
           token: session.access_token,
+          timeoutMs: 12_000,
         });
         setMe(profile);
       } catch {

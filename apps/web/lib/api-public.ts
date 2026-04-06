@@ -12,7 +12,7 @@ function apiBaseHint(apiRoot: string): string {
 
 export async function apiFetch<T>(
   path: string,
-  init?: RequestInit & { token?: string | null },
+  init?: RequestInit & { token?: string | null; timeoutMs?: number | null },
 ): Promise<T> {
   const apiRoot = base().replace(/\/+$/, "");
   const url = `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
@@ -21,12 +21,24 @@ export async function apiFetch<T>(
   if (init?.token) {
     headers.set("Authorization", `Bearer ${init.token}`);
   }
-  const { token: _t, ...rest } = init ?? {};
+  const { token: _t, timeoutMs, ...rest } = init ?? {};
   void _t;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let timeoutCtl: AbortController | undefined;
+  const shouldTimeOut =
+    timeoutMs != null &&
+    timeoutMs > 0 &&
+    rest.signal === undefined;
+  if (shouldTimeOut) {
+    timeoutCtl = new AbortController();
+    timer = setTimeout(() => timeoutCtl!.abort(), timeoutMs);
+  }
+  const signal = rest.signal ?? timeoutCtl?.signal;
   let res: Response;
   try {
     res = await fetch(url, {
       ...rest,
+      signal,
       headers,
       cache: rest.cache ?? "no-store",
     });
@@ -34,6 +46,8 @@ export async function apiFetch<T>(
     const msg = e instanceof Error ? e.message : "Request failed";
     const hint = e instanceof TypeError ? apiBaseHint(apiRoot) : "";
     throw new Error(`${msg}.${hint}`);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 
   if (res.status === 204) return undefined as T;

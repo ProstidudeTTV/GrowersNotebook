@@ -15,9 +15,9 @@ describe('AppController', () => {
   });
 
   describe('health', () => {
-    it('should return ok and database flag', () => {
-      const h = appController.health();
-      expect(h.status).toBe('ok');
+    it('should return status and database flag', async () => {
+      const h = await appController.health();
+      expect(['ok', 'degraded']).toContain(h.status);
       expect(typeof h.databaseConfigured).toBe('boolean');
     });
   });

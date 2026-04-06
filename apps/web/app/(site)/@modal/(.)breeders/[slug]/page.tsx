@@ -1,0 +1,26 @@
+import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
+import { BreederDetailBody } from "@/components/catalog/breeder-detail-body";
+
+export default async function BreederModalPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ reviewsPage?: string }>;
+}) {
+  const { slug } = await params;
+  const sp = await searchParams;
+  const reviewsPage = Number(sp.reviewsPage ?? 1) || 1;
+  const safe = slug?.trim() ?? "";
+  const breederPath = `/breeders/${encodeURIComponent(safe)}`;
+
+  return (
+    <CatalogDetailModal fullPageHref={breederPath}>
+      <BreederDetailBody
+        slug={safe}
+        reviewsPage={reviewsPage}
+        variant="modal"
+      />
+    </CatalogDetailModal>
+  );
+}

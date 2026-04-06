@@ -22,6 +22,9 @@ services:
     runtime: node
     region: oregon
     plan: starter
+    # After adding migrations, run once with production DATABASE_URL:
+    #   pnpm --filter @growers/api db:migrate
+    # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
     buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health

@@ -4,9 +4,12 @@
 export function StarDisplay({
   avg,
   count,
+  compact,
 }: {
   avg: string | null;
   count?: number;
+  /** Tight single-line layout for dense card grids */
+  compact?: boolean;
 }) {
   const n = avg != null ? Number.parseFloat(avg) : NaN;
   const label =
@@ -15,6 +18,25 @@ export function StarDisplay({
       : Number.isFinite(n)
         ? `${n.toFixed(1)} / 5`
         : "No ratings yet";
+
+  if (compact) {
+    return (
+      <div
+        className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-[var(--gn-text-muted)]"
+        title={label}
+      >
+        <span className="text-amber-400 leading-none" aria-hidden>
+          {Number.isFinite(n) ? "★".repeat(Math.round(n)) : "—"}
+        </span>
+        {Number.isFinite(n) ? (
+          <span className="text-[var(--gn-text)]">{n.toFixed(1)}</span>
+        ) : null}
+        {count != null && count > 0 ? (
+          <span className="hidden min-[380px]:inline">({count})</span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div

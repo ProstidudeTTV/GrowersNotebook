@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BreederDetailBody } from "@/components/catalog/breeder-detail-body";
+import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
 import { StarDisplay } from "@/components/catalog/star-display";
 import { apiFetch } from "@/lib/api-public";
+import {
+  breederPreviewPath,
+  type BreedersListQuery,
+} from "@/lib/catalog-list-urls";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -31,13 +37,21 @@ type ListJson = {
 export default async function BreedersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    sort?: string;
+    page?: string;
+    detail?: string;
+    reviewsPage?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const sort = sp.sort === "rating" ? "rating" : "name";
   const page = Number(sp.page ?? 1) || 1;
-  const pageSize = 24;
+  const detailSlug = sp.detail?.trim() ?? "";
+  const overlayReviewsPage = Number(sp.reviewsPage ?? 1) || 1;
+  const pageSize = 48;
   const qs = new URLSearchParams({
     sort,
     page: String(page),
@@ -69,73 +83,96 @@ export default async function BreedersPage({
 
   const totalPages = Math.max(1, Math.ceil(data.total / pageSize));
 
+  const listPreview: BreedersListQuery = {
+    q: q || undefined,
+    sort: sort === "rating" ? "rating" : undefined,
+    page: page > 1 ? String(page) : undefined,
+  };
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
-        Breeders
-      </h1>
-      <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Strain breeders with community ratings. Curated by staff.
-      </p>
+    <main className="mx-auto w-full max-w-[90rem] px-3 py-5 sm:px-4 sm:py-6 lg:px-6 xl:px-8 2xl:px-10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+        <div className="min-w-0 lg:max-w-xl">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--gn-text)] sm:text-2xl">
+            Breeders
+          </h1>
+          <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+            Strain breeders with community ratings. Curated by staff.
+          </p>
+        </div>
 
-      <form className="mt-6 flex flex-wrap items-end gap-3" action="/breeders" method="get">
-        <div className="flex-1 min-w-[200px]">
-          <label htmlFor="bq" className="sr-only">
-            Search
-          </label>
-          <input
-            id="bq"
-            name="q"
-            defaultValue={q}
-            placeholder="Search by name…"
-            className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
-          />
-        </div>
-        <div>
-          <label htmlFor="bsort" className="sr-only">
-            Sort
-          </label>
-          <select
-            id="bsort"
-            name="sort"
-            defaultValue={sort}
-            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
-          >
-            <option value="name">Name</option>
-            <option value="rating">Rating</option>
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="rounded-lg bg-[#ff6a38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ff7d4c]"
+        <form
+          className="flex w-full flex-wrap items-end gap-2 sm:gap-3 lg:max-w-2xl lg:flex-1 lg:justify-end"
+          action="/breeders"
+          method="get"
         >
-          Search
-        </button>
-      </form>
+          <div className="min-w-0 flex-1 basis-[12rem]">
+            <label htmlFor="bq" className="sr-only">
+              Search
+            </label>
+            <input
+              id="bq"
+              name="q"
+              defaultValue={q}
+              placeholder="Search by name…"
+              className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+            />
+          </div>
+          <div className="shrink-0">
+            <label htmlFor="bsort" className="sr-only">
+              Sort
+            </label>
+            <select
+              id="bsort"
+              name="sort"
+              defaultValue={sort}
+              className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+            >
+              <option value="name">Name</option>
+              <option value="rating">Rating</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="shrink-0 rounded-lg bg-[#ff6a38] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ff7d4c] sm:px-4 sm:py-2"
+          >
+            Search
+          </button>
+        </form>
+      </div>
 
-      <ul className="mt-8 divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
+      <ul className="mt-5 grid list-none grid-cols-2 gap-2 sm:mt-6 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {data.items.length === 0 ? (
-          <li className="px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
+          <li className="col-span-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-10 text-center text-sm text-[var(--gn-text-muted)]">
             No breeders match yet. Check back as the directory grows.
           </li>
         ) : (
           data.items.map((b) => (
-            <li key={b.id}>
+            <li key={b.id} className="min-w-0">
               <Link
-                href={`/breeders/${encodeURIComponent(b.slug)}`}
-                className="block px-4 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_70%,transparent)]"
+                href={breederPreviewPath(b.slug, listPreview)}
+                scroll={false}
+                className="block h-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-2.5 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-3"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h2 className="text-base font-semibold text-[#ff6a38]">
+                <div className="flex items-start justify-between gap-1.5 sm:gap-2">
+                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#ff6a38] sm:text-[0.9375rem]">
                     {b.name}
                   </h2>
-                  <StarDisplay avg={b.avgRating} count={b.reviewCount} />
+                  <StarDisplay
+                    avg={b.avgRating}
+                    count={b.reviewCount}
+                    compact
+                  />
                 </div>
                 {b.description?.trim() ? (
-                  <p className="mt-1 line-clamp-2 text-sm text-[var(--gn-text-muted)]">
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-2 sm:text-sm">
                     {b.description.trim()}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="mt-1.5 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+                    View profile…
+                  </p>
+                )}
               </Link>
             </li>
           ))
@@ -143,7 +180,7 @@ export default async function BreedersPage({
       </ul>
 
       {totalPages > 1 ? (
-        <nav className="mt-6 flex items-center justify-center gap-4 text-sm">
+        <nav className="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm sm:mt-6 sm:gap-4">
           {page > 1 ? (
             <Link
               href={buildLink(page - 1)}
@@ -179,6 +216,19 @@ export default async function BreedersPage({
           Suggest an entry
         </Link>
       </p>
+
+      {detailSlug ? (
+        <CatalogListPreviewOverlay
+          fullPageHref={`/breeders/${encodeURIComponent(detailSlug)}`}
+        >
+          <BreederDetailBody
+            slug={detailSlug}
+            reviewsPage={overlayReviewsPage}
+            variant="modal"
+            listPreview={listPreview}
+          />
+        </CatalogListPreviewOverlay>
+      ) : null}
     </main>
   );
 }

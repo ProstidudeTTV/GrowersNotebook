@@ -29,11 +29,13 @@ function MenuIcon({ className }: { className?: string }) {
 
 export function SiteChrome({
   children,
+  modal,
   initialFollowedCommunities,
   initialHotWeekPost,
   authed,
 }: {
   children: React.ReactNode;
+  modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
   initialHotWeekPost: SidebarHotPost | null;
   authed: boolean;
@@ -88,6 +90,7 @@ export function SiteChrome({
 
         <div className="min-w-0 flex-1">{children}</div>
       </div>
+      {modal}
     </div>
   );
 }

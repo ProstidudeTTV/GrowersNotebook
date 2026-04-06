@@ -9,8 +9,10 @@ const SIDEBAR_API_TIMEOUT_MS = 12_000;
 
 export default async function SiteLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
@@ -41,6 +43,7 @@ export default async function SiteLayout({
       initialFollowedCommunities={followedCommunities}
       initialHotWeekPost={hotWeekPost}
       authed={!!token}
+      modal={modal}
     >
       {children}
     </SiteChrome>

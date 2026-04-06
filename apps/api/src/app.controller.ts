@@ -1,7 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { getDb } from './db';
-import { communities, profileReports, profiles } from './db/schema';
+import {
+  breeders,
+  communities,
+  profileReports,
+  profiles,
+  strains,
+} from './db/schema';
 
 function errMessage(e: unknown): string {
   if (!(e instanceof Error)) return String(e);
@@ -33,6 +39,8 @@ export class AppController {
     databaseConfigured: boolean;
     databaseReachable?: boolean;
     coreTablesPresent?: boolean;
+    /** Strains/breeders catalog (migration 0012). When false, /strains and /admin/strains return 500. */
+    catalogTablesPresent?: boolean;
     error?: string;
     /** Extra detail in development only */
     detail?: string;
@@ -70,12 +78,6 @@ export class AppController {
         .from(profiles)
         .limit(1);
       await db.select({ id: profileReports.id }).from(profileReports).limit(1);
-      return {
-        status: 'ok',
-        databaseConfigured: true,
-        databaseReachable: true,
-        coreTablesPresent: true,
-      };
     } catch (e) {
       const msg = errMessage(e);
       return {
@@ -88,5 +90,30 @@ export class AppController {
         detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
       };
     }
+
+    try {
+      await db.select({ id: strains.id }).from(strains).limit(1);
+      await db.select({ id: breeders.id }).from(breeders).limit(1);
+    } catch (e) {
+      const msg = errMessage(e);
+      return {
+        status: 'degraded',
+        databaseConfigured: true,
+        databaseReachable: true,
+        coreTablesPresent: true,
+        catalogTablesPresent: false,
+        error:
+          'Catalog tables (strains, breeders) are missing. Apply migrations: pnpm --filter @growers/api db:migrate (uses DATABASE_URL). Then import CSV via admin or pnpm --filter @growers/api db:import-strains.',
+        detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
+      };
+    }
+
+    return {
+      status: 'ok',
+      databaseConfigured: true,
+      databaseReachable: true,
+      coreTablesPresent: true,
+      catalogTablesPresent: true,
+    };
   }
 }

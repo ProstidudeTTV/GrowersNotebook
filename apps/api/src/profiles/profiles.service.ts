@@ -3,7 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { FollowsService } from '../follows/follows.service';
@@ -282,6 +294,70 @@ export class ProfilesService {
       );
     }
     return map;
+  }
+
+  /** Public directory search (display name + bio). Min 2 chars on q. */
+  async searchForSite(query: { q?: string; page: number; pageSize: number }) {
+    const raw = query.q?.trim() ?? '';
+    const page = Math.max(1, query.page);
+    const pageSize = Math.min(30, Math.max(1, query.pageSize));
+    const skip = (page - 1) * pageSize;
+
+    if (raw.length < 2) {
+      return { items: [], total: 0, page, pageSize };
+    }
+
+    const term = `%${raw.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`;
+    const db = getDb();
+
+    const activeAccount = and(
+      isNull(profiles.bannedAt),
+      or(
+        isNull(profiles.suspendedUntil),
+        lte(profiles.suspendedUntil, new Date()),
+      ),
+    );
+
+    const textMatch = or(
+      ilike(profiles.displayName, term),
+      ilike(profiles.description, term),
+    );
+
+    const whereClause = and(
+      eq(profiles.profilePublic, true),
+      activeAccount,
+      textMatch,
+    );
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(profiles)
+      .where(whereClause);
+
+    const rows = await db
+      .select({
+        id: profiles.id,
+        displayName: profiles.displayName,
+        description: profiles.description,
+        avatarUrl: profiles.avatarUrl,
+      })
+      .from(profiles)
+      .where(whereClause)
+      .orderBy(asc(profiles.displayName))
+      .limit(pageSize)
+      .offset(skip);
+
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        displayName: r.displayName,
+        description: r.description,
+        avatarUrl: r.avatarUrl,
+      })),
+      total: Number(total),
+      page,
+      pageSize,
+    };
   }
 
   async listPaged(skip: number, take: number) {

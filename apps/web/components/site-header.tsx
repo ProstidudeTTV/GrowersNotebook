@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { AuthNav } from "@/components/auth-nav";
 import { MessagesNavLink } from "@/components/messages-nav-link";
+import { SiteHeaderSearch } from "@/components/site-header-search";
 
 const brandClass =
   "text-lg font-semibold tracking-tight text-[#ff4500] transition hover:drop-shadow-[0_0_10px_rgba(255,69,0,0.5)]";
@@ -40,41 +42,72 @@ function DiscordNavLink() {
   );
 }
 
+function HeaderNavActions() {
+  return (
+    <>
+      <MessagesNavLink />
+      <DiscordNavLink />
+      <AuthNav />
+    </>
+  );
+}
+
+function SearchFallback() {
+  return (
+    <div
+      className="h-10 w-full max-w-md animate-pulse rounded-lg bg-[var(--gn-surface-muted)]"
+      aria-hidden
+    />
+  );
+}
+
 export function SiteHeader({ leading }: { leading?: ReactNode }) {
   return (
     <header className="gn-header sticky top-0 z-40">
-      {/* Desktop: brand column matches sidebar width (w-56); padding matches sidebar nav (px-2 + link px-3) */}
-      <div className="hidden min-h-14 w-full lg:flex">
-        <div className="flex w-56 shrink-0 items-center px-2 py-3">
-          <Link
-            href="/"
-            className={`min-w-0 truncate rounded-lg px-3 py-2 ${brandClass}`}
-          >
-            Growers Notebook
-          </Link>
-        </div>
-        <div className="flex min-h-14 min-w-0 flex-1 items-center justify-end gap-3 px-4 py-3">
-          <MessagesNavLink />
-          <DiscordNavLink />
-          <AuthNav />
+      {/* Desktop: brand | search (centered) | messages / discord / auth */}
+      <div className="hidden w-full flex-col lg:flex">
+        <div className="flex min-h-14 w-full min-w-0">
+          <div className="flex w-56 shrink-0 items-center px-2 py-3">
+            <Link
+              href="/"
+              className={`min-w-0 truncate rounded-lg px-3 py-2 ${brandClass}`}
+            >
+              Growers Notebook
+            </Link>
+          </div>
+          <div className="flex min-h-14 min-w-0 flex-1 items-center gap-4 px-3 py-3 pr-4">
+            <div className="flex min-w-0 flex-1 justify-center">
+              <Suspense fallback={<SearchFallback />}>
+                <SiteHeaderSearch />
+              </Suspense>
+            </div>
+            <nav className="flex shrink-0 items-center gap-3">
+              <HeaderNavActions />
+            </nav>
+          </div>
         </div>
       </div>
 
-      {/* Mobile: hamburger + title + auth */}
-      <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3 lg:hidden">
-        <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-          {leading ? (
-            <div className="flex shrink-0 items-center">{leading}</div>
-          ) : null}
-          <Link href="/" className={`min-w-0 truncate ${brandClass}`}>
-            Growers Notebook
-          </Link>
+      {/* Mobile: title row + full-width search */}
+      <div className="flex flex-col lg:hidden">
+        <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+            {leading ? (
+              <div className="flex shrink-0 items-center">{leading}</div>
+            ) : null}
+            <Link href="/" className={`min-w-0 truncate ${brandClass}`}>
+              Growers Notebook
+            </Link>
+          </div>
+          <nav className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+            <HeaderNavActions />
+          </nav>
         </div>
-        <nav className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
-          <MessagesNavLink />
-          <DiscordNavLink />
-          <AuthNav />
-        </nav>
+        <div className="border-t border-[var(--gn-divide)] px-4 pb-3">
+          <Suspense fallback={<SearchFallback />}>
+            <SiteHeaderSearch />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

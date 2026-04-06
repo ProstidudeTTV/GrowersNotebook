@@ -14,6 +14,7 @@ import type { JwtUser } from '../auth/jwt-user';
 import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
+import { SearchSiteQueryDto } from '../common/dto/search-site.query.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListFollowingPostsQueryDto } from './dto/list-following-posts.query';
@@ -54,6 +55,20 @@ export class PostsController {
     @CurrentUser() user?: JwtUser,
   ) {
     return this.posts.listHotWeek({
+      page: query.page,
+      pageSize: query.pageSize,
+      viewerId: user?.sub,
+    });
+  }
+
+  @Get('search')
+  @UseGuards(OptionalAuthGuard)
+  search(
+    @Query() query: SearchSiteQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    return this.posts.searchForSite({
+      q: query.q,
       page: query.page,
       pageSize: query.pageSize,
       viewerId: user?.sub,

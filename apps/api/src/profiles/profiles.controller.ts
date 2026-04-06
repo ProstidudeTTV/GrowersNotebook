@@ -17,6 +17,7 @@ import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CommentsService } from '../comments/comments.service';
 import { CurrentUser } from '../common/current-user.decorator';
+import { SearchSiteQueryDto } from '../common/dto/search-site.query.dto';
 import { MatrixService } from '../matrix/matrix.service';
 import { PostsService } from '../posts/posts.service';
 import { ListProfileCommentsQueryDto } from './dto/list-profile-comments.query';
@@ -120,6 +121,16 @@ export class ProfilesController {
     @Body() dto: ReportProfileBodyDto,
   ) {
     return this.profiles.reportProfile(user.sub, id, dto.reason);
+  }
+
+  @Get('search')
+  @UseGuards(OptionalAuthGuard)
+  search(@Query() query: SearchSiteQueryDto) {
+    return this.profiles.searchForSite({
+      q: query.q,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
   }
 
   @Get(':id')

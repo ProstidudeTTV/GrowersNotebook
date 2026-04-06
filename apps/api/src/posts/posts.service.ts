@@ -11,7 +11,10 @@ import {
   desc,
   eq,
   gte,
+  ilike,
   inArray,
+  isNull,
+  lte,
   or,
   sql,
 } from 'drizzle-orm';
@@ -107,6 +110,104 @@ export class PostsService {
     private readonly follows: FollowsService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  /** Search post title, excerpt, and body (HTML). Min 2 chars. Excludes banned/suspended authors. */
+  async searchForSite(query: {
+    q?: string;
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
+    const raw = query.q?.trim() ?? '';
+    const page = Math.max(1, query.page);
+    const pageSize = Math.min(30, Math.max(1, query.pageSize));
+    const skip = (page - 1) * pageSize;
+
+    if (raw.length < 2) {
+      return { items: [], total: 0, page, pageSize };
+    }
+
+    const term = `%${raw.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`;
+    const db = getDb();
+
+    const authorOk = and(
+      isNull(profiles.bannedAt),
+      or(
+        isNull(profiles.suspendedUntil),
+        lte(profiles.suspendedUntil, new Date()),
+      ),
+    );
+
+    const textMatch = or(
+      ilike(posts.title, term),
+      ilike(posts.excerpt, term),
+      ilike(posts.bodyHtml, term),
+    );
+
+    const whereClause = and(authorOk, textMatch);
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
+      .where(whereClause);
+
+    const rows = await db
+      .select({
+        post: posts,
+        author: {
+          id: profiles.id,
+          displayName: profiles.displayName,
+          avatarUrl: profiles.avatarUrl,
+        },
+        communitySlug: communities.slug,
+        communityName: communities.name,
+        authorSeeds: authorSeedsExpr.as('author_seeds'),
+        score: scoreExpr.as('score'),
+        viewerVote: viewerVoteSelect(query.viewerId),
+      })
+      .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
+      .leftJoin(communities, eq(posts.communityId, communities.id))
+      .where(whereClause)
+      .orderBy(desc(posts.createdAt))
+      .offset(skip)
+      .limit(pageSize);
+
+    const authorIds = rows.map((r) => r.author.id);
+    const followedAuthors = query.viewerId
+      ? await this.follows.getFollowingUserIds(query.viewerId, authorIds)
+      : null;
+
+    return {
+      items: rows.map((r) => {
+        const seeds = Number(r.authorSeeds);
+        const rawRow = r as unknown as Record<string, unknown>;
+        const community =
+          r.communitySlug != null
+            ? { slug: r.communitySlug, name: r.communityName ?? '' }
+            : null;
+        return {
+          id: r.post.id,
+          title: r.post.title,
+          excerpt: r.post.excerpt,
+          createdAt: r.post.createdAt,
+          community,
+          author: {
+            ...r.author,
+            seeds,
+            growerLevel: growerLevelFromSeeds(seeds),
+            viewerFollowing: followedAuthors?.has(r.author.id) ?? false,
+          },
+          score: Number(r.score),
+          viewerVote: viewerVoteFromRow(rawRow),
+        };
+      }),
+      total: Number(total),
+      page,
+      pageSize,
+    };
+  }
 
   /**
    * Paginated feed: posts from the last 7 days, highest net vote score first (then newest).

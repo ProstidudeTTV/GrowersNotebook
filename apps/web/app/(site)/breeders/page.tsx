@@ -51,7 +51,7 @@ export default async function BreedersPage({
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
   const overlayReviewsPage = Number(sp.reviewsPage ?? 1) || 1;
-  const pageSize = 48;
+  const pageSize = 30;
   const qs = new URLSearchParams({
     sort,
     page: String(page),
@@ -90,7 +90,7 @@ export default async function BreedersPage({
   };
 
   return (
-    <main className="mx-auto w-full max-w-[90rem] px-3 py-5 sm:px-4 sm:py-6 lg:px-6 xl:px-8 2xl:px-10">
+    <main className="mx-auto w-full max-w-[90rem] px-5 py-5 sm:px-7 sm:py-6 md:px-9 lg:px-12 xl:px-16 2xl:px-20">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="min-w-0 lg:max-w-xl">
           <h1 className="text-xl font-bold tracking-tight text-[var(--gn-text)] sm:text-2xl">

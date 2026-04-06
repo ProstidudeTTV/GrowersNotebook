@@ -91,12 +91,12 @@ export default function AdminBreederReviewsPage() {
   }
 
   return (
-    <List title="Seed source review moderation">
+    <List title="Breeder review moderation">
       <Typography.Paragraph type="secondary">
-        Hidden reviews no longer appear on public source pages.{" "}
+        Hidden reviews no longer appear on public breeder pages.{" "}
         {breederIdFilter ? (
           <>
-            Filtered by source ID{" "}
+            Filtered by breeder ID{" "}
             <Typography.Text code>{breederIdFilter}</Typography.Text> —{" "}
             <Link href="/admin/breeder-reviews">clear</Link>
           </>
@@ -121,7 +121,7 @@ export default function AdminBreederReviewsPage() {
         }}
         columns={[
           {
-            title: "Source",
+            title: "Breeder",
             render: (_: unknown, r) => (
               <span>
                 <Link

@@ -127,7 +127,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             create: "/admin/strains/create",
             edit: "/admin/strains/edit/:id",
             meta: {
-              label: "Cultivars",
+              label: "Strains",
               parent: "catalog",
               icon: <ExperimentOutlined />,
             },
@@ -138,7 +138,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             create: "/admin/breeders/create",
             edit: "/admin/breeders/edit/:id",
             meta: {
-              label: "Seed sources",
+              label: "Breeders",
               parent: "catalog",
               icon: <ShopOutlined />,
             },
@@ -156,7 +156,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             name: "strain-reviews",
             list: "/admin/strain-reviews",
             meta: {
-              label: "Cultivar reviews",
+              label: "Strain reviews",
               parent: "catalog-moderation",
               icon: <MessageOutlined />,
             },
@@ -165,7 +165,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             name: "breeder-reviews",
             list: "/admin/breeder-reviews",
             meta: {
-              label: "Source reviews",
+              label: "Breeder reviews",
               parent: "catalog-moderation",
               icon: <MessageOutlined />,
             },

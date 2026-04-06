@@ -114,11 +114,11 @@ export function CatalogSuggestClient() {
         <p>Thanks — your suggestion was submitted for staff review.</p>
         <p className="mt-3">
           <Link href="/strains" className="text-[#ff6a38] hover:underline">
-            Cultivars
+            Strains
           </Link>
           {" · "}
           <Link href="/breeders" className="text-[#ff6a38] hover:underline">
-            Seed sources
+            Breeders
           </Link>
         </p>
       </div>
@@ -145,10 +145,10 @@ export function CatalogSuggestClient() {
           onChange={(e) => setKind(e.target.value as Kind)}
           className="mt-1 w-full max-w-md rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-2 text-sm text-[var(--gn-text)]"
         >
-          <option value="new_strain">New cultivar</option>
-          <option value="new_breeder">New seed source</option>
-          <option value="edit_strain">Suggest edits — cultivar</option>
-          <option value="edit_breeder">Suggest edits — seed source</option>
+          <option value="new_strain">New strain</option>
+          <option value="new_breeder">New breeder</option>
+          <option value="edit_strain">Suggest edits — strain</option>
+          <option value="edit_breeder">Suggest edits — breeder</option>
         </select>
       </div>
 
@@ -215,7 +215,7 @@ export function CatalogSuggestClient() {
       {showBreeder ? (
         <div>
           <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-            Linked seed source slug (optional)
+            Linked breeder slug (optional)
           </label>
           <input
             value={breederSlug}

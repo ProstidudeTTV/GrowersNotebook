@@ -13,7 +13,7 @@ export default function AdminBreedersPage() {
   });
 
   return (
-    <List title="Seed sources (catalog)" headerButtons={<CreateButton />}>
+    <List title="Breeders (catalog)" headerButtons={<CreateButton />}>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
       <Table {...tableProps} rowKey="id">
         <Table.Column dataIndex="name" title="Name" />

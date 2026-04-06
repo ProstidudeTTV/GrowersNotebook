@@ -5,10 +5,10 @@ import { apiFetch } from "@/lib/api-public";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Cultivar catalog",
-  description: `Browse cultivars and community ratings on ${SITE_NAME}.`,
+  title: "Strains",
+  description: `Browse cultivars and strains — reference entries and community ratings on ${SITE_NAME}.`,
   openGraph: {
-    title: `Cultivars · ${SITE_NAME}`,
+    title: `Cultivars & strains · ${SITE_NAME}`,
     url: canonicalPath("/strains"),
   },
   alternates: { canonical: canonicalPath("/strains") },
@@ -93,17 +93,17 @@ export default async function StrainsPage({
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
-        Cultivars
+        Strains
       </h1>
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Reference entries and star ratings from growers. Entries are curated by staff.
+        Cultivars and strains — reference entries and community ratings. Staff curate the catalog.
       </p>
 
       {breederSlug ? (
         <p className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-3 py-2 text-sm text-[var(--gn-text)]">
           {filterBreederName ? (
             <>
-              Showing cultivars linked to{" "}
+              Showing strains linked to{" "}
               <Link
                 href={`/breeders/${encodeURIComponent(breederSlug)}`}
                 className="font-medium text-[#ff6a38] hover:underline"
@@ -113,7 +113,7 @@ export default async function StrainsPage({
               .{" "}
             </>
           ) : (
-            <>Filtered by seed source. </>
+            <>Filtered by breeder. </>
           )}
           <Link href="/strains" className="text-[#ff6a38] hover:underline">
             Clear filter
@@ -162,7 +162,7 @@ export default async function StrainsPage({
       <ul className="mt-8 divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
         {data.items.length === 0 ? (
           <li className="px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
-            No cultivars match. Check back as the catalog grows.
+            No strains match yet. Check back as the catalog grows.
           </li>
         ) : (
           data.items.map((s) => (
@@ -218,7 +218,7 @@ export default async function StrainsPage({
 
       <p className="mt-8 text-center text-sm text-[var(--gn-text-muted)]">
         <Link href="/breeders" className="text-[#ff6a38] hover:underline">
-          Seed sources directory
+          Breeders
         </Link>
         {" · "}
         <Link href="/catalog/suggest" className="text-[#ff6a38] hover:underline">

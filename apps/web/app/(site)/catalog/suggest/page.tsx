@@ -8,8 +8,8 @@ export default function CatalogSuggestPage() {
         Suggest a catalog entry
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Propose a new cultivar or seed source, or suggest corrections. Staff
-        review all submissions before anything goes live.
+        Propose a new strain or breeder, or suggest corrections. Staff review
+        all submissions before anything goes live.
       </p>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
         <Link href="/login" className="text-[#ff6a38] hover:underline">
@@ -17,11 +17,11 @@ export default function CatalogSuggestPage() {
         </Link>{" "}
         to submit. Read the{" "}
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
-          cultivar catalog
+          strains
         </Link>{" "}
         and{" "}
         <Link href="/breeders" className="text-[#ff6a38] hover:underline">
-          seed sources
+          breeders
         </Link>{" "}
         first to avoid duplicates.
       </p>

@@ -5,10 +5,10 @@ import { apiFetch } from "@/lib/api-public";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Seed sources",
-  description: `Browse seed sources and community ratings on ${SITE_NAME}.`,
+  title: "Breeders",
+  description: `Browse breeders and community ratings on ${SITE_NAME}.`,
   openGraph: {
-    title: `Seed sources · ${SITE_NAME}`,
+    title: `Breeders · ${SITE_NAME}`,
     url: canonicalPath("/breeders"),
   },
   alternates: { canonical: canonicalPath("/breeders") },
@@ -72,10 +72,10 @@ export default async function BreedersPage({
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
-        Seed sources
+        Breeders
       </h1>
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Breeders and seed banks with community ratings. Curated by staff.
+        Strain breeders with community ratings. Curated by staff.
       </p>
 
       <form className="mt-6 flex flex-wrap items-end gap-3" action="/breeders" method="get">
@@ -116,7 +116,7 @@ export default async function BreedersPage({
       <ul className="mt-8 divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
         {data.items.length === 0 ? (
           <li className="px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
-            No sources match yet. Check back as the directory grows.
+            No breeders match yet. Check back as the directory grows.
           </li>
         ) : (
           data.items.map((b) => (
@@ -172,7 +172,7 @@ export default async function BreedersPage({
 
       <p className="mt-8 text-center text-sm text-[var(--gn-text-muted)]">
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
-          Cultivar catalog
+          Strains
         </Link>
         {" · "}
         <Link href="/catalog/suggest" className="text-[#ff6a38] hover:underline">

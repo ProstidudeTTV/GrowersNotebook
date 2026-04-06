@@ -22,7 +22,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/run-migrate.cjs",
     "db:push": "drizzle-kit push",
-    "db:seed": "ts-node -r tsconfig-paths/register scripts/seed.ts"
+    "db:seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
+    "db:import-strains": "ts-node -r tsconfig-paths/register scripts/import-strains-csv.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -50,6 +51,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "csv-parse": "^6.2.1",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.31.10",
     "eslint": "^8.0.0",

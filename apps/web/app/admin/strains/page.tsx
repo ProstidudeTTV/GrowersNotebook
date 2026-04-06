@@ -13,7 +13,7 @@ export default function AdminStrainsPage() {
   });
 
   return (
-    <List title="Cultivars (catalog)" headerButtons={<CreateButton />}>
+    <List title="Strains (catalog)" headerButtons={<CreateButton />}>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
       <Table {...tableProps} rowKey="id">
         <Table.Column dataIndex="name" title="Name" />

@@ -234,13 +234,13 @@ export function AppSidebar({
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 
         <p className="px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-          Catalog
+          Cultivars &amp; strains
         </p>
         <Link href="/strains" className={navItem} onClick={afterNav}>
-          Cultivars
+          Strains
         </Link>
         <Link href="/breeders" className={navItem} onClick={afterNav}>
-          Seed sources
+          Breeders
         </Link>
         <Link href="/catalog/suggest" className={navItem} onClick={afterNav}>
           Suggest an entry

@@ -91,9 +91,9 @@ export default function AdminStrainReviewsPage() {
   }
 
   return (
-    <List title="Cultivar review moderation">
+    <List title="Strain review moderation">
       <Typography.Paragraph type="secondary">
-        Hidden reviews no longer appear on public cultivar pages.{" "}
+        Hidden reviews no longer appear on public strain pages.{" "}
         {strainIdFilter ? (
           <>
             Filtered by strain ID{" "}
@@ -121,7 +121,7 @@ export default function AdminStrainReviewsPage() {
         }}
         columns={[
           {
-            title: "Cultivar",
+            title: "Strain",
             render: (_: unknown, r) => (
               <span>
                 <Link

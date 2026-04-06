@@ -343,7 +343,7 @@ export const communityPins = pgTable(
   ],
 );
 
-/** Seed banks / sources (catalog). */
+/** Breeders (catalog). */
 export const breeders = pgTable(
   'breeders',
   {

@@ -47,7 +47,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const safe = slug?.trim();
-  if (!safe) return { title: "Cultivar" };
+  if (!safe) return { title: "Strain" };
   try {
     const data = await apiFetch<DetailJson>(
       `/strains/${encodeURIComponent(safe)}?reviewsPage=1&reviewsPageSize=1`,
@@ -57,7 +57,7 @@ export async function generateMetadata({
     const title = s.name?.trim() || safe;
     const desc =
       s.description?.trim() ||
-      `${title} — cultivar reference on ${SITE_NAME}.`;
+      `${title} — strain reference on ${SITE_NAME}.`;
     return {
       title,
       description: desc,
@@ -69,7 +69,7 @@ export async function generateMetadata({
       alternates: { canonical: canonicalPath(`/strains/${safe}`) },
     };
   } catch {
-    return { title: "Cultivar" };
+    return { title: "Strain" };
   }
 }
 
@@ -121,7 +121,7 @@ export default async function StrainDetailPage({
     <main className="mx-auto max-w-3xl px-4 py-8">
       <nav className="mb-4 text-sm text-[var(--gn-text-muted)]">
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
-          Cultivars
+          Strains
         </Link>
         <span className="mx-2">/</span>
         <span className="text-[var(--gn-text)]">{s.name}</span>
@@ -134,7 +134,7 @@ export default async function StrainDetailPage({
 
       {s.breeder ? (
         <p className="mt-3 text-sm text-[var(--gn-text-muted)]">
-          Source:{" "}
+          Breeder:{" "}
           <Link
             href={`/breeders/${encodeURIComponent(s.breeder.slug)}`}
             className="font-medium text-[#ff6a38] hover:underline"
@@ -196,7 +196,7 @@ export default async function StrainDetailPage({
                 : null
             }
             disabled={!user}
-            disabledMessage="Sign in to rate and review this cultivar."
+            disabledMessage="Sign in to rate and review this strain."
           />
         </div>
       </section>

@@ -3,7 +3,7 @@ import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Suggest a catalog entry",
-  description: `Propose a new cultivar or seed source, or suggest edits, on ${SITE_NAME}. Staff review all submissions.`,
+  description: `Propose a new strain or breeder, or suggest edits, on ${SITE_NAME}. Staff review all submissions.`,
   openGraph: {
     title: `Suggest an entry · ${SITE_NAME}`,
     url: canonicalPath("/catalog/suggest"),

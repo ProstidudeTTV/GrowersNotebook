@@ -65,7 +65,7 @@ export default function AdminBreederEditPage() {
             href={`/admin/breeder-reviews?breederId=${id}`}
             className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
           >
-            Moderate reviews for this source
+            Moderate reviews for this breeder
           </Link>
         </Form.Item>
       </Form>

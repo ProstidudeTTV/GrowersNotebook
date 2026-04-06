@@ -51,7 +51,7 @@ export default function AdminStrainCreatePage() {
         <Form.Item label="Description" name="description">
           <Input.TextArea rows={6} maxLength={8000} showCount />
         </Form.Item>
-        <Form.Item label="Seed source" name="breederId">
+        <Form.Item label="Breeder" name="breederId">
           <Select
             allowClear
             placeholder="Optional"

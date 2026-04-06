@@ -6,6 +6,7 @@ import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { createClient } from "@/lib/supabase/client";
 import {
   ClientEvent,
+  createClient as createMatrixClient,
   EventType,
   KnownMembership,
   MatrixEventEvent,
@@ -300,6 +301,12 @@ export function MessagesPanel() {
           "/wasm/matrix_sdk_crypto_wasm_bg.wasm",
           window.location.origin,
         );
+        const wasmProbe = await fetch(wasmAsset.href, { method: "GET" });
+        if (!wasmProbe.ok) {
+          throw new Error(
+            `Encryption module not found (${wasmProbe.status}). Try redeploying the site.`,
+          );
+        }
         await MatrixCryptoWasm.initAsync(wasmAsset);
 
         const loginUrl = `${bundle.homeserverUrl.replace(/\/+$/, "")}/_matrix/client/v3/login`;
@@ -352,8 +359,7 @@ export function MessagesPanel() {
           throw new Error("Messaging login response missing credentials.");
         }
 
-        const sdk = await import("matrix-js-sdk");
-        mx = sdk.createClient({
+        mx = createMatrixClient({
           baseUrl: bundle.homeserverUrl.replace(/\/+$/, ""),
           accessToken: loginJson.access_token,
           userId: loginJson.user_id,
@@ -364,8 +370,12 @@ export function MessagesPanel() {
           await mx.initRustCrypto();
         } catch (e) {
           console.error("Matrix initRustCrypto failed", e);
+          const detail =
+            e instanceof Error ? e.message : String(e);
           throw new Error(
-            "Could not initialize encryption. Try refreshing the page or another browser.",
+            detail
+              ? `Could not initialize encryption: ${detail.slice(0, 280)}`
+              : "Could not initialize encryption. Try refreshing the page.",
           );
         }
         if (!cancelled) setCryptoReady(true);

@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
+import { getPublicSiteOrigin } from "@/lib/public-site-origin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * PKCE email-confirm / magic-link target. Add this URL (plus production origin)
- * under Supabase → Authentication → URL configuration → Redirect URLs.
+ * PKCE email-confirm / magic-link target.
+ * Supabase → Authentication → URL configuration:
+ * - Site URL: your public web origin (e.g. https://growers-notebook-web.onrender.com)
+ * - Redirect URLs: same origin + `/auth/callback` (and local dev if needed)
  */
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const origin = getPublicSiteOrigin(request);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const err = searchParams.get("error");
   const errDesc = searchParams.get("error_description");

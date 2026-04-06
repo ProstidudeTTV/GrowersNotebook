@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   communities,
@@ -101,6 +101,21 @@ export class FollowsService {
       .from(userFollows)
       .where(eq(userFollows.followerId, followerId));
     return rows.map((r) => r.id);
+  }
+
+  /** People this user follows (for messaging picker). */
+  async listUsersIFollowWithProfiles(followerId: string) {
+    const db = getDb();
+    const rows = await db
+      .select({
+        id: profiles.id,
+        displayName: profiles.displayName,
+      })
+      .from(userFollows)
+      .innerJoin(profiles, eq(profiles.id, userFollows.followingId))
+      .where(eq(userFollows.followerId, followerId))
+      .orderBy(asc(profiles.displayName));
+    return { items: rows };
   }
 
   async getAllFollowingCommunityIds(userId: string): Promise<string[]> {

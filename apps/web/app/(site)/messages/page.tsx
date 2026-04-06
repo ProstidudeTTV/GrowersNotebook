@@ -1,4 +1,5 @@
 import { MessagesPanel } from "@/components/messages-panel";
+import { Suspense } from "react";
 
 export default function MessagesPage() {
   return (
@@ -7,11 +8,17 @@ export default function MessagesPage() {
         Messages
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Direct messages and group chats. End-to-end encryption may be available
-        depending on room settings.
+        Private chats with people you follow. Conversations are end-to-end
+        encrypted on the homeserver.
       </p>
       <div className="mt-6">
-        <MessagesPanel />
+        <Suspense
+          fallback={
+            <p className="text-sm text-[var(--gn-text-muted)]">Loading…</p>
+          }
+        >
+          <MessagesPanel />
+        </Suspense>
       </div>
     </main>
   );

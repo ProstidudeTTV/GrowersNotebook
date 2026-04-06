@@ -6,6 +6,7 @@ import {
   type SidebarCommunity,
   type SidebarHotPost,
 } from "@/components/app-sidebar";
+import { MatrixSessionBootstrap } from "@/components/matrix-session-bootstrap";
 import { SiteHeader } from "@/components/site-header";
 
 function MenuIcon({ className }: { className?: string }) {
@@ -48,6 +49,7 @@ export function SiteChrome({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <MatrixSessionBootstrap />
       <SiteHeader
         leading={
           <button

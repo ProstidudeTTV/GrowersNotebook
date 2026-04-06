@@ -1,6 +1,7 @@
 import {
   Controller,
   Delete,
+  Get,
   Param,
   ParseUUIDPipe,
   Post,
@@ -15,6 +16,11 @@ import { FollowsService } from './follows.service';
 @UseGuards(SupabaseAuthGuard)
 export class FollowsController {
   constructor(private readonly follows: FollowsService) {}
+
+  @Get('users')
+  listUsersIFollow(@CurrentUser() user: JwtUser) {
+    return this.follows.listUsersIFollowWithProfiles(user.sub);
+  }
 
   @Post('users/:userId')
   followUser(

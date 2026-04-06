@@ -49,6 +49,13 @@ export async function deleteMatrixRustCryptoDbs(prefix: string): Promise<void> {
   }
 }
 
+/** Default matrix-js-sdk prefix before we scoped crypto per-user — clear on recovery/mismatch. */
+const LEGACY_RUST_CRYPTO_PREFIX = "matrix-js-sdk";
+
+export async function deleteLegacyMatrixRustCryptoDbs(): Promise<void> {
+  await deleteMatrixRustCryptoDbs(LEGACY_RUST_CRYPTO_PREFIX);
+}
+
 export function isMatrixCryptoStoreMismatchError(err: unknown): boolean {
   const s = err instanceof Error ? err.message : String(err);
   return /account in the store doesn't match|doesn't match the account in the constructor/i.test(

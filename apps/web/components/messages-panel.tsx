@@ -4,6 +4,7 @@ import * as MatrixCryptoWasm from "@matrix-org/matrix-sdk-crypto-wasm";
 import { apiFetch } from "@/lib/api-public";
 import {
   clearPersistedMatrixDevice,
+  deleteLegacyMatrixRustCryptoDbs,
   deleteMatrixRustCryptoDbs,
   isMatrixCryptoStoreMismatchError,
   loadPersistedMatrixDevice,
@@ -319,17 +320,18 @@ export function MessagesPanel() {
         await MatrixCryptoWasm.initAsync(wasmAsset);
 
         const cryptoPrefix = matrixCryptoStorePrefix(bundle.userId);
-        let deviceHint = loadPersistedMatrixDevice(bundle.userId);
+        let deviceIdWeRequested = loadPersistedMatrixDevice(bundle.userId);
         let loginResult = await matrixHomeserverJwtLogin(
           bundle.homeserverUrl,
           bundle.jwt,
-          deviceHint,
+          deviceIdWeRequested,
         );
 
-        if (!loginResult.ok && deviceHint) {
+        if (!loginResult.ok && deviceIdWeRequested) {
           clearPersistedMatrixDevice();
           await deleteMatrixRustCryptoDbs(cryptoPrefix);
-          deviceHint = undefined;
+          await deleteLegacyMatrixRustCryptoDbs();
+          deviceIdWeRequested = undefined;
           loginResult = await matrixHomeserverJwtLogin(
             bundle.homeserverUrl,
             bundle.jwt,
@@ -354,16 +356,19 @@ export function MessagesPanel() {
           );
         }
 
-        savePersistedMatrixDevice(
-          loginResult.data.user_id,
-          loginResult.data.device_id,
-        );
+        const loginDeviceId = loginResult.data.device_id;
+        if (deviceIdWeRequested && loginDeviceId !== deviceIdWeRequested) {
+          await deleteMatrixRustCryptoDbs(cryptoPrefix);
+          await deleteLegacyMatrixRustCryptoDbs();
+        }
+
+        savePersistedMatrixDevice(loginResult.data.user_id, loginDeviceId);
 
         mx = createMatrixClient({
           baseUrl: bundle.homeserverUrl.replace(/\/+$/, ""),
           accessToken: loginResult.data.access_token,
           userId: loginResult.data.user_id,
-          deviceId: loginResult.data.device_id,
+          deviceId: loginDeviceId,
         });
 
         const initRustOrThrow = async (
@@ -393,6 +398,7 @@ export function MessagesPanel() {
           mx = null;
           clearPersistedMatrixDevice();
           await deleteMatrixRustCryptoDbs(cryptoPrefix);
+          await deleteLegacyMatrixRustCryptoDbs();
           const bundle2 = await apiFetch<LoginBundle>("/matrix/login-token", {
             method: "POST",
             body: JSON.stringify({}),

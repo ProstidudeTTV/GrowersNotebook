@@ -104,6 +104,15 @@ function roomLastTs(r: Room): number {
   return last?.getTs() ?? 0;
 }
 
+/** Display name only — never fall back to Matrix localpart (e.g. gn_…). */
+function membersDisplayNameOnly(
+  m: { rawDisplayName?: string; name?: string } | undefined,
+  ifEmpty: string,
+): string {
+  const d = m?.rawDisplayName?.trim() || m?.name?.trim();
+  return d || ifEmpty;
+}
+
 function dmLabel(client: MatrixClient, room: Room): string {
   const me = client.getUserId();
   if (!me) return room.name || room.roomId;
@@ -111,11 +120,8 @@ function dmLabel(client: MatrixClient, room: Room): string {
     const inviter =
       room.getJoinedMembers().find((m) => m.userId !== me) ??
       room.getJoinedMembers()[0];
-    const raw =
-      inviter?.rawDisplayName ||
-      inviter?.name ||
-      inviter?.userId.split(":")[0]?.replace("@", "");
-    return raw ? `${raw} (invited)` : "Invited chat";
+    const who = membersDisplayNameOnly(inviter, "Someone");
+    return `${who} (Request)`;
   }
   const others = room.getJoinedMembers().filter((m) => m.userId !== me);
   if (others.length === 1) {
@@ -129,9 +135,8 @@ function dmLabel(client: MatrixClient, room: Room): string {
     .filter((m) => m.userId !== me);
   if (pending.length >= 1) {
     const m = pending[0]!;
-    const raw =
-      m.name || m.rawDisplayName || m.userId.split(":")[0]?.replace("@", "");
-    return raw ? `${raw} (pending)` : "Pending invite";
+    const who = membersDisplayNameOnly(m, "Someone");
+    return `${who} (Request)`;
   }
   return room.name || room.getCanonicalAlias() || "Chat";
 }

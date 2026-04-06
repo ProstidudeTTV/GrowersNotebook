@@ -13,8 +13,8 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @growers/api build
-    startCommand: pnpm --filter @growers/api start:prod
+    buildCommand: npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
+    startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -27,7 +27,7 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @growers/web build
-    startCommand: pnpm --filter @growers/web start
+    buildCommand: npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/web build
+    startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
 

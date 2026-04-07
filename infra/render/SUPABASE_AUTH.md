@@ -53,7 +53,11 @@ Email and magic links use the redirect you pass from the app (`emailRedirectTo` 
 
 ### Reset password email template
 
-Under **Authentication** → **Email Templates** → **Reset password**, keep the default anchor that uses **`{{ .ConfirmationURL }}`**. Set **Site URL** to **`https://growersnotebook.com`** (not localhost) if you customized the template.
+Supabase builds the email link as **`/auth/v1/verify?...&redirect_to=...`**. If **`redirect_to`** is only your **Site URL** (e.g. `https://growersnotebook.com` with no path), after verify the user lands on **`/?code=...`**. The app’s middleware forwards that to **`/auth/callback`** so the session is created and recovery is routed to **`/auth/update-password`**.
+
+**Better:** Under **Authentication** → **Email Templates** → **Reset password**, use the default link that uses **`{{ .ConfirmationURL }}`** (not a hand-built `{{ .SiteURL }}` only). `ConfirmationURL` includes the **`redirect_to`** your app sends from **`resetPasswordForEmail`** (e.g. `https://growersnotebook.com/auth/callback/recovery`), so users skip the home-page hop entirely.
+
+Set **Site URL** to **`https://growersnotebook.com`** (not localhost) if you customized the template.
 
 ## 4. Custom SMTP (noreply@growersnotebook.com)
 

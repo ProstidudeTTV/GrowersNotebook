@@ -59,6 +59,8 @@ Supabase builds the email link as **`/auth/v1/verify?...&redirect_to=...`**. If 
 
 Set **Site URL** to **`https://growersnotebook.com`** (not localhost) if you customized the template.
 
+**Template already uses `{{ .ConfirmationURL }}` but the verify link still shows `redirect_to=https://growersnotebook.com` (no path):** Supabase validates `redirectTo` from `resetPasswordForEmail` against **Redirect URLs**. If **`https://growersnotebook.com/auth/callback/recovery`** or **`https://growersnotebook.com/auth/callback`** is missing, mistyped (extra slash, `http` vs `https`, or `www` mismatch), or not saved, Auth **falls back to Site URL** (origin only). Fix the allow list (section 3), save, then send a **new** reset—old emails keep the old `redirect_to`.
+
 ## 4. Custom SMTP (noreply@growersnotebook.com)
 
 Use your own mail host so auth email comes from **`noreply@growersnotebook.com`**.

@@ -22,7 +22,7 @@ If you ever serve the app **only** from `www.growersnotebook.com`, set **`NEXT_P
 
 You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or publishable key), `NEXT_PUBLIC_API_URL` (your Nest API public URL, e.g. `https://growers-notebook-api.onrender.com` or a future `https://api.growersnotebook.com`).
 
-**API database:** `DATABASE_URL` must point at your **Supabase Postgres** session pooler URI (same DB as local Drizzle / Supabase migrations). **`render.yaml`** runs **`preDeployCommand: pnpm --filter @growers/api db:migrate`** on **growers-notebook-api** so Drizzle migrations (including `profile_matrix_ssss_wrap`) apply on each deploy.
+**API database:** `DATABASE_URL` must point at your **Supabase Postgres** session pooler URI (same DB as local Drizzle / Supabase migrations). **Drizzle migrations run automatically** when the API starts (`apps/api` **`start:prod`** = `run-migrate.cjs` then `node dist/src/main.js`), so you do **not** need a separate Render pre-deploy command.
 
 **Supabase SQL:** The same table ships in `supabase/migrations/20260418120000_profile_matrix_ssss_wrap.sql`. If you manage schema with **Supabase Dashboard → SQL** or `supabase db push`, keep that file applied so branches and CLI stay aligned with production.
 

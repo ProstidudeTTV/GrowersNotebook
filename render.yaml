@@ -25,12 +25,9 @@ services:
     runtime: node
     region: oregon
     plan: starter
-    # After adding migrations, run once with production DATABASE_URL:
-    #   pnpm --filter @growers/api db:migrate
+    # Drizzle migrations run at every API boot via apps/api package.json start:prod (no Render pre-deploy UI needed).
     # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
     buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
-    # Runs after build, before traffic switches; requires DATABASE_URL (Supabase pooler URI on API).
-    preDeployCommand: npx pnpm@9.15.9 --filter @growers/api db:migrate
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:

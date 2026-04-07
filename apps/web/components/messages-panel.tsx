@@ -40,7 +40,7 @@ import {
   SyncState,
 } from "matrix-js-sdk";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type LoginBundle = {
   homeserverUrl: string;
@@ -305,10 +305,56 @@ export function MessagesPanel() {
   const openedForWith = useRef<string | null>(null);
   const activeRoomIdRef = useRef<string | null>(null);
   const historyFillCancelRef = useRef(false);
+  const timelineScrollRef = useRef<HTMLDivElement | null>(null);
+  /** User is within this many px of the bottom of the message list. */
+  const stickToBottomRef = useRef(true);
+  const pendingScrollToBottomRef = useRef(false);
+  const prevLastLineIdRef = useRef<string | null>(null);
+  const prevActiveRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
     activeRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
+
+  useEffect(() => {
+    if (prevActiveRoomRef.current !== activeRoomId) {
+      prevActiveRoomRef.current = activeRoomId;
+      pendingScrollToBottomRef.current = !!activeRoomId;
+      stickToBottomRef.current = true;
+      prevLastLineIdRef.current = null;
+    }
+  }, [activeRoomId]);
+
+  const updateStickToBottomFromScroll = useCallback(() => {
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = gap < 72;
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = timelineScrollRef.current;
+    if (!el || !activeRoomId) return;
+    const lastId = lines.length > 0 ? lines[lines.length - 1]!.id : null;
+
+    if (pendingScrollToBottomRef.current && lines.length > 0) {
+      el.scrollTop = el.scrollHeight;
+      pendingScrollToBottomRef.current = false;
+      prevLastLineIdRef.current = lastId;
+      stickToBottomRef.current = true;
+      return;
+    }
+
+    const tailGrew =
+      lastId != null &&
+      (prevLastLineIdRef.current === null
+        ? lines.length > 0
+        : lastId !== prevLastLineIdRef.current);
+    if (tailGrew && stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+    prevLastLineIdRef.current = lastId;
+  }, [lines, activeRoomId]);
 
   const refreshConversations = useCallback((c: MatrixClient) => {
     const me = c.getUserId();
@@ -931,7 +977,16 @@ export function MessagesPanel() {
 
   if (status === "loading" || status === "idle") {
     return (
-      <p className="text-sm text-[var(--gn-text-muted)]">Connecting…</p>
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-[var(--gn-text)]">
+          Connecting to messages…
+        </p>
+        <p className="text-xs leading-relaxed text-[var(--gn-text-muted)]">
+          Setting up encryption and syncing with the chat server. This usually
+          takes a few seconds; on a slow connection it may take up to a couple of
+          minutes.
+        </p>
+      </div>
     );
   }
 
@@ -1051,7 +1106,11 @@ export function MessagesPanel() {
             Loading older messages from the server…
           </p>
         ) : null}
-        <div className="mb-3 max-h-[340px] space-y-2 overflow-y-auto rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3">
+        <div
+          ref={timelineScrollRef}
+          onScroll={updateStickToBottomFromScroll}
+          className="gn-messages-timeline mb-3 flex max-h-[min(52vh,420px)] min-h-[200px] flex-col gap-2 overflow-y-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 shadow-[var(--gn-shadow-sm)]"
+        >
           {!activeRoomId ? (
             <p className="text-xs text-[var(--gn-text-muted)]">
               {hasNoChatHistory
@@ -1066,10 +1125,17 @@ export function MessagesPanel() {
             </p>
           ) : (
             lines.map((ln) => (
-              <div key={ln.id} className="text-sm">
-                <span className="font-medium text-[#ff6a38]">{ln.sender}</span>
+              <div
+                key={ln.id}
+                className="rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)]"
+              >
+                <span className="font-medium text-[var(--gn-accent)]">
+                  {ln.sender}
+                </span>
                 <span className="text-[var(--gn-text-muted)]"> · </span>
-                <span className="text-[var(--gn-text)]">{ln.body}</span>
+                <span className="text-[var(--gn-text)] whitespace-pre-wrap break-words">
+                  {ln.body}
+                </span>
               </div>
             ))
           )}

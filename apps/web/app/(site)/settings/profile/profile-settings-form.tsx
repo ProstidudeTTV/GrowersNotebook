@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { uploadProfileAvatar } from "@/lib/upload-profile-avatar";
+import { setPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 
 type MeProfile = {
   id: string;
@@ -30,6 +31,9 @@ export function ProfileSettingsForm() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [profilePublic, setProfilePublic] = useState(true);
   const [showGrowerStatsPublic, setShowGrowerStatsPublic] = useState(true);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [resetSending, setResetSending] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -43,6 +47,7 @@ export function ProfileSettingsForm() {
       data: { session },
     } = await supabase.auth.getSession();
     setUserId(session?.user?.id ?? null);
+    setAccountEmail(session?.user?.email?.trim() || null);
     try {
       const me = await apiFetch<MeProfile>("/profiles/me", { token });
       setDisplayName(me.displayName?.trim() ?? "");
@@ -88,6 +93,40 @@ export function ProfileSettingsForm() {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const requestPasswordReset = async () => {
+    if (!accountEmail) return;
+    setResetMessage(null);
+    setResetSending(true);
+    try {
+      const res = await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: accountEmail }),
+      });
+      const payload: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof (payload as { error: unknown }).error === "string"
+            ? (payload as { error: string }).error
+            : "Could not send reset email.";
+        throw new Error(msg);
+      }
+      setPasswordRecoveryPending(accountEmail);
+      setResetMessage(
+        "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.",
+      );
+    } catch (e) {
+      setResetMessage(
+        e instanceof Error ? e.message : "Could not send reset email.",
+      );
+    } finally {
+      setResetSending(false);
     }
   };
 
@@ -235,6 +274,41 @@ export function ProfileSettingsForm() {
           show initials.
         </span>
       </label>
+
+      <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
+        <p className="text-sm font-medium text-[var(--gn-text)]">
+          Account & sign-in
+        </p>
+        <p className="text-xs text-[var(--gn-text-muted)]">
+          Signed in as{" "}
+          <span className="font-medium text-[var(--gn-text)]">
+            {accountEmail ?? "—"}
+          </span>
+          {accountEmail ? "." : " (email not available for this sign-in method)."}
+        </p>
+        {accountEmail ? (
+          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-3 sm:px-4">
+            <p className="text-sm text-[var(--gn-text)]">Password</p>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+              We&apos;ll email a secure link to choose a new password. The link
+              expires after a short time.
+            </p>
+            <button
+              type="button"
+              disabled={resetSending}
+              onClick={() => void requestPasswordReset()}
+              className="mt-3 inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+            >
+              {resetSending ? "Sending…" : "Email me a reset link"}
+            </button>
+            {resetMessage ? (
+              <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                {resetMessage}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
       <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
         <p className="text-sm font-medium text-[var(--gn-text)]">Privacy</p>

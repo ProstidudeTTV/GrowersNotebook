@@ -34,14 +34,18 @@ Open your project: **Authentication** → **URL Configuration**.
    Set to your production web origin (same as `NEXT_PUBLIC_SITE_URL` / step 1).
 
 2. **Redirect URLs**  
-   Add these entries (one per line; adjust hostname if yours differs):
+   Add these entries (one per line; adjust hostname if yours differs). Supabase must allow the exact redirect your app sends (including query strings used for password reset):
 
    ```
    https://growers-notebook-web.onrender.com/auth/callback
+   https://growers-notebook-web.onrender.com/auth/callback?next=/auth/update-password
    http://localhost:3000/auth/callback
+   http://localhost:3000/auth/callback?next=/auth/update-password
    ```
 
    (`localhost` is optional; keep it if you test email confirmation locally.)
+
+   If **Site URL** is still `http://localhost:3000`, magic links and password resets can target localhost even on production. **Site URL** must be your public HTTPS origin (same as `NEXT_PUBLIC_SITE_URL`).
 
 3. Save.
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeInternalPath } from "@/lib/safe-internal-path";
+import { getSiteOriginForAuth } from "@/lib/site-origin-client";
 
 function parseUrlError(raw: string | null): string | null {
   if (!raw) return null;
@@ -32,7 +33,7 @@ export function LoginForm() {
     setMessage(null);
     setLoading(true);
     const supabase = createClient();
-    const origin = window.location.origin;
+    const origin = getSiteOriginForAuth();
     try {
       if (mode === "signup") {
         const u = username.trim();

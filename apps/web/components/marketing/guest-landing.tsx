@@ -136,10 +136,13 @@ export function GuestLanding({
   communities,
   loadError,
   apiBase,
+  hostedDeploy = false,
 }: {
   communities: GuestLandingCommunity[];
   loadError: string | null;
   apiBase: string;
+  /** Show Render/production troubleshooting instead of local npm hints */
+  hostedDeploy?: boolean;
 }) {
   const featured = communities.slice(0, 8);
 
@@ -275,6 +278,19 @@ export function GuestLanding({
                   {apiBase}
                 </code>
               </p>
+            ) : null}
+            {hostedDeploy ? (
+              <ul className="mt-4 list-inside list-disc text-sm opacity-90">
+                <li>
+                  In Render → <strong>growers-notebook-api</strong>, open Logs and
+                  confirm the latest deploy is live. Try <code className="rounded bg-black/10 px-1 dark:bg-white/10">{apiBase}/health</code>.
+                </li>
+                <li>
+                  If the API recently added catalog columns, run the migration
+                  on your Supabase DB (e.g. <code className="rounded bg-black/10 px-1 dark:bg-white/10">icon_key</code> on{" "}
+                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">communities</code>).
+                </li>
+              </ul>
             ) : null}
           </div>
         ) : featured.length === 0 ? (

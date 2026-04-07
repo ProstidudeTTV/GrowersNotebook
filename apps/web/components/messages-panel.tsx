@@ -24,6 +24,10 @@ import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { matrixSecretStorageCallbacks } from "@/lib/matrix-secret-storage-callbacks";
 import { createClient } from "@/lib/supabase/client";
 import {
+  AllDevicesIsolationMode,
+  DecryptionFailureCode,
+} from "matrix-js-sdk/lib/crypto-api/index.js";
+import {
   ClientEvent,
   createClient as createMatrixClient,
   EventType,
@@ -241,19 +245,75 @@ function roomHasVisualUnread(
  * “unverified” devices (we don’t run verification UX), and prime outbound encryption
  * for each DM so session keys fan out via sync.
  */
-async function primeEncryptedDmsForMultiDevice(client: MatrixClient): Promise<void> {
+/** Web DMs without verification UX: always share Megolm keys with all peer devices Element would call “insecure”. */
+function applyOpenWebCryptoPolicy(client: MatrixClient): void {
   const cryptoApi = client.getCrypto();
   if (!cryptoApi) return;
   try {
-    const mutable = cryptoApi as {
-      globalBlacklistUnverifiedDevices?: boolean;
-    };
-    if (typeof mutable.globalBlacklistUnverifiedDevices === "boolean") {
-      mutable.globalBlacklistUnverifiedDevices = false;
+    cryptoApi.globalBlacklistUnverifiedDevices = false;
+    cryptoApi.setDeviceIsolationMode(new AllDevicesIsolationMode(false));
+    cryptoApi.setTrustCrossSignedDevices(true);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Fetch peer device keys and prime Megolm sharing before send. Without this, send can outrace
+ * `/keys/query` + to-device forwarding and recipients see MEGOLM_UNKNOWN_INBOUND_SESSION_ID.
+ */
+async function ensureMegolmOutboundPrimed(
+  client: MatrixClient,
+  roomId: string,
+): Promise<void> {
+  applyOpenWebCryptoPolicy(client);
+  const room = client.getRoom(roomId);
+  if (!room) return;
+  const cryptoApi = client.getCrypto();
+  if (!cryptoApi) return;
+  await room.loadMembersIfNeeded();
+  const me = client.getUserId();
+  const peerIds = [
+    ...new Set(
+      room
+        .getMembersWithMembership(KnownMembership.Join)
+        .map((m) => m.userId)
+        .filter((id) => id && id !== me),
+    ),
+  ];
+  if (peerIds.length) {
+    try {
+      await cryptoApi.getUserDeviceInfo(peerIds, true);
+    } catch {
+      /* continue; send path may still recover */
+    }
+    for (const uid of peerIds) {
+      try {
+        const st = await cryptoApi.getUserVerificationStatus(uid);
+        if (st.needsUserApproval) {
+          await cryptoApi.pinCurrentUserIdentity(uid);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  try {
+    if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
+      cryptoApi.prepareToEncrypt(room);
     }
   } catch {
     /* ignore */
   }
+  await new Promise<void>((r) => {
+    window.setTimeout(r, 320);
+  });
+}
+
+async function primeEncryptedDmsForMultiDevice(client: MatrixClient): Promise<void> {
+  const cryptoApi = client.getCrypto();
+  if (!cryptoApi) return;
+  applyOpenWebCryptoPolicy(client);
   for (const room of listDmRooms(client)) {
     try {
       if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
@@ -405,6 +465,16 @@ export function MessagesPanel() {
             } else if (reason === "HISTORICAL_MESSAGE_BACKUP_UNCONFIGURED") {
               body =
                 "Older encrypted message — key backup exists but this device could not unlock it.";
+            } else if (
+              reason === DecryptionFailureCode.MEGOLM_UNKNOWN_INBOUND_SESSION_ID
+            ) {
+              body =
+                "Still waiting for encryption keys from their device (common right after a new chat or new login). Ask them to send another message, or wait a few seconds and refresh.";
+            } else if (
+              reason === DecryptionFailureCode.MEGOLM_KEY_WITHHELD_FOR_UNVERIFIED_DEVICE
+            ) {
+              body =
+                "Their client did not send keys to unverified devices. They should resend from Growers Notebook in Messages, or you can both keep chatting until keys sync.";
             } else {
               body = "Unable to decrypt this message.";
             }
@@ -489,6 +559,13 @@ export function MessagesPanel() {
               preset: Preset.TrustedPrivateChat,
               is_direct: true,
               invite: [peerMxid],
+              initial_state: [
+                {
+                  type: EventType.RoomEncryption,
+                  state_key: "",
+                  content: { algorithm: "m.megolm.v1.aes-sha2" },
+                },
+              ],
             }),
             new Promise<never>((_, reject) => {
               window.setTimeout(
@@ -527,13 +604,8 @@ export function MessagesPanel() {
         }
 
         const roomId = raced.room_id;
-        await client.sendStateEvent(
-          roomId,
-          EventType.RoomEncryption,
-          { algorithm: "m.megolm.v1.aes-sha2" },
-          "",
-        );
         await client.getRoom(roomId)?.loadMembersIfNeeded();
+        await ensureMegolmOutboundPrimed(client, roomId);
         activeRoomIdRef.current = roomId;
         setActiveRoomId(roomId);
         loadTimeline(client, roomId);
@@ -787,6 +859,7 @@ export function MessagesPanel() {
         });
 
         if (cancelled) return;
+        applyOpenWebCryptoPolicy(mx);
         setClient(mx);
         refreshConversations(mx);
         const arReady = activeRoomIdRef.current;
@@ -954,6 +1027,7 @@ export function MessagesPanel() {
     setDraft("");
     setActionError(null);
     try {
+      await ensureMegolmOutboundPrimed(client, activeRoomId);
       const room = client.getRoom(activeRoomId);
       if (room) await room.loadMembersIfNeeded();
       await client.sendTextMessage(activeRoomId, text);

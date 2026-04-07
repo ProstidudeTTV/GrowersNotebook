@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
 import { getPublicSiteOrigin } from "@/lib/public-site-origin";
-import { safeInternalPath } from "@/lib/safe-internal-path";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * PKCE email-confirm / magic-link target.
- * Supabase → Authentication → URL configuration:
- * - Site URL: public web origin (production: https://growersnotebook.com)
- * - Redirect URLs: same origin + `/auth/callback` (query strings allowed, e.g.
- *   Password recovery uses `/auth/callback/recovery` (see that route) so `?code=` does not
- *   wipe a `next=` param).
+ * PKCE handler for **password recovery** only.
+ *
+ * `redirectTo` cannot be `/auth/callback?next=/auth/update-password`: Supabase appends
+ * `?code=` to the configured URL and drops prior query params, so `next` is lost and
+ * users were sent to `/auth/complete` → home. This route has no extra query string to lose.
  */
 export async function GET(request: Request) {
   const origin = getPublicSiteOrigin(request);
   const { searchParams } = new URL(request.url);
-  const nextPath = safeInternalPath(searchParams.get("next"));
   const code = searchParams.get("code");
   const err = searchParams.get("error");
   const errDesc = searchParams.get("error_description");
@@ -29,10 +26,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      if (nextPath !== "/") {
-        return NextResponse.redirect(`${origin}${nextPath}`);
-      }
-      return NextResponse.redirect(`${origin}/auth/complete`);
+      return NextResponse.redirect(`${origin}/auth/update-password`);
     }
   }
 

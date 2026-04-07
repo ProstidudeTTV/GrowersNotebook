@@ -36,22 +36,22 @@ You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or 
 
    ```
    https://growersnotebook.com/auth/callback
-   https://growersnotebook.com/auth/callback?next=/auth/update-password
+   https://growersnotebook.com/auth/callback/recovery
    ```
 
    If you use **www** for the app as well, add the same paths for `https://www.growersnotebook.com/...`.
 
-   Optional: keep a **Render default hostname** during migration (e.g. `https://growers-notebook-web.onrender.com/auth/callback` and the `?next=...` variant) until traffic is only on the custom domain; then remove them.
+   Optional: keep a **Render default hostname** during migration (e.g. `https://growers-notebook-web.onrender.com/auth/callback` and `.../auth/callback/recovery`) until traffic is only on the custom domain; then remove them.
 
 3. Save.
 
 Email and magic links use the redirect you pass from the app (`emailRedirectTo` / `redirectTo`); every distinct origin + path must appear in **Redirect URLs**.
 
-**Password reset:** Requests use **`POST /api/auth/request-password-reset`** (`apps/web/app/api/auth/request-password-reset/route.ts`) so `redirectTo` is computed **on the server** (`NEXT_PUBLIC_SITE_URL`, or **`https://growersnotebook.com`** in production if unset). That avoids recovery links pointing at **localhost** when the client bundle or browser origin was wrong.
+**Password reset:** Requests use **`POST /api/auth/request-password-reset`**, which sets `redirectTo` to **`/auth/callback/recovery`** (not `/auth/callback?next=...`). Supabase appends **`?code=`** to `redirectTo` and **drops existing query parameters**, so a `next=` value was lost and users landed on **`/auth/complete`** then home. The dedicated **`/auth/callback/recovery`** route exchanges the code and redirects to **`/auth/update-password`**.
 
 ### Reset password email template
 
-Under **Authentication** → **Email Templates** → **Reset password**, keep the default anchor that uses **`{{ .ConfirmationURL }}`** so the message includes the `redirect_to` value from the API. If you customized the template and only used **`{{ .SiteURL }}`** (or left **Site URL** on localhost), links will ignore the app’s `redirectTo` and stay on the wrong host — set **Site URL** to **`https://growersnotebook.com`** or use **`{{ .ConfirmationURL }}`** / **`{{ .RedirectTo }}`** per the [email templates](https://supabase.com/docs/guides/auth/auth-email-templates) docs.
+Under **Authentication** → **Email Templates** → **Reset password**, keep the default anchor that uses **`{{ .ConfirmationURL }}`**. Set **Site URL** to **`https://growersnotebook.com`** (not localhost) if you customized the template.
 
 ## 4. Custom SMTP (noreply@growersnotebook.com)
 

@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   }
 
   const origin = getAuthRedirectOriginServer();
-  const redirectTo = `${origin}/auth/callback?next=/auth/update-password`;
+  // Use /auth/callback/recovery — Supabase adds ?code= and strips other query params from redirectTo.
+  const redirectTo = `${origin}/auth/callback/recovery`;
 
   const supabase = createClient(getSupabaseUrl(), getSupabasePublicKey(), {
     auth: { persistSession: false, autoRefreshToken: false },

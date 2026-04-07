@@ -1,14 +1,22 @@
 import { getPublicApiUrl } from "./public-api-url";
 
+/** Browser: same-origin `/api/gn-proxy/...` (no CORS). Server: direct API URL. */
+function resolveClientApiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (typeof window !== "undefined") {
+    return `/api/gn-proxy${p}`;
+  }
+  return `${getPublicApiUrl().replace(/\/+$/, "")}${p}`;
+}
+
 /**
- * Browser-side JSON fetch to the Nest API (uses NEXT_PUBLIC_API_URL).
+ * JSON fetch to the Nest API. In the browser, uses the Next.js gn-proxy route.
  */
 export async function clientApiJson<T>(
   path: string,
   init?: { token?: string | null; signal?: AbortSignal },
 ): Promise<T> {
-  const apiRoot = getPublicApiUrl();
-  const url = `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = resolveClientApiUrl(path);
   const headers = new Headers();
   headers.set("Accept", "application/json");
   if (init?.token) {

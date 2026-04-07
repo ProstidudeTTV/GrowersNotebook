@@ -73,6 +73,7 @@ function BreederFilterCombobox({
   const [open, setOpen] = useState(false);
   const [hits, setHits] = useState<BreederHit[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pickError, setPickError] = useState<string | null>(null);
 
   useEffect(() => {
     setInput(breederLabel);
@@ -82,10 +83,15 @@ function BreederFilterCombobox({
     if (debounced.length < 1) {
       setHits([]);
       setLoading(false);
+      setPickError(null);
+      setOpen(false);
       return;
     }
     const ctrl = new AbortController();
+    setOpen(true);
     setLoading(true);
+    setPickError(null);
+    setHits([]);
     const qs = new URLSearchParams({
       q: debounced,
       page: "1",
@@ -100,10 +106,12 @@ function BreederFilterCombobox({
         );
         if (!ctrl.signal.aborted) {
           setHits(data.items ?? []);
-          setOpen(true);
         }
-      } catch {
-        if (!ctrl.signal.aborted) setHits([]);
+      } catch (e) {
+        if (!ctrl.signal.aborted) {
+          setHits([]);
+          setPickError(e instanceof Error ? e.message : "Search failed");
+        }
       } finally {
         if (!ctrl.signal.aborted) setLoading(false);
       }
@@ -119,8 +127,7 @@ function BreederFilterCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const showPanel =
-    open && debounced.length >= 1 && (loading || hits.length > 0);
+  const showPanel = open && debounced.length >= 1;
 
   return (
     <div ref={rootRef} className="relative min-w-[10rem] max-w-[14rem] flex-1">
@@ -153,9 +160,19 @@ function BreederFilterCombobox({
       ) : null}
       {showPanel ? (
         <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-xl border border-[var(--gn-border)] bg-[var(--gn-menu-bg)] py-1 shadow-[var(--gn-shadow-lg)]">
-          {loading && hits.length === 0 ? (
+          {loading ? (
             <li className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
               Searching…
+            </li>
+          ) : null}
+          {pickError ? (
+            <li className="px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+              {pickError}
+            </li>
+          ) : null}
+          {!loading && !pickError && hits.length === 0 ? (
+            <li className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
+              No breeders match.
             </li>
           ) : null}
           {hits.map((h) => (

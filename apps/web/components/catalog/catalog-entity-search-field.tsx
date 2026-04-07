@@ -41,36 +41,48 @@ export function CatalogEntitySearchField({
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const ctrlRef = useRef<AbortController | null>(null);
 
   const runFetch = useCallback(async () => {
     if (debounced.length < 2) {
       setItems([]);
       setLoading(false);
+      setError(null);
+      setOpen(false);
       return;
     }
     ctrlRef.current?.abort();
     const ctrl = new AbortController();
     ctrlRef.current = ctrl;
+    setOpen(true);
     setLoading(true);
+    setError(null);
+    setItems([]);
     const qs = new URLSearchParams({
       q: debounced,
       page: "1",
       pageSize: "8",
       sort: "name",
     });
-    const path = `${apiListPath}?${qs.toString()}${extraApiQuery.startsWith("&") ? extraApiQuery : extraApiQuery ? `&${extraApiQuery}` : ""}`;
+    const extra =
+      extraApiQuery.startsWith("&")
+        ? extraApiQuery
+        : extraApiQuery
+          ? `&${extraApiQuery}`
+          : "";
+    const path = `${apiListPath}?${qs.toString()}${extra}`;
     try {
       const data = await clientApiJson<ListResponse>(path, {
         signal: ctrl.signal,
       });
       if (!ctrl.signal.aborted) {
-        setItems(data.items ?? []);
-        setOpen(true);
+        setItems(data?.items ?? []);
       }
-    } catch {
+    } catch (e) {
       if (!ctrl.signal.aborted) {
         setItems([]);
+        setError(e instanceof Error ? e.message : "Search failed");
       }
     } finally {
       if (!ctrl.signal.aborted) setLoading(false);
@@ -90,8 +102,7 @@ export function CatalogEntitySearchField({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const showPanel =
-    open && debounced.length >= 2 && (loading || items.length > 0);
+  const showPanel = open && debounced.length >= 2;
 
   return (
     <div ref={rootRef} className="relative min-w-0 flex-1 basis-[12rem]">
@@ -108,7 +119,7 @@ export function CatalogEntitySearchField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => {
-          if (debounced.length >= 2 && items.length > 0) setOpen(true);
+          if (debounced.length >= 2) setOpen(true);
         }}
         role="combobox"
         aria-expanded={showPanel}
@@ -122,9 +133,19 @@ export function CatalogEntitySearchField({
           role="listbox"
           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-[var(--gn-border)] bg-[var(--gn-menu-bg)] py-1 shadow-[var(--gn-shadow-lg)] backdrop-blur-md"
         >
-          {loading && items.length === 0 ? (
+          {loading ? (
             <li className="px-3 py-2 text-sm text-[var(--gn-text-muted)]">
               Searching…
+            </li>
+          ) : null}
+          {error ? (
+            <li className="px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+              {error}
+            </li>
+          ) : null}
+          {!loading && !error && items.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-[var(--gn-text-muted)]">
+              No matches. Try another term or relax filters.
             </li>
           ) : null}
           {items.map((it) => (

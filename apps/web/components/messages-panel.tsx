@@ -259,6 +259,30 @@ function applyOpenWebCryptoPolicy(client: MatrixClient): void {
 }
 
 /**
+ * Synapse returns 403 "not in room" on /send if our membership is not `join` (invite pending, or store stale).
+ */
+async function ensureSelfJoined(
+  client: MatrixClient,
+  roomId: string,
+): Promise<Room | null> {
+  let room = client.getRoom(roomId);
+  if (!room) return null;
+  await room.loadMembersIfNeeded();
+  if (room.getMyMembership() === KnownMembership.Invite) {
+    try {
+      await client.joinRoom(roomId);
+    } catch {
+      return null;
+    }
+    await room.loadMembersIfNeeded();
+  }
+  if (room.getMyMembership() !== KnownMembership.Join) {
+    return null;
+  }
+  return room;
+}
+
+/**
  * Fetch peer device keys and prime Megolm sharing before send. Without this, send can outrace
  * `/keys/query` + to-device forwarding and recipients see MEGOLM_UNKNOWN_INBOUND_SESSION_ID.
  */
@@ -267,11 +291,10 @@ async function ensureMegolmOutboundPrimed(
   roomId: string,
 ): Promise<void> {
   applyOpenWebCryptoPolicy(client);
-  const room = client.getRoom(roomId);
+  const room = await ensureSelfJoined(client, roomId);
   if (!room) return;
   const cryptoApi = client.getCrypto();
   if (!cryptoApi) return;
-  await room.loadMembersIfNeeded();
   const me = client.getUserId();
   const peerIds = [
     ...new Set(
@@ -306,7 +329,7 @@ async function ensureMegolmOutboundPrimed(
     /* ignore */
   }
   await new Promise<void>((r) => {
-    window.setTimeout(r, 320);
+    window.setTimeout(r, 200);
   });
 }
 
@@ -315,6 +338,7 @@ async function primeEncryptedDmsForMultiDevice(client: MatrixClient): Promise<vo
   if (!cryptoApi) return;
   applyOpenWebCryptoPolicy(client);
   for (const room of listDmRooms(client)) {
+    if (room.getMyMembership() !== KnownMembership.Join) continue;
     try {
       if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
         cryptoApi.prepareToEncrypt(room);
@@ -559,13 +583,6 @@ export function MessagesPanel() {
               preset: Preset.TrustedPrivateChat,
               is_direct: true,
               invite: [peerMxid],
-              initial_state: [
-                {
-                  type: EventType.RoomEncryption,
-                  state_key: "",
-                  content: { algorithm: "m.megolm.v1.aes-sha2" },
-                },
-              ],
             }),
             new Promise<never>((_, reject) => {
               window.setTimeout(
@@ -604,6 +621,23 @@ export function MessagesPanel() {
         }
 
         const roomId = raced.room_id;
+        await client.getRoom(roomId)?.loadMembersIfNeeded();
+        try {
+          if (
+            client.getRoom(roomId)?.getMyMembership() !== KnownMembership.Join
+          ) {
+            await client.joinRoom(roomId);
+            await client.getRoom(roomId)?.loadMembersIfNeeded();
+          }
+        } catch {
+          /* creator is usually already joined; ignore */
+        }
+        await client.sendStateEvent(
+          roomId,
+          EventType.RoomEncryption,
+          { algorithm: "m.megolm.v1.aes-sha2" },
+          "",
+        );
         await client.getRoom(roomId)?.loadMembersIfNeeded();
         await ensureMegolmOutboundPrimed(client, roomId);
         activeRoomIdRef.current = roomId;
@@ -1027,9 +1061,14 @@ export function MessagesPanel() {
     setDraft("");
     setActionError(null);
     try {
+      const room = await ensureSelfJoined(client, activeRoomId);
+      if (!room) {
+        throw new Error(
+          "You must be in this chat to send. Open the conversation from the list (accept the invite if shown), then try again.",
+        );
+      }
       await ensureMegolmOutboundPrimed(client, activeRoomId);
-      const room = client.getRoom(activeRoomId);
-      if (room) await room.loadMembersIfNeeded();
+      await room.loadMembersIfNeeded();
       await client.sendTextMessage(activeRoomId, text);
       const cryptoAfter = client.getCrypto();
       if (cryptoAfter && room) {

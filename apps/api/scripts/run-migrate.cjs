@@ -1,12 +1,15 @@
 /**
- * drizzle-kit often exits 1 without printing the DB error (spinner + stderr swallowing).
- * Preflight: connect with the same URL/options as the API, then run drizzle-kit migrate.
+ * Applies Drizzle migrations using the postgres-js migrator (not drizzle-kit CLI).
+ * drizzle-kit migrate can exit 1 on Supabase/Render when harmless NOTICEs are emitted
+ * for CREATE SCHEMA IF NOT EXISTS / CREATE TABLE IF NOT EXISTS on __drizzle_migrations.
+ * The postgres client here uses onnotice: () => {} so notices do not fail the run.
  */
-const { spawnSync } = require("child_process");
 const { existsSync } = require("fs");
 const { config } = require("dotenv");
 const { resolve } = require("path");
 const postgres = require("postgres");
+const { drizzle } = require("drizzle-orm/postgres-js");
+const { migrate } = require("drizzle-orm/postgres-js/migrator");
 
 const apiRoot = resolve(__dirname, "..");
 for (const p of [
@@ -40,14 +43,22 @@ const sql = postgres(url, {
   prepare: false,
   connect_timeout: 25,
   ssl: /supabase\.co|pooler\.supabase\.com/i.test(url) ? "require" : undefined,
+  onnotice: () => {},
 });
 
 (async () => {
   try {
     await sql`select 1`;
-    console.log("db:migrate: Postgres reachable, running drizzle-kit …");
+    console.log("db:migrate: Postgres reachable, applying migrations …");
+    const db = drizzle(sql);
+    await migrate(db, {
+      migrationsFolder: resolve(apiRoot, "drizzle"),
+      migrationsTable: "__drizzle_migrations",
+      migrationsSchema: "public",
+    });
+    console.log("db:migrate: done.");
   } catch (e) {
-    console.error("db:migrate: Postgres connection failed:", e.message);
+    console.error("db:migrate: failed:", e.message);
     const c = e && e.cause;
     if (c) console.error("  cause:", c instanceof Error ? c.message : c);
     const msg = String(e.message);
@@ -92,12 +103,4 @@ const sql = postgres(url, {
   } finally {
     await sql.end({ timeout: 5 });
   }
-
-  const r = spawnSync("npx", ["drizzle-kit", "migrate"], {
-    cwd: apiRoot,
-    stdio: "inherit",
-    shell: true,
-    env: { ...process.env, FORCE_COLOR: "0" },
-  });
-  process.exit(r.status === null ? 1 : r.status);
 })();

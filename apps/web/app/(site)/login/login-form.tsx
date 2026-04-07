@@ -5,6 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeInternalPath } from "@/lib/safe-internal-path";
+import {
+  clearPasswordRecoveryPending,
+  setPasswordRecoveryPending,
+} from "@/lib/auth-recovery-client";
 import { getSiteOriginForAuth } from "@/lib/site-origin-client";
 
 function parseUrlError(raw: string | null): string | null {
@@ -77,12 +81,14 @@ export function LoginForm() {
         setMessage(
           "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.",
         );
+        setPasswordRecoveryPending(email.trim());
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        clearPasswordRecoveryPending();
         router.push(next);
         router.refresh();
       }

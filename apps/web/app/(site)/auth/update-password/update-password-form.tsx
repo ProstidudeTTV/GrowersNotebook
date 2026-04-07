@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 import { createClient } from "@/lib/supabase/client";
 
 export function UpdatePasswordForm() {
@@ -14,6 +15,7 @@ export function UpdatePasswordForm() {
   const [sessionOk, setSessionOk] = useState<boolean | null>(null);
 
   useEffect(() => {
+    clearPasswordRecoveryPending();
     const supabase = createClient();
     void supabase.auth.getSession().then(({ data: { session } }) => {
       setSessionOk(!!session);

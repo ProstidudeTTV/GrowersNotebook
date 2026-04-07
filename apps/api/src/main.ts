@@ -36,8 +36,25 @@ async function bootstrap() {
       'WEB_ORIGIN must be set in production (public origin of the Next.js app, for CORS).',
     );
   }
+  const allowedOrigins = (raw: string) =>
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   app.enableCors({
-    origin: dev ? true : webOrigin,
+    origin: dev
+      ? true
+      : (origin, callback) => {
+          if (!origin) {
+            callback(null, true);
+            return;
+          }
+          if (allowedOrigins(webOrigin!).includes(origin)) {
+            callback(null, true);
+            return;
+          }
+          callback(null, false);
+        },
     credentials: true,
     exposedHeaders: ['X-Total-Count'],
   });

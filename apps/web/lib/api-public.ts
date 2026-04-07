@@ -1,12 +1,23 @@
 import { getPublicApiUrl } from "./public-api-url";
 
-const base = () => getPublicApiUrl();
+/**
+ * Browser calls go through the Next.js `/api/gn-proxy` route so requests are same-origin
+ * (avoids CORS when `WEB_ORIGIN` on the API does not match every hostname users hit).
+ * Server/RSC calls use `NEXT_PUBLIC_API_URL` directly.
+ */
+function apiRootForFetch(): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/gn-proxy`.replace(/\/+$/, "");
+  }
+  return getPublicApiUrl().replace(/\/+$/, "");
+}
 
-function apiBaseHint(apiRoot: string): string {
+function apiBaseHint(): string {
+  const direct = getPublicApiUrl().replace(/\/+$/, "");
   return (
-    ` Cannot reach API at ${apiRoot}. ` +
-    `Ensure the Nest API is running and NEXT_PUBLIC_API_URL in apps/web/.env.local matches it. ` +
-    `Open \`${apiRoot}/health\` in a browser — it should return JSON.`
+    ` Cannot reach the API. ` +
+    `Ensure the Nest API is running and NEXT_PUBLIC_API_URL in apps/web matches it. ` +
+    `Open \`${direct}/health\` in a browser — it should return JSON.`
   );
 }
 
@@ -14,7 +25,7 @@ export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { token?: string | null; timeoutMs?: number | null },
 ): Promise<T> {
-  const apiRoot = base().replace(/\/+$/, "");
+  const apiRoot = apiRootForFetch();
   const url = `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
@@ -44,7 +55,7 @@ export async function apiFetch<T>(
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Request failed";
-    const hint = e instanceof TypeError ? apiBaseHint(apiRoot) : "";
+    const hint = e instanceof TypeError ? apiBaseHint() : "";
     throw new Error(`${msg}.${hint}`);
   } finally {
     if (timer) clearTimeout(timer);

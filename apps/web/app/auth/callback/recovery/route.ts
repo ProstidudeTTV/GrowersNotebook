@@ -1,4 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
+import {
+  PASSWORD_RECOVERY_FLOW_COOKIE,
+  PASSWORD_RECOVERY_FLOW_VALUE,
+  clearPasswordRecoveryFlowCookie,
+} from "@/lib/auth-recovery-cookie";
 import { getPublicSiteOrigin } from "@/lib/public-site-origin";
 import {
   createSupabaseRouteHandlerClient,
@@ -11,6 +16,9 @@ import {
  */
 export async function GET(request: NextRequest) {
   const origin = getPublicSiteOrigin(request);
+  const forgotCookie =
+    request.cookies.get(PASSWORD_RECOVERY_FLOW_COOKIE)?.value ===
+    PASSWORD_RECOVERY_FLOW_VALUE;
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const err = searchParams.get("error");
@@ -31,7 +39,9 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.redirect(`${origin}/login?error=auth`);
     }
-    return redirectPreservingCookies(jar, destination);
+    const out = redirectPreservingCookies(jar, destination);
+    if (forgotCookie) clearPasswordRecoveryFlowCookie(out);
+    return out;
   }
 
   const tokenHash = searchParams.get("token_hash");
@@ -45,7 +55,9 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.redirect(`${origin}/login?error=auth`);
     }
-    return redirectPreservingCookies(jar, destination);
+    const out = redirectPreservingCookies(jar, destination);
+    if (forgotCookie) clearPasswordRecoveryFlowCookie(out);
+    return out;
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);

@@ -12,6 +12,7 @@ import {
 } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
+import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 import { createClient } from "@/lib/supabase/client";
 
 type Me = {
@@ -30,9 +31,22 @@ type NavNotification = {
   createdAt: string;
 };
 
-function usernameFromSession(me: Me | null, email: string | null): string {
+function displayNameFromUserMetadata(session: Session | null): string | null {
+  const meta = session?.user?.user_metadata;
+  if (!meta || typeof meta !== "object") return null;
+  const d = (meta as { display_name?: unknown }).display_name;
+  return typeof d === "string" && d.trim() ? d.trim() : null;
+}
+
+function usernameFromSession(
+  me: Me | null,
+  email: string | null,
+  metadataDisplayName: string | null,
+): string {
   const fromProfile = me?.displayName?.trim();
   if (fromProfile) return fromProfile;
+  const fromMeta = metadataDisplayName?.trim();
+  if (fromMeta) return fromMeta;
   if (email) {
     const local = email.split("@")[0]?.trim();
     if (local) return local;
@@ -80,26 +94,36 @@ export function AuthNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [colorMode, setColorMode] = useState<"dark" | "light">("dark");
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  const [metadataDisplayName, setMetadataDisplayName] = useState<string | null>(
+    null,
+  );
   const [notifications, setNotifications] = useState<NavNotification[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  const profileFetchSeq = useRef(0);
 
   const applySession = useCallback(async (session: Session | null) => {
+    const seq = ++profileFetchSeq.current;
+    setMetadataDisplayName(displayNameFromUserMetadata(session));
     setEmail(session?.user?.email ?? null);
     setSessionUserId(session?.user?.id ?? null);
-    if (session?.access_token) {
-      try {
-        const profile = await apiFetch<Me>("/profiles/me", {
-          token: session.access_token,
-          timeoutMs: 12_000,
-        });
-        setMe(profile);
-      } catch {
-        setMe(null);
-      }
-    } else {
+    if (!session?.access_token) {
       setMe(null);
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    try {
+      const profile = await apiFetch<Me>("/profiles/me", {
+        token: session.access_token,
+        timeoutMs: 12_000,
+      });
+      if (seq !== profileFetchSeq.current) return;
+      setMe(profile);
+    } catch {
+      if (seq !== profileFetchSeq.current) return;
+      setMe(null);
+    } finally {
+      if (seq === profileFetchSeq.current) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -184,6 +208,7 @@ export function AuthNav() {
 
   const signOut = async () => {
     setMenuOpen(false);
+    clearPasswordRecoveryPending();
     const supabase = createClient();
     await supabase.auth.signOut();
     setEmail(null);
@@ -192,8 +217,8 @@ export function AuthNav() {
   };
 
   const username = useMemo(
-    () => usernameFromSession(me, email),
-    [me, email],
+    () => usernameFromSession(me, email, metadataDisplayName),
+    [me, email, metadataDisplayName],
   );
 
   const unreadBadge = me?.unreadNotificationCount ?? 0;

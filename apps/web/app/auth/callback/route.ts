@@ -1,4 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
+import {
+  PASSWORD_RECOVERY_FLOW_COOKIE,
+  PASSWORD_RECOVERY_FLOW_VALUE,
+  clearPasswordRecoveryFlowCookie,
+} from "@/lib/auth-recovery-cookie";
 import { getPublicSiteOrigin } from "@/lib/public-site-origin";
 import { safeInternalPath } from "@/lib/safe-internal-path";
 import {
@@ -42,8 +47,13 @@ export async function GET(request: NextRequest) {
   }
 
   const typeParam = searchParams.get("type");
+  const forgotCookie =
+    request.cookies.get(PASSWORD_RECOVERY_FLOW_COOKIE)?.value ===
+    PASSWORD_RECOVERY_FLOW_VALUE;
   const recovery =
-    typeParam === "recovery" || sessionIsPasswordRecovery(data.session ?? null);
+    typeParam === "recovery" ||
+    sessionIsPasswordRecovery(data.session ?? null) ||
+    forgotCookie;
 
   let destination: string;
   if (recovery) {
@@ -54,5 +64,9 @@ export async function GET(request: NextRequest) {
     destination = `${origin}/auth/complete`;
   }
 
-  return redirectPreservingCookies(jar, destination);
+  const out = redirectPreservingCookies(jar, destination);
+  if (forgotCookie) {
+    clearPasswordRecoveryFlowCookie(out);
+  }
+  return out;
 }

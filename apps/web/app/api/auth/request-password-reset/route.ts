@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import {
+  PASSWORD_RECOVERY_FLOW_COOKIE,
+  PASSWORD_RECOVERY_FLOW_MAX_AGE,
+  PASSWORD_RECOVERY_FLOW_VALUE,
+} from "@/lib/auth-recovery-cookie";
 import { getAuthRedirectOriginServer } from "@/lib/auth-redirect-origin";
 import { getSupabasePublicKey, getSupabaseUrl } from "@/lib/supabase/public-env";
 
@@ -40,6 +45,13 @@ export async function POST(request: Request) {
     console.error("[request-password-reset]", error.message);
   }
 
-  // Same response either way — avoid account enumeration
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(PASSWORD_RECOVERY_FLOW_COOKIE, PASSWORD_RECOVERY_FLOW_VALUE, {
+    path: "/",
+    maxAge: PASSWORD_RECOVERY_FLOW_MAX_AGE,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+  });
+  return res;
 }

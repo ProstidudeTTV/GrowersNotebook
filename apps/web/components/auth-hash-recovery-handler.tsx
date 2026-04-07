@@ -1,23 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Password recovery sometimes returns tokens in the URL **hash** (implicit flow), e.g.
- * `https://growersnotebook.com/#access_token=...&refresh_token=...&type=recovery`.
- * The server never sees the fragment, so middleware and `/auth/callback` cannot run PKCE.
- * Parse the hash here, persist the session, then send the user to `/auth/update-password`.
+ * Implicit flow puts tokens in the **hash** — only the browser can read them.
+ * Strip the hash immediately (survives React Strict Mode double-mount), `setSession`,
+ * clear the forgot-password hint cookie, then hard-navigate to `/auth/update-password`
+ * so App Router cannot briefly show the logged-in home page instead.
  */
 export function AuthHashRecoveryHandler() {
-  const router = useRouter();
-  const ran = useRef(false);
-
   useEffect(() => {
-    if (ran.current) return;
+    if (typeof window === "undefined") return;
 
-    const raw = typeof window !== "undefined" ? window.location.hash : "";
+    const raw = window.location.hash;
     if (!raw || raw.length < 2) return;
 
     const params = new URLSearchParams(raw.slice(1));
@@ -28,23 +25,29 @@ export function AuthHashRecoveryHandler() {
     if (!access_token?.trim() || !refresh_token?.trim()) return;
     if (type !== "recovery") return;
 
-    ran.current = true;
+    const origin = window.location.origin;
+    const pathAndQuery = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(null, "", pathAndQuery);
 
     const supabase = createClient();
     void supabase.auth
       .setSession({ access_token, refresh_token })
-      .then(({ error }) => {
-        const pathAndQuery = `${window.location.pathname}${window.location.search}`;
-        window.history.replaceState(null, "", pathAndQuery);
-
+      .then(async ({ error }) => {
         if (error) {
-          router.replace("/login?error=auth");
+          window.location.replace(`${origin}/login?error=auth`);
           return;
         }
-        router.replace("/auth/update-password");
-        router.refresh();
+        clearPasswordRecoveryPending();
+        try {
+          await fetch("/api/auth/clear-recovery-flow-cookie", {
+            method: "POST",
+          });
+        } catch {
+          /* non-fatal */
+        }
+        window.location.replace(`${origin}/auth/update-password`);
       });
-  }, [router]);
+  }, []);
 
   return null;
 }

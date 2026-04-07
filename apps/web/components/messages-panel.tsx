@@ -26,6 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   AllDevicesIsolationMode,
   DecryptionFailureCode,
+  type DeviceIsolationMode,
 } from "matrix-js-sdk/lib/crypto-api/index.js";
 import {
   ClientEvent,
@@ -280,6 +281,106 @@ async function ensureSelfJoined(
   return room;
 }
 
+/** Rust crypto queues `/keys/claim` and room-key to-device traffic; flush so recipients get keys before (or right after) our encrypted event. */
+type MatrixCryptoWithOutgoing = {
+  outgoingRequestsManager?: {
+    doProcessOutgoingRequests: () => Promise<unknown>;
+  };
+};
+
+async function flushMatrixOutgoingCrypto(client: MatrixClient): Promise<void> {
+  const crypto = client.getCrypto() as MatrixCryptoWithOutgoing | undefined;
+  const run = crypto?.outgoingRequestsManager?.doProcessOutgoingRequests;
+  if (!run) return;
+  try {
+    await run.call(crypto.outgoingRequestsManager);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+/** Match {@link Room.getEncryptionTargetMembers}: invitees need keys too when history allows it (typical DMs). */
+function encryptionTargetPeerUserIds(room: Room, me: string | null): string[] {
+  let members = room.getMembersWithMembership(KnownMembership.Join);
+  if (room.shouldEncryptForInvitedMembers()) {
+    members = members.concat(
+      room.getMembersWithMembership(KnownMembership.Invite),
+    );
+  }
+  return [
+    ...new Set(
+      members
+        .map((m) => m.userId)
+        .filter((id): id is string => Boolean(id) && id !== me),
+    ),
+  ];
+}
+
+type RoomEncryptorShim = {
+  prepareForEncryption: (
+    globalBlacklistUnverifiedDevices: boolean,
+    deviceIsolationMode: DeviceIsolationMode,
+  ) => Promise<void>;
+};
+
+type RustCryptoShim = MatrixCryptoWithOutgoing & {
+  roomEncryptors?: Record<string, RoomEncryptorShim>;
+  globalBlacklistUnverifiedDevices: boolean;
+  deviceIsolationMode: DeviceIsolationMode;
+};
+
+/**
+ * `CryptoApi.prepareToEncrypt` does not await the internal Rust `prepareForEncryption` promise, so key
+ * share + `/keys/claim` can still be in flight when we flush. Await the encryptor directly when present.
+ */
+async function awaitPrepareToEncryptRoom(
+  client: MatrixClient,
+  room: Room,
+): Promise<void> {
+  const cryptoApi = client.getCrypto();
+  if (!cryptoApi) return;
+  const shim = cryptoApi as unknown as RustCryptoShim;
+  const enc = shim.roomEncryptors?.[room.roomId];
+  if (enc) {
+    await enc.prepareForEncryption(
+      shim.globalBlacklistUnverifiedDevices,
+      shim.deviceIsolationMode,
+    );
+    return;
+  }
+  cryptoApi.prepareToEncrypt(room);
+}
+
+/** After sending `m.room.encryption`, encryptor is created on sync; wait so priming/sends are not no-ops. */
+async function waitForRoomEncryptorReady(
+  client: MatrixClient,
+  roomId: string,
+  timeoutMs = 15_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const shim = client.getCrypto() as unknown as RustCryptoShim | undefined;
+    if (shim?.roomEncryptors?.[roomId]) return;
+    await new Promise<void>((r) => {
+      window.setTimeout(r, 50);
+    });
+  }
+}
+
+async function drainMatrixOutgoingCrypto(
+  client: MatrixClient,
+  rounds = 4,
+): Promise<void> {
+  for (let i = 0; i < rounds; i++) {
+    await flushMatrixOutgoingCrypto(client);
+    if (i + 1 < rounds) {
+      await new Promise<void>((r) => {
+        window.setTimeout(r, 75);
+      });
+    }
+  }
+}
+
 /**
  * Fetch peer device keys and prime Megolm sharing before send. Without this, send can outrace
  * `/keys/query` + to-device forwarding and recipients see MEGOLM_UNKNOWN_INBOUND_SESSION_ID.
@@ -291,17 +392,15 @@ async function ensureMegolmOutboundPrimed(
   applyOpenWebCryptoPolicy(client);
   const room = await ensureSelfJoined(client, roomId);
   if (!room) return;
+  try {
+    room.setBlacklistUnverifiedDevices(false);
+  } catch {
+    /* ignore */
+  }
   const cryptoApi = client.getCrypto();
   if (!cryptoApi) return;
   const me = client.getUserId();
-  const peerIds = [
-    ...new Set(
-      room
-        .getMembersWithMembership(KnownMembership.Join)
-        .map((m) => m.userId)
-        .filter((id) => id && id !== me),
-    ),
-  ];
+  const peerIds = encryptionTargetPeerUserIds(room, me ?? null);
   if (peerIds.length) {
     try {
       await cryptoApi.getUserDeviceInfo(peerIds, true);
@@ -318,33 +417,37 @@ async function ensureMegolmOutboundPrimed(
         /* ignore */
       }
     }
+    await flushMatrixOutgoingCrypto(client);
   }
   try {
     if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
-      cryptoApi.prepareToEncrypt(room);
+      await awaitPrepareToEncryptRoom(client, room);
     }
   } catch {
     /* ignore */
   }
-  await new Promise<void>((r) => {
-    window.setTimeout(r, 200);
-  });
+  await drainMatrixOutgoingCrypto(client);
 }
 
 async function primeEncryptedDmsForMultiDevice(client: MatrixClient): Promise<void> {
   const cryptoApi = client.getCrypto();
   if (!cryptoApi) return;
   applyOpenWebCryptoPolicy(client);
-  for (const room of listDmRooms(client)) {
-    if (room.getMyMembership() !== KnownMembership.Join) continue;
-    try {
-      if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
-        cryptoApi.prepareToEncrypt(room);
+  const rooms = listDmRooms(client).filter(
+    (r) => r.getMyMembership() === KnownMembership.Join,
+  );
+  await Promise.all(
+    rooms.map(async (room) => {
+      try {
+        if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
+          await awaitPrepareToEncryptRoom(client, room);
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
-  }
+    }),
+  );
+  await drainMatrixOutgoingCrypto(client);
 }
 
 function findDmWithPeer(client: MatrixClient, peerMxid: string): Room | null {
@@ -535,6 +638,18 @@ export function MessagesPanel() {
         });
       }
       setLines(out);
+      queueMicrotask(() => {
+        try {
+          for (const ev of live.getEvents()) {
+            if (ev.getWireType() !== EventType.RoomMessageEncrypted) continue;
+            if (ev.isBeingDecrypted()) continue;
+            if (ev.getType() !== EventType.RoomMessageEncrypted) continue;
+            void c.decryptEventIfNeeded(ev).catch(() => {});
+          }
+        } catch {
+          /* ignore */
+        }
+      });
     },
     [senderLineLabel],
   );
@@ -637,6 +752,7 @@ export function MessagesPanel() {
           "",
         );
         await client.getRoom(roomId)?.loadMembersIfNeeded();
+        await waitForRoomEncryptorReady(client, roomId);
         await ensureMegolmOutboundPrimed(client, roomId);
         activeRoomIdRef.current = roomId;
         setActiveRoomId(roomId);
@@ -1068,14 +1184,18 @@ export function MessagesPanel() {
       await ensureMegolmOutboundPrimed(client, activeRoomId);
       await room.loadMembersIfNeeded();
       await client.sendTextMessage(activeRoomId, text);
+      await drainMatrixOutgoingCrypto(client);
       const cryptoAfter = client.getCrypto();
       if (cryptoAfter && room) {
         try {
-          cryptoAfter.prepareToEncrypt(room);
+          if (await cryptoAfter.isEncryptionEnabledInRoom(room.roomId)) {
+            await awaitPrepareToEncryptRoom(client, room);
+          }
         } catch {
           /* ignore */
         }
       }
+      await flushMatrixOutgoingCrypto(client);
       loadTimeline(client, activeRoomId);
       refreshConversations(client);
     } catch (e) {

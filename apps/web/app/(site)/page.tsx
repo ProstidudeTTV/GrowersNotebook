@@ -128,100 +128,40 @@ export default async function Home() {
           <p className="font-semibold">Could not load communities</p>
           <p className="mt-2 text-sm opacity-90">{loadError}</p>
           <ul className="mt-4 list-inside list-disc text-sm opacity-90">
-            {hostedProd ? (
-              <>
-                <li>
-                  Confirm the API deploy on Render succeeded and check{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    growers-notebook-api
-                  </code>{" "}
-                  → Logs. Try{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    {apiBase}/health
-                  </code>
-                  .
-                </li>
-                <li>
-                  Database schema must include new columns (e.g.{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    communities.icon_key
-                  </code>
-                  ). Apply Supabase migrations or run the SQL from{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    supabase/migrations/
-                  </code>{" "}
-                  on the project DB, then redeploy or restart the API if needed.
-                </li>
-                <li>
-                  This page loads from{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    {apiBase}
-                  </code>
-                  — ensure Render <strong>growers-notebook-web</strong> has{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    NEXT_PUBLIC_API_URL
-                  </code>{" "}
-                  pointing at that API.
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  Start web + API (from repo root:{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    npm run dev
-                  </code>
-                  ; needs{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    npm run install:all
-                  </code>{" "}
-                  first if deps are missing).
-                </li>
-                <li>
-                  Point it at your Supabase DB: set{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    DATABASE_URL
-                  </code>{" "}
-                  in{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    apps/api/.env
-                  </code>{" "}
-                  (see apps/api/.env.example).
-                </li>
-                <li>
-                  This page loads data from{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    {apiBase || "(set NEXT_PUBLIC_API_URL)"}
-                  </code>
-                  — match{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    NEXT_PUBLIC_API_URL
-                  </code>{" "}
-                  in apps/web/.env.local if needed.
-                </li>
-                <li>
-                  <strong>Supabase + Windows / IPv4:</strong> the direct host{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    {"db.<project-ref>.supabase.co"}
-                  </code>{" "}
-                  is often IPv6-only and fails with{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    ENOTFOUND
-                  </code>
-                  . In the Supabase dashboard use{" "}
-                  <strong>Connect → Session pooler</strong> and set that full URI
-                  as{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    DATABASE_URL
-                  </code>{" "}
-                  in{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    apps/api/.env
-                  </code>
-                  , then restart the API.
-                </li>
-              </>
-            )}
+            <li>
+              Confirm the API service deploy succeeded and check service logs. Try{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                {apiBase || "(your API)"}/health
+              </code>
+              .
+            </li>
+            <li>
+              Database schema must include required columns (e.g.{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                communities.icon_key
+              </code>
+              ). Apply Supabase migrations or run the SQL from{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                supabase/migrations/
+              </code>{" "}
+              on the project database, then redeploy or restart the API if needed.
+            </li>
+            <li>
+              This page loads from{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                {apiBase || "(set NEXT_PUBLIC_API_URL)"}
+              </code>
+              — set{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                NEXT_PUBLIC_API_URL
+              </code>{" "}
+              on the web app to that API base URL, and ensure{" "}
+              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                DATABASE_URL
+              </code>{" "}
+              (with session pooler if your network cannot reach the direct DB host)
+              is configured on the API.
+            </li>
           </ul>
         </div>
       ) : null}

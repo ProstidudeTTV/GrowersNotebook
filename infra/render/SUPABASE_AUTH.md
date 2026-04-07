@@ -39,13 +39,9 @@ Open your project: **Authentication** → **URL Configuration**.
    ```
    https://growers-notebook-web.onrender.com/auth/callback
    https://growers-notebook-web.onrender.com/auth/callback?next=/auth/update-password
-   http://localhost:3000/auth/callback
-   http://localhost:3000/auth/callback?next=/auth/update-password
    ```
 
-   (`localhost` is optional; keep it if you test email confirmation locally.)
-
-   If **Site URL** is still `http://localhost:3000`, magic links and password resets can target localhost even on production. **Site URL** must be your public HTTPS origin (same as `NEXT_PUBLIC_SITE_URL`).
+   Add separate origins for staging if you use them. If **Site URL** or allowed redirects still point at a private or old host, magic links and password resets will open the wrong place. **Site URL** must be your public HTTPS origin (same as `NEXT_PUBLIC_SITE_URL`).
 
 3. Save.
 

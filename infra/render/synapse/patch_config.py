@@ -24,7 +24,7 @@ def main() -> None:
     user = urllib.parse.unquote(parsed.username or "")
     password = urllib.parse.unquote(parsed.password or "")
     database = (parsed.path or "").lstrip("/").split("?")[0]
-    host = parsed.hostname or "localhost"
+    host = parsed.hostname or "127.0.0.1"
     dbport = parsed.port or 5432
     query = urllib.parse.parse_qs(parsed.query or "")
     sslmode = (query.get("sslmode") or [None])[0]

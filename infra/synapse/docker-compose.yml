@@ -5,9 +5,9 @@
 #   docker compose -f infra/synapse/docker-compose.yml up -d
 #
 # Point apps/api .env at this stack, e.g.:
-#   SYNAPSE_BASE_URL=http://localhost:8010
-#   SYNAPSE_PUBLIC_BASE_URL=http://localhost:8010
-#   SYNAPSE_SERVER_NAME=localhost
+#   SYNAPSE_BASE_URL=http://127.0.0.1:8010
+#   SYNAPSE_PUBLIC_BASE_URL=http://127.0.0.1:8010
+#   SYNAPSE_SERVER_NAME=127.0.0.1
 # and create an admin user + access token for SYNAPSE_ADMIN_ACCESS_TOKEN.
 
 services:
@@ -34,7 +34,7 @@ services:
     ports:
       - "8010:8008"
     environment:
-      SYNAPSE_SERVER_NAME: localhost
+      SYNAPSE_SERVER_NAME: "127.0.0.1"
       SYNAPSE_REPORT_STATS: "no"
       POSTGRES_USER: synapse
       POSTGRES_PASSWORD: synapse_local_dev

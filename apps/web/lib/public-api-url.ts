@@ -1,4 +1,4 @@
-/** Resolves the Nest API base URL. No localhost defaults in source — set NEXT_PUBLIC_API_URL (see env.example). */
+/** Resolves the Nest API base URL. Requires `NEXT_PUBLIC_API_URL` (see env.example). */
 export function getPublicApiUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!raw) {

@@ -12,7 +12,7 @@ npm run dev
 ```
 
 - **`npm run install:all`** runs `npx pnpm@9.15.9 install` (downloads pnpm temporarily).
-- **`npm run dev`** runs [`scripts/dev.cjs`](scripts/dev.cjs): **Next.js** (default [http://localhost:3000](http://localhost:3000)) and **Nest** (default [http://localhost:3001](http://localhost:3001)) in parallel.
+- **`npm run dev`** runs [`scripts/dev.cjs`](scripts/dev.cjs): **Next.js** (default port **3000**) and **Nest** (default port **3001**) in parallel.
 
 Production build without global pnpm: **`npm run build`** ([`scripts/build.cjs`](scripts/build.cjs)).
 

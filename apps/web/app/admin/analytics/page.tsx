@@ -61,7 +61,7 @@ export default function AdminAnalyticsPage() {
                   <Text code>{plausibleDomain}</Text>
                 </li>
                 <li>
-                  Plausible <strong>does not count localhost</strong> — test on your public URL
+                  Plausible <strong>does not count non-public URLs</strong> — verify on your live domain
                 </li>
                 <li>
                   Disable ad blockers / privacy extensions while testing, or rely on the first-party

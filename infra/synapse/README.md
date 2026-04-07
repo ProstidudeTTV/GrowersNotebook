@@ -35,7 +35,7 @@ PostgreSQL and Synapse for development. Production can use Render Postgres from 
    docker compose -f infra/synapse/docker-compose.yml up -d
    ```
 
-6. Create an admin Matrix user (via `docker exec` + `register_new_matrix_user` or Element against `http://localhost:8010`), then copy a login **access token** for the Nest env variable `SYNAPSE_ADMIN_ACCESS_TOKEN`.
+6. Create an admin Matrix user (via `docker exec` + `register_new_matrix_user` or Element against `http://127.0.0.1:8010`), then copy a login **access token** for the Nest env variable `SYNAPSE_ADMIN_ACCESS_TOKEN`.
 
 ## Nest / web environment
 

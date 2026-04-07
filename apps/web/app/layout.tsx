@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { AuthHashRecoveryHandler } from "@/components/auth-hash-recovery-handler";
 import { PlausibleAnalytics } from "@/components/plausible-analytics";
 import { SeoJsonLd } from "@/components/seo-json-ld";
 import { defaultSiteMetadata } from "@/lib/site-config";
@@ -44,6 +45,7 @@ export default function RootLayout({
         </Script>
         <SeoJsonLd />
         <PlausibleAnalytics />
+        <AuthHashRecoveryHandler />
         {children}
       </body>
     </html>

@@ -61,6 +61,8 @@ Set **Site URL** to **`https://growersnotebook.com`** (not localhost) if you cus
 
 **Template already uses `{{ .ConfirmationURL }}` but the verify link still shows `redirect_to=https://growersnotebook.com` (no path):** Supabase validates `redirectTo` from `resetPasswordForEmail` against **Redirect URLs**. If **`https://growersnotebook.com/auth/callback/recovery`** or **`https://growersnotebook.com/auth/callback`** is missing, mistyped (extra slash, `http` vs `https`, or `www` mismatch), or not saved, Auth **falls back to Site URL** (origin only). Fix the allow list (section 3), save, then send a **new** reset—old emails keep the old `redirect_to`.
 
+**Redirect lands on `https://growersnotebook.com/#access_token=...&type=recovery`:** That is the **implicit** (hash) flow. The **hash is never sent to the server**, so `/auth/callback` and middleware cannot see it. The app includes **`AuthHashRecoveryHandler`** in the root layout (`components/auth-hash-recovery-handler.tsx`): in the browser it reads the hash, calls **`setSession`**, clears the fragment from the address bar, and navigates to **`/auth/update-password`**. Prefer **PKCE** in Supabase where possible (see [Auth settings](https://supabase.com/docs/guides/auth/passwords#resetting-a-users-password-forgot-password)) so redirects use `?code=` instead of hash tokens.
+
 ## 4. Custom SMTP (noreply@growersnotebook.com)
 
 Use your own mail host so auth email comes from **`noreply@growersnotebook.com`**.

@@ -47,7 +47,9 @@ You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or 
 
 Email and magic links use the redirect you pass from the app (`emailRedirectTo` / `redirectTo`); every distinct origin + path must appear in **Redirect URLs**.
 
-**Password reset:** Requests use **`POST /api/auth/request-password-reset`**, which sets `redirectTo` to **`/auth/callback/recovery`** (not `/auth/callback?next=...`). Supabase appends **`?code=`** to `redirectTo` and **drops existing query parameters**, so a `next=` value was lost and users landed on **`/auth/complete`** then home. The dedicated **`/auth/callback/recovery`** route exchanges the code and redirects to **`/auth/update-password`**.
+**Password reset:** Requests use **`POST /api/auth/request-password-reset`**, which sets `redirectTo` to **`/auth/callback/recovery`**. That route exchanges the PKCE **`code`** (or verifies **`token_hash`** + **`type=recovery`** for older-style email links) and redirects to **`/auth/update-password`**.
+
+**Session cookies on the redirect:** The recovery and main callback routes use a Supabase client that writes cookies onto the **same** `NextResponse` as the redirect. Using only `cookies()` from `next/headers` often **does not** attach `Set-Cookie` to a redirect response, so the browser never got a session and `/auth/update-password` behaved like a logged-out user (or you fell through to home after other steps).
 
 ### Reset password email template
 

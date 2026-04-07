@@ -1,17 +1,13 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getPublicSiteOrigin } from "@/lib/public-site-origin";
 import { safeInternalPath } from "@/lib/safe-internal-path";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
 
 /**
  * PKCE email-confirm / magic-link target.
- * Supabase → Authentication → URL configuration:
- * - Site URL: public web origin (production: https://growersnotebook.com)
- * - Redirect URLs: same origin + `/auth/callback` (query strings allowed, e.g.
- *   Password recovery uses `/auth/callback/recovery` (see that route) so `?code=` does not
- *   wipe a `next=` param).
+ * Session cookies are written onto the redirect response — see {@link createSupabaseRouteHandlerClient}.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const origin = getPublicSiteOrigin(request);
   const { searchParams } = new URL(request.url);
   const nextPath = safeInternalPath(searchParams.get("next"));
@@ -25,16 +21,20 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?${q.toString()}`);
   }
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      if (nextPath !== "/") {
-        return NextResponse.redirect(`${origin}${nextPath}`);
-      }
-      return NextResponse.redirect(`${origin}/auth/complete`);
-    }
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  const target =
+    nextPath !== "/" ? `${origin}${nextPath}` : `${origin}/auth/complete`;
+
+  const response = NextResponse.redirect(target);
+  const supabase = createSupabaseRouteHandlerClient(request, response);
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    return NextResponse.redirect(`${origin}/login?error=auth`);
+  }
+
+  return response;
 }

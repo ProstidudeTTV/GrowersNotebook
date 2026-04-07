@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Post,
   ServiceUnavailableException,
   UseGuards,
@@ -13,11 +14,13 @@ import { CurrentUser } from '../common/current-user.decorator';
 import { FollowsService } from '../follows/follows.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import { MatrixService } from './matrix.service';
+import { MatrixSsssWrapService } from './matrix-ssss-wrap.service';
 
 @Controller('matrix')
 export class MatrixController {
   constructor(
     private readonly matrix: MatrixService,
+    private readonly matrixSsssWrap: MatrixSsssWrapService,
     private readonly follows: FollowsService,
     private readonly profiles: ProfilesService,
   ) {}
@@ -72,6 +75,31 @@ export class MatrixController {
     }
     await this.ensureMessagingUserWithDisplayName(user.sub);
     await this.ensureMessagingUserWithDisplayName(peer);
+    return { ok: true as const };
+  }
+
+  /**
+   * Encrypted-at-rest copy of the Matrix secret-storage AES key for this profile.
+   * Lets a new browser restore Megolm key backup after Supabase login.
+   */
+  @Get('secret-storage-wrap')
+  @UseGuards(SupabaseAuthGuard)
+  async getSecretStorageWrap(@CurrentUser() user: JwtUser) {
+    return this.matrixSsssWrap.load(user.sub);
+  }
+
+  @Post('secret-storage-wrap')
+  @UseGuards(SupabaseAuthGuard)
+  async putSecretStorageWrap(
+    @CurrentUser() user: JwtUser,
+    @Body() body: { keyId?: string; privateKeyB64?: string },
+  ) {
+    const keyId = body?.keyId?.trim();
+    const privateKeyB64 = body?.privateKeyB64?.trim();
+    if (!keyId || !privateKeyB64) {
+      throw new BadRequestException('keyId and privateKeyB64 are required.');
+    }
+    await this.matrixSsssWrap.save(user.sub, keyId, privateKeyB64);
     return { ok: true as const };
   }
 

@@ -1,8 +1,50 @@
 import type { MatrixClient } from "matrix-js-sdk";
+import { apiFetch } from "./api-public";
+import {
+  primeMatrixSsssLocal,
+  readMatrixSsssFromLocal,
+} from "./matrix-secret-storage-callbacks";
+
+/**
+ * Load 4S key from Growers API (encrypted at rest per profile) before Matrix crypto init
+ * so any device where you’re logged in can unlock Megolm backup.
+ */
+export async function tryPrimeMatrixSsssFromGrowersApi(
+  matrixUserId: string,
+  token: string,
+): Promise<void> {
+  try {
+    const wrap = await apiFetch<{ keyId: string; privateKeyB64: string }>(
+      "/matrix/secret-storage-wrap",
+      { token },
+    );
+    primeMatrixSsssLocal(matrixUserId, wrap);
+  } catch {
+    /* 404 or wrap not configured */
+  }
+}
+
+/** Persist latest 4S key to the API so other browsers can prime from the profile. */
+export async function syncMatrixSsssWrapToServer(
+  token: string,
+  matrixUserId: string,
+): Promise<void> {
+  const b = readMatrixSsssFromLocal(matrixUserId);
+  if (!b) return;
+  try {
+    await apiFetch("/matrix/secret-storage-wrap", {
+      method: "POST",
+      body: JSON.stringify(b),
+      token,
+    });
+  } catch (e) {
+    console.warn("[matrix] profile secret-storage sync failed", e);
+  }
+}
 
 /**
  * Ensure megolm session keys are backed up to the homeserver and restorable on new devices
- * (same browser profile: 4S AES key lives in localStorage — see matrix-secret-storage-callbacks).
+ * (4S key: localStorage + Growers-wrapped copy on the API for cross-browser restore).
  */
 export async function ensureMatrixKeyBackup(client: MatrixClient): Promise<void> {
   const crypto = client.getCrypto();

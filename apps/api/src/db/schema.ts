@@ -501,3 +501,17 @@ export const catalogSuggestions = pgTable(
     index('catalog_suggestions_suggested_by_idx').on(t.suggestedBy),
   ],
 );
+
+/**
+ * Growers-wrapped Matrix 4S (secret storage) AES key — lets any device recover Megolm
+ * backup after login. Ciphertext uses MATRIX_SSSS_WRAP_KEY on the API (see matrix-ssss-wrap.service).
+ */
+export const profileMatrixSsssWrap = pgTable('profile_matrix_ssss_wrap', {
+  profileId: uuid('profile_id')
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: 'cascade' }),
+  ciphertext: text('ciphertext').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

@@ -92,6 +92,13 @@
       "when": 1776200000000,
       "tag": "0012_strains_breeders_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776300000000,
+      "tag": "0013_profile_matrix_ssss_wrap",
+      "breakpoints": true
     }
   ]
 }

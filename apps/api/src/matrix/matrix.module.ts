@@ -4,6 +4,7 @@ import { FollowsModule } from '../follows/follows.module';
 import { ProfilesModule } from '../profiles/profiles.module';
 import { MatrixController } from './matrix.controller';
 import { MatrixService } from './matrix.service';
+import { MatrixSsssWrapService } from './matrix-ssss-wrap.service';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { MatrixService } from './matrix.service';
     forwardRef(() => ProfilesModule),
   ],
   controllers: [MatrixController],
-  providers: [MatrixService],
+  providers: [MatrixService, MatrixSsssWrapService],
   exports: [MatrixService],
 })
 export class MatrixModule {}

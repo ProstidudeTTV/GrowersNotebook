@@ -5,8 +5,45 @@
 
 const LS_PREFIX = "gn-matrix-ssss-v1:";
 
-function storageKeyForUser(matrixUserId: string): string {
+export function matrixSsssLocalStorageKey(matrixUserId: string): string {
   return `${LS_PREFIX}${matrixUserId.replace(/:/g, "_")}`;
+}
+
+/** Write 4S key material before `initRustCrypto` when loaded from the Growers API (cross-device). */
+export function primeMatrixSsssLocal(
+  matrixUserId: string,
+  bundle: { keyId: string; privateKeyB64: string },
+) {
+  const lsKey = matrixSsssLocalStorageKey(matrixUserId);
+  localStorage.setItem(
+    lsKey,
+    JSON.stringify({
+      keyId: bundle.keyId,
+      privateKeyB64: bundle.privateKeyB64,
+    }),
+  );
+}
+
+export function readMatrixSsssFromLocal(
+  matrixUserId: string,
+): { keyId: string; privateKeyB64: string } | null {
+  try {
+    const raw = localStorage.getItem(matrixSsssLocalStorageKey(matrixUserId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      keyId?: unknown;
+      privateKeyB64?: unknown;
+    };
+    if (
+      typeof parsed.keyId !== "string" ||
+      typeof parsed.privateKeyB64 !== "string"
+    ) {
+      return null;
+    }
+    return { keyId: parsed.keyId, privateKeyB64: parsed.privateKeyB64 };
+  } catch {
+    return null;
+  }
 }
 
 function u8ToPrivateKeyB64(key: Uint8Array): string {
@@ -23,26 +60,12 @@ function b64ToPrivateKey(b64: string): Uint8Array {
 }
 
 export function matrixSecretStorageCallbacks(matrixUserId: string) {
-  const lsKey = storageKeyForUser(matrixUserId);
+  const lsKey = matrixSsssLocalStorageKey(matrixUserId);
 
   function loadCached(): { keyId: string; privateKey: Uint8Array } | null {
-    try {
-      const raw = localStorage.getItem(lsKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as {
-        keyId?: unknown;
-        privateKeyB64?: unknown;
-      };
-      if (
-        typeof parsed.keyId !== "string" ||
-        typeof parsed.privateKeyB64 !== "string"
-      ) {
-        return null;
-      }
-      return { keyId: parsed.keyId, privateKey: b64ToPrivateKey(parsed.privateKeyB64) };
-    } catch {
-      return null;
-    }
+    const parsed = readMatrixSsssFromLocal(matrixUserId);
+    if (!parsed) return null;
+    return { keyId: parsed.keyId, privateKey: b64ToPrivateKey(parsed.privateKeyB64) };
   }
 
   return {

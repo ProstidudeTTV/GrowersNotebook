@@ -15,7 +15,11 @@ import {
   savePersistedMatrixDevice,
 } from "@/lib/matrix-session-storage";
 import { setMessagesUnreadAny } from "@/lib/messages-unread-store";
-import { ensureMatrixKeyBackup } from "@/lib/matrix-key-backup";
+import {
+  ensureMatrixKeyBackup,
+  syncMatrixSsssWrapToServer,
+  tryPrimeMatrixSsssFromGrowersApi,
+} from "@/lib/matrix-key-backup";
 import { peerMxidForProfileId } from "@/lib/matrix-mxid";
 import { matrixSecretStorageCallbacks } from "@/lib/matrix-secret-storage-callbacks";
 import { createClient } from "@/lib/supabase/client";
@@ -317,7 +321,7 @@ export function MessagesPanel() {
             const reason = ev.decryptionFailureReason;
             if (reason === "HISTORICAL_MESSAGE_NO_KEY_BACKUP") {
               body =
-                "Older encrypted message — this session has no key backup yet, or you’re on a new browser without your saved security key. New messages still work; history may stay locked until you use the same browser/profile.";
+                "Older encrypted message — this device hasn’t loaded your message keys yet. Open Messages once on a browser that already showed this chat (so keys save to your Growers profile), then return here. Brand‑new setups can’t recover messages from before key backup existed.";
             } else if (reason === "HISTORICAL_MESSAGE_BACKUP_UNCONFIGURED") {
               body =
                 "Older encrypted message — key backup exists but this device could not unlock it.";
@@ -522,6 +526,11 @@ export function MessagesPanel() {
           })(),
         ]);
 
+        await tryPrimeMatrixSsssFromGrowersApi(
+          bundle.userId,
+          session.access_token,
+        );
+
         const cryptoPrefix = matrixCryptoStorePrefix(bundle.userId);
         let deviceIdWeRequested = loadPersistedMatrixDevice(bundle.userId);
         let loginResult = await matrixHomeserverJwtLogin(
@@ -692,6 +701,9 @@ export function MessagesPanel() {
 
         if (cancelled) return;
         await ensureMatrixKeyBackup(mx!);
+        if (!cancelled) {
+          void syncMatrixSsssWrapToServer(session.access_token, bundle.userId);
+        }
         if (cancelled) return;
         const ar = activeRoomIdRef.current;
         if (ar) loadTimeline(mx!, ar);

@@ -1,5 +1,6 @@
 # Render Blueprint: https://docs.render.com/infrastructure-as-code
 # Secrets: set in dashboard (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API;
+# MATRIX_SSSS_WRAP_KEY on API: 64 hex chars — wraps Matrix 4S keys per profile for cross-browser history;
 # use comma-separated WEB_ORIGIN values if users hit multiple hostnames (e.g. custom domain
 # and *.onrender.com). Browser API calls also go through Next.js /api/gn-proxy when possible;
 # NEXT_PUBLIC_* on web; SYNAPSE_* on API for messaging; SYNAPSE_JWT_SECRET on both API + Synapse).

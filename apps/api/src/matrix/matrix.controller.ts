@@ -16,8 +16,12 @@ import { ProfilesService } from '../profiles/profiles.service';
 import { MatrixService } from './matrix.service';
 import { MatrixSsssWrapService } from './matrix-ssss-wrap.service';
 
-/** Synapse admin PUTs are heavy; login-token + layout bootstrap both call ensure — throttle per profile. */
+/**
+ * Synapse admin PUTs are heavy; login-token + ensure-peer both call ensure.
+ * Cooldown skips repeat work; in-flight dedupe prevents parallel PUT storms for the same profile.
+ */
 const lastSynapseEnsureMs = new Map<string, number>();
+const synapseEnsureInflight = new Map<string, Promise<void>>();
 const SYNAPSE_ENSURE_COOLDOWN_MS = 90_000;
 
 @Controller('matrix')
@@ -30,16 +34,35 @@ export class MatrixController {
   ) {}
 
   /** Create Synapse user if needed and push current Growers display name. */
-  private async ensureMessagingUserWithDisplayName(profileId: string) {
-    const now = Date.now();
-    const prev = lastSynapseEnsureMs.get(profileId);
-    if (prev !== undefined && now - prev < SYNAPSE_ENSURE_COOLDOWN_MS) {
-      return;
-    }
-    await this.matrix.ensureSynapseUser(profileId);
-    const p = await this.profiles.findById(profileId);
-    await this.matrix.syncHomeserverDisplayName(profileId, p?.displayName ?? null);
-    lastSynapseEnsureMs.set(profileId, Date.now());
+  private async ensureMessagingUserWithDisplayName(profileId: string): Promise<void> {
+    const p =
+      synapseEnsureInflight.get(profileId) ??
+      (() => {
+        const inner = (async () => {
+          try {
+            const now = Date.now();
+            const prev = lastSynapseEnsureMs.get(profileId);
+            if (
+              prev !== undefined &&
+              now - prev < SYNAPSE_ENSURE_COOLDOWN_MS
+            ) {
+              return;
+            }
+            await this.matrix.ensureSynapseUser(profileId);
+            const prof = await this.profiles.findById(profileId);
+            await this.matrix.syncHomeserverDisplayName(
+              profileId,
+              prof?.displayName ?? null,
+            );
+            lastSynapseEnsureMs.set(profileId, Date.now());
+          } finally {
+            synapseEnsureInflight.delete(profileId);
+          }
+        })();
+        synapseEnsureInflight.set(profileId, inner);
+        return inner;
+      })();
+    await p;
   }
 
   @Post('ensure-account')
@@ -84,7 +107,8 @@ export class MatrixController {
       );
     }
     await this.ensureMessagingUserWithDisplayName(user.sub);
-    await this.ensureMessagingUserWithDisplayName(peer);
+    /** Peer only needs a Matrix account to receive the invite; display name sync runs on their login-token. */
+    await this.matrix.ensureSynapseUser(peer);
     return { ok: true as const };
   }
 

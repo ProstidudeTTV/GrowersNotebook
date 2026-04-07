@@ -75,7 +75,24 @@ def main() -> None:
 
     cfg["federation_domain_whitelist"] = []
 
-    # Docker sample defaults (0.2 / 10) are tight for E2EE + initial /sync + pagination.
+    # Docker defaults are extremely low for a JWT-based web app: every client open hits m.login (rc_login),
+    # createRoom hits rc_invites — defaults (~0.003/s, burst 5) cause 429 "Too Many Requests" under normal traffic.
+    cfg["rc_message"] = {"per_second": 3.0, "burst_count": 80.0}
+    cfg["rc_login"] = {
+        "address": {"per_second": 2.0, "burst_count": 250},
+        "account": {"per_second": 2.0, "burst_count": 250},
+    }
+    cfg["rc_joins"] = {
+        "local": {"per_second": 10.0, "burst_count": 100},
+        "remote": {"per_second": 2.0, "burst_count": 50},
+    }
+    cfg["rc_joins_per_room"] = {"per_second": 5.0, "burst_count": 50}
+    cfg["rc_invites"] = {
+        "per_room": {"per_second": 10.0, "burst_count": 100},
+        "per_user": {"per_second": 2.0, "burst_count": 80},
+        "per_issuer": {"per_second": 10.0, "burst_count": 100},
+    }
+    # Legacy flat keys (still honored by many Synapse versions); keep aligned with rc_message.
     cfg["rc_messages_per_second"] = 3.0
     cfg["rc_message_burst_count"] = 80.0
 

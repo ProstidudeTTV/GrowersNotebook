@@ -189,9 +189,7 @@ function dmLabel(client: MatrixClient, room: Room): string {
   const others = room.getJoinedMembers().filter((m) => m.userId !== me);
   if (others.length === 1) {
     const m = others[0]!;
-    const raw =
-      m.name || m.rawDisplayName || m.userId.split(":")[0]?.replace("@", "");
-    return raw || "Chat";
+    return membersDisplayNameOnly(m, "Chat");
   }
   const pending = room
     .getMembersWithMembership(KnownMembership.Invite)

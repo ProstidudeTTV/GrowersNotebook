@@ -10,6 +10,7 @@ import { count } from 'drizzle-orm';
 import type { DbClient } from '../db';
 import { getDb } from '../db';
 import { breeders, strains } from '../db/schema';
+import { isNonStrainPromoCatalogRow } from './catalog-promo-exclusions';
 
 function normalizeHeaderKey(k: string): string {
   return k
@@ -35,6 +36,7 @@ export function normalizeCsvRecords(
 export type StrainCsvImportResult = {
   rowsParsed: number;
   rowsSkippedNoStrainName: number;
+  rowsSkippedNonStrainPromo: number;
   rowsSkippedDuplicateStrainBreeder: number;
   uniqueBreedersInCsv: number;
   strainCandidates: number;
@@ -168,6 +170,7 @@ export async function importStrainCsvRecords(
 ): Promise<StrainCsvImportResult> {
   const normalized = normalizeCsvRecords(records);
   let rowsSkippedNoStrainName = 0;
+  let rowsSkippedNonStrainPromo = 0;
   let rowsSkippedDuplicateStrainBreeder = 0;
 
   const [{ total: bcBefore }] = await db
@@ -179,6 +182,7 @@ export async function importStrainCsvRecords(
 
   const breederCanonical = new Map<string, string>();
   for (const row of normalized) {
+    if (isNonStrainPromoCatalogRow(row)) continue;
     const name = (row.breeder || '').trim();
     if (!name) continue;
     const bslug = slugify(name);
@@ -214,6 +218,10 @@ export async function importStrainCsvRecords(
   const strainValues: InferInsertModel<typeof strains>[] = [];
 
   for (const row of normalized) {
+    if (isNonStrainPromoCatalogRow(row)) {
+      rowsSkippedNonStrainPromo += 1;
+      continue;
+    }
     const strainName = (row.strain_name || '').trim();
     if (!strainName) {
       rowsSkippedNoStrainName += 1;
@@ -263,6 +271,7 @@ export async function importStrainCsvRecords(
   return {
     rowsParsed: normalized.length,
     rowsSkippedNoStrainName,
+    rowsSkippedNonStrainPromo,
     rowsSkippedDuplicateStrainBreeder,
     uniqueBreedersInCsv: breederCanonical.size,
     strainCandidates: strainValues.length,
@@ -300,6 +309,7 @@ export class StrainCsvImportService {
       return {
         rowsParsed: 0,
         rowsSkippedNoStrainName: 0,
+        rowsSkippedNonStrainPromo: 0,
         rowsSkippedDuplicateStrainBreeder: 0,
         uniqueBreedersInCsv: 0,
         strainCandidates: 0,

@@ -47,6 +47,7 @@ export default async function BreedersPage({
     minReviews?: string;
     detail?: string;
     reviewsPage?: string;
+    strainReviewsPage?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -58,6 +59,7 @@ export default async function BreedersPage({
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
   const overlayReviewsPage = Number(sp.reviewsPage ?? 1) || 1;
+  const overlayStrainReviewsPage = Number(sp.strainReviewsPage ?? 1) || 1;
   const pageSize = 30;
   const qs = new URLSearchParams({
     sort,
@@ -217,6 +219,7 @@ export default async function BreedersPage({
           <BreederDetailBody
             slug={detailSlug}
             reviewsPage={overlayReviewsPage}
+            strainReviewsPage={overlayStrainReviewsPage}
             variant="modal"
             listPreview={listPreview}
           />

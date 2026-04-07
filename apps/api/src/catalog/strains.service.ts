@@ -12,14 +12,46 @@ import {
   eq,
   gte,
   ilike,
+  inArray,
   isNotNull,
   isNull,
+  notInArray,
   or,
 } from 'drizzle-orm';
 import { getDb } from '../db';
-import { breeders, profiles, strainReviews, strains } from '../db/schema';
+import {
+  breeders,
+  type PostMediaItem,
+  profiles,
+  strainReviews,
+  strains,
+} from '../db/schema';
 import { refreshStrainAggregates } from './catalog-aggregates';
+import {
+  isPublicExcludedBreederSlug,
+  PUBLIC_EXCLUDED_BREEDER_SLUGS,
+} from './catalog-promo-exclusions';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
+
+const MAX_STRAIN_REVIEW_MEDIA = 8;
+
+function normalizeStrainReviewMedia(
+  raw: { url: string; type: string }[] | undefined,
+): PostMediaItem[] {
+  if (!raw?.length) return [];
+  const seen = new Set<string>();
+  const out: PostMediaItem[] = [];
+  for (const item of raw) {
+    const url = item.url?.trim();
+    if (!url || !/^https:\/\//i.test(url)) continue;
+    if (item.type !== 'image') continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, type: 'image' });
+    if (out.length >= MAX_STRAIN_REVIEW_MEDIA) break;
+  }
+  return out;
+}
 
 export type ListStrainsQuery = {
   q?: string;
@@ -50,6 +82,13 @@ export class StrainsService {
     const conditions = [];
     if (query.publishedOnly !== false) {
       conditions.push(eq(strains.published, true));
+      const promoBreederIds = db
+        .select({ id: breeders.id })
+        .from(breeders)
+        .where(inArray(breeders.slug, [...PUBLIC_EXCLUDED_BREEDER_SLUGS]));
+      conditions.push(
+        or(isNull(strains.breederId), notInArray(strains.breederId, promoBreederIds)),
+      );
     }
     let breederIdFilter = query.breederId;
     if (query.breederSlug?.trim()) {
@@ -134,6 +173,9 @@ export class StrainsService {
         })
         .from(breeders)
         .where(eq(breeders.id, row.breederId));
+      if (b?.slug && isPublicExcludedBreederSlug(b.slug)) {
+        throw new NotFoundException('Strain not found');
+      }
       if (b && b.slug) breeder = this.toPublicBreederEmbedded(b);
     }
 
@@ -155,6 +197,7 @@ export class StrainsService {
         id: strainReviews.id,
         rating: strainReviews.rating,
         body: strainReviews.body,
+        media: strainReviews.media,
         createdAt: strainReviews.createdAt,
         updatedAt: strainReviews.updatedAt,
         authorId: strainReviews.authorId,
@@ -171,6 +214,7 @@ export class StrainsService {
       id: string;
       rating: string;
       body: string;
+      media: PostMediaItem[];
       createdAt: Date;
       updatedAt: Date;
       hidden: boolean;
@@ -190,6 +234,7 @@ export class StrainsService {
           id: mine.id,
           rating: String(mine.rating),
           body: mine.body,
+          media: (mine.media ?? []) as PostMediaItem[],
           createdAt: mine.createdAt,
           updatedAt: mine.updatedAt,
           hidden: mine.hiddenAt != null,
@@ -204,6 +249,7 @@ export class StrainsService {
           id: r.id,
           rating: String(r.rating),
           body: r.body,
+          media: (r.media ?? []) as PostMediaItem[],
           createdAt: r.createdAt,
           updatedAt: r.updatedAt,
           author: {
@@ -219,9 +265,16 @@ export class StrainsService {
     };
   }
 
-  async upsertReview(slug: string, userId: string, rating: number, body: string) {
+  async upsertReview(
+    slug: string,
+    userId: string,
+    rating: number,
+    body: string,
+    media?: { url: string; type: string }[],
+  ) {
     if (rating < 1 || rating > 5)
       throw new BadRequestException('Rating must be between 1 and 5');
+    const mediaItems = normalizeStrainReviewMedia(media);
     const db = getDb();
     const [s] = await db.select().from(strains).where(eq(strains.slug, slug));
     if (!s) throw new NotFoundException('Strain not found');
@@ -249,6 +302,7 @@ export class StrainsService {
         .set({
           rating: String(rating),
           body: body ?? '',
+          media: mediaItems,
           updatedAt: new Date(),
         })
         .where(eq(strainReviews.id, existing.id));
@@ -258,6 +312,7 @@ export class StrainsService {
         authorId: userId,
         rating: String(rating),
         body: body ?? '',
+        media: mediaItems,
       });
     }
     await refreshStrainAggregates(db, s.id);

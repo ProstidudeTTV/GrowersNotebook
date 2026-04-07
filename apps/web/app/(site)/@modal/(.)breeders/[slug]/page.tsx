@@ -6,11 +6,12 @@ export default async function BreederModalPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ reviewsPage?: string }>;
+  searchParams: Promise<{ reviewsPage?: string; strainReviewsPage?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const reviewsPage = Number(sp.reviewsPage ?? 1) || 1;
+  const strainReviewsPage = Number(sp.strainReviewsPage ?? 1) || 1;
   const safe = slug?.trim() ?? "";
   const breederPath = `/breeders/${encodeURIComponent(safe)}`;
 
@@ -19,6 +20,7 @@ export default async function BreederModalPage({
       <BreederDetailBody
         slug={safe}
         reviewsPage={reviewsPage}
+        strainReviewsPage={strainReviewsPage}
         variant="modal"
       />
     </CatalogDetailModal>

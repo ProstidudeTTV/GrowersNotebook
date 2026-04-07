@@ -7,13 +7,15 @@ import { recordRecentCommunityVisit } from "@/lib/recent-communities";
 export function RecentCommunitiesTracker({
   slug,
   name,
+  iconKey = null,
 }: {
   slug: string;
   name: string;
+  iconKey?: string | null;
 }) {
   useEffect(() => {
-    recordRecentCommunityVisit(slug, name);
-  }, [slug, name]);
+    recordRecentCommunityVisit(slug, name, iconKey ?? null);
+  }, [slug, name, iconKey]);
 
   return null;
 }

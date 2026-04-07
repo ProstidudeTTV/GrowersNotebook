@@ -14,6 +14,7 @@ import {
   ilike,
   isNotNull,
   isNull,
+  notInArray,
   or,
 } from 'drizzle-orm';
 import { getDb } from '../db';
@@ -21,9 +22,15 @@ import {
   breederReviews,
   breeders,
   profiles,
+  strainReviews,
   strains,
 } from '../db/schema';
+import type { PostMediaItem } from '../db/schema';
 import { refreshBreederAggregates } from './catalog-aggregates';
+import {
+  isPublicExcludedBreederSlug,
+  PUBLIC_EXCLUDED_BREEDER_SLUGS,
+} from './catalog-promo-exclusions';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 
 export type ListBreedersQuery = {
@@ -53,6 +60,9 @@ export class BreedersService {
     const conditions = [];
     if (query.publishedOnly !== false) {
       conditions.push(eq(breeders.published, true));
+      conditions.push(
+        notInArray(breeders.slug, [...PUBLIC_EXCLUDED_BREEDER_SLUGS]),
+      );
     }
     if (q) {
       const term = `%${q.replace(/%/g, '\\%')}%`;
@@ -108,8 +118,13 @@ export class BreedersService {
     viewerId?: string,
     reviewsPage = 1,
     reviewsPageSize = 20,
+    strainReviewsPage = 1,
+    strainReviewsPageSize = 10,
   ) {
     const db = getDb();
+    if (isPublicExcludedBreederSlug(slug)) {
+      throw new NotFoundException('Breeder not found');
+    }
     const [row] = await db
       .select()
       .from(breeders)
@@ -177,6 +192,42 @@ export class BreedersService {
       }
     }
 
+    const srTake = Math.min(50, strainReviewsPageSize);
+    const srSkip =
+      (Math.max(1, strainReviewsPage) - 1) * srTake;
+
+    const strainRevWhere = and(
+      eq(strains.breederId, row.id),
+      eq(strains.published, true),
+      isNull(strainReviews.hiddenAt),
+    );
+
+    const [{ srTotal }] = await db
+      .select({ srTotal: count() })
+      .from(strainReviews)
+      .innerJoin(strains, eq(strainReviews.strainId, strains.id))
+      .where(strainRevWhere);
+
+    const strainReviewRows = await db
+      .select({
+        id: strainReviews.id,
+        rating: strainReviews.rating,
+        body: strainReviews.body,
+        media: strainReviews.media,
+        createdAt: strainReviews.createdAt,
+        authorId: strainReviews.authorId,
+        displayName: profiles.displayName,
+        strainSlug: strains.slug,
+        strainName: strains.name,
+      })
+      .from(strainReviews)
+      .innerJoin(strains, eq(strainReviews.strainId, strains.id))
+      .innerJoin(profiles, eq(strainReviews.authorId, profiles.id))
+      .where(strainRevWhere)
+      .orderBy(desc(strainReviews.createdAt))
+      .limit(srTake)
+      .offset(srSkip);
+
     return {
       breeder: this.toPublicBreed(row),
       reviews: {
@@ -194,6 +245,24 @@ export class BreedersService {
         total: Number(reviewTotal),
         page: reviewsPage,
         pageSize: take,
+      },
+      /** Strain reviews for cultivars linked to this breeder (also on strain pages). */
+      strainReviewsOnCatalog: {
+        items: strainReviewRows.map((r) => ({
+          id: r.id,
+          rating: String(r.rating),
+          body: r.body,
+          media: (r.media ?? []) as PostMediaItem[],
+          createdAt: r.createdAt,
+          strain: { slug: r.strainSlug, name: r.strainName },
+          author: {
+            id: r.authorId,
+            displayName: r.displayName,
+          },
+        })),
+        total: Number(srTotal),
+        page: strainReviewsPage,
+        pageSize: srTake,
       },
       viewerReview,
     };

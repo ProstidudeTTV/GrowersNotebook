@@ -45,11 +45,12 @@ export default async function BreederDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ reviewsPage?: string }>;
+  searchParams: Promise<{ reviewsPage?: string; strainReviewsPage?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const reviewsPage = Number(sp.reviewsPage ?? 1) || 1;
+  const strainReviewsPage = Number(sp.strainReviewsPage ?? 1) || 1;
   const safe = slug?.trim();
   if (!safe) notFound();
 
@@ -57,6 +58,7 @@ export default async function BreederDetailPage({
     <BreederDetailBody
       slug={safe}
       reviewsPage={reviewsPage}
+      strainReviewsPage={strainReviewsPage}
       variant="page"
     />
   );

@@ -28,6 +28,7 @@ import { PostsService } from '../posts/posts.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import { AdminRemovePostDto } from './dto/admin-remove-post.dto';
 import { CreateCommunityDto } from '../communities/dto/create-community.dto';
+import { UpdateCommunityAdminDto } from '../communities/dto/update-community-admin.dto';
 
 function range(skip: string | undefined, take: string | undefined) {
   const start = Math.max(0, Number(skip ?? 0));
@@ -138,7 +139,7 @@ export class AdminController {
   @Patch('communities/:id')
   patchCommunity(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: Partial<{ name: string; description: string | null }>,
+    @Body() body: UpdateCommunityAdminDto,
   ) {
     return this.communities.update(id, body);
   }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CommunityIcon } from "@/components/community-icon";
 import { GuestLanding } from "@/components/marketing/guest-landing";
 import { apiFetch } from "@/lib/api-public";
 import { getPublicApiUrl } from "@/lib/public-api-url";
@@ -27,14 +28,22 @@ type Community = {
   slug: string;
   name: string;
   description: string | null;
+  iconKey?: string | null;
 };
 
 function CommunityListRow({ community: c }: { community: Community }) {
   return (
     <Link
       href={`/community/${c.slug}`}
-      className="group block py-5 transition-colors hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_70%,transparent)]"
+      className="group flex gap-4 py-5 transition-colors hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_70%,transparent)]"
     >
+      <CommunityIcon
+        iconKey={c.iconKey}
+        nameFallback={c.name}
+        slugFallback={c.slug}
+        className="mt-0.5"
+      />
+      <div className="min-w-0 flex-1">
       <h2 className="text-base font-semibold text-[#ff6a38] transition group-hover:text-[#ff7d4c] group-hover:drop-shadow-[0_0_12px_rgba(255,106,56,0.22)]">
         {c.name}
       </h2>
@@ -47,6 +56,7 @@ function CommunityListRow({ community: c }: { community: Community }) {
           No description yet.
         </p>
       )}
+      </div>
     </Link>
   );
 }

@@ -1,7 +1,11 @@
 "use client";
 
 import { Create, useForm } from "@refinedev/antd";
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input, Select } from "antd";
+import {
+  COMMUNITY_ICON_KEYS,
+  COMMUNITY_ICON_LABELS,
+} from "@/lib/community-icon-keys";
 
 export default function AdminCommunityCreatePage() {
   const { form, formProps, saveButtonProps } = useForm({
@@ -35,6 +39,20 @@ export default function AdminCommunityCreatePage() {
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea rows={5} placeholder="Shown on the community page" maxLength={2000} showCount />
+        </Form.Item>
+        <Form.Item
+          label="Icon"
+          name="iconKey"
+          extra="Optional — shown in the directory, guest landing, and sidebar."
+        >
+          <Select
+            allowClear
+            placeholder="Default (initial letter)"
+            options={COMMUNITY_ICON_KEYS.map((k) => ({
+              value: k,
+              label: COMMUNITY_ICON_LABELS[k],
+            }))}
+          />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" {...saveButtonProps}>

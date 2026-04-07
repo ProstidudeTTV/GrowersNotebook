@@ -53,12 +53,16 @@ export class PublicBreedersController {
     @CurrentUser() user: JwtUser | undefined,
     @Query('reviewsPage') reviewsPage?: string,
     @Query('reviewsPageSize') reviewsPageSize?: string,
+    @Query('strainReviewsPage') strainReviewsPage?: string,
+    @Query('strainReviewsPageSize') strainReviewsPageSize?: string,
   ) {
     return this.breeders.getBySlugPublic(
       slug,
       user?.sub,
       reviewsPage ? Number(reviewsPage) : 1,
       reviewsPageSize ? Number(reviewsPageSize) : 20,
+      strainReviewsPage ? Number(strainReviewsPage) : 1,
+      strainReviewsPageSize ? Number(strainReviewsPageSize) : 10,
     );
   }
 

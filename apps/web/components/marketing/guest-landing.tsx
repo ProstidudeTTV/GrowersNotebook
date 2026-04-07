@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CommunityIcon } from "@/components/community-icon";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site-config";
 
 const DISCORD_INVITE_URL = "https://discord.gg/qGvv9knhdA";
@@ -8,6 +9,7 @@ export type GuestLandingCommunity = {
   slug: string;
   name: string;
   description: string | null;
+  iconKey?: string | null;
 };
 
 function IconLeaf({ className }: { className?: string }) {
@@ -287,18 +289,28 @@ export function GuestLanding({
                   href={`/community/${c.slug}`}
                   className="group flex h-full flex-col rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/55 p-5 shadow-[var(--gn-shadow-sm)] transition hover:border-[rgba(255,106,56,0.35)] hover:bg-[var(--gn-surface-hover)] hover:shadow-[var(--gn-shadow-hover)]"
                 >
-                  <h3 className="font-semibold text-[#ff6a38] transition group-hover:text-[#ff7d4c]">
-                    {c.name}
-                  </h3>
-                  {c.description?.trim() ? (
-                    <p className="mt-2 line-clamp-3 flex-1 text-sm leading-snug text-[var(--gn-text-muted)]">
-                      {c.description.trim()}
-                    </p>
-                  ) : (
-                    <p className="mt-2 flex-1 text-sm italic text-[var(--gn-text-muted)]/75">
-                      Open the room →
-                    </p>
-                  )}
+                  <div className="flex items-start gap-3">
+                    <CommunityIcon
+                      iconKey={c.iconKey}
+                      nameFallback={c.name}
+                      slugFallback={c.slug}
+                      frameClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--gn-surface-muted)_85%,transparent)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-[#ff6a38] transition group-hover:text-[#ff7d4c]">
+                        {c.name}
+                      </h3>
+                      {c.description?.trim() ? (
+                        <p className="mt-2 line-clamp-3 text-sm leading-snug text-[var(--gn-text-muted)]">
+                          {c.description.trim()}
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-sm italic text-[var(--gn-text-muted)]/75">
+                          Open the room →
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </Link>
               </li>
             ))}

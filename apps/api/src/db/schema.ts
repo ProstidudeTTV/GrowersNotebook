@@ -65,6 +65,8 @@ export const communities = pgTable(
     slug: text('slug').notNull().unique(),
     name: text('name').notNull(),
     description: text('description'),
+    /** Curated icon id for sidebar / directory (set in admin). */
+    iconKey: text('icon_key'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -449,6 +451,10 @@ export const strainReviews = pgTable(
       .references(() => profiles.id, { onDelete: 'cascade' }),
     rating: numeric('rating', { precision: 3, scale: 2 }).notNull(),
     body: text('body').notNull().default(''),
+    media: jsonb('media')
+      .notNull()
+      .$type<PostMediaItem[]>()
+      .default(sql`'[]'::jsonb`),
     hiddenAt: timestamp('hidden_at', { withTimezone: true }),
     hiddenBy: uuid('hidden_by').references(() => profiles.id, {
       onDelete: 'set null',

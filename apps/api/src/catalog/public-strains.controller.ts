@@ -76,6 +76,7 @@ export class PublicStrainsController {
       user.sub,
       body.rating,
       body.body ?? '',
+      body.media,
     );
   }
 }

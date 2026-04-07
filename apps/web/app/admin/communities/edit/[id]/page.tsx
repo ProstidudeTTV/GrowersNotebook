@@ -1,7 +1,11 @@
 "use client";
 
 import { Edit, useForm } from "@refinedev/antd";
-import { Button, Form, Input, Typography } from "antd";
+import { Button, Form, Input, Select, Typography } from "antd";
+import {
+  COMMUNITY_ICON_KEYS,
+  COMMUNITY_ICON_LABELS,
+} from "@/lib/community-icon-keys";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -41,6 +45,20 @@ export default function AdminCommunityEditPage() {
         </Form.Item>
         <Form.Item label="Description" name="description">
           <Input.TextArea rows={6} maxLength={2000} showCount />
+        </Form.Item>
+        <Form.Item
+          label="Icon"
+          name="iconKey"
+          extra="Optional — directory, guest landing, sidebar."
+        >
+          <Select
+            allowClear
+            placeholder="Default (initial letter)"
+            options={COMMUNITY_ICON_KEYS.map((k) => ({
+              value: k,
+              label: COMMUNITY_ICON_LABELS[k],
+            }))}
+          />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" {...saveButtonProps}>

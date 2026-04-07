@@ -13,6 +13,11 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 
+export type StrainReviewMedia = {
+  url: string;
+  type: "image" | "video" | string;
+};
+
 export type StrainDetailJson = {
   strain: {
     id: string;
@@ -30,6 +35,7 @@ export type StrainDetailJson = {
       id: string;
       rating: string;
       body: string;
+      media: StrainReviewMedia[];
       createdAt: string;
       author: { id: string; displayName: string | null };
     }>;
@@ -41,9 +47,37 @@ export type StrainDetailJson = {
     id: string;
     rating: string;
     body: string;
+    media: StrainReviewMedia[];
     hidden: boolean;
   } | null;
 };
+
+function ReviewPhotos({
+  media,
+  altPrefix,
+}: {
+  media: StrainReviewMedia[];
+  altPrefix: string;
+}) {
+  const imgs = media.filter((m) => m.type === "image" && m.url?.trim());
+  if (imgs.length === 0) return null;
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2">
+      {imgs.map((m, i) => (
+        <li key={`${m.url}-${i}`} className="overflow-hidden rounded-md ring-1 ring-[var(--gn-ring)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={m.url}
+            alt={`${altPrefix} ${i + 1}`}
+            className="h-24 w-24 object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export async function StrainDetailBody({
   slug,
@@ -223,6 +257,11 @@ export async function StrainDetailBody({
                 ? data.viewerReview.body
                 : null
             }
+            initialMedia={
+              data.viewerReview && !data.viewerReview.hidden
+                ? data.viewerReview.media
+                : null
+            }
             disabled={!user}
             disabledMessage="Sign in to rate and review this strain."
           />
@@ -253,6 +292,7 @@ export async function StrainDetailBody({
                   {r.body.trim()}
                 </p>
               ) : null}
+              <ReviewPhotos media={r.media ?? []} altPrefix="Review photo" />
             </li>
           ))}
         </ul>

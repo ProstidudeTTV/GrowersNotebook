@@ -8,6 +8,7 @@ import { getDb } from '../db';
 import { communities, communityModerators, profiles } from '../db/schema';
 import { FollowsService } from '../follows/follows.service';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
+import { assertCommunityIconKey } from './community-icon-keys';
 import type { CreateCommunityDto } from './dto/create-community.dto';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class CommunitiesService {
           slug: dto.slug,
           name: dto.name,
           description: dto.description ?? null,
+          iconKey: assertCommunityIconKey(dto.iconKey ?? null),
         })
         .returning();
       return row;
@@ -109,15 +111,30 @@ export class CommunitiesService {
 
   async update(
     id: string,
-    partial: Partial<{ name: string; description: string | null }>,
+    partial: Partial<{
+      name: string;
+      description: string | null;
+      iconKey: string | null;
+    }>,
   ) {
     if (partial.name !== undefined) {
       await this.nameBlocklist.assertAllowed(partial.name);
     }
     const db = getDb();
+    const toSet: {
+      name?: string;
+      description?: string | null;
+      iconKey?: string | null;
+    } = {};
+    if (partial.name !== undefined) toSet.name = partial.name;
+    if (partial.description !== undefined)
+      toSet.description = partial.description;
+    if (partial.iconKey !== undefined) {
+      toSet.iconKey = assertCommunityIconKey(partial.iconKey);
+    }
     const [row] = await db
       .update(communities)
-      .set({ ...partial })
+      .set(toSet)
       .where(eq(communities.id, id))
       .returning();
     if (!row) throw new NotFoundException();

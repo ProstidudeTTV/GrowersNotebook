@@ -9,6 +9,7 @@ export type RecentCommunity = {
   slug: string;
   name: string;
   visitedAt: number;
+  iconKey?: string | null;
 };
 
 function parseList(raw: string | null): RecentCommunity[] {
@@ -23,11 +24,16 @@ function parseList(raw: string | null): RecentCommunity[] {
         const slug = typeof r.slug === "string" ? r.slug : "";
         const name = typeof r.name === "string" ? r.name : "";
         const visitedAt = typeof r.visitedAt === "number" ? r.visitedAt : 0;
+        const iconKey =
+          typeof r.iconKey === "string" || r.iconKey === null
+            ? r.iconKey
+            : undefined;
         if (!slug.trim()) return null;
         return {
           slug: slug.trim(),
           name: name.trim() || slug.trim(),
           visitedAt,
+          ...(iconKey !== undefined ? { iconKey } : {}),
         };
       })
       .filter((x): x is RecentCommunity => x != null);
@@ -44,7 +50,11 @@ export function getRecentCommunities(): RecentCommunity[] {
     .slice(0, MAX_ITEMS);
 }
 
-export function recordRecentCommunityVisit(slug: string, name: string) {
+export function recordRecentCommunityVisit(
+  slug: string,
+  name: string,
+  iconKey: string | null,
+) {
   if (typeof window === "undefined") return;
   const s = slug.trim();
   if (!s) return;
@@ -55,6 +65,7 @@ export function recordRecentCommunityVisit(slug: string, name: string) {
     slug: s,
     name: label,
     visitedAt: Date.now(),
+    iconKey,
   });
   list = list.slice(0, MAX_ITEMS);
   try {

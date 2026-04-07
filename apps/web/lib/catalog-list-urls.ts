@@ -70,10 +70,14 @@ export function breederPreviewPath(
   slug: string,
   list: BreedersListQuery,
   reviewsPage = 1,
+  strainReviewsPage = 1,
 ): string {
   const u = new URLSearchParams();
   appendBreedersParams(u, list);
   u.set("detail", slug);
   if (reviewsPage > 1) u.set("reviewsPage", String(reviewsPage));
+  if (strainReviewsPage > 1) {
+    u.set("strainReviewsPage", String(strainReviewsPage));
+  }
   return `/breeders?${u.toString()}`;
 }

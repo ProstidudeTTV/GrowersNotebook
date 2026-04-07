@@ -13,6 +13,11 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 
+export type CatalogStrainReviewMedia = {
+  url: string;
+  type: "image" | "video" | string;
+};
+
 export type BreederDetailJson = {
   breeder: {
     id: string;
@@ -36,6 +41,20 @@ export type BreederDetailJson = {
     page: number;
     pageSize: number;
   };
+  strainReviewsOnCatalog: {
+    items: Array<{
+      id: string;
+      rating: string;
+      body: string;
+      media: CatalogStrainReviewMedia[];
+      createdAt: string;
+      strain: { slug: string; name: string };
+      author: { id: string; displayName: string | null };
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  };
   viewerReview: {
     id: string;
     rating: string;
@@ -44,14 +63,43 @@ export type BreederDetailJson = {
   } | null;
 };
 
+function ReviewPhotos({
+  media,
+  altPrefix,
+}: {
+  media: CatalogStrainReviewMedia[];
+  altPrefix: string;
+}) {
+  const imgs = media.filter((m) => m.type === "image" && m.url?.trim());
+  if (imgs.length === 0) return null;
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2">
+      {imgs.map((m, i) => (
+        <li key={`${m.url}-${i}`} className="overflow-hidden rounded-md ring-1 ring-[var(--gn-ring)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={m.url}
+            alt={`${altPrefix} ${i + 1}`}
+            className="h-24 w-24 object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export async function BreederDetailBody({
   slug,
   reviewsPage,
+  strainReviewsPage,
   variant,
   listPreview,
 }: {
   slug: string;
   reviewsPage: number;
+  strainReviewsPage: number;
   variant: "page" | "modal";
   listPreview?: BreedersListQuery;
 }) {
@@ -69,6 +117,8 @@ export async function BreederDetailBody({
     const qs = new URLSearchParams({
       reviewsPage: String(reviewsPage),
       reviewsPageSize: "15",
+      strainReviewsPage: String(strainReviewsPage),
+      strainReviewsPageSize: "10",
     });
     data = await apiFetch<BreederDetailJson>(
       `/breeders/${encodeURIComponent(safe)}?${qs}`,
@@ -89,10 +139,21 @@ export async function BreederDetailBody({
     Math.ceil(data.reviews.total / data.reviews.pageSize),
   );
 
+  const sr = data.strainReviewsOnCatalog;
+  const strainReviewTotalPages = Math.max(
+    1,
+    Math.ceil(sr.total / sr.pageSize),
+  );
+
   const reviewListHref = (rp: number) =>
     listPreview
-      ? breederPreviewPath(b.slug, listPreview, rp)
-      : `/breeders/${encodeURIComponent(b.slug)}?reviewsPage=${rp}`;
+      ? breederPreviewPath(b.slug, listPreview, rp, strainReviewsPage)
+      : `/breeders/${encodeURIComponent(b.slug)}?reviewsPage=${rp}${strainReviewsPage > 1 ? `&strainReviewsPage=${strainReviewsPage}` : ""}`;
+
+  const strainReviewListHref = (srp: number) =>
+    listPreview
+      ? breederPreviewPath(b.slug, listPreview, reviewsPage, srp)
+      : `/breeders/${encodeURIComponent(b.slug)}?strainReviewsPage=${srp}${reviewsPage > 1 ? `&reviewsPage=${reviewsPage}` : ""}`;
 
   const strainsFromBreederHref = `/strains?breederSlug=${encodeURIComponent(b.slug)}`;
 
@@ -179,6 +240,81 @@ export async function BreederDetailBody({
           </p>
         </aside>
       </div>
+
+      <section className="border-t border-[var(--gn-divide)] pt-8 lg:pt-10">
+        <h2 className="text-lg font-semibold text-[var(--gn-text)]">
+          Strain reviews on this breeder&apos;s catalog ({sr.total})
+        </h2>
+        <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+          When growers review a published strain tied to {b.name}, it shows
+          here as well as on the strain page.
+        </p>
+        <ul className="mt-5 space-y-4 lg:mt-6">
+          {sr.items.length === 0 ? (
+            <li className="rounded-lg border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-6 text-sm text-[var(--gn-text-muted)]">
+              No strain reviews yet.
+            </li>
+          ) : (
+            sr.items.map((r) => (
+              <li
+                key={r.id}
+                className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link
+                      href={`/u/${r.author.id}`}
+                      className="font-medium text-[#ff6a38] hover:underline"
+                    >
+                      {r.author.displayName?.trim() || "Grower"}
+                    </Link>
+                    <span className="text-[var(--gn-text-muted)]">·</span>
+                    <Link
+                      href={`/strains/${encodeURIComponent(r.strain.slug)}`}
+                      scroll={false}
+                      className="min-w-0 truncate font-medium text-[#ff6a38] hover:underline"
+                    >
+                      {r.strain.name}
+                    </Link>
+                  </div>
+                  <StarDisplay avg={r.rating} />
+                </div>
+                {r.body?.trim() ? (
+                  <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+                    {r.body.trim()}
+                  </p>
+                ) : null}
+                <ReviewPhotos
+                  media={r.media ?? []}
+                  altPrefix={`${r.strain.name} photo`}
+                />
+              </li>
+            ))
+          )}
+        </ul>
+        {strainReviewTotalPages > 1 ? (
+          <div className="mt-6 flex justify-center gap-4 text-sm lg:mt-8">
+            {strainReviewsPage > 1 ? (
+              <Link
+                href={strainReviewListHref(strainReviewsPage - 1)}
+                scroll={false}
+                className="text-[#ff6a38] hover:underline"
+              >
+                Newer strain reviews
+              </Link>
+            ) : null}
+            {strainReviewsPage < strainReviewTotalPages ? (
+              <Link
+                href={strainReviewListHref(strainReviewsPage + 1)}
+                scroll={false}
+                className="text-[#ff6a38] hover:underline"
+              >
+                Older strain reviews
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
 
       <section className="border-t border-[var(--gn-divide)] pt-8 lg:pt-10">
         <h2 className="text-lg font-semibold text-[var(--gn-text)]">

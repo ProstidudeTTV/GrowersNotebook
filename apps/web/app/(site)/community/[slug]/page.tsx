@@ -14,6 +14,7 @@ type Community = {
   slug: string;
   name: string;
   description: string | null;
+  iconKey?: string | null;
 };
 
 type PostListResponse = {
@@ -108,7 +109,11 @@ export default async function CommunityPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <RecentCommunitiesTracker slug={community.slug} name={community.name} />
+      <RecentCommunitiesTracker
+        slug={community.slug}
+        name={community.name}
+        iconKey={community.iconKey ?? null}
+      />
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-[var(--gn-text)]">

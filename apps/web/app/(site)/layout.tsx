@@ -19,11 +19,33 @@ export default async function SiteLayout({
 
   const [followingRows, hotRes] = await Promise.all([
     token
-      ? apiFetch<Array<{ id: string; slug: string; name: string }>>(
-          "/communities/me/following",
-          { token, timeoutMs: SIDEBAR_API_TIMEOUT_MS },
-        ).catch(() => [] as Array<{ id: string; slug: string; name: string }>)
-      : Promise.resolve([] as Array<{ id: string; slug: string; name: string }>),
+      ? apiFetch<
+          Array<{
+            id: string;
+            slug: string;
+            name: string;
+            iconKey?: string | null;
+          }>
+        >("/communities/me/following", {
+          token,
+          timeoutMs: SIDEBAR_API_TIMEOUT_MS,
+        }).catch(
+          () =>
+            [] as Array<{
+              id: string;
+              slug: string;
+              name: string;
+              iconKey?: string | null;
+            }>,
+        )
+      : Promise.resolve(
+          [] as Array<{
+            id: string;
+            slug: string;
+            name: string;
+            iconKey?: string | null;
+          }>,
+        ),
     apiFetch<{
       items: Array<{ id: string; title: string; score: number }>;
     }>("/posts/hot/week?page=1&pageSize=1", {

@@ -8,12 +8,14 @@ import {
   RECENT_COMMUNITIES_STORAGE_KEY,
   type RecentCommunity,
 } from "@/lib/recent-communities";
+import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 
 export type SidebarCommunity = {
   id: string;
   slug: string;
   name: string;
+  iconKey?: string | null;
 };
 
 export type SidebarHotPost = {
@@ -123,19 +125,6 @@ function Chevron({ open }: { open: boolean }) {
     >
       <path d="m6 9 6 6 6-6" />
     </svg>
-  );
-}
-
-function CommunityAvatar({ name, slug }: { name: string; slug: string }) {
-  const label = name.trim() || slug;
-  const initial = label.charAt(0).toUpperCase() || "?";
-  return (
-    <span
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
-      aria-hidden
-    >
-      {initial}
-    </span>
   );
 }
 
@@ -296,7 +285,11 @@ export function AppSidebar({
                     title={c.name}
                     onClick={afterNav}
                   >
-                    <CommunityAvatar name={c.name} slug={c.slug} />
+                    <CommunityIcon
+                      iconKey={c.iconKey}
+                      nameFallback={c.name}
+                      slugFallback={c.slug}
+                    />
                     <span className="min-w-0 truncate">{c.name}</span>
                   </Link>
                 </li>
@@ -316,7 +309,11 @@ export function AppSidebar({
                         title={c.name}
                         onClick={afterNav}
                       >
-                        <CommunityAvatar name={c.name} slug={c.slug} />
+                        <CommunityIcon
+                          iconKey={c.iconKey}
+                          nameFallback={c.name}
+                          slugFallback={c.slug}
+                        />
                         <span className="min-w-0 truncate">{c.name}</span>
                       </Link>
                     </li>

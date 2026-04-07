@@ -8,6 +8,7 @@ import { adminAxios } from "@/lib/admin-axios";
 type ImportResult = {
   rowsParsed: number;
   rowsSkippedNoStrainName: number;
+  rowsSkippedNonStrainPromo: number;
   rowsSkippedDuplicateStrainBreeder: number;
   uniqueBreedersInCsv: number;
   strainCandidates: number;
@@ -46,7 +47,7 @@ export default function AdminCatalogImportPage() {
               { timeout: 600_000, maxContentLength: 50 * 1024 * 1024, maxBodyLength: 50 * 1024 * 1024 },
             );
             message.success(
-              `Import complete: ${data.strainsInserted} new strains, ${data.breedersInserted} new breeders (${data.rowsParsed} rows parsed).`,
+              `Import complete: ${data.strainsInserted} new strains, ${data.breedersInserted} new breeders (${data.rowsParsed} rows parsed${data.rowsSkippedNonStrainPromo ? `, ${data.rowsSkippedNonStrainPromo} promo rows skipped` : ""}).`,
               8,
             );
             onSuccess?.(data, raw as unknown as XMLHttpRequest);

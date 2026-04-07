@@ -58,13 +58,22 @@ export function LoginForm() {
           setLoading(false);
           return;
         }
-        const { error } = await supabase.auth.resetPasswordForEmail(
-          email.trim(),
-          {
-            redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
-          },
-        );
-        if (error) throw error;
+        const res = await fetch("/api/auth/request-password-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const payload: unknown = await res.json().catch(() => null);
+        if (!res.ok) {
+          const msg =
+            typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof (payload as { error: unknown }).error === "string"
+              ? (payload as { error: string }).error
+              : "Could not send reset email.";
+          throw new Error(msg);
+        }
         setMessage(
           "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.",
         );

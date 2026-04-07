@@ -47,6 +47,12 @@ You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or 
 
 Email and magic links use the redirect you pass from the app (`emailRedirectTo` / `redirectTo`); every distinct origin + path must appear in **Redirect URLs**.
 
+**Password reset:** Requests use **`POST /api/auth/request-password-reset`** (`apps/web/app/api/auth/request-password-reset/route.ts`) so `redirectTo` is computed **on the server** (`NEXT_PUBLIC_SITE_URL`, or **`https://growersnotebook.com`** in production if unset). That avoids recovery links pointing at **localhost** when the client bundle or browser origin was wrong.
+
+### Reset password email template
+
+Under **Authentication** → **Email Templates** → **Reset password**, keep the default anchor that uses **`{{ .ConfirmationURL }}`** so the message includes the `redirect_to` value from the API. If you customized the template and only used **`{{ .SiteURL }}`** (or left **Site URL** on localhost), links will ignore the app’s `redirectTo` and stay on the wrong host — set **Site URL** to **`https://growersnotebook.com`** or use **`{{ .ConfirmationURL }}`** / **`{{ .RedirectTo }}`** per the [email templates](https://supabase.com/docs/guides/auth/auth-email-templates) docs.
+
 ## 4. Custom SMTP (noreply@growersnotebook.com)
 
 Use your own mail host so auth email comes from **`noreply@growersnotebook.com`**.

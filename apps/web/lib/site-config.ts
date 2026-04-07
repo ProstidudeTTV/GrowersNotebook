@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Growers Notebook";
 
+/**
+ * Public site origin when `NEXT_PUBLIC_SITE_URL` is unset in production builds.
+ * Must match the live hostname; used for auth email `redirectTo` fallbacks and metadata.
+ */
+export const CANONICAL_PUBLIC_SITE_ORIGIN = "https://growersnotebook.com";
+
 /** Primary SEO focus: home cannabis cultivation community. */
 export const SITE_TAGLINE =
   "Community for cannabis home growers — grow diaries, tips, strains, nutrients, and conversations with fellow growers.";
@@ -29,6 +35,9 @@ export function getSiteUrl(): string {
     return `https://${process.env.VERCEL_URL.trim()}`;
   if (process.env.RENDER_EXTERNAL_URL?.trim()) {
     return process.env.RENDER_EXTERNAL_URL.trim().replace(/\/+$/, "");
+  }
+  if (process.env.NODE_ENV === "production") {
+    return CANONICAL_PUBLIC_SITE_ORIGIN;
   }
   return "http://127.0.0.1:3000";
 }

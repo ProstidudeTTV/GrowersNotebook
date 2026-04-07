@@ -58,7 +58,7 @@ export async function apiFetch<T>(
     const loc = res.headers.get("Location") ?? "";
     throw new Error(
       `API returned redirect ${res.status}${loc ? ` → ${loc}` : ""}. ` +
-        `Check NEXT_PUBLIC_API_URL is the Nest API origin (e.g. …-api.onrender.com), not the Next site.`,
+        `Check NEXT_PUBLIC_API_URL is the Nest API base URL, not the Next.js site URL.`,
     );
   }
 

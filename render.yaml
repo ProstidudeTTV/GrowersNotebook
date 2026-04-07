@@ -6,8 +6,8 @@
 # Runbook: infra/render/synapse/README.md
 #
 # Supabase auth (email confirm / magic link): infra/render/SUPABASE_AUTH.md
-# Set the web service’s NEXT_PUBLIC_SITE_URL (dashboard) to your public HTTPS origin so
-# /auth/callback redirects match Supabase “Site URL” and “Redirect URLs”.
+# Canonical public site: https://growersnotebook.com (custom domain on Render).
+# Supabase Site URL + Redirect URLs + API WEB_ORIGIN must use the same origin users see in the browser.
 #
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
@@ -47,14 +47,13 @@ services:
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:
-      # Public origin of this web service (no trailing slash). Must match Supabase Site URL.
-      # Example: https://growers-notebook-web.onrender.com
+      # Baked into `next build` for metadata, auth redirects, and client-side canonical URLs.
       - key: NEXT_PUBLIC_SITE_URL
-        sync: false
+        value: https://growersnotebook.com
       # Nest API origin (no trailing slash). Required for the app + dynamic sitemap entries.
       - key: NEXT_PUBLIC_API_URL
         sync: false
-      # Optional: https://plausible.io — set domain to your public hostname (e.g. growers.example.com)
+      # Optional: https://plausible.io — public hostname only (no https://), e.g. growersnotebook.com
       - key: NEXT_PUBLIC_PLAUSIBLE_DOMAIN
         sync: false
       - key: NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL

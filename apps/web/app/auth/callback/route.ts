@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * PKCE email-confirm / magic-link target.
  * Supabase → Authentication → URL configuration:
- * - Site URL: your public web origin (e.g. https://growers-notebook-web.onrender.com)
+ * - Site URL: public web origin (production: https://growersnotebook.com)
  * - Redirect URLs: same origin + `/auth/callback` (query strings allowed, e.g.
  *   `…/auth/callback?next=/auth/update-password` for password recovery).
  */

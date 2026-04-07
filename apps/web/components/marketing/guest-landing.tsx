@@ -282,7 +282,7 @@ export function GuestLanding({
             {hostedDeploy ? (
               <ul className="mt-4 list-inside list-disc text-sm opacity-90">
                 <li>
-                  In Render → <strong>growers-notebook-api</strong>, open Logs and
+                  On your <strong>hosted API</strong> service (e.g. Render → API), open Logs and
                   confirm the latest deploy is live. Try <code className="rounded bg-black/10 px-1 dark:bg-white/10">{apiBase}/health</code>.
                 </li>
                 <li>

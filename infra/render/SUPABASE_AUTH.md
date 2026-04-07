@@ -1,56 +1,81 @@
-# Supabase auth on Render (email confirmation & `/auth/callback`)
+# Supabase auth (growersnotebook.com, email, `/auth/callback`)
 
 The Next.js app exposes **`GET /auth/callback`** (`apps/web/app/auth/callback/route.ts`). Supabase redirects here with a `code` after the user clicks the email link.
 
-## 1. Web service URL
+## 1. Canonical public URL
 
-Use your **Render web** public URL (Dashboard → **growers-notebook-web** → copy **URL**), for example:
+Production site: **`https://growersnotebook.com`** (no trailing slash).
 
-`https://growers-notebook-web.onrender.com`
+- In **Render** → **growers-notebook-web** → **Custom Domains**, attach `growersnotebook.com` (and optionally `www.growersnotebook.com`). Finish DNS + certificate verification.
+- **`render.yaml`** sets **`NEXT_PUBLIC_SITE_URL=https://growersnotebook.com`** so `next build` embeds this origin in metadata, client auth helpers, and canonical URLs.
+- **`WEB_ORIGIN`** on **growers-notebook-api** must be the **same** origin the browser uses (`https://growersnotebook.com`), or API CORS will block the web app.
 
-If you use a **custom domain**, use that HTTPS origin instead everywhere below.
+If you ever serve the app **only** from `www.growersnotebook.com`, set **`NEXT_PUBLIC_SITE_URL`** and **`WEB_ORIGIN`** to `https://www.growersnotebook.com` instead, and use the same host in Supabase **Site URL** and **Redirect URLs** below.
 
-## 2. Render environment (growers-notebook-web)
+## 2. Render environment (summary)
 
-In the Render dashboard for **growers-notebook-web**, set:
+| Service | Variable | Value |
+|---------|----------|--------|
+| **growers-notebook-web** | `NEXT_PUBLIC_SITE_URL` | `https://growersnotebook.com` |
+| **growers-notebook-api** | `WEB_ORIGIN` | `https://growersnotebook.com` |
 
-| Variable | Value |
-|----------|--------|
-| `NEXT_PUBLIC_SITE_URL` | Same as step 1, **no trailing slash** (e.g. `https://growers-notebook-web.onrender.com`) |
+You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or publishable key), `NEXT_PUBLIC_API_URL` (your Nest API public URL, e.g. `https://growers-notebook-api.onrender.com` or a future `https://api.growersnotebook.com`).
 
-This keeps post-login redirects correct behind Render’s proxy. If unset, the app falls back to the request URL / `X-Forwarded-*` headers.
+`getPublicSiteOrigin()` prefers `NEXT_PUBLIC_SITE_URL`, then `X-Forwarded-Host` / `X-Forwarded-Proto` from Render so redirects stay correct behind the proxy.
 
-You still need the usual Supabase client vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or publishable key), `NEXT_PUBLIC_API_URL`.
+## 3. Supabase Dashboard → Authentication → URL configuration
 
-## 3. API CORS (`WEB_ORIGIN`)
-
-On **growers-notebook-api**, set **`WEB_ORIGIN`** to that **same** public web origin (no trailing slash). The API rejects browser calls in production if this does not match.
-
-## 4. Supabase Dashboard → Authentication → URL configuration
-
-Open your project: **Authentication** → **URL Configuration**.
+[Authentication → URL Configuration](https://supabase.com/dashboard/project/_/auth/url-configuration) for your project.
 
 1. **Site URL**  
-   Set to your production web origin (same as `NEXT_PUBLIC_SITE_URL` / step 1).
+   `https://growersnotebook.com`  
+   (Must match **`NEXT_PUBLIC_SITE_URL`**.)
 
 2. **Redirect URLs**  
-   Add these entries (one per line; adjust hostname if yours differs). Supabase must allow the exact redirect your app sends (including query strings used for password reset):
+   Add **exact** entries Supabase should allow (including query strings used for password reset). Example:
 
    ```
-   https://growers-notebook-web.onrender.com/auth/callback
-   https://growers-notebook-web.onrender.com/auth/callback?next=/auth/update-password
+   https://growersnotebook.com/auth/callback
+   https://growersnotebook.com/auth/callback?next=/auth/update-password
    ```
 
-   Add separate origins for staging if you use them. If **Site URL** or allowed redirects still point at a private or old host, magic links and password resets will open the wrong place. **Site URL** must be your public HTTPS origin (same as `NEXT_PUBLIC_SITE_URL`).
+   If you use **www** for the app as well, add the same paths for `https://www.growersnotebook.com/...`.
+
+   Optional: keep a **Render default hostname** during migration (e.g. `https://growers-notebook-web.onrender.com/auth/callback` and the `?next=...` variant) until traffic is only on the custom domain; then remove them.
 
 3. Save.
 
-Email templates use the redirect you pass at sign-up (`emailRedirectTo`); it must be allowed here or Supabase will block the redirect.
+Email and magic links use the redirect you pass from the app (`emailRedirectTo` / `redirectTo`); every distinct origin + path must appear in **Redirect URLs**.
 
-## 5. Quick verification
+## 4. Custom SMTP (noreply@growersnotebook.com)
+
+Use your own mail host so auth email comes from **`noreply@growersnotebook.com`**.
+
+In the Dashboard: **Authentication** → **SMTP Settings** (enable custom SMTP), or use the [Management API](https://supabase.com/docs/reference/api/v1-update-auth-service-config) (`PATCH /v1/projects/{ref}/config/auth`) with fields such as:
+
+| Field | Typical use |
+|-------|----------------|
+| `smtp_host` | Outbound host from your provider |
+| `smtp_port` | Often `587` (STARTTLS) or `465` (SSL) — match provider docs |
+| `smtp_user` / `smtp_pass` | SMTP credentials |
+| `smtp_admin_email` | An address your provider accepts (often same as sender) |
+| `smtp_sender_name` | Display name, e.g. `Growers Notebook` |
+
+Use the **sender address** your provider authorizes (e.g. `noreply@growersnotebook.com`). At your DNS / mail host:
+
+- **SPF**: include your provider’s SPF include (and Supabase’s if their docs require it for relay).
+- **DKIM / DMARC**: follow your provider’s steps so inbox delivery is reliable.
+
+After saving, send a test **signup** or **password reset** and confirm From / links point at **`https://growersnotebook.com`** (see **Site URL** and templates under **Authentication** → **Email Templates** — links should use **`{{ .SiteURL }}`** or **`{{ .RedirectTo }}`** per [email templates](https://supabase.com/docs/guides/auth/auth-email-templates)).
+
+## 5. Optional: custom domain for Supabase API
+
+Auth still works with the default `https://<project-ref>.supabase.co`. If you add a **Supabase custom domain** (e.g. `auth.growersnotebook.com`), update `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_URL` everywhere to match; OAuth and redirect rules are unchanged as long as **Site URL** / **Redirect URLs** match the **Next** app origin (`growersnotebook.com`), not the Supabase host.
+
+## 6. Quick verification
 
 1. Deploy web + API with env vars above.  
-2. Sign up with a **new** email on production.  
-3. Click the confirmation link; you should land on `/auth/callback`, then `/auth/complete`, then home with a session.
+2. Open `https://growersnotebook.com`, sign up with a **new** email.  
+3. Click the confirmation link; you should hit `/auth/callback`, then `/auth/complete`, then home with a session.
 
-If you see `redirect_uri_mismatch` or the link sends you to the wrong host, recheck **Site URL**, **Redirect URLs**, and **`NEXT_PUBLIC_SITE_URL`** for typos and trailing slashes.
+If you see `redirect_uri_mismatch` or wrong host in the link, recheck **Site URL**, **Redirect URLs**, **`NEXT_PUBLIC_SITE_URL`**, and **`WEB_ORIGIN`**.

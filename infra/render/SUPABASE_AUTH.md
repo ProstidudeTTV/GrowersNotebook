@@ -18,8 +18,13 @@ If you ever serve the app **only** from `www.growersnotebook.com`, set **`NEXT_P
 |---------|----------|--------|
 | **growers-notebook-web** | `NEXT_PUBLIC_SITE_URL` | `https://growersnotebook.com` |
 | **growers-notebook-api** | `WEB_ORIGIN` | `https://growersnotebook.com` |
+| **growers-notebook-api** | `MATRIX_SSSS_WRAP_KEY` | **Required** for cross-browser Matrix DM history: **64 hex characters** (32 random bytes). Generate once and keep stable across deploys: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Set in Render → API → **Environment** (blueprint declares the key with `sync: false`; you must paste the value). If unset, `GET/POST /matrix/secret-storage-wrap` responds **503**. |
 
 You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or publishable key), `NEXT_PUBLIC_API_URL` (your Nest API public URL, e.g. `https://growers-notebook-api.onrender.com` or a future `https://api.growersnotebook.com`).
+
+**API database:** `DATABASE_URL` must point at your **Supabase Postgres** session pooler URI (same DB as local Drizzle / Supabase migrations). **`render.yaml`** runs **`preDeployCommand: pnpm --filter @growers/api db:migrate`** on **growers-notebook-api** so Drizzle migrations (including `profile_matrix_ssss_wrap`) apply on each deploy.
+
+**Supabase SQL:** The same table ships in `supabase/migrations/20260418120000_profile_matrix_ssss_wrap.sql`. If you manage schema with **Supabase Dashboard → SQL** or `supabase db push`, keep that file applied so branches and CLI stay aligned with production.
 
 `getPublicSiteOrigin()` prefers `NEXT_PUBLIC_SITE_URL`, then `X-Forwarded-Host` / `X-Forwarded-Proto` from Render so redirects stay correct behind the proxy.
 

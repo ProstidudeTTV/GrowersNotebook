@@ -26,8 +26,9 @@ On **`growers-notebook-api`**, set:
 - `SYNAPSE_SERVER_NAME` — same value as on the Synapse service.
 - `SYNAPSE_JWT_SECRET` — **same** as Synapse.
 - `SYNAPSE_ADMIN_ACCESS_TOKEN` — access token for a Synapse **admin** user (see below).
+- `MATRIX_SSSS_WRAP_KEY` — **64 hex chars** (32-byte AES key) so the API can wrap Matrix secret-storage keys per profile for **new browsers/devices** reading DM history. See **`infra/render/SUPABASE_AUTH.md`** §2 and `apps/api/.env.example`.
 
-Until all five are set, `POST /matrix/login-token` returns **503**.
+Until the Synapse five are set, `POST /matrix/login-token` returns **503**. Until `MATRIX_SSSS_WRAP_KEY` is set, cross-device secret-storage sync endpoints return **503**.
 
 ## Admin token for `SYNAPSE_ADMIN_ACCESS_TOKEN`
 

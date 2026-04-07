@@ -29,6 +29,8 @@ services:
     #   pnpm --filter @growers/api db:migrate
     # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
     buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
+    # Runs after build, before traffic switches; requires DATABASE_URL (Supabase pooler URI on API).
+    preDeployCommand: npx pnpm@9.15.9 --filter @growers/api db:migrate
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
@@ -36,6 +38,10 @@ services:
         value: production
       - key: LISTEN_HOST
         value: "0.0.0.0"
+      # Cross-browser Matrix DM history: 64 hex chars (32 bytes). Generate once, set in dashboard:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: MATRIX_SSSS_WRAP_KEY
+        sync: false
       # Messaging (after Synapse is live — same values as in infra/render/synapse/README.md):
       # SYNAPSE_BASE_URL, SYNAPSE_PUBLIC_BASE_URL, SYNAPSE_SERVER_NAME, SYNAPSE_JWT_SECRET,
       # SYNAPSE_ADMIN_ACCESS_TOKEN

@@ -128,7 +128,14 @@ export function SiteHeaderSearch() {
         method="get"
         role="search"
         className="flex w-full min-w-0 items-center gap-2"
-        onSubmit={() => setOpen(false)}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const qs = value.trim();
+          setOpen(false);
+          if (qs.length >= 2) {
+            router.push(`/search?q=${encodeURIComponent(qs)}`);
+          }
+        }}
       >
         <label htmlFor="gn-site-search" className="sr-only">
           Search growers and posts

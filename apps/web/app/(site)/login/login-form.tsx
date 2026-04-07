@@ -109,7 +109,13 @@ export function LoginForm() {
           We&apos;ll email you a link to choose a new password.
         </p>
       ) : null}
-      <div className="mt-6 space-y-3">
+      <form
+        className="mt-6 space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+      >
         {mode === "signup" ? (
           <input
             type="text"
@@ -200,9 +206,8 @@ export function LoginForm() {
           </button>
         )}
         <button
-          type="button"
+          type="submit"
           disabled={loading}
-          onClick={submit}
           className="w-full rounded-full bg-[#ff4500] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] hover:shadow-[0_0_28px_rgba(255,69,0,0.45)] disabled:opacity-50"
         >
           {loading
@@ -216,7 +221,7 @@ export function LoginForm() {
         {message ? (
           <p className="text-sm text-[var(--gn-text)]">{message}</p>
         ) : null}
-      </div>
+      </form>
       <Link
         href="/"
         className="mt-8 inline-block text-sm text-[#ff4500] hover:underline"

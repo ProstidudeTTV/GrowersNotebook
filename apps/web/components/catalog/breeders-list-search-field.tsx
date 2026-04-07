@@ -6,6 +6,7 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clientApiJson } from "@/lib/client-api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -26,12 +27,15 @@ export function BreedersListSearchField({
   /** Extra /breeders list params from toolbar filters, e.g. `&country=es&minRating=4` */
   activeListFiltersQuery,
   buildLinkToBreederDetail,
+  onEnterCommit,
 }: {
   value: string;
   onChange: (v: string) => void;
   activeListFiltersQuery: string;
   buildLinkToBreederDetail: (slug: string) => string;
+  onEnterCommit?: () => void;
 }) {
+  const router = useRouter();
   const listboxId = `${INPUT_ID}-suggestions`;
   const rootRef = useRef<HTMLDivElement>(null);
   const debounced = useDebouncedValue(value.trim(), 280);
@@ -120,6 +124,17 @@ export function BreedersListSearchField({
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => {
           if (debounced.length >= 2) setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          const first = items[0];
+          if (first && debounced.length >= 2 && !loading && !error) {
+            setOpen(false);
+            router.push(buildLinkToBreederDetail(first.slug));
+            return;
+          }
+          onEnterCommit?.();
         }}
         role="combobox"
         aria-expanded={showPanel}

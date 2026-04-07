@@ -236,6 +236,35 @@ function roomHasVisualUnread(
   return false;
 }
 
+/**
+ * Helps your other browsers/devices decrypt sooner: don’t withhold Megolm keys from
+ * “unverified” devices (we don’t run verification UX), and prime outbound encryption
+ * for each DM so session keys fan out via sync.
+ */
+async function primeEncryptedDmsForMultiDevice(client: MatrixClient): Promise<void> {
+  const cryptoApi = client.getCrypto();
+  if (!cryptoApi) return;
+  try {
+    const mutable = cryptoApi as {
+      globalBlacklistUnverifiedDevices?: boolean;
+    };
+    if (typeof mutable.globalBlacklistUnverifiedDevices === "boolean") {
+      mutable.globalBlacklistUnverifiedDevices = false;
+    }
+  } catch {
+    /* ignore */
+  }
+  for (const room of listDmRooms(client)) {
+    try {
+      if (await cryptoApi.isEncryptionEnabledInRoom(room.roomId)) {
+        cryptoApi.prepareToEncrypt(room);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function findDmWithPeer(client: MatrixClient, peerMxid: string): Room | null {
   const me = client.getUserId();
   if (!me) return null;
@@ -662,6 +691,7 @@ export function MessagesPanel() {
 
         mx.on(ClientEvent.Sync, (st) => {
           if (st === SyncState.Prepared) {
+            void primeEncryptedDmsForMultiDevice(mx!);
             refreshConversations(mx!);
             return;
           }
@@ -750,6 +780,16 @@ export function MessagesPanel() {
       mx?.stopClient();
     };
   }, [refreshConversations, loadTimeline]);
+
+  useEffect(() => {
+    if (!client || !cryptoReady) return;
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      void primeEncryptedDmsForMultiDevice(client);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [client, cryptoReady]);
 
   useEffect(() => {
     if (!withParam) {
@@ -871,6 +911,14 @@ export function MessagesPanel() {
       const room = client.getRoom(activeRoomId);
       if (room) await room.loadMembersIfNeeded();
       await client.sendTextMessage(activeRoomId, text);
+      const cryptoAfter = client.getCrypto();
+      if (cryptoAfter && room) {
+        try {
+          cryptoAfter.prepareToEncrypt(room);
+        } catch {
+          /* ignore */
+        }
+      }
       loadTimeline(client, activeRoomId);
       refreshConversations(client);
     } catch (e) {

@@ -144,6 +144,16 @@ function BreederFilterCombobox({
         onFocus={() => {
           if (debounced.length >= 1 && hits.length) setOpen(true);
         }}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          const h = hits[0];
+          if (h && debounced.length >= 1 && !loading && !pickError) {
+            setInput(h.name);
+            onCommittedSlug(h.slug, h.name);
+            setOpen(false);
+          }
+        }}
         className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
       />
       {breederSlug ? (
@@ -286,6 +296,7 @@ export function StrainsCatalogToolbar({
           onChange={setQ}
           activeListFiltersQuery={activeListFiltersQuery}
           buildStrainDetailHref={(slug) => strainPreviewPath(slug, previewList())}
+          onEnterCommit={() => navigateWith({ q })}
         />
         <div className="shrink-0">
           <label htmlFor="strain-sort" className="mb-1 block text-xs text-[var(--gn-text-muted)]">

@@ -145,6 +145,7 @@ export function BreedersCatalogToolbar() {
           onChange={setQ}
           activeListFiltersQuery={activeListFiltersQuery}
           buildLinkToBreederDetail={(slug) => breederPreviewPath(slug, previewList())}
+          onEnterCommit={() => navigateWith({ q })}
         />
         <div className="min-w-[8rem] shrink-0">
           <label htmlFor="breeder-country" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
@@ -157,6 +158,11 @@ export function BreedersCatalogToolbar() {
             placeholder="e.g. Spain"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              navigateWith({ country: country.trim() });
+            }}
             className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           />
         </div>

@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import type { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicKey, getSupabaseUrl } from "./public-env";
 
 /**
@@ -23,4 +23,29 @@ export function createSupabaseRouteHandlerClient(
       },
     },
   });
+}
+
+/**
+ * PKCE sets several auth cookies. If the final URL differs from the response used during
+ * `exchangeCodeForSession`, copy cookies onto a fresh redirect (see main `/auth/callback`).
+ */
+export function redirectPreservingCookies(
+  source: NextResponse,
+  destination: string,
+): NextResponse {
+  const out = NextResponse.redirect(destination);
+  for (const c of source.cookies.getAll()) {
+    out.cookies.set(c.name, c.value, {
+      domain: c.domain,
+      expires: c.expires,
+      httpOnly: c.httpOnly,
+      maxAge: c.maxAge,
+      path: c.path,
+      priority: c.priority,
+      sameSite: c.sameSite,
+      secure: c.secure,
+      partitioned: c.partitioned,
+    });
+  }
+  return out;
 }

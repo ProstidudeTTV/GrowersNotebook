@@ -47,9 +47,9 @@ You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or 
 
 Email and magic links use the redirect you pass from the app (`emailRedirectTo` / `redirectTo`); every distinct origin + path must appear in **Redirect URLs**.
 
-**Password reset:** Requests use **`POST /api/auth/request-password-reset`**, which sets `redirectTo` to **`/auth/callback/recovery`**. That route exchanges the PKCE **`code`** (or verifies **`token_hash`** + **`type=recovery`** for older-style email links) and redirects to **`/auth/update-password`**.
+**Password reset:** Requests use **`POST /api/auth/request-password-reset`**, which sets `redirectTo` to **`/auth/callback/recovery`**. If your **Reset password** email template still points at **`{{ .SiteURL }}/auth/callback`** (common), the main **`/auth/callback`** handler detects a **recovery** session (JWT **`amr`** / `?type=recovery`) and redirects to **`/auth/update-password`** instead of **`/auth/complete`** (which auto-navigates home).
 
-**Session cookies on the redirect:** The recovery and main callback routes use a Supabase client that writes cookies onto the **same** `NextResponse` as the redirect. Using only `cookies()` from `next/headers` often **does not** attach `Set-Cookie` to a redirect response, so the browser never got a session and `/auth/update-password` behaved like a logged-out user (or you fell through to home after other steps).
+**Session cookies:** Callbacks use a **`NextResponse.next()` cookie jar**, then **`redirectPreservingCookies`** so every `Set-Cookie` from `exchangeCodeForSession` is copied onto the final redirect (including when the recovery URL differs from the first response). Middleware only sets cookies on **`NextResponse.next()`**, not on **`request.cookies`** (Next.js does not treat the latter as the outgoing response).
 
 ### Reset password email template
 

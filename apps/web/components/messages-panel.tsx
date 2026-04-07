@@ -52,9 +52,11 @@ type LoginBundle = {
 const CREATE_ROOM_TIMEOUT_MS = 90_000;
 
 /** Homeserver often returns a short initial timeline; paginate backwards for full history. */
-const TIMELINE_BACKFILL_TARGET = 45;
-const TIMELINE_BACKFILL_PAGE = 60;
-const TIMELINE_BACKFILL_MAX_PAGES = 10;
+const TIMELINE_BACKFILL_TARGET = 32;
+const TIMELINE_BACKFILL_PAGE = 50;
+const TIMELINE_BACKFILL_MAX_PAGES = 6;
+/** Small gap between pagination requests to avoid Synapse client rate limits (429). */
+const TIMELINE_BACKFILL_PAGE_DELAY_MS = 80;
 
 const matrixClientStoreOpts = { timelineSupport: true as const };
 
@@ -95,6 +97,9 @@ async function backfillRoomHistory(
     }
     if (!more) break;
     pages += 1;
+    await new Promise<void>((r) => {
+      window.setTimeout(r, TIMELINE_BACKFILL_PAGE_DELAY_MS);
+    });
   }
 }
 
@@ -526,18 +531,20 @@ export function MessagesPanel() {
           })(),
         ]);
 
-        await tryPrimeMatrixSsssFromGrowersApi(
-          bundle.userId,
-          session.access_token,
-        );
-
         const cryptoPrefix = matrixCryptoStorePrefix(bundle.userId);
         let deviceIdWeRequested = loadPersistedMatrixDevice(bundle.userId);
-        let loginResult = await matrixHomeserverJwtLogin(
-          bundle.homeserverUrl,
-          bundle.jwt,
-          deviceIdWeRequested,
-        );
+        const [, loginRound1] = await Promise.all([
+          tryPrimeMatrixSsssFromGrowersApi(
+            bundle.userId,
+            session.access_token,
+          ),
+          matrixHomeserverJwtLogin(
+            bundle.homeserverUrl,
+            bundle.jwt,
+            deviceIdWeRequested,
+          ),
+        ]);
+        let loginResult = loginRound1;
 
         if (!loginResult.ok && deviceIdWeRequested) {
           clearPersistedMatrixDevice();
@@ -650,14 +657,18 @@ export function MessagesPanel() {
           if (debounceRefresh) window.clearTimeout(debounceRefresh);
           debounceRefresh = window.setTimeout(() => {
             refreshConversations(mx!);
-          }, 400);
+          }, 650);
         };
 
         mx.on(ClientEvent.Sync, (st) => {
           if (st === SyncState.Prepared) {
             refreshConversations(mx!);
+            return;
           }
-          debouncedListRefresh();
+          // Initial sync emits many Syncing events; only debounce after the first full sync.
+          if (mx!.isInitialSyncComplete()) {
+            debouncedListRefresh();
+          }
         });
 
         timelineHandler = (_ev, _room, toStartOfTimeline) => {
@@ -700,16 +711,24 @@ export function MessagesPanel() {
         });
 
         if (cancelled) return;
-        await ensureMatrixKeyBackup(mx!);
-        if (!cancelled) {
-          void syncMatrixSsssWrapToServer(session.access_token, bundle.userId);
-        }
-        if (cancelled) return;
-        const ar = activeRoomIdRef.current;
-        if (ar) loadTimeline(mx!, ar);
         setClient(mx);
         refreshConversations(mx);
+        const arReady = activeRoomIdRef.current;
+        if (arReady) loadTimeline(mx!, arReady);
         setStatus("ready");
+
+        void (async () => {
+          try {
+            await ensureMatrixKeyBackup(mx!);
+            if (cancelled) return;
+            void syncMatrixSsssWrapToServer(session.access_token, bundle.userId);
+            const ar = activeRoomIdRef.current;
+            if (ar) loadTimeline(mx!, ar);
+            refreshConversations(mx!);
+          } catch (e) {
+            console.warn("[matrix] key backup / wrap sync", e);
+          }
+        })();
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : String(e));

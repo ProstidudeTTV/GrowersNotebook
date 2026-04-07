@@ -75,6 +75,10 @@ def main() -> None:
 
     cfg["federation_domain_whitelist"] = []
 
+    # Docker sample defaults (0.2 / 10) are tight for E2EE + initial /sync + pagination.
+    cfg["rc_messages_per_second"] = 3.0
+    cfg["rc_message_burst_count"] = 80.0
+
     reg_secret = os.environ.get("SYNAPSE_REGISTRATION_SHARED_SECRET", "").strip()
     if reg_secret:
         cfg["registration_shared_secret"] = reg_secret

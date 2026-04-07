@@ -16,6 +16,10 @@ import { ProfilesService } from '../profiles/profiles.service';
 import { MatrixService } from './matrix.service';
 import { MatrixSsssWrapService } from './matrix-ssss-wrap.service';
 
+/** Synapse admin PUTs are heavy; login-token + layout bootstrap both call ensure — throttle per profile. */
+const lastSynapseEnsureMs = new Map<string, number>();
+const SYNAPSE_ENSURE_COOLDOWN_MS = 90_000;
+
 @Controller('matrix')
 export class MatrixController {
   constructor(
@@ -27,9 +31,15 @@ export class MatrixController {
 
   /** Create Synapse user if needed and push current Growers display name. */
   private async ensureMessagingUserWithDisplayName(profileId: string) {
+    const now = Date.now();
+    const prev = lastSynapseEnsureMs.get(profileId);
+    if (prev !== undefined && now - prev < SYNAPSE_ENSURE_COOLDOWN_MS) {
+      return;
+    }
     await this.matrix.ensureSynapseUser(profileId);
     const p = await this.profiles.findById(profileId);
     await this.matrix.syncHomeserverDisplayName(profileId, p?.displayName ?? null);
+    lastSynapseEnsureMs.set(profileId, Date.now());
   }
 
   @Post('ensure-account')

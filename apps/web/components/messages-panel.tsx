@@ -45,7 +45,52 @@ type LoginBundle = {
 
 const CREATE_ROOM_TIMEOUT_MS = 90_000;
 
+/** Homeserver often returns a short initial timeline; paginate backwards for full history. */
+const TIMELINE_BACKFILL_TARGET = 45;
+const TIMELINE_BACKFILL_PAGE = 60;
+const TIMELINE_BACKFILL_MAX_PAGES = 10;
+
 const matrixClientStoreOpts = { timelineSupport: true as const };
+
+function timelineMessageLikeCount(events: MatrixEvent[]): number {
+  let n = 0;
+  for (const ev of events) {
+    const t = ev.getType();
+    if (t === EventType.RoomMessage) {
+      if (ev.getContent()?.msgtype) n += 1;
+      continue;
+    }
+    if (t === EventType.RoomMessageEncrypted) n += 1;
+  }
+  return n;
+}
+
+/**
+ * Fetch older events into the live timeline until we have enough messages or the server ends.
+ */
+async function backfillRoomHistory(
+  client: MatrixClient,
+  room: Room,
+  cancelRef: { current: boolean },
+): Promise<void> {
+  const live = room.getLiveTimeline();
+  let pages = 0;
+  while (!cancelRef.current && pages < TIMELINE_BACKFILL_MAX_PAGES) {
+    const events = live.getEvents();
+    if (timelineMessageLikeCount(events) >= TIMELINE_BACKFILL_TARGET) break;
+    let more: boolean;
+    try {
+      more = await client.paginateEventTimeline(live, {
+        backwards: true,
+        limit: TIMELINE_BACKFILL_PAGE,
+      });
+    } catch {
+      break;
+    }
+    if (!more) break;
+    pages += 1;
+  }
+}
 
 function pickThreadRoot(client: MatrixClient, ev: MatrixEvent): MatrixEvent {
   const relates = ev.getContent()?.["m.relates_to"] as
@@ -216,8 +261,10 @@ export function MessagesPanel() {
   const [draft, setDraft] = useState("");
   const [busyPeer, setBusyPeer] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const openedForWith = useRef<string | null>(null);
   const activeRoomIdRef = useRef<string | null>(null);
+  const historyFillCancelRef = useRef(false);
 
   useEffect(() => {
     activeRoomIdRef.current = activeRoomId;
@@ -276,13 +323,28 @@ export function MessagesPanel() {
           continue;
         }
         if (t !== EventType.RoomMessage) continue;
-        if (ev.getContent()?.msgtype !== MsgType.Text) continue;
         const root = pickThreadRoot(c, ev);
+        const rootContent = root.getContent();
+        const rootType = rootContent?.msgtype;
         const sid = root.getSender() ?? "?";
+        let body: string | undefined;
+        if (rootType === MsgType.Text) {
+          body = eventBody(root);
+        } else if (rootType === MsgType.Notice || rootType === MsgType.Emote) {
+          body = eventBody(root);
+        } else if (typeof rootType === "string") {
+          const ob = eventBody(root);
+          body =
+            ob ||
+            (rootType === "org.matrix.custom.html" && typeof rootContent?.body === "string"
+              ? rootContent.body
+              : `[${rootType}]`);
+        }
+        if (body === undefined) continue;
         out.push({
           id: ev.getId()!,
           sender: senderLineLabel(room, sid),
-          body: eventBody(root),
+          body,
         });
       }
       setLines(out);
@@ -423,28 +485,31 @@ export function MessagesPanel() {
         if (!session?.access_token) {
           throw new Error("Sign in to use messages.");
         }
-        const bundle = await apiFetch<LoginBundle>("/matrix/login-token", {
-          method: "POST",
-          body: JSON.stringify({}),
-          token: session.access_token,
-        });
-
-        /**
-         * Must use the same module instance as matrix-js-sdk (rust-crypto calls initAsync() with no URL).
-         * Dynamic import can duplicate the package so pre-init never applies — use static import above.
-         * WASM file is copied to /public/wasm/ during build (see copy-matrix-wasm.cjs).
-         */
         const wasmAsset = new URL(
           "/wasm/matrix_sdk_crypto_wasm_bg.wasm",
           window.location.origin,
         );
-        const wasmProbe = await fetch(wasmAsset.href, { method: "GET" });
-        if (!wasmProbe.ok) {
-          throw new Error(
-            `Encryption module not found (${wasmProbe.status}). Try redeploying the site.`,
-          );
-        }
-        await MatrixCryptoWasm.initAsync(wasmAsset);
+
+        /**
+         * Must use the same module instance as matrix-js-sdk (rust-crypto calls initAsync() with no URL).
+         * Run JWT fetch and WASM init in parallel to cut time-to-sync on slow networks.
+         */
+        const [bundle] = await Promise.all([
+          apiFetch<LoginBundle>("/matrix/login-token", {
+            method: "POST",
+            body: JSON.stringify({}),
+            token: session.access_token,
+          }),
+          (async () => {
+            const wasmProbe = await fetch(wasmAsset.href, { method: "GET" });
+            if (!wasmProbe.ok) {
+              throw new Error(
+                `Encryption module not found (${wasmProbe.status}). Try redeploying the site.`,
+              );
+            }
+            await MatrixCryptoWasm.initAsync(wasmAsset);
+          })(),
+        ]);
 
         const cryptoPrefix = matrixCryptoStorePrefix(bundle.userId);
         let deviceIdWeRequested = loadPersistedMatrixDevice(bundle.userId);
@@ -678,6 +743,35 @@ export function MessagesPanel() {
     };
   }, [client, activeRoomId, loadTimeline, refreshConversations]);
 
+  /** Load older events from the homeserver — initial /sync often only includes recent timeline chunks. */
+  useEffect(() => {
+    if (!client || !activeRoomId || !cryptoReady) return;
+    const room = client.getRoom(activeRoomId);
+    if (!room) return;
+    historyFillCancelRef.current = false;
+    setHistoryLoading(true);
+    void (async () => {
+      try {
+        await backfillRoomHistory(client, room, historyFillCancelRef);
+      } finally {
+        setHistoryLoading(false);
+        if (!historyFillCancelRef.current) {
+          loadTimeline(client, activeRoomId);
+          refreshConversations(client);
+        }
+      }
+    })();
+    return () => {
+      historyFillCancelRef.current = true;
+    };
+  }, [
+    client,
+    activeRoomId,
+    cryptoReady,
+    loadTimeline,
+    refreshConversations,
+  ]);
+
   useEffect(() => {
     if (!client || !activeRoomId || !cryptoReady) return;
     const room = client.getRoom(activeRoomId);
@@ -856,6 +950,11 @@ export function MessagesPanel() {
             Opening chat… (this can take up to a minute)
           </p>
         ) : null}
+        {historyLoading && activeRoomId ? (
+          <p className="mb-2 text-xs text-[var(--gn-text-muted)]">
+            Loading older messages from the server…
+          </p>
+        ) : null}
         <div className="mb-3 max-h-[340px] space-y-2 overflow-y-auto rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3">
           {!activeRoomId ? (
             <p className="text-xs text-[var(--gn-text-muted)]">
@@ -865,8 +964,9 @@ export function MessagesPanel() {
             </p>
           ) : lines.length === 0 ? (
             <p className="text-xs text-[var(--gn-text-muted)]">
-              No messages in this chat yet. Say hello below—your thread will
-              build from here.
+              {historyLoading
+                ? "Fetching your chat history…"
+                : "No messages in this chat yet. Say hello below—your thread will build from here."}
             </p>
           ) : (
             lines.map((ln) => (

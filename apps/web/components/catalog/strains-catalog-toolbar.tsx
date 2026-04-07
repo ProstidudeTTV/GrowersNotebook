@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { CatalogEntitySearchField } from "@/components/catalog/catalog-entity-search-field";
+import { StrainsListSearchField } from "@/components/catalog/strains-list-search-field";
 import { clientApiJson } from "@/lib/client-api";
 import {
   strainPreviewPath,
@@ -262,7 +262,7 @@ export function StrainsCatalogToolbar({
     router.replace(`${pathname}?${p.toString()}`);
   }, [debouncedQ, pathname, router, sp, spKey]);
 
-  const suggestExtraQs = (() => {
+  const activeListFiltersQuery = (() => {
     const e = new URLSearchParams();
     if (breederSlug) e.set("breederSlug", breederSlug);
     const mr = minRating.trim();
@@ -276,15 +276,16 @@ export function StrainsCatalogToolbar({
   const previewList = () => toPreviewList(inputs);
 
   return (
-    <div className="flex w-full flex-col gap-3 lg:max-w-4xl lg:flex-1">
+    <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
+      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+        Strain catalog
+      </legend>
       <div className="flex flex-wrap items-end gap-2 sm:gap-3">
-        <CatalogEntitySearchField
-          placeholder="Search strains…"
+        <StrainsListSearchField
           value={q}
           onChange={setQ}
-          apiListPath="/strains"
-          extraApiQuery={suggestExtraQs}
-          buildDetailHref={(slug) => strainPreviewPath(slug, previewList())}
+          activeListFiltersQuery={activeListFiltersQuery}
+          buildStrainDetailHref={(slug) => strainPreviewPath(slug, previewList())}
         />
         <div className="shrink-0">
           <label htmlFor="strain-sort" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
@@ -370,11 +371,12 @@ export function StrainsCatalogToolbar({
         </button>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Type at least two letters for live strain suggestions.{" "}
+        Catalog search only lists strains here (header search is for growers &
+        posts). Two+ letters open quick picks.{" "}
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
           Reset all filters
         </Link>
       </p>
-    </div>
+    </fieldset>
   );
 }

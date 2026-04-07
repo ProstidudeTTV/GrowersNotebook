@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CatalogEntitySearchField } from "@/components/catalog/catalog-entity-search-field";
+import { BreedersListSearchField } from "@/components/catalog/breeders-list-search-field";
 import {
   breederPreviewPath,
   type BreedersListQuery,
@@ -120,7 +120,7 @@ export function BreedersCatalogToolbar() {
     router.replace(`${pathname}?${p.toString()}`);
   }, [debouncedCountry, pathname, router, sp, spKey]);
 
-  const suggestExtraQs = (() => {
+  const activeListFiltersQuery = (() => {
     const e = new URLSearchParams();
     const c = country.trim();
     if (c) e.set("country", c);
@@ -135,15 +135,16 @@ export function BreedersCatalogToolbar() {
   const previewList = () => toBreederPreviewList(inputs);
 
   return (
-    <div className="flex w-full flex-col gap-3 lg:max-w-4xl lg:flex-1">
+    <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
+      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+        Breeder catalog
+      </legend>
       <div className="flex flex-wrap items-end gap-2 sm:gap-3">
-        <CatalogEntitySearchField
-          placeholder="Search breeders…"
+        <BreedersListSearchField
           value={q}
           onChange={setQ}
-          apiListPath="/breeders"
-          extraApiQuery={suggestExtraQs}
-          buildDetailHref={(slug) => breederPreviewPath(slug, previewList())}
+          activeListFiltersQuery={activeListFiltersQuery}
+          buildLinkToBreederDetail={(slug) => breederPreviewPath(slug, previewList())}
         />
         <div className="min-w-[8rem] shrink-0">
           <label htmlFor="breeder-country" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
@@ -234,12 +235,13 @@ export function BreedersCatalogToolbar() {
         </button>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Live breeder suggestions after two letters. Country filters as you type
-        (short pause).{" "}
+        Catalog search only lists breeders here (header search is for growers &
+        posts). Two+ letters open quick picks; country updates the list after a
+        short pause.{" "}
         <Link href="/breeders" className="text-[#ff6a38] hover:underline">
           Reset all filters
         </Link>
       </p>
-    </div>
+    </fieldset>
   );
 }

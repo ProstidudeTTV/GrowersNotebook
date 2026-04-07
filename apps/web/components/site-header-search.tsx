@@ -1,5 +1,7 @@
 "use client";
 
+/** Site-wide search: public growers + posts only — not strains/breeders catalog. */
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {

@@ -1,45 +1,42 @@
 "use client";
 
+/**
+ * Breeder catalog name search + live /breeders suggestions only.
+ * Independent from the site header (growers/posts) search.
+ */
+
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clientApiJson } from "@/lib/client-api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
-type ListItem = {
+const INPUT_ID = "gn-breeders-catalog-q";
+
+type BreederHit = {
   slug: string;
   name: string;
   description?: string | null;
 };
 
-type ListResponse = { items: ListItem[] };
+type ListResponse = { items: BreederHit[] };
 
-export function CatalogEntitySearchField({
-  id,
-  placeholder,
-  name: fieldName,
+export function BreedersListSearchField({
   value,
   onChange,
-  /** `/strains` or `/breeders` */
-  apiListPath,
-  extraApiQuery = "",
-  buildDetailHref,
+  /** Extra /breeders list params from toolbar filters, e.g. `&country=es&minRating=4` */
+  activeListFiltersQuery,
+  buildLinkToBreederDetail,
 }: {
-  id?: string;
-  placeholder: string;
-  name?: string;
   value: string;
   onChange: (v: string) => void;
-  apiListPath: string;
-  extraApiQuery?: string;
-  buildDetailHref: (slug: string) => string;
+  activeListFiltersQuery: string;
+  buildLinkToBreederDetail: (slug: string) => string;
 }) {
-  const genId = useId();
-  const inputId = id ?? genId;
-  const listboxId = `${inputId}-suggestions`;
+  const listboxId = `${INPUT_ID}-suggestions`;
   const rootRef = useRef<HTMLDivElement>(null);
   const debounced = useDebouncedValue(value.trim(), 280);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<ListItem[]>([]);
+  const [items, setItems] = useState<BreederHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ctrlRef = useRef<AbortController | null>(null);
@@ -66,12 +63,12 @@ export function CatalogEntitySearchField({
       sort: "name",
     });
     const extra =
-      extraApiQuery.startsWith("&")
-        ? extraApiQuery
-        : extraApiQuery
-          ? `&${extraApiQuery}`
+      activeListFiltersQuery.startsWith("&")
+        ? activeListFiltersQuery
+        : activeListFiltersQuery
+          ? `&${activeListFiltersQuery}`
           : "";
-    const path = `${apiListPath}?${qs.toString()}${extra}`;
+    const path = `/breeders?${qs.toString()}${extra}`;
     try {
       const data = await clientApiJson<ListResponse>(path, {
         signal: ctrl.signal,
@@ -82,12 +79,12 @@ export function CatalogEntitySearchField({
     } catch (e) {
       if (!ctrl.signal.aborted) {
         setItems([]);
-        setError(e instanceof Error ? e.message : "Search failed");
+        setError(e instanceof Error ? e.message : "Breeder search failed");
       }
     } finally {
       if (!ctrl.signal.aborted) setLoading(false);
     }
-  }, [apiListPath, debounced, extraApiQuery]);
+  }, [debounced, activeListFiltersQuery]);
 
   useEffect(() => {
     void runFetch();
@@ -105,17 +102,20 @@ export function CatalogEntitySearchField({
   const showPanel = open && debounced.length >= 2;
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1 basis-[12rem]">
-      <label htmlFor={inputId} className="sr-only">
-        Search
+    <div ref={rootRef} className="relative min-w-0 flex-1 basis-[14rem]">
+      <label
+        htmlFor={INPUT_ID}
+        className="mb-1 block text-xs font-medium text-[var(--gn-text-muted)]"
+      >
+        Breeder name
       </label>
       <input
-        id={inputId}
-        name={fieldName}
+        id={INPUT_ID}
         type="search"
+        name="q"
         autoComplete="off"
         enterKeyHint="search"
-        placeholder={placeholder}
+        placeholder="Filter list & quick-open…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => {
@@ -131,11 +131,12 @@ export function CatalogEntitySearchField({
         <ul
           id={listboxId}
           role="listbox"
+          aria-label="Breeder suggestions"
           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-[var(--gn-border)] bg-[var(--gn-menu-bg)] py-1 shadow-[var(--gn-shadow-lg)] backdrop-blur-md"
         >
           {loading ? (
             <li className="px-3 py-2 text-sm text-[var(--gn-text-muted)]">
-              Searching…
+              Searching breeders…
             </li>
           ) : null}
           {error ? (
@@ -145,13 +146,13 @@ export function CatalogEntitySearchField({
           ) : null}
           {!loading && !error && items.length === 0 ? (
             <li className="px-3 py-2 text-sm text-[var(--gn-text-muted)]">
-              No matches. Try another term or relax filters.
+              No breeders match. Try another term or relax filters.
             </li>
           ) : null}
           {items.map((it) => (
             <li key={it.slug} role="option">
               <Link
-                href={buildDetailHref(it.slug)}
+                href={buildLinkToBreederDetail(it.slug)}
                 scroll={false}
                 className="block px-3 py-2.5 text-left transition hover:bg-[var(--gn-surface-hover)]"
                 onClick={() => setOpen(false)}

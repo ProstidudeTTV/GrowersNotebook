@@ -265,7 +265,7 @@ async function ensureSelfJoined(
   client: MatrixClient,
   roomId: string,
 ): Promise<Room | null> {
-  let room = client.getRoom(roomId);
+  const room = client.getRoom(roomId);
   if (!room) return null;
   await room.loadMembersIfNeeded();
   if (room.getMyMembership() === KnownMembership.Invite) {

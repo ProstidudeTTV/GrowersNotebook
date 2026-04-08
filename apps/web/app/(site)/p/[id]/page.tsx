@@ -92,10 +92,8 @@ export default async function PostPage({
   const { id } = await params;
   if (!isUuid(id)) notFound();
   let post: PostDetail;
-  let comments: CommentRow[];
   try {
     post = await apiFetch<PostDetail>(`/posts/${id}`);
-    comments = await apiFetch<CommentRow[]>(`/posts/${id}/comments`);
   } catch {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
@@ -107,9 +105,21 @@ export default async function PostPage({
     );
   }
 
+  let comments: CommentRow[] = [];
+  let commentsFetchFailed = false;
+  try {
+    comments = await apiFetch<CommentRow[]>(`/posts/${id}/comments`);
+  } catch {
+    commentsFetchFailed = true;
+  }
+
   return (
     <main className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 sm:py-8">
-      <PostView initialPost={post} initialComments={comments} />
+      <PostView
+        initialPost={post}
+        initialComments={comments}
+        commentsFetchFailed={commentsFetchFailed}
+      />
     </main>
   );
 }

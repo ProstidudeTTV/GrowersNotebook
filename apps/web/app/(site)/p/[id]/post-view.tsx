@@ -395,13 +395,19 @@ function CommentTree({
 export function PostView({
   initialPost,
   initialComments,
+  commentsFetchFailed: initialCommentsFetchFailed = false,
 }: {
   initialPost: PostDetail;
   initialComments: CommentRow[];
+  /** Server could not load comments (e.g. API error); post still renders. */
+  commentsFetchFailed?: boolean;
 }) {
   const router = useRouter();
   const [post, setPost] = useState(initialPost);
   const [comments, setComments] = useState(initialComments);
+  const [commentsLoadHadError, setCommentsLoadHadError] = useState(
+    initialCommentsFetchFailed,
+  );
   const [text, setText] = useState("");
   const [pendingCommentImages, setPendingCommentImages] = useState<
     PendingCommentImage[]
@@ -484,27 +490,32 @@ export function PostView({
 
   const refreshComments = useCallback(
     async (token?: string | null) => {
-      const supabase = createClient();
-      const t =
-        token !== undefined ? token : await getAccessTokenForApi(supabase);
-      const path = `/posts/${post.id}/comments`;
-      const list = await apiFetch<CommentRow[]>(path, {
-        token: t ?? undefined,
-      });
-      const m = commentVoteOverlay.current;
-      const merged = list.map((c) => {
-        const srv = pickViewerVote(c);
-        const ov = m.get(c.id);
-        if (!ov) {
-          return { ...c, viewerVote: srv };
-        }
-        if (srv === ov.target) {
-          m.delete(c.id);
-          return { ...c, viewerVote: srv };
-        }
-        return { ...c, viewerVote: ov.target };
-      });
-      setComments(merged);
+      try {
+        const supabase = createClient();
+        const t =
+          token !== undefined ? token : await getAccessTokenForApi(supabase);
+        const path = `/posts/${post.id}/comments`;
+        const list = await apiFetch<CommentRow[]>(path, {
+          token: t ?? undefined,
+        });
+        const m = commentVoteOverlay.current;
+        const merged = list.map((c) => {
+          const srv = pickViewerVote(c);
+          const ov = m.get(c.id);
+          if (!ov) {
+            return { ...c, viewerVote: srv };
+          }
+          if (srv === ov.target) {
+            m.delete(c.id);
+            return { ...c, viewerVote: srv };
+          }
+          return { ...c, viewerVote: ov.target };
+        });
+        setComments(merged);
+        setCommentsLoadHadError(false);
+      } catch {
+        setCommentsLoadHadError(true);
+      }
     },
     [post.id],
   );
@@ -1364,6 +1375,26 @@ export function PostView({
         <h2 className="text-base font-semibold text-[var(--gn-text)] sm:text-lg">
           Comments
         </h2>
+        {commentsLoadHadError ? (
+          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            <p>
+              Comments could not be loaded (server error). The thread is still
+              here—try again or refresh the page. If this appeared right after a
+              deploy, apply the latest DB migration (e.g.{" "}
+              <code className="rounded bg-black/10 px-1 text-xs dark:bg-white/10">
+                comments.image_urls
+              </code>
+              ).
+            </p>
+            <button
+              type="button"
+              className="mt-2 text-xs font-semibold text-[#ff4500] underline"
+              onClick={() => void refreshCommentsRef.current()}
+            >
+              Retry loading comments
+            </button>
+          </div>
+        ) : null}
         <div className="mt-3 space-y-2">
           <input
             ref={commentFileInputRef}

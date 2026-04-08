@@ -1,0 +1,19 @@
+---
+description: Growers Notebook runs on Render + GitHub + Supabase; do not default to local dev.
+alwaysApply: true
+---
+
+# Production stack (authoritative)
+
+The maintainer deploys **only** via this stack. **Do not** ask them to confirm Render / GitHub / Supabase or assume a local-only setup.
+
+- **GitHub**: Source of truth; changes reach production by **commit + push** to `main` (or the configured deploy branch).
+- **Render**: Hosts **Next.js web** and **Nest API** (`growers-notebook-web`, `growers-notebook-api`). Use env vars on those services (`INTERNAL_API_URL`, `NEXT_PUBLIC_API_URL`, `WEB_ORIGIN`, etc.), not `.env.local` assumptions.
+- **Supabase**: **Auth and Postgres** for the product. Redirect URLs, JWT, and pools are configured for **production**; see `infra/render/SUPABASE_AUTH.md` when relevant.
+
+## Agent behavior
+
+- Prefer fixes that work **in production** (same-origin API proxy, server env, CORS, `WEB_ORIGIN`).
+- Do **not** treat `localhost`, `.env.local`, or “run `npm run dev`” as the default explanation or fix unless the user **explicitly** says they are developing locally.
+- After code changes that affect deployed behavior, **commit and push** so Render can build; mention deploy timing if the user needs to wait for `live`.
+- Use **Render MCP** / dashboard and **Supabase MCP** when investigating live services instead of guessing.

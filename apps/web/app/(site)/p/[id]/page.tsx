@@ -36,6 +36,7 @@ type CommentRow = {
   authorId: string;
   parentId: string | null;
   body: string;
+  imageUrls?: string[];
   createdAt: string;
   upvotes: number;
   downvotes: number;

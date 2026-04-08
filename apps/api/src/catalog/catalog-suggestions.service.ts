@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { asc, count, eq } from 'drizzle-orm';
+import { asc, count, desc, eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { catalogSuggestions } from '../db/schema';
 import type { CatalogSuggestionKind } from '../db/schema';
@@ -43,11 +43,15 @@ export class CatalogSuggestionsService {
         .select({ total: count() })
         .from(catalogSuggestions)
         .where(where);
+      const order =
+        status === 'pending'
+          ? asc(catalogSuggestions.createdAt)
+          : desc(catalogSuggestions.moderatedAt);
       const rows = await db
         .select()
         .from(catalogSuggestions)
         .where(where)
-        .orderBy(asc(catalogSuggestions.createdAt))
+        .orderBy(order)
         .limit(take)
         .offset(skip);
       return { rows, total: Number(total) };

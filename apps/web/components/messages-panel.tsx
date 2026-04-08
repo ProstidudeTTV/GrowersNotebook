@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { DmSharedPostEmbed } from "@/components/dm-shared-post-embed";
 import { apiFetch } from "@/lib/api-public";
@@ -12,6 +13,7 @@ import {
   clientAbsolutePostUrl,
   firstPostShareMatch,
 } from "@/lib/post-share";
+import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { uploadPostImage } from "@/lib/upload-post-media";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,33 +27,6 @@ import {
 
 const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
-
-/**
- * Vertical photo pile: same-size square tiles, mostly stacked along Y with a
- * tiny ±X stagger and light rotation (not a diagonal staircase down-right).
- */
-const DM_STACK_CARD_PX = 128;
-/** How far each layer sits below the previous (down the column). Smaller = tighter pile. */
-const DM_STACK_OVERLAP_Y = 7;
-/** Tiny alternating horizontal nudge so back corners peek—cards stay on one vertical column. */
-const DM_STACK_JITTER_X = 2;
-const DM_STACK_ROTATION_PAD = 28;
-
-/** Center of stack track + tiny ± jitter (avoids down-right staircase from left-anchored steps). */
-function dmStackCardLeft(stackInnerWidth: number, idx: number): number {
-  const center =
-    (stackInnerWidth - DM_STACK_CARD_PX) / 2 +
-    (idx % 2 === 0 ? -DM_STACK_JITTER_X : DM_STACK_JITTER_X);
-  return Math.max(0, Math.round(center * 10) / 10);
-}
-
-/** Back cards: very light tilt; front (last index) = 0°. */
-function dmStackCardRotation(index: number, total: number): number {
-  if (total <= 1 || index === total - 1) return 0;
-  const depth = total - 1 - index;
-  const sign = index % 2 === 0 ? -1 : 1;
-  return sign * Math.min(4, 1.5 + depth * 0.65);
-}
 
 type PendingAttachment = {
   id: string;
@@ -634,14 +609,21 @@ export function MessagesPanel() {
             ) : (
               threads.map((t) => (
                 <li key={t.id}>
-                  <button
-                    type="button"
-                    className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className={`w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-sm ${
                       t.id === activeThreadId
                         ? "bg-[var(--gn-surface-hover)] text-[var(--gn-text)]"
                         : "text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
                     }`}
                     onClick={() => void selectThread(t.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        void selectThread(t.id);
+                      }
+                    }}
                   >
                     <span className="flex w-full items-start gap-2 text-left">
                       <span
@@ -652,7 +634,13 @@ export function MessagesPanel() {
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium">
-                          {displayNameFor(t.peer.id, selfId, t.peer)}
+                          <Link
+                            href={`/u/${t.peer.id}`}
+                            className="text-[var(--gn-text)] hover:text-[#ff6a38] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {displayNameFor(t.peer.id, selfId, t.peer)}
+                          </Link>
                         </span>
                         {threadPreviewLine(t.lastMessage) ? (
                           <span className="mt-0.5 block truncate text-xs text-[var(--gn-text-muted)]">
@@ -661,7 +649,7 @@ export function MessagesPanel() {
                         ) : null}
                       </span>
                     </span>
-                  </button>
+                  </div>
                 </li>
               ))
             )}
@@ -676,9 +664,12 @@ export function MessagesPanel() {
           {activeThreadId && activePeer ? (
             <p className="mb-2 text-xs text-[var(--gn-text-muted)]">
               Chat with{" "}
-              <span className="font-medium text-[var(--gn-text)]">
+              <Link
+                href={`/u/${activePeer.id}`}
+                className="font-medium text-[var(--gn-text)] hover:text-[#ff6a38] hover:underline"
+              >
                 {displayNameFor(activePeer.id, selfId, activePeer)}
-              </span>
+              </Link>
             </p>
           ) : null}
           <div
@@ -714,22 +705,6 @@ export function MessagesPanel() {
                 ) : (
                   messages.map((ln) => {
                     const imgs = messageImageUrls(ln);
-                    const n = imgs.length;
-                    const stackW =
-                      n <= 1
-                        ? undefined
-                        : DM_STACK_CARD_PX +
-                          DM_STACK_JITTER_X * 2 +
-                          DM_STACK_ROTATION_PAD +
-                          8;
-                    const stackH =
-                      n <= 1
-                        ? undefined
-                        : (n - 1) * DM_STACK_OVERLAP_Y +
-                          DM_STACK_CARD_PX +
-                          DM_STACK_ROTATION_PAD +
-                          12;
-                    const stackInnerW = stackW ?? 0;
                     const share = firstPostShareMatch(ln.body);
                     const caption = share
                       ? captionWithoutShareUrl(ln.body, share.fullUrl).trim()
@@ -740,11 +715,24 @@ export function MessagesPanel() {
                     return (
                       <div
                         key={ln.id}
-                        className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${n > 1 ? "overflow-visible" : ""}`}
+                        className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${imgs.length > 1 ? "overflow-visible" : ""}`}
                       >
                         <div className="flex min-w-0 flex-col overflow-visible">
                           <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
-                            {displayNameFor(ln.senderId, selfId, activePeer)}
+                            {selfId && ln.senderId === selfId ? (
+                              "You"
+                            ) : (
+                              <Link
+                                href={`/u/${ln.senderId}`}
+                                className="hover:text-[#ff6a38] hover:underline"
+                              >
+                                {displayNameFor(
+                                  ln.senderId,
+                                  selfId,
+                                  activePeer,
+                                )}
+                              </Link>
+                            )}
                           </div>
                           {hasText ? (
                             <p className="mt-1.5 whitespace-pre-wrap break-words text-[var(--gn-text)]">
@@ -764,83 +752,20 @@ export function MessagesPanel() {
                             <div
                               className={`overflow-visible ${hasText || showPostEmbed ? "" : "mt-1.5"}`}
                             >
-                              {imgs.length > 1 ? (
-                                <p className="mb-1.5 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
-                                  {selfId && ln.senderId === selfId
-                                    ? `You sent ${imgs.length} photos`
-                                    : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`}
-                                </p>
-                              ) : null}
-                              {imgs.length === 1 ? (
-                                <button
-                                  type="button"
-                                  className="max-w-[min(11rem,85%)] border-0 bg-transparent p-0"
-                                  onClick={() =>
-                                    setLightbox({ urls: imgs, index: 0 })
-                                  }
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={imgs[0]}
-                                    alt=""
-                                    className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
-                                  />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="relative overflow-visible border-0 bg-transparent p-0 text-left"
-                                  style={{
-                                    width: stackW,
-                                    height: stackH,
-                                    minWidth: stackW,
-                                    minHeight: stackH,
-                                  }}
-                                  onClick={() =>
-                                    setLightbox({
-                                      urls: imgs,
-                                      index: imgs.length - 1,
-                                    })
-                                  }
-                                  aria-label={`${imgs.length} photos — open viewer`}
-                                >
-                                  {imgs.map((url, idx) => {
-                                    const rot = dmStackCardRotation(
-                                      idx,
-                                      imgs.length,
-                                    );
-                                    return (
-                                      <span
-                                        key={`${ln.id}-${idx}-${url}`}
-                                        className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
-                                        style={{
-                                          left: dmStackCardLeft(stackInnerW, idx),
-                                          top:
-                                            DM_STACK_ROTATION_PAD / 2 +
-                                            idx * DM_STACK_OVERLAP_Y,
-                                          width: DM_STACK_CARD_PX,
-                                          height: DM_STACK_CARD_PX,
-                                          minWidth: DM_STACK_CARD_PX,
-                                          minHeight: DM_STACK_CARD_PX,
-                                          maxWidth: DM_STACK_CARD_PX,
-                                          maxHeight: DM_STACK_CARD_PX,
-                                          zIndex: idx,
-                                          transform: `rotate(${rot}deg)`,
-                                          transformOrigin: "50% 50%",
-                                        }}
-                                      >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={url}
-                                          alt=""
-                                          className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-contain object-center"
-                                          sizes={`${DM_STACK_CARD_PX}px`}
-                                        />
-                                      </span>
-                                    );
-                                  })}
-                                </button>
-                              )}
+                              <StackedDmStyleImages
+                                urls={imgs}
+                                stackKey={ln.id}
+                                pileLabel={
+                                  imgs.length > 1
+                                    ? selfId && ln.senderId === selfId
+                                      ? `You sent ${imgs.length} photos`
+                                      : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`
+                                    : null
+                                }
+                                onOpen={(index) =>
+                                  setLightbox({ urls: imgs, index })
+                                }
+                              />
                             </div>
                           ) : null}
                         </div>

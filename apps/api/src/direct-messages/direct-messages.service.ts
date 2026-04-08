@@ -14,6 +14,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { getDb } from '../db';
 import {
   dmMessages,
@@ -52,30 +53,8 @@ export class DirectMessagesService {
     private readonly config: ConfigService,
   ) {}
 
-  /** Only our Supabase `post-media` public URLs (same client upload path as posts). */
   private isAllowedDmImageUrl(url: string): boolean {
-    let parsed: URL;
-    try {
-      parsed = new URL(url.trim());
-    } catch {
-      return false;
-    }
-    if (parsed.protocol !== 'https:') return false;
-    const pathNeedle = '/storage/v1/object/public/post-media/';
-    if (!parsed.pathname.startsWith(pathNeedle)) return false;
-
-    const origins = new Set<string>();
-    for (const key of ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'] as const) {
-      const raw = this.config.get<string>(key)?.trim().replace(/\/+$/, '');
-      if (!raw) continue;
-      try {
-        origins.add(new URL(raw).origin);
-      } catch {
-        continue;
-      }
-    }
-    if (origins.size === 0) return false;
-    return origins.has(parsed.origin);
+    return isAllowedPostMediaPublicUrl(this.config, url);
   }
 
   async openThread(userId: string, peerProfileId: string) {

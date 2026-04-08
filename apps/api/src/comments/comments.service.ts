@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { asc, count, desc, eq, sql } from 'drizzle-orm';
+import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { viewerVoteFromRow } from '../common/normalize-viewer-vote';
 import { getDb } from '../db';
@@ -24,6 +26,16 @@ const commentDownVotesExpr = sql<number>`coalesce((select count(*)::int from ${c
 
 const commentScoreExpr = sql<number>`coalesce((select sum(${commentVotes.value})::int from ${commentVotes} where ${commentVotes.commentId} = ${comments.id}), 0)`;
 
+const COMMENT_IMAGE_MAX = 8;
+
+function parseStoredCommentImages(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const u = raw.filter(
+    (x): x is string => typeof x === 'string' && x.trim().length > 0,
+  );
+  return u.map((s) => s.trim());
+}
+
 function commentViewerVoteSelect(viewerId: string | undefined) {
   if (!viewerId) {
     return sql<number | null>`null`.as('viewerVote');
@@ -37,11 +49,38 @@ function commentViewerVoteSelect(viewerId: string | undefined) {
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly profiles: ProfilesService) {}
+  constructor(
+    private readonly profiles: ProfilesService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private normalizeIncomingImageUrls(urls: string[] | undefined): string[] {
+    if (!urls?.length) return [];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const u of urls) {
+      const t = u.trim();
+      if (!t || seen.has(t)) continue;
+      seen.add(t);
+      out.push(t);
+      if (out.length >= COMMENT_IMAGE_MAX) break;
+    }
+    for (const u of out) {
+      if (!isAllowedPostMediaPublicUrl(this.config, u)) {
+        throw new BadRequestException('Invalid image URL.');
+      }
+    }
+    return out;
+  }
 
   async create(
     authorId: string,
-    dto: { postId: string; parentId: string | null; body: string },
+    dto: {
+      postId: string;
+      parentId: string | null;
+      body?: string;
+      imageUrls?: string[];
+    },
   ) {
     const db = getDb();
     const [post] = await db
@@ -61,13 +100,20 @@ export class CommentsService {
       }
     }
 
+    const text = (dto.body ?? '').trim();
+    const imageUrls = this.normalizeIncomingImageUrls(dto.imageUrls);
+    if (!text && imageUrls.length === 0) {
+      throw new BadRequestException('Comment must include text or an image.');
+    }
+
     const [row] = await db
       .insert(comments)
       .values({
         postId: dto.postId,
         authorId,
         parentId: dto.parentId ?? null,
-        body: dto.body.trim(),
+        body: text,
+        imageUrls,
       })
       .returning();
     return row;
@@ -121,6 +167,7 @@ export class CommentsService {
           postTitle: r.postTitle,
           community,
           body: r.comment.body,
+          imageUrls: parseStoredCommentImages(r.comment.imageUrls),
           createdAt: r.comment.createdAt,
           parentId: r.comment.parentId,
           upvotes: Number(r.upvotes),
@@ -244,8 +291,13 @@ export class CommentsService {
     userId: string,
     postId: string,
     commentId: string,
-    body: string,
+    patch: { body?: string; imageUrls?: string[] },
   ) {
+    const hasBody = patch.body !== undefined;
+    const hasImages = patch.imageUrls !== undefined;
+    if (!hasBody && !hasImages) {
+      throw new BadRequestException('No changes.');
+    }
     const db = getDb();
     const [row] = await db
       .select()
@@ -253,11 +305,19 @@ export class CommentsService {
       .where(eq(comments.id, commentId));
     if (!row || row.postId !== postId) throw new NotFoundException();
     if (row.authorId !== userId) throw new ForbiddenException();
-    const trimmed = body.trim();
-    if (!trimmed) throw new BadRequestException('Empty comment');
+
+    const nextBody = hasBody ? patch.body!.trim() : row.body;
+    const nextUrls = hasImages
+      ? this.normalizeIncomingImageUrls(patch.imageUrls)
+      : parseStoredCommentImages(row.imageUrls);
+
+    if (!nextBody.trim() && nextUrls.length === 0) {
+      throw new BadRequestException('Comment must include text or an image.');
+    }
+
     const [updated] = await db
       .update(comments)
-      .set({ body: trimmed })
+      .set({ body: nextBody, imageUrls: nextUrls })
       .where(eq(comments.id, commentId))
       .returning();
     return updated;

@@ -123,6 +123,11 @@ export const comments = pgTable(
       onDelete: 'cascade',
     }),
     body: text('body').notNull(),
+    /** Public `post-media` URLs; may be empty when `body` carries text only. */
+    imageUrls: jsonb('image_urls')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -45,6 +45,7 @@ export class PostCommentsController {
       postId,
       parentId: dto.parentId ?? null,
       body: dto.body,
+      imageUrls: dto.imageUrls,
     });
   }
 
@@ -56,7 +57,10 @@ export class PostCommentsController {
     @CurrentUser() user: JwtUser,
     @Body() dto: UpdateCommentBodyDto,
   ) {
-    return this.comments.updateComment(user.sub, postId, commentId, dto.body);
+    return this.comments.updateComment(user.sub, postId, commentId, {
+      body: dto.body,
+      imageUrls: dto.imageUrls,
+    });
   }
 
   @Delete(':commentId')

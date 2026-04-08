@@ -22,50 +22,67 @@ export function PostMediaDropzone({
   const [busy, setBusy] = useState(false);
 
   const processFile = useCallback(
-    async (file: File) => {
+    async (file: File): Promise<boolean> => {
       const okImage = /^image\/(jpeg|png|webp|gif)$/i.test(file.type);
       const okVideo = /^video\/(mp4|webm|quicktime)$/i.test(file.type);
       if (!okImage && !okVideo) {
-        onError?.("Drop an image (JPEG, PNG, WebP, GIF) or video (MP4, WebM, MOV).");
-        return;
+        onError?.(
+          "Drop an image (JPEG, PNG, WebP, GIF) or video (MP4, WebM, MOV).",
+        );
+        return false;
       }
-      setBusy(true);
       try {
         const supabase = createClient();
         const token = await getAccessTokenForApi(supabase);
         if (!token) {
           onError?.("Sign in to upload media.");
-          return;
+          return false;
         }
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) {
           onError?.("Sign in to upload media.");
-          return;
+          return false;
         }
         if (okImage) {
           const r = await uploadPostImage(supabase, user.id, file);
           if (!r.ok) {
             onError?.(r.message);
-            return;
+            return false;
           }
           onMediaReady(r.publicUrl, "image");
         } else {
           const r = await uploadPostVideo(supabase, user.id, file);
           if (!r.ok) {
             onError?.(r.message);
-            return;
+            return false;
           }
           onMediaReady(r.publicUrl, "video");
         }
+        return true;
       } catch (e) {
         onError?.(e instanceof Error ? e.message : "Upload failed");
+        return false;
+      }
+    },
+    [onError, onMediaReady],
+  );
+
+  const processFiles = useCallback(
+    async (files: File[]) => {
+      if (disabled || files.length === 0) return;
+      setBusy(true);
+      try {
+        for (const file of files) {
+          if (disabled) break;
+          await processFile(file);
+        }
       } finally {
         setBusy(false);
       }
     },
-    [onError, onMediaReady],
+    [disabled, processFile],
   );
 
   const onDrop = useCallback(
@@ -73,19 +90,19 @@ export function PostMediaDropzone({
       e.preventDefault();
       setDragOver(false);
       if (disabled || busy) return;
-      const f = e.dataTransfer.files?.[0];
-      if (f) void processFile(f);
+      const list = e.dataTransfer.files;
+      if (list?.length) void processFiles(Array.from(list));
     },
-    [busy, disabled, processFile],
+    [busy, disabled, processFiles],
   );
 
   const onPick = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
+      const list = e.target.files;
       e.target.value = "";
-      if (f) void processFile(f);
+      if (list?.length) void processFiles(Array.from(list));
     },
-    [processFile],
+    [processFiles],
   );
 
   return (
@@ -125,9 +142,10 @@ export function PostMediaDropzone({
         ref={inputRef}
         id={inputId}
         type="file"
+        multiple
         accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mov"
         className="sr-only"
-        aria-label="Upload image or video"
+        aria-label="Upload images or video"
         disabled={disabled || busy}
         onChange={onPick}
         onClick={(e) => e.stopPropagation()}
@@ -154,7 +172,8 @@ export function PostMediaDropzone({
         {busy ? "Uploading…" : "Drag and drop or upload media"}
       </p>
       <p className="text-center text-xs text-[var(--gn-text-muted)]">
-        Images up to 8 MB · Videos up to 50 MB · Shown below your text on the post, not inside the editor
+        Images up to 8 MB · Videos up to 50 MB · Select multiple files at once ·
+        Shown below your text on the post, not inside the editor
       </p>
     </div>
   );

@@ -1,12 +1,29 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
+
+const COMMENT_IMAGE_MAX = 8;
 
 export class CreateCommentBodyDto {
   @IsOptional()
   @IsUUID()
   parentId?: string | null;
 
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(10000)
-  body!: string;
+  body?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(COMMENT_IMAGE_MAX)
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true })
+  @MaxLength(2048, { each: true })
+  imageUrls?: string[];
 }

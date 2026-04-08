@@ -34,4 +34,9 @@ export class UpdateProfileDto {
   @IsBoolean()
   @Type(() => Boolean)
   showGrowerStatsPublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  showNotebooksPublic?: boolean;
 }

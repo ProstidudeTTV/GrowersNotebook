@@ -10,6 +10,15 @@ export class VotePostDto {
   value!: -1 | 1;
 }
 
+export class VoteNotebookDto {
+  @IsUUID()
+  notebookId!: string;
+
+  @Type(() => Number)
+  @IsIn([-1, 1])
+  value!: -1 | 1;
+}
+
 export class VoteCommentDto {
   @IsUUID()
   commentId!: string;

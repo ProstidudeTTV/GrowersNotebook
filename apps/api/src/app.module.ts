@@ -13,6 +13,7 @@ import { PostsModule } from './posts/posts.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { DirectMessagesModule } from './direct-messages/direct-messages.module';
+import { NotebooksModule } from './notebooks/notebooks.module';
 import { VotesModule } from './votes/votes.module';
 import { getApiPackageRoot } from './paths';
 
@@ -42,6 +43,7 @@ const repoRoot = join(apiRoot, '..', '..');
     AdminModule,
     CatalogModule,
     DirectMessagesModule,
+    NotebooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

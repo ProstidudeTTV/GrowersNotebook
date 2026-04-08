@@ -31,6 +31,12 @@ export const catalogSuggestionStatusEnum = pgEnum('catalog_suggestion_status', [
   'rejected',
 ]);
 
+export const notebookStatusEnum = pgEnum('notebook_status', [
+  'active',
+  'completed',
+  'archived',
+]);
+
 /** Drizzle pgEnum helper type for suggestion kinds */
 export type CatalogSuggestionKind =
   (typeof catalogSuggestionKindEnum.enumValues)[number];
@@ -45,6 +51,10 @@ export const profiles = pgTable('profiles', {
   profilePublic: boolean('profile_public').notNull().default(true),
   /** When false, non-owners do not see seed count or grower tier on the profile card. */
   showGrowerStatsPublic: boolean('show_grower_stats_public')
+    .notNull()
+    .default(true),
+  /** When false, non-owners do not see this user's notebooks on the profile or public listings. */
+  showNotebooksPublic: boolean('show_notebooks_public')
     .notNull()
     .default(true),
   role: roleEnum('role').notNull().default('member'),
@@ -615,5 +625,169 @@ export const dmThreadReads = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.threadId, t.profileId] }),
+  ],
+);
+
+/** Grow diary (NOTEBOOK) — one run per cultivar / grow. */
+export const notebooks = pgTable(
+  'notebooks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    strainId: uuid('strain_id').references(() => strains.id, {
+      onDelete: 'set null',
+    }),
+    /** Free-text strain label when not linked to catalog or as display override. */
+    customStrainLabel: text('custom_strain_label'),
+    title: text('title').notNull(),
+    status: notebookStatusEnum('status').notNull().default('active'),
+    startedAt: timestamp('started_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    plantCount: integer('plant_count'),
+    totalLightWatts: numeric('total_light_watts', {
+      precision: 12,
+      scale: 2,
+    }),
+    harvestDryWeightG: numeric('harvest_dry_weight_g', {
+      precision: 12,
+      scale: 3,
+    }),
+    harvestQualityNotes: text('harvest_quality_notes'),
+    /** Derived on save: harvest_dry_weight_g / total_light_watts */
+    gPerWatt: numeric('g_per_watt', { precision: 14, scale: 6 }),
+    /** Derived: g_per_watt / plant_count when both set */
+    gPerWattPerPlant: numeric('g_per_watt_per_plant', {
+      precision: 14,
+      scale: 6,
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('notebooks_owner_updated_idx').on(t.ownerId, t.updatedAt),
+    index('notebooks_strain_idx').on(t.strainId),
+  ],
+);
+
+export const notebookWeeks = pgTable(
+  'notebook_weeks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    notebookId: uuid('notebook_id')
+      .notNull()
+      .references(() => notebooks.id, { onDelete: 'cascade' }),
+    weekIndex: integer('week_index').notNull(),
+    notes: text('notes'),
+    tempC: numeric('temp_c', { precision: 6, scale: 2 }),
+    humidityPct: numeric('humidity_pct', { precision: 6, scale: 2 }),
+    ph: numeric('ph', { precision: 5, scale: 2 }),
+    ec: numeric('ec', { precision: 8, scale: 3 }),
+    lightCycle: text('light_cycle'),
+    imageUrls: jsonb('image_urls')
+      .notNull()
+      .$type<string[]>()
+      .default(sql`'[]'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('notebook_weeks_notebook_week_uq').on(t.notebookId, t.weekIndex),
+    index('notebook_weeks_notebook_idx').on(t.notebookId),
+  ],
+);
+
+export const nutrientProducts = pgTable(
+  'nutrient_products',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    brand: text('brand'),
+    npk: text('npk'),
+    published: boolean('published').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('nutrient_products_published_name_idx').on(t.published, t.name),
+  ],
+);
+
+export const notebookWeekNutrients = pgTable(
+  'notebook_week_nutrients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekId: uuid('week_id')
+      .notNull()
+      .references(() => notebookWeeks.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id').references(() => nutrientProducts.id, {
+      onDelete: 'set null',
+    }),
+    customLabel: text('custom_label'),
+    dosage: text('dosage'),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [
+    index('notebook_week_nutrients_week_idx').on(t.weekId),
+  ],
+);
+
+export const notebookVotes = pgTable(
+  'notebook_votes',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    notebookId: uuid('notebook_id')
+      .notNull()
+      .references(() => notebooks.id, { onDelete: 'cascade' }),
+    value: integer('value').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.notebookId] }),
+    index('notebook_votes_notebook_idx').on(t.notebookId),
+  ],
+);
+
+export const notebookComments = pgTable(
+  'notebook_comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    notebookId: uuid('notebook_id')
+      .notNull()
+      .references(() => notebooks.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    parentId: uuid('parent_id').references((): AnyPgColumn => notebookComments.id, {
+      onDelete: 'cascade',
+    }),
+    body: text('body').notNull(),
+    imageUrls: jsonb('image_urls')
+      .notNull()
+      .$type<string[]>()
+      .default(sql`'[]'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('notebook_comments_notebook_created_idx').on(t.notebookId, t.createdAt),
+    index('notebook_comments_parent_idx').on(t.parentId),
   ],
 );

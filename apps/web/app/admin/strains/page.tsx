@@ -3,9 +3,11 @@
 import { CreateButton, List, useTable } from "@refinedev/antd";
 import { Button, Table } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminStrainsPage() {
+  const router = useRouter();
   const { tableProps, searchFormProps } = useTable({
     resource: "strains",
     syncWithLocation: true,
@@ -15,7 +17,14 @@ export default function AdminStrainsPage() {
   return (
     <List title="Strains (catalog)" headerButtons={<CreateButton />}>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        onRow={(record) => ({
+          onClick: () =>
+            router.push(`/admin/strains/edit/${(record as { id: string }).id}`),
+        })}
+      >
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
         <Table.Column
@@ -34,7 +43,7 @@ export default function AdminStrainsPage() {
           render={(_, record) => (
             <span className="flex flex-wrap gap-2">
               <Link href={`/admin/strains/edit/${record.id}`}>
-                <Button type="link" size="small">
+                <Button type="link" size="small" onClick={(e) => e.stopPropagation()}>
                   Edit
                 </Button>
               </Link>
@@ -43,12 +52,14 @@ export default function AdminStrainsPage() {
                 target="_blank"
                 rel="noreferrer"
                 className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+                onClick={(e) => e.stopPropagation()}
               >
-                View
+                Public
               </Link>
               <Link
                 href={`/admin/strain-reviews?strainId=${record.id}`}
                 className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+                onClick={(e) => e.stopPropagation()}
               >
                 Reviews
               </Link>

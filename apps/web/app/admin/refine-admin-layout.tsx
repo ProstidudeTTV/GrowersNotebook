@@ -4,8 +4,10 @@ import "@ant-design/v5-patch-for-react-19";
 
 import {
   BarChartOutlined,
+  BookOutlined,
   ExperimentOutlined,
   InboxOutlined,
+  MedicineBoxOutlined,
   MessageOutlined,
   ShopOutlined,
   UploadOutlined,
@@ -111,6 +113,20 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             name: "posts",
             list: "/admin/posts",
             meta: { label: "Posts" },
+          },
+          {
+            name: "notebooks",
+            list: "/admin/notebooks",
+            create: "/admin/notebooks/create",
+            edit: "/admin/notebooks/edit/:id",
+            meta: { label: "Notebooks", icon: <BookOutlined /> },
+          },
+          {
+            name: "nutrient-products",
+            list: "/admin/nutrient-products",
+            create: "/admin/nutrient-products/create",
+            edit: "/admin/nutrient-products/edit/:id",
+            meta: { label: "Nutrient products", icon: <MedicineBoxOutlined /> },
           },
           {
             name: "communities",

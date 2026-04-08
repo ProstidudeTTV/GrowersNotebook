@@ -39,7 +39,7 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `role` enum (`member` / `moderator` / `admin`). |
+| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `role` enum (`member` / `moderator` / `admin`). |
 | `communities` | `slug`, `name`, `description`. |
 | `posts` | `community_id` (**nullable**: null = profile post), `author_id`, `title`, `body_json`, `body_html`, `excerpt`, timestamps. |
 | `comments` | Threaded: `post_id`, `author_id`, `parent_id`, `body`. |
@@ -48,6 +48,11 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 | `comment_reports` | Moderation; unique (`comment_id`, `reporter_id`). |
 | `user_follows` | PK (`follower_id`, `following_id`); CHECK no self-follow. |
 | `community_follows` | PK (`user_id`, `community_id`); “joined” community. |
+| `notebooks` | NOTEBOOK grow diary: `owner_id`, optional `strain_id`, `custom_strain_label`, `title`, `status` (`active` / `completed` / `archived`), harvest fields, derived `g_per_watt` / `g_per_watt_per_plant`. |
+| `notebook_weeks` | Weekly log: env readings, `image_urls` (max 8 via API), unique (`notebook_id`, `week_index`). |
+| `nutrient_products` | Admin-curated product catalog; `notebook_week_nutrients` links rows to a week. |
+| `notebook_votes` | PK (`user_id`, `notebook_id`); `value` ±1. |
+| `notebook_comments` | Threaded comments on a notebook (`parent_id`). |
 
 ## Domain logic (API mental model)
 
@@ -59,7 +64,8 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
   - `GET /posts/following?sort=&page=` — posts where **author** is followed **or** **community** is joined; `community` on items is **null** for profile posts.  
   - `GET /posts/hot/week?page=&pageSize=` — hot **feed**: posts from the **last 7 days** (rolling), ordered by net vote score (then newest). Same item shape as community/following feeds (`items`, `total`, `page`, `pageSize`). Public (optional Bearer).  
   - `GET /profiles/:id`, `GET /profiles/:id/posts`, `GET /profiles/:id/comments` — public profile + tabs (optional Bearer for `viewerFollowing` on profile). If `profile_public` is false and the viewer is not the owner: `GET /profiles/:id` returns the profile card fields plus `profileFeedHiddenFromViewer: true`; `GET /profiles/:id/posts` and `GET /profiles/:id/comments` are empty. The owner always sees full lists. When `show_grower_stats_public` is false (public profile), `seeds` and `growerLevel` are null for non-owners.  
-  - `GET /profiles/me`, `PATCH /profiles/me` — authenticated profile (edit display name, `avatar_url` HTTPS URL, privacy flags).  
+  - `GET /profiles/me`, `PATCH /profiles/me` — authenticated profile (edit display name, `avatar_url` HTTPS URL, privacy flags including `showNotebooksPublic`).  
+  - **Notebooks:** `GET /notebooks`, `GET /notebooks/:id`, profile notebooks tab, votes, comments — see Nest `notebooks` module (public listings respect `show_notebooks_public` and `profile_public`).  
   - `POST /posts` — `communityId` optional (omit for profile post).  
 - **Communities list/detail:** `viewerFollowing` on `GET /communities`, `GET /communities/:slug` when Bearer present.
 - **Posts detail/list:** `author.viewerFollowing` when Bearer present.

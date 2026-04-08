@@ -1,7 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from '../db';
-import { commentVotes, comments, postVotes, posts } from '../db/schema';
+import {
+  commentVotes,
+  comments,
+  notebookVotes,
+  notebooks,
+  postVotes,
+  posts,
+} from '../db/schema';
+import { NotebooksService } from '../notebooks/notebooks.service';
 
 async function setPostVoteRow(
   db: ReturnType<typeof getDb>,
@@ -18,6 +26,30 @@ async function setPostVoteRow(
       .set({ value })
       .where(
         and(eq(postVotes.userId, userId), eq(postVotes.postId, postId)),
+      );
+  }
+}
+
+async function setNotebookVoteRow(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  notebookId: string,
+  value: -1 | 1,
+  hadRow: boolean,
+) {
+  if (!hadRow) {
+    await db
+      .insert(notebookVotes)
+      .values({ userId, notebookId, value });
+  } else {
+    await db
+      .update(notebookVotes)
+      .set({ value })
+      .where(
+        and(
+          eq(notebookVotes.userId, userId),
+          eq(notebookVotes.notebookId, notebookId),
+        ),
       );
   }
 }
@@ -49,6 +81,8 @@ async function setCommentVoteRow(
 
 @Injectable()
 export class VotesService {
+  constructor(private readonly notebooksSvc: NotebooksService) {}
+
   async votePost(userId: string, postId: string, value: -1 | 1) {
     const db = getDb();
     const [post] = await db
@@ -142,5 +176,91 @@ export class VotesService {
         and(eq(postVotes.userId, userId), eq(postVotes.postId, postId)),
       );
     return { ok: true };
+  }
+
+  async voteNotebook(userId: string, notebookId: string, value: -1 | 1) {
+    const db = getDb();
+    const [nb] = await db
+      .select({ id: notebooks.id, ownerId: notebooks.ownerId })
+      .from(notebooks)
+      .where(eq(notebooks.id, notebookId));
+    if (!nb) throw new NotFoundException('Notebook not found');
+    await this.notebooksSvc.assertNotebookReadableByOwnerSettings(
+      nb.ownerId,
+      userId,
+    );
+
+    const [existing] = await db
+      .select({ value: notebookVotes.value })
+      .from(notebookVotes)
+      .where(
+        and(
+          eq(notebookVotes.userId, userId),
+          eq(notebookVotes.notebookId, notebookId),
+        ),
+      );
+
+    const prev = existing?.value === undefined ? null : Number(existing.value);
+    const incoming = Number(value);
+    if (prev === incoming) {
+      await db
+        .delete(notebookVotes)
+        .where(
+          and(
+            eq(notebookVotes.userId, userId),
+            eq(notebookVotes.notebookId, notebookId),
+          ),
+        );
+      const m = await this.notebookVoteMetrics(notebookId, userId);
+      return {
+        ok: true as const,
+        removed: true as const,
+        ...m,
+      };
+    }
+
+    await setNotebookVoteRow(db, userId, notebookId, value, prev !== null);
+    const m = await this.notebookVoteMetrics(notebookId, userId);
+    return {
+      ok: true as const,
+      removed: false as const,
+      ...m,
+    };
+  }
+
+  private async notebookVoteMetrics(notebookId: string, viewerId: string) {
+    const db = getDb();
+    const [{ score, upvotes, downvotes }] = await db
+      .select({
+        score: sql<number>`coalesce(sum(${notebookVotes.value})::int, 0)`.as(
+          'score',
+        ),
+        upvotes: sql<number>`coalesce(sum(case when ${notebookVotes.value} = 1 then 1 else 0 end)::int, 0)`.as(
+          'upvotes',
+        ),
+        downvotes: sql<number>`coalesce(sum(case when ${notebookVotes.value} = -1 then 1 else 0 end)::int, 0)`.as(
+          'downvotes',
+        ),
+      })
+      .from(notebookVotes)
+      .where(eq(notebookVotes.notebookId, notebookId));
+
+    const [vrow] = await db
+      .select({ value: notebookVotes.value })
+      .from(notebookVotes)
+      .where(
+        and(
+          eq(notebookVotes.notebookId, notebookId),
+          eq(notebookVotes.userId, viewerId),
+        ),
+      );
+
+    return {
+      score: Number(score ?? 0),
+      upvotes: Number(upvotes ?? 0),
+      downvotes: Number(downvotes ?? 0),
+      viewerVote:
+        vrow?.value === undefined ? null : (Number(vrow.value) as -1 | 1),
+    };
   }
 }

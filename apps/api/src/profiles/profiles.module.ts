@@ -4,6 +4,7 @@ import { CommentsModule } from '../comments/comments.module';
 import { FollowsModule } from '../follows/follows.module';
 import { NameBlocklistModule } from '../name-blocklist/name-blocklist.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { NotebooksModule } from '../notebooks/notebooks.module';
 import { PostsModule } from '../posts/posts.module';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
@@ -16,6 +17,7 @@ import { ProfilesService } from './profiles.service';
     forwardRef(() => CommentsModule),
     NotificationsModule,
     NameBlocklistModule,
+    forwardRef(() => NotebooksModule),
   ],
   controllers: [ProfilesController],
   providers: [ProfilesService],

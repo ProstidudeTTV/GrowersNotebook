@@ -13,7 +13,7 @@ import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CommentsService } from '../comments/comments.service';
 import { CurrentUser } from '../common/current-user.decorator';
 import { PostsService } from '../posts/posts.service';
-import { VoteCommentDto, VotePostDto } from './dto/vote.dto';
+import { VoteCommentDto, VoteNotebookDto, VotePostDto } from './dto/vote.dto';
 import { VotesService } from './votes.service';
 
 @Controller('votes')
@@ -36,6 +36,12 @@ export class VotesController {
       downvotes: post.downvotes,
       viewerVote: post.viewerVote,
     };
+  }
+
+  @Post('notebook')
+  @UseGuards(SupabaseAuthGuard)
+  voteNotebook(@CurrentUser() user: JwtUser, @Body() dto: VoteNotebookDto) {
+    return this.votes.voteNotebook(user.sub, dto.notebookId, dto.value);
   }
 
   @Post('comment')

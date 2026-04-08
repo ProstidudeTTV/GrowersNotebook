@@ -16,6 +16,7 @@ type MeProfile = {
   avatarUrl: string | null;
   profilePublic: boolean;
   showGrowerStatsPublic: boolean;
+  showNotebooksPublic: boolean;
 };
 
 export function ProfileSettingsForm() {
@@ -31,6 +32,7 @@ export function ProfileSettingsForm() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [profilePublic, setProfilePublic] = useState(true);
   const [showGrowerStatsPublic, setShowGrowerStatsPublic] = useState(true);
+  const [showNotebooksPublic, setShowNotebooksPublic] = useState(true);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [resetSending, setResetSending] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export function ProfileSettingsForm() {
       setAvatarUrl(me.avatarUrl?.trim() ?? "");
       setProfilePublic(me.profilePublic !== false);
       setShowGrowerStatsPublic(me.showGrowerStatsPublic !== false);
+      setShowNotebooksPublic(me.showNotebooksPublic !== false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load profile");
     } finally {
@@ -85,6 +88,7 @@ export function ProfileSettingsForm() {
           avatarUrl: avatarUrl.trim() || null,
           profilePublic,
           showGrowerStatsPublic,
+          showNotebooksPublic,
         }),
       });
       router.refresh();
@@ -345,6 +349,24 @@ export function ProfileSettingsForm() {
             <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
               When off, visitors still see your name and avatar but not vote
               score or tier.
+            </span>
+          </span>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-0.5 hover:bg-[var(--gn-surface-hover)]">
+          <input
+            type="checkbox"
+            checked={showNotebooksPublic}
+            onChange={(e) => setShowNotebooksPublic(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-[var(--gn-border)]"
+          />
+          <span>
+            <span className="block text-sm text-[var(--gn-text)]">
+              Show notebooks on public profile
+            </span>
+            <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+              When off, other users won&apos;t see your NOTEBOOK grow diaries on
+              your profile or in the public notebooks list.
             </span>
           </span>
         </label>

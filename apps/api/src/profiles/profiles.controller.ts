@@ -16,8 +16,10 @@ import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CommentsService } from '../comments/comments.service';
 import { CurrentUser } from '../common/current-user.decorator';
 import { SearchSiteQueryDto } from '../common/dto/search-site.query.dto';
+import { NotebooksService } from '../notebooks/notebooks.service';
 import { PostsService } from '../posts/posts.service';
 import { ListProfileCommentsQueryDto } from './dto/list-profile-comments.query';
+import { ListProfileNotebooksQueryDto } from './dto/list-profile-notebooks.query';
 import { ListProfilePostsQueryDto } from './dto/list-profile-posts.query';
 import { ReportProfileBodyDto } from './dto/report-profile-body.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -29,6 +31,7 @@ export class ProfilesController {
     private readonly profiles: ProfilesService,
     private readonly posts: PostsService,
     private readonly comments: CommentsService,
+    private readonly notebooks: NotebooksService,
   ) {}
 
   @Get('me')
@@ -69,6 +72,31 @@ export class ProfilesController {
       page: query.page,
       pageSize: query.pageSize,
       viewerId: user?.sub,
+    });
+  }
+
+  @Get(':id/notebooks')
+  @UseGuards(OptionalAuthGuard)
+  async listNotebooks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListProfileNotebooksQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    const v = await this.profiles.getProfileNotebookVisibility(id, user?.sub);
+    if (!v.exists) throw new NotFoundException();
+    if (!v.allow) {
+      return {
+        items: [],
+        total: 0,
+        page: query.page,
+        pageSize: query.pageSize,
+      };
+    }
+    return this.notebooks.listByOwner({
+      ownerId: id,
+      viewerId: user?.sub,
+      page: query.page,
+      pageSize: query.pageSize,
     });
   }
 

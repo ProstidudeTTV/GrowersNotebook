@@ -141,6 +141,13 @@
       "when": 1776800000000,
       "tag": "0019_catalog_review_sub_ratings",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1776900000000,
+      "tag": "0020_notebooks",
+      "breakpoints": true
     }
   ]
 }

@@ -96,6 +96,7 @@ export class ProfilesService {
       avatarUrl: row.avatarUrl,
       profilePublic: row.profilePublic,
       showGrowerStatsPublic: row.showGrowerStatsPublic,
+      showNotebooksPublic: row.showNotebooksPublic,
       role: row.role,
       createdAt: row.createdAt,
       seeds,
@@ -125,6 +126,27 @@ export class ProfilesService {
       return { exists: true, allowPosts: false, allowComments: false };
     }
     return { exists: true, allowPosts: true, allowComments: true };
+  }
+
+  /**
+   * Whether the profile owner's NOTEBOOK list should load for this viewer.
+   * Owner always sees their own; non-owners need a public profile and `show_notebooks_public`.
+   */
+  async getProfileNotebookVisibility(
+    profileId: string,
+    viewerId?: string,
+  ): Promise<{ exists: boolean; allow: boolean }> {
+    const row = await this.findById(profileId);
+    if (!row) {
+      return { exists: false, allow: false };
+    }
+    if (viewerId === profileId) {
+      return { exists: true, allow: true };
+    }
+    if (row.profilePublic === false || row.showNotebooksPublic === false) {
+      return { exists: true, allow: false };
+    }
+    return { exists: true, allow: true };
   }
 
   /** Public profile card (no email). Posts/comments lists are empty when private for non-owners. */
@@ -182,6 +204,9 @@ export class ProfilesService {
     }
     if (dto.showGrowerStatsPublic !== undefined) {
       patch.showGrowerStatsPublic = dto.showGrowerStatsPublic;
+    }
+    if (dto.showNotebooksPublic !== undefined) {
+      patch.showNotebooksPublic = dto.showNotebooksPublic;
     }
     if (Object.keys(patch).length > 0) {
       await db.update(profiles).set(patch).where(eq(profiles.id, userId));

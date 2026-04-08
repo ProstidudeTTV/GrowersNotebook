@@ -44,6 +44,23 @@ type CommentsResponse = {
   pageSize: number;
 };
 
+type ProfileNotebookRow = {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  customStrainLabel: string | null;
+  strain: { slug: string; name: string | null } | null;
+  score: number;
+};
+
+type NotebooksResponse = {
+  items: ProfileNotebookRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 const tabClass = (active: boolean) =>
   `rounded-full px-4 py-2 text-sm font-medium transition ${
     active
@@ -57,12 +74,14 @@ export function ProfileView({
   sort: activeSort,
   postsPayload,
   commentsPayload,
+  notebooksPayload,
 }: {
   profile: PublicProfile;
-  tab: "posts" | "comments";
+  tab: "posts" | "comments" | "notebooks";
   sort: "new" | "top";
   postsPayload: FeedResponse | null;
   commentsPayload: CommentsResponse | null;
+  notebooksPayload: NotebooksResponse | null;
 }) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
@@ -149,6 +168,11 @@ export function ProfileView({
   const commentsTotal = commentsPayload?.total ?? 0;
   const commentsPageSize = commentsPayload?.pageSize ?? 20;
   const commentsPage = commentsPayload?.page ?? 1;
+
+  const notebookItems = notebooksPayload?.items ?? [];
+  const notebooksTotal = notebooksPayload?.total ?? 0;
+  const notebooksPageSize = notebooksPayload?.pageSize ?? 20;
+  const notebooksPage = notebooksPayload?.page ?? 1;
 
   const buildPostsHref = (p: {
     tab: string;
@@ -253,6 +277,12 @@ export function ProfileView({
                 >
                   New post on profile
                 </Link>
+                <Link
+                  href={buildPostsHref({ tab: "notebooks", page: 1 })}
+                  className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+                >
+                  Notebooks
+                </Link>
                 <span className="text-xs text-[var(--gn-text-muted)]">
                   (visible on your profile and followers&apos; feeds)
                 </span>
@@ -319,6 +349,12 @@ export function ProfileView({
           className={tabClass(activeTab === "comments")}
         >
           Comments
+        </Link>
+        <Link
+          href={buildPostsHref({ tab: "notebooks" })}
+          className={tabClass(activeTab === "notebooks")}
+        >
+          Notebooks
         </Link>
       </div>
 
@@ -401,7 +437,7 @@ export function ProfileView({
             </>
           )}
         </div>
-      ) : (
+      ) : activeTab === "comments" ? (
         <div className="mt-6 space-y-4">
           {feedHidden ? (
             <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
@@ -438,6 +474,88 @@ export function ProfileView({
                       href={buildPostsHref({
                         tab: "comments",
                         page: commentsPage + 1,
+                      })}
+                      className="text-[#ff4500] hover:underline"
+                    >
+                      Next
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {feedHidden ? (
+            <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
+              Nothing to see here!
+            </p>
+          ) : (
+            <>
+              {isOwn ? (
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/notebooks/new"
+                    className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414]"
+                  >
+                    New notebook
+                  </Link>
+                </div>
+              ) : null}
+              {notebookItems.length === 0 ? (
+                <p className="text-sm text-[var(--gn-text-muted)]">
+                  No public notebooks yet.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {notebookItems.map((n) => {
+                    const strainLabel =
+                      n.strain?.name?.trim() ||
+                      n.customStrainLabel?.trim() ||
+                      null;
+                    return (
+                      <li key={n.id}>
+                        <Link
+                          href={`/notebooks/${encodeURIComponent(n.id)}`}
+                          className="block rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 transition hover:border-[var(--gn-text-muted)]"
+                        >
+                          <p className="font-semibold text-[var(--gn-text)]">
+                            {n.title}
+                          </p>
+                          {strainLabel ? (
+                            <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                              {strainLabel}
+                            </p>
+                          ) : null}
+                          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                            Score {n.score} · {n.status} · updated{" "}
+                            {new Date(n.updatedAt).toLocaleDateString()}
+                          </p>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {notebooksTotal > notebooksPageSize ? (
+                <div className="flex gap-4 text-sm">
+                  {notebooksPage > 1 ? (
+                    <Link
+                      href={buildPostsHref({
+                        tab: "notebooks",
+                        page: notebooksPage - 1,
+                      })}
+                      className="text-[#ff4500] hover:underline"
+                    >
+                      Previous
+                    </Link>
+                  ) : null}
+                  {notebooksPage * notebooksPageSize < notebooksTotal ? (
+                    <Link
+                      href={buildPostsHref({
+                        tab: "notebooks",
+                        page: notebooksPage + 1,
                       })}
                       className="text-[#ff4500] hover:underline"
                     >

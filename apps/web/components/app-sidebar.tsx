@@ -208,6 +208,9 @@ export function AppSidebar({
           <IconFlame className="shrink-0 text-[#ff4500]" />
           Hot this week
         </Link>
+        <Link href="/notebooks" className={navItem} onClick={afterNav}>
+          Notebooks
+        </Link>
         {hotWeekPost ? (
           <p className="mx-3 -mt-0.5 mb-1 line-clamp-2 text-xs leading-snug text-[var(--gn-text-muted)]">
             <span className="font-medium text-[var(--gn-text)]">#1:</span>{" "}

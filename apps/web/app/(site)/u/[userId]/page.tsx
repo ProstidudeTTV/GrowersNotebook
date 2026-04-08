@@ -34,6 +34,23 @@ type CommentsResponse = {
   pageSize: number;
 };
 
+type ProfileNotebookRow = {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  customStrainLabel: string | null;
+  strain: { slug: string; name: string | null } | null;
+  score: number;
+};
+
+type NotebooksResponse = {
+  items: ProfileNotebookRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -78,7 +95,12 @@ export default async function UserProfilePage({
   const { userId } = await params;
   if (!isUuid(userId)) notFound();
   const sp = await searchParams;
-  const activeTab = sp.tab === "comments" ? "comments" : "posts";
+  const activeTab =
+    sp.tab === "comments"
+      ? "comments"
+      : sp.tab === "notebooks"
+        ? "notebooks"
+        : "posts";
   const sort = sp.sort === "top" ? "top" : "new";
   const page = Number(sp.page ?? 1) || 1;
 
@@ -96,6 +118,7 @@ export default async function UserProfilePage({
 
   let postsPayload: FeedResponse | null = null;
   let commentsPayload: CommentsResponse | null = null;
+  let notebooksPayload: NotebooksResponse | null = null;
 
   if (activeTab === "posts") {
     const qs = new URLSearchParams({
@@ -116,7 +139,7 @@ export default async function UserProfilePage({
         pageSize: 20,
       };
     }
-  } else {
+  } else if (activeTab === "comments") {
     const qs = new URLSearchParams({
       page: String(page),
       pageSize: "20",
@@ -134,6 +157,24 @@ export default async function UserProfilePage({
         pageSize: 20,
       };
     }
+  } else {
+    const qs = new URLSearchParams({
+      page: String(page),
+      pageSize: "20",
+    });
+    try {
+      notebooksPayload = await apiFetch<NotebooksResponse>(
+        `/profiles/${userId}/notebooks?${qs.toString()}`,
+        { token: token ?? undefined },
+      );
+    } catch {
+      notebooksPayload = {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+      };
+    }
   }
 
   return (
@@ -143,6 +184,7 @@ export default async function UserProfilePage({
       sort={sort}
       postsPayload={postsPayload}
       commentsPayload={commentsPayload}
+      notebooksPayload={notebooksPayload}
     />
   );
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -56,6 +57,16 @@ export class PostCommentsController {
     @Body() dto: UpdateCommentBodyDto,
   ) {
     return this.comments.updateComment(user.sub, postId, commentId, dto.body);
+  }
+
+  @Delete(':commentId')
+  @UseGuards(SupabaseAuthGuard)
+  remove(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.comments.deleteComment(user.sub, postId, commentId);
   }
 
   @Post(':commentId/report')

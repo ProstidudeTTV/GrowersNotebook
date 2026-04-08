@@ -215,6 +215,24 @@ export class CommentsService {
     };
   }
 
+  /** Author may delete own comment; site `admin` / `moderator` may delete any. Cascades to replies. */
+  async deleteComment(userId: string, postId: string, commentId: string) {
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(comments)
+      .where(eq(comments.id, commentId));
+    if (!row || row.postId !== postId) throw new NotFoundException();
+    const profile = await this.profiles.findById(userId);
+    const isStaff =
+      profile?.role === 'admin' || profile?.role === 'moderator';
+    if (row.authorId !== userId && !isStaff) {
+      throw new ForbiddenException();
+    }
+    await db.delete(comments).where(eq(comments.id, commentId));
+    return { ok: true as const };
+  }
+
   async updateComment(
     userId: string,
     postId: string,

@@ -97,14 +97,19 @@ type CommentRow = {
 function CommentTree({
   comments,
   viewerId,
+  viewerIsStaff,
   onReply,
   onVoteComment,
   onSaveEdit,
   onReport,
+  onDeleteComment,
   votingCommentId,
+  deletingCommentId,
 }: {
   comments: CommentRow[];
   viewerId: string | null;
+  /** Site admin or moderator — may delete any comment. */
+  viewerIsStaff: boolean;
   onReply: (id: string) => void;
   onVoteComment: (commentId: string, value: 1 | -1) => void;
   onSaveEdit: (comment: CommentRow, body: string) => Promise<void>;
@@ -112,7 +117,9 @@ function CommentTree({
     comment: CommentRow,
     reason: string,
   ) => Promise<{ alreadyReported: boolean }>;
+  onDeleteComment: (comment: CommentRow) => void | Promise<void>;
   votingCommentId: string | null;
+  deletingCommentId: string | null;
 }) {
   const byParent = useMemo(() => {
     const map = new Map<string | null, CommentRow[]>();
@@ -179,8 +186,10 @@ function CommentTree({
   const renderNodes = (parentId: string | null, depth: number) => {
     const kids = byParent.get(parentId) ?? [];
     return kids.map((c) => {
-      const busy = votingCommentId === c.id;
+      const busy =
+        votingCommentId === c.id || deletingCommentId === c.id;
       const isAuthor = viewerId != null && viewerId === c.authorId;
+      const canDelete = isAuthor || viewerIsStaff;
       const tier = c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
 
       return (
@@ -238,6 +247,15 @@ function CommentTree({
                         {reportingId === c.id ? "Hide report form" : "Report"}
                       </MenuRow>
                     )}
+                    {canDelete ? (
+                      <MenuRow
+                        danger
+                        onClick={() => void onDeleteComment(c)}
+                        disabled={busy}
+                      >
+                        Delete
+                      </MenuRow>
+                    ) : null}
                   </CommentActionMenu>
                 ) : null}
               </div>
@@ -336,7 +354,13 @@ export function PostView({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+    null,
+  );
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [viewerRole, setViewerRole] = useState<
+    "member" | "moderator" | "admin" | null
+  >(null);
   const [editingPost, setEditingPost] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editMedia, setEditMedia] = useState<PostMediaItem[]>([]);
@@ -366,6 +390,37 @@ export function PostView({
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!viewerId) {
+      setViewerRole(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const token = await getAccessTokenForApi(supabase);
+        if (!token || cancelled) return;
+        const me = await apiFetch<{ role: string }>("/profiles/me", {
+          token,
+        });
+        if (cancelled) return;
+        const r = me.role;
+        setViewerRole(
+          r === "admin" || r === "moderator" || r === "member" ? r : "member",
+        );
+      } catch {
+        if (!cancelled) setViewerRole(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerId]);
+
+  const viewerIsStaff =
+    viewerRole === "admin" || viewerRole === "moderator";
 
   const refreshPost = useCallback(async () => {
     const supabase = createClient();
@@ -612,6 +667,36 @@ export function PostView({
         body: JSON.stringify({ reason: reason || undefined }),
       },
     );
+  };
+
+  const removeComment = async (c: CommentRow) => {
+    if (
+      !window.confirm(
+        "Delete this comment and all replies beneath it? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setDeletingCommentId(c.id);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) {
+        setError("Sign in to delete.");
+        return;
+      }
+      await apiFetch(`/posts/${post.id}/comments/${c.id}`, {
+        method: "DELETE",
+        token,
+      });
+      await refreshComments(token);
+      await refreshPost();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete comment");
+    } finally {
+      setDeletingCommentId(null);
+    }
   };
 
   const setEditDraftStable = useCallback(
@@ -1060,11 +1145,14 @@ export function PostView({
           <CommentTree
             comments={comments}
             viewerId={viewerId}
+            viewerIsStaff={viewerIsStaff}
             onReply={(id) => setReplyTo(id)}
             onVoteComment={voteComment}
             onSaveEdit={saveCommentEdit}
             onReport={reportComment}
+            onDeleteComment={removeComment}
             votingCommentId={votingCommentId}
+            deletingCommentId={deletingCommentId}
           />
         </div>
       </section>

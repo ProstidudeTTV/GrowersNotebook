@@ -56,20 +56,23 @@ export function CommentActionMenu({
 export function MenuRow({
   onClick,
   danger,
+  disabled,
   children,
 }: {
   onClick: () => void;
   danger?: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       role="menuitem"
+      disabled={disabled}
       className={
         danger
-          ? "flex w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
-          : "flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)] hover:shadow-[inset_0_0_0_1px_var(--gn-border)]"
+          ? "flex w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-45 dark:text-red-400 dark:hover:bg-red-950/50"
+          : "flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)] hover:shadow-[inset_0_0_0_1px_var(--gn-border)] disabled:opacity-45"
       }
       onClick={onClick}
     >

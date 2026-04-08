@@ -1,16 +1,45 @@
 "use client";
 
 import { List, useTable } from "@refinedev/antd";
-import { Table } from "antd";
+import { useInvalidate } from "@refinedev/core";
+import { App, Button, Table } from "antd";
 import Link from "next/link";
+import { useState } from "react";
+import { adminAxios } from "@/lib/admin-axios";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminCommentReportsPage() {
+  const { message } = App.useApp();
+  const invalidate = useInvalidate();
+  const [busyCommentId, setBusyCommentId] = useState<string | null>(null);
   const { tableProps, searchFormProps } = useTable({
     resource: "comment-reports",
     syncWithLocation: true,
     pagination: { pageSize: 20 },
   });
+
+  const removeComment = async (commentId: string) => {
+    if (
+      !window.confirm(
+        "Permanently delete this comment and all nested replies?",
+      )
+    ) {
+      return;
+    }
+    setBusyCommentId(commentId);
+    try {
+      await adminAxios.delete(`comments/${commentId}`);
+      message.success("Comment removed");
+      await invalidate({
+        resource: "comment-reports",
+        invalidates: ["list"],
+      });
+    } catch {
+      message.error("Could not remove comment");
+    } finally {
+      setBusyCommentId(null);
+    }
+  };
 
   return (
     <List title="Comment reports">
@@ -53,6 +82,19 @@ export default function AdminCommentReportsPage() {
             >
               View thread
             </Link>
+          )}
+        />
+        <Table.Column
+          title="Moderation"
+          render={(_: unknown, r: { commentId: string }) => (
+            <Button
+              danger
+              size="small"
+              loading={busyCommentId === r.commentId}
+              onClick={() => void removeComment(r.commentId)}
+            >
+              Delete comment
+            </Button>
           )}
         />
       </Table>

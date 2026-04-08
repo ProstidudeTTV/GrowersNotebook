@@ -242,6 +242,13 @@ export class AdminController {
     return rows;
   }
 
+  @Delete('comments/:commentId')
+  deleteCommentAdmin(
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+  ) {
+    return this.comments.deleteCommentAdmin(commentId);
+  }
+
   @Get('profile-reports')
   async listProfileReports(
     @Query('_start') _start: string,

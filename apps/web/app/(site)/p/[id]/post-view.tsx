@@ -97,7 +97,6 @@ type CommentRow = {
 function CommentTree({
   comments,
   viewerId,
-  viewerIsStaff,
   onReply,
   onVoteComment,
   onSaveEdit,
@@ -108,8 +107,6 @@ function CommentTree({
 }: {
   comments: CommentRow[];
   viewerId: string | null;
-  /** Site admin or moderator — may delete any comment. */
-  viewerIsStaff: boolean;
   onReply: (id: string) => void;
   onVoteComment: (commentId: string, value: 1 | -1) => void;
   onSaveEdit: (comment: CommentRow, body: string) => Promise<void>;
@@ -189,7 +186,7 @@ function CommentTree({
       const busy =
         votingCommentId === c.id || deletingCommentId === c.id;
       const isAuthor = viewerId != null && viewerId === c.authorId;
-      const canDelete = isAuthor || viewerIsStaff;
+      const canDelete = isAuthor;
       const tier = c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
 
       return (
@@ -358,9 +355,10 @@ export function PostView({
     null,
   );
   const [viewerId, setViewerId] = useState<string | null>(null);
-  const [viewerRole, setViewerRole] = useState<
-    "member" | "moderator" | "admin" | null
-  >(null);
+  const [postReportOpen, setPostReportOpen] = useState(false);
+  const [postReportDraft, setPostReportDraft] = useState("");
+  const [postReportMsg, setPostReportMsg] = useState<string | null>(null);
+  const [postReportBusy, setPostReportBusy] = useState(false);
   const [editingPost, setEditingPost] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editMedia, setEditMedia] = useState<PostMediaItem[]>([]);
@@ -390,37 +388,6 @@ export function PostView({
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!viewerId) {
-      setViewerRole(null);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const supabase = createClient();
-        const token = await getAccessTokenForApi(supabase);
-        if (!token || cancelled) return;
-        const me = await apiFetch<{ role: string }>("/profiles/me", {
-          token,
-        });
-        if (cancelled) return;
-        const r = me.role;
-        setViewerRole(
-          r === "admin" || r === "moderator" || r === "member" ? r : "member",
-        );
-      } catch {
-        if (!cancelled) setViewerRole(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [viewerId]);
-
-  const viewerIsStaff =
-    viewerRole === "admin" || viewerRole === "moderator";
 
   const refreshPost = useCallback(async () => {
     const supabase = createClient();
@@ -476,6 +443,12 @@ export function PostView({
   useEffect(() => {
     void refreshPostRef.current();
     void refreshCommentsRef.current();
+  }, [post.id]);
+
+  useEffect(() => {
+    setPostReportOpen(false);
+    setPostReportDraft("");
+    setPostReportMsg(null);
   }, [post.id]);
 
   /** Session often isn't ready on first paint; refetch so viewerVote / comment votes apply. */
@@ -667,6 +640,41 @@ export function PostView({
         body: JSON.stringify({ reason: reason || undefined }),
       },
     );
+  };
+
+  const submitPostReport = async () => {
+    if (!viewerId || viewerId === post.author.id) return;
+    setPostReportBusy(true);
+    setPostReportMsg(null);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) throw new Error("Sign in to report.");
+      const res = await apiFetch<{ alreadyReported?: boolean }>(
+        `/posts/${post.id}/report`,
+        {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            reason: postReportDraft.trim() || undefined,
+          }),
+        },
+      );
+      setPostReportOpen(false);
+      setPostReportDraft("");
+      setPostReportMsg(
+        res.alreadyReported
+          ? "You already reported this post."
+          : "Thanks — moderators will review.",
+      );
+      window.setTimeout(() => setPostReportMsg(null), 4000);
+    } catch (e) {
+      setPostReportMsg(
+        e instanceof Error ? e.message : "Could not submit report.",
+      );
+    } finally {
+      setPostReportBusy(false);
+    }
   };
 
   const removeComment = async (c: CommentRow) => {
@@ -970,7 +978,62 @@ export function PostView({
                     </button>
                   </>
                 ) : null}
+                {viewerId && !isOp && !editingPost ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostReportOpen((o) => !o);
+                      setPostReportMsg(null);
+                    }}
+                    className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+                  >
+                    {postReportOpen ? "Close report" : "Report post"}
+                  </button>
+                ) : null}
               </div>
+              {viewerId && !isOp && postReportMsg ? (
+                <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+                  {postReportMsg}
+                </p>
+              ) : null}
+              {viewerId && !isOp && postReportOpen && !editingPost ? (
+                <div
+                  className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3"
+                  data-interactive
+                >
+                  <p className="text-xs text-[var(--gn-text-muted)]">
+                    Report this post to moderators (optional note).
+                  </p>
+                  <textarea
+                    className="gn-input mt-2 w-full p-2 text-sm"
+                    rows={2}
+                    placeholder="Reason (optional)"
+                    value={postReportDraft}
+                    onChange={(e) => setPostReportDraft(e.target.value)}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={postReportBusy}
+                      className="rounded-full bg-[#ff4500] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                      onClick={() => void submitPostReport()}
+                    >
+                      {postReportBusy ? "Sending…" : "Submit report"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={postReportBusy}
+                      className="rounded-full border border-[var(--gn-ring)] px-3 py-1.5 text-xs text-[var(--gn-text)] disabled:opacity-50"
+                      onClick={() => {
+                        setPostReportOpen(false);
+                        setPostReportDraft("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1145,7 +1208,6 @@ export function PostView({
           <CommentTree
             comments={comments}
             viewerId={viewerId}
-            viewerIsStaff={viewerIsStaff}
             onReply={(id) => setReplyTo(id)}
             onVoteComment={voteComment}
             onSaveEdit={saveCommentEdit}

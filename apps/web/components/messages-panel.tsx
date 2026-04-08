@@ -1,10 +1,17 @@
 "use client";
 
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
+import { DmSharedPostEmbed } from "@/components/dm-shared-post-embed";
 import { apiFetch } from "@/lib/api-public";
 import { setMessagesUnreadAny } from "@/lib/messages-unread-store";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import {
+  buildPostShareDmBody,
+  captionWithoutShareUrl,
+  clientAbsolutePostUrl,
+  firstPostShareMatch,
+} from "@/lib/post-share";
 import { uploadPostImage } from "@/lib/upload-post-media";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -153,6 +160,7 @@ export function MessagesPanel() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
+  const sharePostPrefillDone = useRef<string | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const scrollStickBottom = useRef(true);
   const pendingAttachmentsRef = useRef(pendingAttachments);
@@ -335,6 +343,41 @@ export function MessagesPanel() {
     loadThreads,
     router,
   ]);
+
+  useEffect(() => {
+    const sid = searchParams.get("sharePost")?.trim();
+    if (!sid) {
+      sharePostPrefillDone.current = null;
+      return;
+    }
+    if (status !== "ready" || !selfId) return;
+    if (sharePostPrefillDone.current === sid) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await apiFetch<{ title: string }>(`/posts/${sid}`, {
+          method: "GET",
+        });
+        if (cancelled) return;
+        setDraft(
+          buildPostShareDmBody(
+            p.title ?? "",
+            clientAbsolutePostUrl(sid),
+          ),
+        );
+        sharePostPrefillDone.current = sid;
+        router.replace("/messages", { scroll: false });
+      } catch {
+        if (!cancelled) {
+          sharePostPrefillDone.current = null;
+          setActionError("Could not load that post to share.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status, selfId, searchParams, router]);
 
   useLayoutEffect(() => {
     const el = timelineRef.current;
@@ -687,8 +730,12 @@ export function MessagesPanel() {
                           DM_STACK_ROTATION_PAD +
                           12;
                     const stackInnerW = stackW ?? 0;
-                    const bodyText = ln.body.trim();
-                    const hasBody = bodyText.length > 0;
+                    const share = firstPostShareMatch(ln.body);
+                    const caption = share
+                      ? captionWithoutShareUrl(ln.body, share.fullUrl).trim()
+                      : ln.body.trim();
+                    const showPostEmbed = Boolean(share);
+                    const hasText = caption.length > 0;
                     const hasMedia = imgs.length > 0;
                     return (
                       <div
@@ -699,12 +746,15 @@ export function MessagesPanel() {
                           <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
                             {displayNameFor(ln.senderId, selfId, activePeer)}
                           </div>
-                          {hasBody ? (
+                          {hasText ? (
                             <p className="mt-1.5 whitespace-pre-wrap break-words text-[var(--gn-text)]">
-                              {ln.body}
+                              {caption}
                             </p>
                           ) : null}
-                          {hasBody && hasMedia ? (
+                          {showPostEmbed && share ? (
+                            <DmSharedPostEmbed postId={share.postId} />
+                          ) : null}
+                          {(hasText || showPostEmbed) && hasMedia ? (
                             <div
                               className="my-2.5 border-t border-[var(--gn-divide)]"
                               role="separator"
@@ -712,7 +762,7 @@ export function MessagesPanel() {
                           ) : null}
                           {hasMedia ? (
                             <div
-                              className={`overflow-visible ${hasBody ? "" : "mt-1.5"}`}
+                              className={`overflow-visible ${hasText || showPostEmbed ? "" : "mt-1.5"}`}
                             >
                               {imgs.length > 1 ? (
                                 <p className="mb-1.5 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">

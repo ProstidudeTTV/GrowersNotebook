@@ -8,6 +8,7 @@ import {
   MenuRow,
 } from "@/components/comment-action-menu";
 import { FollowUserButton } from "@/components/follow-buttons";
+import { PostShareButton } from "@/components/post-share-button";
 import { UserProfileLink } from "@/components/user-profile-link";
 import { PostEditor } from "@/components/post-editor";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
@@ -799,18 +800,25 @@ export function PostView({
               <span>·</span>
               <span>{new Date(post.createdAt).toLocaleString()}</span>
             </div>
-            <FollowUserButton
-              userId={post.author.id}
-              following={post.author.viewerFollowing ?? false}
-              viewerId={viewerId}
-              onFollowingChange={(v) =>
-                setPost((p) => ({
-                  ...p,
-                  author: { ...p.author, viewerFollowing: v },
-                }))
-              }
-              onFollowComplete={refreshPost}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <PostShareButton
+                postId={post.id}
+                postTitle={post.title}
+                viewerId={viewerId}
+              />
+              <FollowUserButton
+                userId={post.author.id}
+                following={post.author.viewerFollowing ?? false}
+                viewerId={viewerId}
+                onFollowingChange={(v) =>
+                  setPost((p) => ({
+                    ...p,
+                    author: { ...p.author, viewerFollowing: v },
+                  }))
+                }
+                onFollowComplete={refreshPost}
+              />
+            </div>
             {isOp && !editingPost ? (
               <span className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
                 <button

@@ -37,16 +37,27 @@ export class CatalogSuggestionsService {
     status?: 'pending' | 'approved' | 'rejected',
   ) {
     const db = getDb();
-    const where =
-      status != null ? eq(catalogSuggestions.status, status) : undefined;
+    if (status != null) {
+      const where = eq(catalogSuggestions.status, status);
+      const [{ total }] = await db
+        .select({ total: count() })
+        .from(catalogSuggestions)
+        .where(where);
+      const rows = await db
+        .select()
+        .from(catalogSuggestions)
+        .where(where)
+        .orderBy(asc(catalogSuggestions.createdAt))
+        .limit(take)
+        .offset(skip);
+      return { rows, total: Number(total) };
+    }
     const [{ total }] = await db
       .select({ total: count() })
-      .from(catalogSuggestions)
-      .where(where);
+      .from(catalogSuggestions);
     const rows = await db
       .select()
       .from(catalogSuggestions)
-      .where(where)
       .orderBy(asc(catalogSuggestions.createdAt))
       .limit(take)
       .offset(skip);

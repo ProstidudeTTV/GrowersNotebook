@@ -22,12 +22,7 @@ export class CatalogReviewModerationService {
     const where =
       conditions.length > 0 ? and(...conditions) : undefined;
 
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(strainReviews)
-      .where(where);
-
-    const rows = await db
+    const listQuery = db
       .select({
         id: strainReviews.id,
         strainId: strainReviews.strainId,
@@ -44,10 +39,22 @@ export class CatalogReviewModerationService {
       .from(strainReviews)
       .innerJoin(strains, eq(strainReviews.strainId, strains.id))
       .innerJoin(profiles, eq(strainReviews.authorId, profiles.id))
-      .where(where)
       .orderBy(desc(strainReviews.createdAt))
       .limit(take)
       .offset(skip);
+
+    if (where !== undefined) {
+      const [{ total }] = await db
+        .select({ total: count() })
+        .from(strainReviews)
+        .where(where);
+      const rows = await listQuery.where(where);
+      return { rows, total: Number(total) };
+    }
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(strainReviews);
+    const rows = await listQuery;
 
     return { rows, total: Number(total) };
   }
@@ -68,12 +75,7 @@ export class CatalogReviewModerationService {
     const where =
       conditions.length > 0 ? and(...conditions) : undefined;
 
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(breederReviews)
-      .where(where);
-
-    const rows = await db
+    const listQuery = db
       .select({
         id: breederReviews.id,
         breederId: breederReviews.breederId,
@@ -90,10 +92,22 @@ export class CatalogReviewModerationService {
       .from(breederReviews)
       .innerJoin(breeders, eq(breederReviews.breederId, breeders.id))
       .innerJoin(profiles, eq(breederReviews.authorId, profiles.id))
-      .where(where)
       .orderBy(desc(breederReviews.createdAt))
       .limit(take)
       .offset(skip);
+
+    if (where !== undefined) {
+      const [{ total }] = await db
+        .select({ total: count() })
+        .from(breederReviews)
+        .where(where);
+      const rows = await listQuery.where(where);
+      return { rows, total: Number(total) };
+    }
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(breederReviews);
+    const rows = await listQuery;
 
     return { rows, total: Number(total) };
   }

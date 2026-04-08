@@ -538,6 +538,11 @@ export const dmMessages = pgTable(
     body: text('body').notNull(),
     /** Public https URL in `post-media` bucket (set with optional caption in `body`). */
     imageUrl: text('image_url'),
+    /** Ordered public `post-media` URLs; mirrors first entry in `image_url` for thread preview SQL. */
+    imageUrls: jsonb('image_urls')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

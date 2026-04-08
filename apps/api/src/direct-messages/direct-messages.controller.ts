@@ -49,6 +49,7 @@ export class DirectMessagesController {
     return this.dm.postMessage(threadId, user.sub, {
       body: body.body?.trim() ?? '',
       imageUrl: body.imageUrl?.trim() || undefined,
+      imageUrls: body.imageUrls,
     });
   }
 

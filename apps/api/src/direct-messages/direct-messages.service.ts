@@ -24,8 +24,24 @@ import {
 import { FollowsService } from '../follows/follows.service';
 import { ProfilesService } from '../profiles/profiles.service';
 
+const DM_MESSAGE_IMAGE_MAX = 8;
+
 function canonicalPair(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];
+}
+
+function normalizeStoredMessageImages(
+  imageUrlsJson: unknown,
+  legacyImageUrl: string | null | undefined,
+): string[] {
+  if (Array.isArray(imageUrlsJson)) {
+    const u = imageUrlsJson.filter(
+      (x): x is string => typeof x === 'string' && x.trim().length > 0,
+    );
+    if (u.length) return u;
+  }
+  const one = legacyImageUrl?.trim();
+  return one ? [one] : [];
 }
 
 @Injectable()
@@ -113,6 +129,7 @@ export class DirectMessagesService {
       created_at: string;
       last_body: string | null;
       last_image_url: string | null;
+      last_image_urls: unknown;
       last_sender_id: string | null;
       last_created_at: string | null;
       last_message_id: string | null;
@@ -125,12 +142,13 @@ export class DirectMessagesService {
         t.created_at,
         lm.body AS last_body,
         lm.image_url AS last_image_url,
+        lm.image_urls AS last_image_urls,
         lm.sender_id AS last_sender_id,
         lm.created_at AS last_created_at,
         lm.id AS last_message_id
       FROM ${dmThreads} AS t
       LEFT JOIN LATERAL (
-        SELECT m.id, m.body, m.image_url, m.sender_id, m.created_at
+        SELECT m.id, m.body, m.image_url, m.image_urls, m.sender_id, m.created_at
         FROM ${dmMessages} AS m
         WHERE m.thread_id = t.id
         ORDER BY m.created_at DESC, m.id DESC
@@ -192,6 +210,10 @@ export class DirectMessagesService {
       const unread =
         hasInboundLast &&
         (readAt == null || readAt.getTime() < lastAt.getTime());
+      const lastImages = normalizeStoredMessageImages(
+        r.last_image_urls,
+        r.last_image_url,
+      );
       return {
         id: r.id,
         peer: {
@@ -203,7 +225,8 @@ export class DirectMessagesService {
             ? {
                 id: r.last_message_id,
                 body: r.last_body ?? '',
-                imageUrl: r.last_image_url ?? null,
+                imageUrls: lastImages,
+                imageUrl: lastImages[0] ?? null,
                 senderId: r.last_sender_id,
                 createdAt: r.last_created_at,
               }
@@ -275,6 +298,7 @@ export class DirectMessagesService {
         senderId: dmMessages.senderId,
         body: dmMessages.body,
         imageUrl: dmMessages.imageUrl,
+        imageUrls: dmMessages.imageUrls,
         createdAt: dmMessages.createdAt,
       })
       .from(dmMessages)
@@ -305,13 +329,17 @@ export class DirectMessagesService {
     }
     const oldestId = oldest?.id ?? null;
     return {
-      items: chronological.map((m) => ({
-        id: m.id,
-        senderId: m.senderId,
-        body: m.body,
-        imageUrl: m.imageUrl ?? null,
-        createdAt: m.createdAt.toISOString(),
-      })),
+      items: chronological.map((m) => {
+        const urls = normalizeStoredMessageImages(m.imageUrls, m.imageUrl);
+        return {
+          id: m.id,
+          senderId: m.senderId,
+          body: m.body,
+          imageUrls: urls,
+          imageUrl: urls[0] ?? null,
+          createdAt: m.createdAt.toISOString(),
+        };
+      }),
       oldestId: oldestId ?? null,
       hasMore,
     };
@@ -320,16 +348,31 @@ export class DirectMessagesService {
   async postMessage(
     threadId: string,
     userId: string,
-    payload: { body: string; imageUrl?: string },
+    payload: { body: string; imageUrl?: string; imageUrls?: string[] },
   ) {
     await this.ensureParticipant(threadId, userId);
     const text = (payload.body ?? '').trim();
-    const imageUrl = payload.imageUrl?.trim();
-    if (!text && !imageUrl) {
+    const fromList = (payload.imageUrls ?? [])
+      .map((u) => u.trim())
+      .filter(Boolean);
+    const single = payload.imageUrl?.trim();
+    const merged =
+      fromList.length > 0 ? fromList : single ? [single] : [];
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    for (const u of merged) {
+      if (seen.has(u)) continue;
+      seen.add(u);
+      urls.push(u);
+      if (urls.length >= DM_MESSAGE_IMAGE_MAX) break;
+    }
+    if (!text && urls.length === 0) {
       throw new BadRequestException('Message must include text or an image.');
     }
-    if (imageUrl && !this.isAllowedDmImageUrl(imageUrl)) {
-      throw new BadRequestException('Invalid image URL.');
+    for (const u of urls) {
+      if (!this.isAllowedDmImageUrl(u)) {
+        throw new BadRequestException('Invalid image URL.');
+      }
     }
     const db = getDb();
     const [msg] = await db
@@ -338,24 +381,28 @@ export class DirectMessagesService {
         threadId,
         senderId: userId,
         body: text,
-        imageUrl: imageUrl || null,
+        imageUrl: urls[0] ?? null,
+        imageUrls: urls,
       })
       .returning({
         id: dmMessages.id,
         senderId: dmMessages.senderId,
         body: dmMessages.body,
         imageUrl: dmMessages.imageUrl,
+        imageUrls: dmMessages.imageUrls,
         createdAt: dmMessages.createdAt,
       });
     await db
       .update(dmThreads)
       .set({ lastMessageAt: msg.createdAt })
       .where(eq(dmThreads.id, threadId));
+    const outUrls = normalizeStoredMessageImages(msg.imageUrls, msg.imageUrl);
     return {
       id: msg.id,
       senderId: msg.senderId,
       body: msg.body,
-      imageUrl: msg.imageUrl ?? null,
+      imageUrls: outUrls,
+      imageUrl: outUrls[0] ?? null,
       createdAt: msg.createdAt.toISOString(),
     };
   }

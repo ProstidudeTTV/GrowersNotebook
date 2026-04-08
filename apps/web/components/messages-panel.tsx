@@ -19,6 +19,19 @@ import {
 const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
 
+type PendingAttachment = {
+  id: string;
+  /** Local blob URL for instant preview; revoked after upload. */
+  localBlobUrl?: string;
+  remoteUrl?: string;
+  uploading: boolean;
+  error?: string;
+};
+
+function revokePendingLocal(a: PendingAttachment) {
+  if (a.localBlobUrl) URL.revokeObjectURL(a.localBlobUrl);
+}
+
 type OpenThreadResponse = {
   threadId: string;
   peer: { id: string; displayName: string | null };
@@ -102,8 +115,9 @@ export function MessagesPanel() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [draft, setDraft] = useState("");
-  const [pendingImageUrls, setPendingImageUrls] = useState<string[]>([]);
-  const [imageBusy, setImageBusy] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingAttachment[]
+  >([]);
   const [lightbox, setLightbox] = useState<{
     urls: string[];
     index: number;
@@ -114,6 +128,22 @@ export function MessagesPanel() {
   const deepLinkProcessedOk = useRef<string | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const scrollStickBottom = useRef(true);
+  const pendingAttachmentsRef = useRef(pendingAttachments);
+  pendingAttachmentsRef.current = pendingAttachments;
+
+  useEffect(() => {
+    return () => {
+      for (const a of pendingAttachmentsRef.current) revokePendingLocal(a);
+    };
+  }, []);
+
+  const removePendingAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => {
+      const found = prev.find((x) => x.id === id);
+      if (found) revokePendingLocal(found);
+      return prev.filter((x) => x.id !== id);
+    });
+  }, []);
 
   const fetchToken = useCallback(async () => {
     return getAccessTokenForApi(supabase);
@@ -294,6 +324,12 @@ export function MessagesPanel() {
 
   const selectThread = async (threadId: string) => {
     setActionError(null);
+    if (threadId !== activeThreadId) {
+      setPendingAttachments((prev) => {
+        for (const a of prev) revokePendingLocal(a);
+        return [];
+      });
+    }
     setActiveThreadId(threadId);
     scrollStickBottom.current = true;
     try {
@@ -330,7 +366,27 @@ export function MessagesPanel() {
 
   const sendMessage = async () => {
     const text = draft.trim();
-    if (!activeThreadId || (!text && pendingImageUrls.length === 0)) return;
+    const uploading = pendingAttachments.some((a) => a.uploading);
+    const hasError = pendingAttachments.some((a) => a.error);
+    const remoteUrls = pendingAttachments
+      .map((a) => a.remoteUrl)
+      .filter(Boolean) as string[];
+    const allUploaded =
+      pendingAttachments.length === 0 ||
+      (remoteUrls.length === pendingAttachments.length &&
+        !uploading &&
+        !hasError);
+    if (!activeThreadId || (!text && remoteUrls.length === 0)) return;
+    if (pendingAttachments.length > 0 && !allUploaded) {
+      if (uploading) {
+        setActionError("Wait for photos to finish uploading.");
+      } else if (hasError) {
+        setActionError("Remove photos that failed to upload, then try again.");
+      } else {
+        setActionError("Photos are not ready to send yet.");
+      }
+      return;
+    }
     setActionError(null);
     try {
       const token = await fetchToken();
@@ -338,14 +394,14 @@ export function MessagesPanel() {
       const payload: { body: string; imageUrls?: string[] } = {
         body: text,
       };
-      if (pendingImageUrls.length) payload.imageUrls = pendingImageUrls;
+      if (remoteUrls.length) payload.imageUrls = remoteUrls;
       await apiFetch(`/direct-messages/threads/${activeThreadId}/messages`, {
         method: "POST",
         token,
         body: JSON.stringify(payload),
       });
       setDraft("");
-      setPendingImageUrls([]);
+      setPendingAttachments([]);
       scrollStickBottom.current = true;
       await loadMessagesPage(activeThreadId);
       await loadThreads();
@@ -360,33 +416,82 @@ export function MessagesPanel() {
     fileInputRef.current?.click();
   };
 
-  const onImageFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = "";
-    if (!files?.length || !selfId) return;
-    const room = DM_ATTACH_MAX - pendingImageUrls.length;
-    if (room <= 0) return;
-    const list = Array.from(files).slice(0, room);
-    setActionError(null);
-    setImageBusy(true);
-    try {
-      const next = [...pendingImageUrls];
-      for (const file of list) {
-        const r = await uploadPostImage(supabase, selfId, file);
-        if (!r.ok) {
-          setActionError(r.message);
-          break;
-        }
-        next.push(r.publicUrl);
-      }
-      setPendingImageUrls(next);
-    } catch (err) {
-      setActionError(
-        err instanceof Error ? err.message : "Could not upload image.",
-      );
-    } finally {
-      setImageBusy(false);
+  const onImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const files = input.files;
+
+    if (!files?.length) {
+      input.value = "";
+      return;
     }
+    if (!selfId) {
+      setActionError("Sign in to attach photos.");
+      input.value = "";
+      return;
+    }
+
+    setActionError(null);
+    const room = DM_ATTACH_MAX - pendingAttachments.length;
+    if (room <= 0) {
+      input.value = "";
+      return;
+    }
+    const list = Array.from(files).slice(0, room);
+    input.value = "";
+    const newItems: PendingAttachment[] = list.map((file) => ({
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      localBlobUrl: URL.createObjectURL(file),
+      uploading: true,
+    }));
+
+    setPendingAttachments((prev) => [...prev, ...newItems]);
+
+    void Promise.all(
+      list.map(async (file, i) => {
+        const itemId = newItems[i]!.id;
+        try {
+          const r = await uploadPostImage(supabase, selfId, file);
+          setPendingAttachments((prev) => {
+            const cur = prev.find((x) => x.id === itemId);
+            if (!cur) return prev;
+            if (!r.ok) {
+              return prev.map((x) =>
+                x.id === itemId
+                  ? { ...x, uploading: false, error: r.message }
+                  : x,
+              );
+            }
+            revokePendingLocal(cur);
+            return prev.map((x) =>
+              x.id === itemId
+                ? {
+                    ...x,
+                    uploading: false,
+                    remoteUrl: r.publicUrl,
+                    localBlobUrl: undefined,
+                    error: undefined,
+                  }
+                : x,
+            );
+          });
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Could not upload image.";
+          setPendingAttachments((prev) => {
+            const cur = prev.find((x) => x.id === itemId);
+            if (!cur) return prev;
+            return prev.map((x) =>
+              x.id === itemId
+                ? { ...x, uploading: false, error: message }
+                : x,
+            );
+          });
+        }
+      }),
+    );
   };
 
   if (status === "idle") {
@@ -598,47 +703,74 @@ export function MessagesPanel() {
               tabIndex={-1}
               onChange={(e) => void onImageFileChange(e)}
             />
-            {pendingImageUrls.length > 0 ? (
+            {pendingAttachments.length > 0 ? (
               <div className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-xs text-[var(--gn-text-muted)]">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[var(--gn-text)]">
-                    {pendingImageUrls.length} photo
-                    {pendingImageUrls.length === 1 ? "" : "s"} ready
+                    {pendingAttachments.length} photo
+                    {pendingAttachments.length === 1 ? "" : "s"}{" "}
+                    {pendingAttachments.some((a) => a.uploading)
+                      ? "(uploading…)"
+                      : pendingAttachments.every((a) => a.remoteUrl)
+                        ? "ready"
+                        : ""}
                   </span>
                   <button
                     type="button"
                     className="font-semibold text-[#ff6a38] hover:underline"
-                    onClick={() => setPendingImageUrls([])}
+                    onClick={() => {
+                      setPendingAttachments((prev) => {
+                        for (const a of prev) revokePendingLocal(a);
+                        return [];
+                      });
+                    }}
                   >
                     Clear all
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {pendingImageUrls.map((url, i) => (
-                    <div
-                      key={url}
-                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--gn-divide)]"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-[10px] font-bold text-white hover:bg-black/80"
-                        aria-label={`Remove photo ${i + 1}`}
-                        onClick={() =>
-                          setPendingImageUrls((prev) =>
-                            prev.filter((_, j) => j !== i),
-                          )
-                        }
+                  {pendingAttachments.map((att, i) => {
+                    const src = att.remoteUrl ?? att.localBlobUrl ?? "";
+                    return (
+                      <div
+                        key={att.id}
+                        className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
                       >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                        {src ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={src}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : null}
+                        {att.uploading ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
+                            aria-hidden
+                          >
+                            …
+                          </div>
+                        ) : null}
+                        {att.error ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-[9px] font-medium leading-tight text-white"
+                            title={att.error}
+                          >
+                            Failed
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-text)] text-sm font-light leading-none text-[var(--gn-surface)] shadow-md hover:bg-[var(--gn-text-muted)]"
+                          aria-label={`Remove photo ${i + 1}`}
+                          onClick={() => removePendingAttachment(att.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
@@ -648,7 +780,7 @@ export function MessagesPanel() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Type a message…"
-                disabled={!activeThreadId || imageBusy}
+                disabled={!activeThreadId}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -661,8 +793,7 @@ export function MessagesPanel() {
                 className="shrink-0 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
                 disabled={
                   !activeThreadId ||
-                  imageBusy ||
-                  pendingImageUrls.length >= DM_ATTACH_MAX
+                  pendingAttachments.length >= DM_ATTACH_MAX
                 }
                 onClick={onPickImage}
               >
@@ -671,11 +802,20 @@ export function MessagesPanel() {
               <button
                 type="button"
                 className="rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
-                disabled={
-                  !activeThreadId ||
-                  imageBusy ||
-                  (!draft.trim() && pendingImageUrls.length === 0)
-                }
+                disabled={(() => {
+                  if (!activeThreadId) return true;
+                  const uploading = pendingAttachments.some((a) => a.uploading);
+                  const hasErr = pendingAttachments.some((a) => a.error);
+                  const remotes = pendingAttachments.filter((a) => a.remoteUrl);
+                  const incomplete =
+                    pendingAttachments.length > 0 &&
+                    remotes.length !== pendingAttachments.length;
+                  if (uploading || hasErr || incomplete) return true;
+                  return (
+                    !draft.trim() &&
+                    remotes.length === 0
+                  );
+                })()}
                 onClick={() => void sendMessage()}
               >
                 Send

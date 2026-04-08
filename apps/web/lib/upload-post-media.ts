@@ -65,8 +65,8 @@ async function blobToResizedJpeg(file: File): Promise<Blob> {
   if (typeof createImageBitmap === "function") {
     try {
       const srcBmp = await createImageBitmap(file);
-      let w = srcBmp.width;
-      let h = srcBmp.height;
+      const w = srcBmp.width;
+      const h = srcBmp.height;
       const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(w, h));
       const tw = Math.max(1, Math.round(w * scale));
       const th = Math.max(1, Math.round(h * scale));

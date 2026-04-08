@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
- * Centered image overlay with optional prev/next (Messenger-style).
- * Image is capped so it never fills the viewport on mobile or desktop.
+ * Full-viewer overlay for DM attachments. Rendered with createPortal on
+ * document.body so parent flex/transform cannot squash sizing or trap fixed
+ * positioning.
  */
 export function DmImageLightbox({
   urls,
@@ -59,13 +61,16 @@ export function DmImageLightbox({
     };
   }, [onClose, goNext, goPrev, hasNav]);
 
-  if (!src) return null;
+  if (!src || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5">
+  const maxW = "min(92vw, 34rem)";
+  const maxH = "min(76dvh, 36rem)";
+
+  const shell = (
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 bg-black/75"
+        className="absolute inset-0 bg-black/80"
         aria-label="Close image viewer"
         onClick={onClose}
       />
@@ -73,7 +78,7 @@ export function DmImageLightbox({
         <>
           <button
             type="button"
-            className="absolute left-2 top-1/2 z-[210] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:left-4"
+            className="absolute left-2 top-1/2 z-[510] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:left-4"
             aria-label="Previous image"
             onClick={(e) => {
               e.stopPropagation();
@@ -84,7 +89,7 @@ export function DmImageLightbox({
           </button>
           <button
             type="button"
-            className="absolute right-2 top-1/2 z-[210] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:right-4"
+            className="absolute right-2 top-1/2 z-[510] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:right-4"
             aria-label="Next image"
             onClick={(e) => {
               e.stopPropagation();
@@ -93,14 +98,14 @@ export function DmImageLightbox({
           >
             ›
           </button>
-          <p className="pointer-events-none absolute bottom-4 left-1/2 z-[210] -translate-x-1/2 rounded-full bg-black/45 px-3 py-1 text-xs text-white">
+          <p className="pointer-events-none absolute bottom-6 left-1/2 z-[510] -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs text-white">
             {i + 1} / {safe.length}
           </p>
         </>
       ) : null}
       <button
         type="button"
-        className="fixed right-3 top-3 z-[220] flex h-10 w-10 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:right-5 sm:top-5"
+        className="absolute right-3 top-3 z-[520] flex h-10 w-10 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:right-5 sm:top-5"
         aria-label="Close"
         onClick={onClose}
       >
@@ -109,21 +114,32 @@ export function DmImageLightbox({
         </span>
       </button>
       <div
-        className="relative z-10 box-border min-w-0 max-w-[min(92vw,28rem)] max-h-[min(72dvh,32rem)]"
+        className="relative z-[505] inline-block max-w-full rounded-xl bg-zinc-950/90 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.55)] ring-1 ring-white/12"
         role="dialog"
         aria-modal="true"
         aria-label="Message images"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={src}
           src={src}
           alt={`Attachment ${i + 1} of ${safe.length}`}
-          className="block h-auto w-auto max-h-[min(72dvh,32rem)] max-w-full border-0 object-contain shadow-none [image-rendering:auto]"
+          className="block rounded-lg"
+          style={{
+            objectFit: "contain",
+            objectPosition: "center",
+            width: "auto",
+            height: "auto",
+            maxWidth: maxW,
+            maxHeight: maxH,
+          }}
           decoding="async"
           fetchPriority="high"
         />
       </div>
     </div>
   );
+
+  return createPortal(shell, document.body);
 }

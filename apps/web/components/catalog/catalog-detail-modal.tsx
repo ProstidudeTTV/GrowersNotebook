@@ -47,7 +47,7 @@ export function CatalogDetailModal({
       />
 
       <div
-        className="relative flex h-full w-full max-w-3xl flex-col border-l border-[var(--gn-divide)] bg-[var(--gn-surface)] shadow-2xl sm:my-0 sm:max-h-full sm:rounded-l-2xl"
+        className="relative flex h-full w-full max-w-6xl flex-col border-l border-[var(--gn-divide)] bg-[var(--gn-surface)] shadow-2xl sm:my-0 sm:max-h-full sm:rounded-l-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={title?.trim() || "Details"}

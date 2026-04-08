@@ -675,105 +675,114 @@ export function MessagesPanel() {
                           DM_STACK_CARD_PX +
                           DM_STACK_ROTATION_PAD +
                           22;
+                    const bodyText = ln.body.trim();
+                    const hasBody = bodyText.length > 0;
+                    const hasMedia = imgs.length > 0;
                     return (
                       <div
                         key={ln.id}
                         className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${n > 1 ? "overflow-visible" : ""}`}
                       >
-                        <div
-                          className={`flex gap-2 overflow-visible ${imgs.length ? "items-start" : ""}`}
-                        >
-                          {imgs.length === 1 ? (
-                            <button
-                              type="button"
-                              className="max-w-[min(11rem,42vw)] shrink-0 border-0 bg-transparent p-0"
-                              onClick={() =>
-                                setLightbox({ urls: imgs, index: 0 })
-                              }
+                        <div className="flex min-w-0 flex-col overflow-visible">
+                          <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
+                            {displayNameFor(ln.senderId, selfId, activePeer)}
+                          </div>
+                          {hasBody ? (
+                            <p className="mt-1.5 whitespace-pre-wrap break-words text-[var(--gn-text)]">
+                              {ln.body}
+                            </p>
+                          ) : null}
+                          {hasBody && hasMedia ? (
+                            <div
+                              className="my-2.5 border-t border-[var(--gn-divide)]"
+                              role="separator"
+                            />
+                          ) : null}
+                          {hasMedia ? (
+                            <div
+                              className={`overflow-visible ${hasBody ? "" : "mt-1.5"}`}
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={imgs[0]}
-                                alt=""
-                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
-                              />
-                            </button>
-                          ) : imgs.length > 1 ? (
-                            <div className="flex min-w-0 shrink-0 flex-col gap-1.5 overflow-visible">
-                              <p className="text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
-                                {selfId && ln.senderId === selfId
-                                  ? `You sent ${imgs.length} photos`
-                                  : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`}
-                              </p>
-                              <button
-                                type="button"
-                                className="relative shrink-0 overflow-visible border-0 bg-transparent p-0 text-left"
-                                style={{
-                                  width: stackW,
-                                  height: stackH,
-                                  minWidth: stackW,
-                                  minHeight: stackH,
-                                }}
-                                onClick={() =>
-                                  setLightbox({
-                                    urls: imgs,
-                                    index: imgs.length - 1,
-                                  })
-                                }
-                                aria-label={`${imgs.length} photos — open viewer`}
-                              >
-                                {imgs.map((url, idx) => {
-                                  const rot = dmStackCardRotation(
-                                    idx,
-                                    imgs.length,
-                                  );
-                                  return (
-                                    <span
-                                      key={`${ln.id}-${idx}-${url}`}
-                                      className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
-                                      style={{
-                                        left:
-                                          idx * DM_STACK_STEP_X +
-                                          DM_STACK_ROTATION_PAD / 2,
-                                        top:
-                                          idx * DM_STACK_STEP_Y +
-                                          DM_STACK_ROTATION_PAD / 2,
-                                        width: DM_STACK_CARD_PX,
-                                        height: DM_STACK_CARD_PX,
-                                        minWidth: DM_STACK_CARD_PX,
-                                        minHeight: DM_STACK_CARD_PX,
-                                        maxWidth: DM_STACK_CARD_PX,
-                                        maxHeight: DM_STACK_CARD_PX,
-                                        zIndex: idx,
-                                        transform: `rotate(${rot}deg)`,
-                                        transformOrigin: "50% 92%",
-                                      }}
-                                    >
-                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                      <img
-                                        src={url}
-                                        alt=""
-                                        className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-cover object-center"
-                                        sizes={`${DM_STACK_CARD_PX}px`}
-                                      />
-                                    </span>
-                                  );
-                                })}
-                              </button>
+                              {imgs.length > 1 ? (
+                                <p className="mb-1.5 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
+                                  {selfId && ln.senderId === selfId
+                                    ? `You sent ${imgs.length} photos`
+                                    : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`}
+                                </p>
+                              ) : null}
+                              {imgs.length === 1 ? (
+                                <button
+                                  type="button"
+                                  className="max-w-[min(11rem,85%)] border-0 bg-transparent p-0"
+                                  onClick={() =>
+                                    setLightbox({ urls: imgs, index: 0 })
+                                  }
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={imgs[0]}
+                                    alt=""
+                                    className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
+                                  />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="relative overflow-visible border-0 bg-transparent p-0 text-left"
+                                  style={{
+                                    width: stackW,
+                                    height: stackH,
+                                    minWidth: stackW,
+                                    minHeight: stackH,
+                                  }}
+                                  onClick={() =>
+                                    setLightbox({
+                                      urls: imgs,
+                                      index: imgs.length - 1,
+                                    })
+                                  }
+                                  aria-label={`${imgs.length} photos — open viewer`}
+                                >
+                                  {imgs.map((url, idx) => {
+                                    const rot = dmStackCardRotation(
+                                      idx,
+                                      imgs.length,
+                                    );
+                                    return (
+                                      <span
+                                        key={`${ln.id}-${idx}-${url}`}
+                                        className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
+                                        style={{
+                                          left:
+                                            idx * DM_STACK_STEP_X +
+                                            DM_STACK_ROTATION_PAD / 2,
+                                          top:
+                                            idx * DM_STACK_STEP_Y +
+                                            DM_STACK_ROTATION_PAD / 2,
+                                          width: DM_STACK_CARD_PX,
+                                          height: DM_STACK_CARD_PX,
+                                          minWidth: DM_STACK_CARD_PX,
+                                          minHeight: DM_STACK_CARD_PX,
+                                          maxWidth: DM_STACK_CARD_PX,
+                                          maxHeight: DM_STACK_CARD_PX,
+                                          zIndex: idx,
+                                          transform: `rotate(${rot}deg)`,
+                                          transformOrigin: "50% 92%",
+                                        }}
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={url}
+                                          alt=""
+                                          className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-cover object-center"
+                                          sizes={`${DM_STACK_CARD_PX}px`}
+                                        />
+                                      </span>
+                                    );
+                                  })}
+                                </button>
+                              )}
                             </div>
                           ) : null}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
-                              {displayNameFor(ln.senderId, selfId, activePeer)}
-                            </div>
-                            {ln.body.trim() ? (
-                              <p
-                                className={`whitespace-pre-wrap break-words text-[var(--gn-text)] ${imgs.length ? "mt-1.5" : "mt-2"}`}
-                              >
-                                {ln.body}
-                              </p>
-                            ) : null}
-                          </div>
                         </div>
                       </div>
                     );

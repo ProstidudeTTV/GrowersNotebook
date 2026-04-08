@@ -246,6 +246,7 @@ export class PostsService {
         score: scoreExpr.as('score'),
         upvotes: upVotesExpr.as('upvotes'),
         downvotes: downVotesExpr.as('downvotes'),
+        commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
       .from(posts)
@@ -282,6 +283,7 @@ export class PostsService {
           score: Number(r.score),
           upvotes: Number(r.upvotes),
           downvotes: Number(r.downvotes),
+          commentCount: Number(r.commentCount),
           viewerVote: viewerVoteFromRow(raw),
         };
       }),
@@ -638,6 +640,7 @@ export class PostsService {
         score: scoreExpr.as('score'),
         upvotes: upVotesExpr.as('upvotes'),
         downvotes: downVotesExpr.as('downvotes'),
+        commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
       .from(posts)
@@ -674,6 +677,7 @@ export class PostsService {
           score: Number(r.score),
           upvotes: Number(r.upvotes),
           downvotes: Number(r.downvotes),
+          commentCount: Number(r.commentCount),
           viewerVote: viewerVoteFromRow(raw),
         };
       }),
@@ -720,6 +724,7 @@ export class PostsService {
         score: scoreExpr.as('score'),
         upvotes: upVotesExpr.as('upvotes'),
         downvotes: downVotesExpr.as('downvotes'),
+        commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
       .from(posts)
@@ -756,6 +761,7 @@ export class PostsService {
           score: Number(r.score),
           upvotes: Number(r.upvotes),
           downvotes: Number(r.downvotes),
+          commentCount: Number(r.commentCount),
           viewerVote: viewerVoteFromRow(raw),
         };
       }),

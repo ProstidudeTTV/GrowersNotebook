@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PostFeedList } from "@/components/post-feed-list";
+import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
@@ -71,7 +71,7 @@ export default async function HotWeekPage({
         </p>
       ) : (
         <div className="mt-6">
-          <PostFeedList items={feed.items} />
+          <FeedPostCardList items={feed.items} />
         </div>
       )}
 

@@ -93,25 +93,6 @@ export function PostShareButton({
     }
   };
 
-  const webShare = async () => {
-    setNotice(null);
-    if (!navigator.share) {
-      await copyLink();
-      return;
-    }
-    try {
-      await navigator.share({
-        title: postTitle.trim() || "GrowersNotebook post",
-        text: postTitle.trim() || "Post on GrowersNotebook",
-        url: publicUrl,
-      });
-      setMenuOpen(false);
-    } catch (e) {
-      if ((e as Error).name === "AbortError") return;
-      await copyLink();
-    }
-  };
-
   const openChatPicker = () => {
     setMenuOpen(false);
     setPickerOpen(true);
@@ -176,17 +157,6 @@ export function PostShareButton({
           >
             Copy link
           </button>
-          {typeof navigator !== "undefined" &&
-          typeof navigator.share === "function" ? (
-            <button
-              type="button"
-              role="menuitem"
-              className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
-              onClick={() => void webShare()}
-            >
-              Share…
-            </button>
-          ) : null}
           {viewerId ? (
             <>
               <button

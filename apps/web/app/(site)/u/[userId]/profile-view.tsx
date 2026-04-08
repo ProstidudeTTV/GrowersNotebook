@@ -8,7 +8,7 @@ import {
   MenuRow,
 } from "@/components/comment-action-menu";
 import { FollowUserButton } from "@/components/follow-buttons";
-import { PostFeedList } from "@/components/post-feed-list";
+import { FeedPostCardList } from "@/components/feed-post-card-list";
 import {
   ProfileCommentsList,
   type ProfileCommentRow,
@@ -368,7 +368,7 @@ export function ProfileView({
                   No posts yet.
                 </p>
               ) : (
-                <PostFeedList items={posts} />
+                <FeedPostCardList items={posts} />
               )}
               {postsTotal > postsPageSize ? (
                 <div className="flex gap-4 text-sm">

@@ -36,14 +36,44 @@ function compactCount(n: number): string {
   return String(n);
 }
 
-export function CommunityFeedCard({
+const authorAvatarFrame =
+  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+
+function AuthorFeedAvatar({
+  avatarUrl,
+  displayName,
+}: {
+  avatarUrl?: string | null;
+  displayName: string | null;
+}) {
+  const label = (displayName ?? "member").trim();
+  const initial = label.charAt(0).toUpperCase() || "?";
+  if (avatarUrl) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={avatarUrl}
+        alt=""
+        className={`${authorAvatarFrame} object-cover`}
+      />
+    );
+  }
+  return (
+    <span className={authorAvatarFrame} aria-hidden>
+      {initial}
+    </span>
+  );
+}
+
+export function FeedPostCard({
   post,
-  community,
   onPatch,
+  pinnedCommunity,
 }: {
   post: FeedPost;
-  community: { slug: string; name: string; iconKey?: string | null };
   onPatch: (postId: string, patch: Partial<FeedPost>) => void;
+  /** On a community feed page: lock header to this community (icon + name). */
+  pinnedCommunity?: { slug: string; name: string; iconKey?: string | null };
 }) {
   const router = useRouter();
   const [local, setLocal] = useState(post);
@@ -190,10 +220,85 @@ export function CommunityFeedCard({
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
   const isOwn = viewerId != null && viewerId === local.author.id;
+  const community = local.community;
 
   const openPost = () => {
     router.push(`/p/${local.id}`);
   };
+
+  const headerLead =
+    pinnedCommunity != null ? (
+      <CommunityIcon
+        iconKey={pinnedCommunity.iconKey}
+        nameFallback={pinnedCommunity.name}
+        slugFallback={pinnedCommunity.slug}
+        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+      />
+    ) : community ? (
+      <CommunityIcon
+        iconKey={null}
+        nameFallback={community.name}
+        slugFallback={community.slug}
+        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+      />
+    ) : (
+      <AuthorFeedAvatar
+        avatarUrl={local.author.avatarUrl}
+        displayName={local.author.displayName}
+      />
+    );
+
+  const headerMeta =
+    pinnedCommunity != null ? (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+        <span className="font-semibold text-[var(--gn-text)]">
+          {pinnedCommunity.name.trim() || pinnedCommunity.slug}
+        </span>
+        <span aria-hidden>·</span>
+        <span title={new Date(local.createdAt).toLocaleString()}>
+          {timeAgo(local.createdAt)}
+        </span>
+      </div>
+    ) : community ? (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+        <Link
+          href={`/community/${community.slug}`}
+          className="font-semibold text-[var(--gn-text)] hover:underline"
+          data-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
+          {community.name.trim() || community.slug}
+        </Link>
+        <span aria-hidden>·</span>
+        <Link
+          href={`/u/${local.author.id}`}
+          className="font-medium text-[var(--gn-text)] hover:underline"
+          data-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
+          {local.author.displayName ?? "member"}
+        </Link>
+        <span aria-hidden>·</span>
+        <span title={new Date(local.createdAt).toLocaleString()}>
+          {timeAgo(local.createdAt)}
+        </span>
+      </div>
+    ) : (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+        <Link
+          href={`/u/${local.author.id}`}
+          className="font-semibold text-[var(--gn-text)] hover:underline"
+          data-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
+          {local.author.displayName ?? "member"}
+        </Link>
+        <span aria-hidden>·</span>
+        <span title={new Date(local.createdAt).toLocaleString()}>
+          {timeAgo(local.createdAt)}
+        </span>
+      </div>
+    );
 
   return (
     <article
@@ -218,22 +323,9 @@ export function CommunityFeedCard({
       >
         <div className="p-3.5 sm:p-4">
           <div className="flex items-start gap-2">
-            <CommunityIcon
-              iconKey={community.iconKey}
-              nameFallback={community.name}
-              slugFallback={community.slug}
-              frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
-            />
+            {headerLead}
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
-                <span className="font-semibold text-[var(--gn-text)]">
-                  {community.name.trim() || community.slug}
-                </span>
-                <span aria-hidden>·</span>
-                <span title={new Date(local.createdAt).toLocaleString()}>
-                  {timeAgo(local.createdAt)}
-                </span>
-              </div>
+              {headerMeta}
               <h2 className="mt-2 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
                 {local.title}
               </h2>

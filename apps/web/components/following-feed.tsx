@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PostFeedList } from "@/components/post-feed-list";
+import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/client";
@@ -166,7 +166,7 @@ export function FollowingFeed({
           </Link>
         </div>
       ) : (
-        <PostFeedList items={items} />
+        <FeedPostCardList items={items} />
       )}
 
       {!loading && total > PAGE_SIZE ? (

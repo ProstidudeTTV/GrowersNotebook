@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { CommunityFeedCard } from "@/components/community-feed-card";
+import { useEffect, useState } from "react";
+import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/client";
@@ -35,12 +35,6 @@ export function CommunityPostList({
   initialItems: FeedPost[];
 }) {
   const [items, setItems] = useState(initialItems);
-
-  const patchItem = useCallback((postId: string, patch: Partial<FeedPost>) => {
-    setItems((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, ...patch } : p)),
-    );
-  }, []);
 
   useEffect(() => {
     setItems(initialItems);
@@ -90,19 +84,13 @@ export function CommunityPostList({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {items.map((p) => (
-        <CommunityFeedCard
-          key={p.id}
-          post={p}
-          community={{
-            slug: communitySlug,
-            name: communityName,
-            iconKey: communityIconKey ?? null,
-          }}
-          onPatch={patchItem}
-        />
-      ))}
-    </div>
+    <FeedPostCardList
+      items={items}
+      pinnedCommunity={{
+        slug: communitySlug,
+        name: communityName,
+        iconKey: communityIconKey ?? null,
+      }}
+    />
   );
 }

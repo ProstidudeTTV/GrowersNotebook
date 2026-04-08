@@ -46,9 +46,32 @@ const sql = postgres(url, {
   onnotice: () => {},
 });
 
+async function syncDrizzleMigrationsIdSequence(dbSql) {
+  await dbSql.unsafe(`
+DO $sync$
+DECLARE
+  m bigint;
+  seq text;
+BEGIN
+  IF to_regclass('public.__drizzle_migrations') IS NULL THEN
+    RETURN;
+  END IF;
+  SELECT MAX(id) INTO m FROM public.__drizzle_migrations;
+  IF m IS NULL THEN
+    RETURN;
+  END IF;
+  seq := pg_get_serial_sequence('public.__drizzle_migrations', 'id');
+  IF seq IS NOT NULL THEN
+    PERFORM setval(seq::regclass, m);
+  END IF;
+END $sync$;
+`);
+}
+
 (async () => {
   try {
     await sql`select 1`;
+    await syncDrizzleMigrationsIdSequence(sql);
     console.log("db:migrate: Postgres reachable, applying migrations …");
     const db = drizzle(sql);
     await migrate(db, {

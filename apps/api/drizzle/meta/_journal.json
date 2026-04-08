@@ -89,7 +89,7 @@
     {
       "idx": 12,
       "version": "7",
-      "when": 1776200000000,
+      "when": 1776150000000,
       "tag": "0012_strains_breeders_catalog",
       "breakpoints": true
     },

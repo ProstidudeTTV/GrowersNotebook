@@ -36,6 +36,7 @@ import {
   comments,
   communities,
   communityPins,
+  postReports,
   postVotes,
   posts,
   profiles,
@@ -51,6 +52,8 @@ const scoreExpr = sql<number>`coalesce((select sum(${postVotes.value}) from ${po
 const upVotesExpr = sql<number>`coalesce((select count(*)::int from ${postVotes} where ${postVotes.postId} = ${posts.id} and ${postVotes.value} = 1), 0)`;
 
 const downVotesExpr = sql<number>`coalesce((select count(*)::int from ${postVotes} where ${postVotes.postId} = ${posts.id} and ${postVotes.value} = -1), 0)`;
+
+const commentCountExpr = sql<number>`coalesce((select count(*)::int from ${comments} where ${comments.postId} = ${posts.id}), 0)`;
 
 /** Weighted seeds: post votes × post weight + comment votes × comment weight. */
 const authorSeedsExpr = sql<number>`(
@@ -391,6 +394,30 @@ export class PostsService {
     return { ok: true as const };
   }
 
+  async reportPost(reporterId: string, postId: string, reason?: string) {
+    const db = getDb();
+    const [row] = await db
+      .select({ authorId: posts.authorId })
+      .from(posts)
+      .where(eq(posts.id, postId));
+    if (!row) throw new NotFoundException('Post not found');
+    if (row.authorId === reporterId) {
+      throw new BadRequestException('You cannot report your own post');
+    }
+    const r = reason?.trim() || null;
+    const inserted = await db
+      .insert(postReports)
+      .values({ postId, reporterId, reason: r })
+      .onConflictDoNothing({
+        target: [postReports.postId, postReports.reporterId],
+      })
+      .returning({ id: postReports.id });
+    return {
+      ok: true as const,
+      alreadyReported: inserted.length === 0,
+    };
+  }
+
   async getById(id: string, viewerId?: string) {
     const db = getDb();
     const [row] = await db
@@ -407,6 +434,7 @@ export class PostsService {
         score: scoreExpr.as('score'),
         upvotes: upVotesExpr.as('upvotes'),
         downvotes: downVotesExpr.as('downvotes'),
+        commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(viewerId),
       })
       .from(posts)
@@ -438,6 +466,7 @@ export class PostsService {
       score: Number(row.score),
       upvotes: Number(row.upvotes),
       downvotes: Number(row.downvotes),
+      commentCount: Number(row.commentCount),
       viewerVote: viewerVoteFromRow(r),
     };
   }
@@ -485,6 +514,7 @@ export class PostsService {
         score: scoreExpr.as('score'),
         upvotes: upVotesExpr.as('upvotes'),
         downvotes: downVotesExpr.as('downvotes'),
+        commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
       .from(posts)
@@ -523,6 +553,7 @@ export class PostsService {
           score: Number(r.score),
           upvotes: Number(r.upvotes),
           downvotes: Number(r.downvotes),
+          commentCount: Number(r.commentCount),
           viewerVote: viewerVoteFromRow(raw),
         };
       }),

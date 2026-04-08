@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { PostFeedList } from "@/components/post-feed-list";
+import { useCallback, useEffect, useState } from "react";
+import { CommunityFeedCard } from "@/components/community-feed-card";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/client";
@@ -20,17 +20,27 @@ type FeedResponse = {
 export function CommunityPostList({
   communitySlug,
   communityId,
+  communityName,
+  communityIconKey,
   sort,
   page,
   initialItems,
 }: {
   communitySlug: string;
   communityId: string;
+  communityName: string;
+  communityIconKey?: string | null;
   sort: "new" | "top";
   page: number;
   initialItems: FeedPost[];
 }) {
   const [items, setItems] = useState(initialItems);
+
+  const patchItem = useCallback((postId: string, patch: Partial<FeedPost>) => {
+    setItems((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, ...patch } : p)),
+    );
+  }, []);
 
   useEffect(() => {
     setItems(initialItems);
@@ -79,5 +89,20 @@ export function CommunityPostList({
     );
   }
 
-  return <PostFeedList items={items} />;
+  return (
+    <div className="flex flex-col gap-4">
+      {items.map((p) => (
+        <CommunityFeedCard
+          key={p.id}
+          post={p}
+          community={{
+            slug: communitySlug,
+            name: communityName,
+            iconKey: communityIconKey ?? null,
+          }}
+          onPatch={patchItem}
+        />
+      ))}
+    </div>
+  );
 }

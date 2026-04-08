@@ -202,3 +202,77 @@ export function VoteScoreReadonly({
     </div>
   );
 }
+
+/**
+ * Horizontal pill for feed cards (▲ net ▼) — Reddit-like spacing, Growers palette.
+ */
+export function VoteFeedPill({
+  score: scoreIn,
+  upvotes: upIn,
+  downvotes: downIn,
+  viewerVote,
+  onUp,
+  onDown,
+  disabled,
+}: {
+  score: number | null | undefined;
+  upvotes: number | null | undefined;
+  downvotes: number | null | undefined;
+  viewerVote: number | null | undefined;
+  onUp: () => void;
+  onDown: () => void;
+  disabled?: boolean;
+}) {
+  const upvotes = Number.isFinite(Number(upIn)) ? Number(upIn) : 0;
+  const downvotes = Number.isFinite(Number(downIn)) ? Number(downIn) : 0;
+  const net = Number.isFinite(Number(scoreIn))
+    ? Number(scoreIn)
+    : upvotes - downvotes;
+  const vv = normalizedViewerVote(viewerVote);
+  const upActive =
+    "bg-orange-500/18 text-[#ff6a38] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)]";
+  const upIdle =
+    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[#ff6a38]";
+  const downActive =
+    "bg-violet-500/18 text-violet-500 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:text-violet-300";
+  const downIdle =
+    "text-[var(--gn-text-muted)] hover:bg-violet-500/10 hover:text-violet-500 dark:hover:text-violet-400";
+
+  return (
+    <div
+      className="inline-flex h-9 max-w-full items-stretch overflow-hidden rounded-full border border-[var(--gn-border)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_92%,transparent)] text-sm shadow-[var(--gn-shadow-sm)]"
+      data-interactive
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        title="Upvote"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUp();
+        }}
+        className={`flex min-w-[2.25rem] items-center justify-center px-2 text-xs font-semibold transition disabled:opacity-40 ${vv === 1 ? upActive : upIdle}`}
+      >
+        ▲
+      </button>
+      <span
+        className="flex min-w-[2.5rem] items-center justify-center border-x border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-2 text-center text-xs font-bold tabular-nums text-[var(--gn-text)]"
+        title={`${upvotes} up · ${downvotes} down`}
+      >
+        {formatVoteScore(net)}
+      </span>
+      <button
+        type="button"
+        disabled={disabled}
+        title="Downvote"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDown();
+        }}
+        className={`flex min-w-[2.25rem] items-center justify-center px-2 text-xs font-semibold transition disabled:opacity-40 ${vv === -1 ? downActive : downIdle}`}
+      >
+        ▼
+      </button>
+    </div>
+  );
+}

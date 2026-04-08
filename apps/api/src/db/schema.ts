@@ -199,6 +199,27 @@ export const commentReports = pgTable(
   ],
 );
 
+export const postReports = pgTable(
+  'post_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    reason: text('reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('post_reports_created_idx').on(t.createdAt),
+    uniqueIndex('post_reports_post_reporter_uq').on(t.postId, t.reporterId),
+  ],
+);
+
 export const profileReports = pgTable(
   'profile_reports',
   {

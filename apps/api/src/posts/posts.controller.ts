@@ -16,6 +16,7 @@ import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
 import { SearchSiteQueryDto } from '../common/dto/search-site.query.dto';
 import { CreatePostDto } from './dto/create-post.dto';
+import { ReportPostBodyDto } from './dto/report-post-body.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListFollowingPostsQueryDto } from './dto/list-following-posts.query';
 import { ListHotWeekPostsQueryDto } from './dto/list-hot-week-posts.query';
@@ -73,6 +74,16 @@ export class PostsController {
       pageSize: query.pageSize,
       viewerId: user?.sub,
     });
+  }
+
+  @Post(':id/report')
+  @UseGuards(SupabaseAuthGuard)
+  reportPost(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtUser,
+    @Body() dto: ReportPostBodyDto,
+  ) {
+    return this.posts.reportPost(user.sub, id, dto.reason);
   }
 
   @Get(':id')

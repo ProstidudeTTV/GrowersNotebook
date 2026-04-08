@@ -947,7 +947,7 @@ export function PostView({
             {error}
           </p>
         ) : null}
-        <section>
+        <section id="comments" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-[var(--gn-text)]">
             Comments
           </h2>

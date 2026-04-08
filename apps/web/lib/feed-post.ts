@@ -14,10 +14,13 @@ export type FeedPost = {
   author: {
     id: string;
     displayName: string | null;
+    avatarUrl?: string | null;
     seeds: number;
     growerLevel: string;
     viewerFollowing?: boolean;
   };
+  /** Comment count (community / list feeds). */
+  commentCount?: number;
   /** Community context; omitted or null for profile posts. */
   community?: { slug: string; name: string } | null;
   /** Present when this post is pinned in its community feed (moderation). */

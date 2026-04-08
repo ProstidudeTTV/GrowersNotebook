@@ -163,6 +163,8 @@ export default async function CommunityPage({
       <CommunityPostList
         communitySlug={slug}
         communityId={community.id}
+        communityName={community.name}
+        communityIconKey={community.iconKey ?? null}
         sort={sort}
         page={page}
         initialItems={feed.items}

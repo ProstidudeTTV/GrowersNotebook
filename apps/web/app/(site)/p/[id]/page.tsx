@@ -18,10 +18,12 @@ type PostDetail = {
   upvotes: number;
   downvotes: number;
   viewerVote: number | null;
+  commentCount?: number;
   community?: { slug: string; name: string } | null;
   author: {
     id: string;
     displayName: string | null;
+    avatarUrl?: string | null;
     seeds: number;
     growerLevel: string;
     viewerFollowing?: boolean;
@@ -105,7 +107,7 @@ export default async function PostPage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 sm:py-8">
       <PostView initialPost={post} initialComments={comments} />
     </main>
   );

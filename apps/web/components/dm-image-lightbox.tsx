@@ -84,8 +84,8 @@ export function DmImageLightbox({
 
   if (!src || typeof document === "undefined") return null;
 
-  const maxW = "min(92vw, 34rem)";
-  const maxH = "min(76dvh, 36rem)";
+  const maxW = "min(96vw, 42rem)";
+  const maxH = "min(88dvh, 48rem)";
 
   const shell = (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6">

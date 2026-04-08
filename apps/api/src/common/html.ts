@@ -70,7 +70,7 @@ export function hasRenderablePostBody(
   return text.length > 0;
 }
 
-export function htmlToExcerpt(html: string, maxLen = 240): string {
+export function htmlToExcerpt(html: string, maxLen = 400): string {
   const plain = sanitizeHtml(html, { allowedTags: [] });
   const trimmed = plain.replace(/\s+/g, ' ').trim();
   if (trimmed.length <= maxLen) return trimmed;

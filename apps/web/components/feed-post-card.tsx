@@ -11,6 +11,7 @@ import { CommunityIcon } from "@/components/community-icon";
 import { PostShareButton } from "@/components/post-share-button";
 import { VoteFeedPill } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
+import { formatFeedExcerpt } from "@/lib/feed-excerpt";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -329,6 +330,15 @@ export function FeedPostCard({
               <h2 className="mt-2 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
                 {local.title}
               </h2>
+              {(() => {
+                const preview = formatFeedExcerpt(local.excerpt);
+                if (!preview) return null;
+                return (
+                  <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
+                    {preview}
+                  </p>
+                );
+              })()}
             </div>
             <div className="shrink-0" data-interactive>
               <CommentActionMenu ariaLabel="Post actions">
@@ -354,36 +364,30 @@ export function FeedPostCard({
           </div>
 
           {media ? (
-            <div
-              className="mt-3 overflow-hidden rounded-xl bg-black/25 ring-1 ring-[var(--gn-ring)]"
-              {...(media.type === "video"
-                ? { "data-interactive": true as const }
-                : {})}
-            >
-              {media.type === "image" ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
+            media.type === "image" ? (
+              <div className="relative mt-3 aspect-[16/10] max-h-[min(28rem,72dvh)] min-h-[8.5rem] w-full overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={media.url}
                   alt=""
-                  className="max-h-[min(28rem,70vh)] w-full object-contain"
+                  className="pointer-events-none h-full w-full object-cover object-center select-none"
                   loading="lazy"
                 />
-              ) : (
+              </div>
+            ) : (
+              <div
+                className="mt-3 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
+                data-interactive
+              >
                 <video
                   src={media.url}
-                  className="max-h-[min(28rem,70vh)] w-full object-contain"
+                  className="max-h-[min(28rem,72dvh)] w-full object-contain"
                   controls
                   preload="metadata"
                   playsInline
                 />
-              )}
-            </div>
-          ) : null}
-
-          {local.excerpt && !media ? (
-            <p className="mt-2 line-clamp-2 text-sm text-[var(--gn-text-excerpt)]">
-              {local.excerpt}
-            </p>
+              </div>
+            )
           ) : null}
         </div>
       </div>

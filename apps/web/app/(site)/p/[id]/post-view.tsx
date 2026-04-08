@@ -7,13 +7,14 @@ import {
   CommentActionMenu,
   MenuRow,
 } from "@/components/comment-action-menu";
+import { CommunityIcon } from "@/components/community-icon";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { PostShareButton } from "@/components/post-share-button";
 import { UserProfileLink } from "@/components/user-profile-link";
 import { PostEditor } from "@/components/post-editor";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
 import { PostMediaDropzone } from "@/components/post-media-dropzone";
-import { VoteScoreRail } from "@/components/vote-score-rail";
+import { VoteFeedPill, VoteScoreRail } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import {
   bodyHtmlIsSubmittable,
@@ -35,10 +36,21 @@ import { displayPostBodyHtml } from "@/lib/youtube-embed";
 type Author = {
   id: string;
   displayName: string | null;
+  avatarUrl?: string | null;
   seeds?: number | null;
   growerLevel?: string | null;
   viewerFollowing?: boolean;
 };
+
+function compactCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  return String(n);
+}
+
+const headerIconFrame =
+  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)] sm:h-10 sm:w-10";
 
 function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
   const html = displayPostBodyHtml(rawHtml);
@@ -63,6 +75,7 @@ type PostDetail = {
   upvotes: number;
   downvotes: number;
   viewerVote: number | null;
+  commentCount?: number;
   community?: { slug: string; name: string } | null;
   author: Author;
 };
@@ -734,136 +747,152 @@ export function PostView({
   const isOp = Boolean(viewerId && viewerId === post.author.id);
   const showPostBody = postBodyHtmlIsMeaningful(post.bodyHtml);
   const showPostMedia = Boolean(post.media && post.media.length > 0);
+  const commentsTotal =
+    typeof post.commentCount === "number"
+      ? post.commentCount
+      : comments.length;
+
+  const authorInitial =
+    (post.author.displayName ?? "m").trim().charAt(0).toUpperCase() || "?";
 
   return (
-    <article className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-      <div className="flex h-fit shrink-0 justify-center lg:sticky lg:top-20 lg:z-30 lg:self-start lg:pt-1">
-        <VoteScoreRail
-          score={post.score}
-          upvotes={post.upvotes}
-          downvotes={post.downvotes}
-          viewerVote={post.viewerVote}
-          onUp={() => votePost(1)}
-          onDown={() => votePost(-1)}
-          disabled={busy}
-          size="lg"
-        />
-      </div>
-      <div className="min-w-0 flex-1 space-y-6">
-        <header className="border-b-2 border-[var(--gn-border)] pb-4">
-          {post.community ? (
-            <div className="mb-2 text-sm text-[var(--gn-text-muted)]">
-              <Link
-                href={`/community/${post.community.slug}`}
-                className="font-semibold text-[#ff4500] hover:underline"
-              >
-                {post.community.name.trim() || post.community.slug}
-              </Link>
-            </div>
-          ) : (
-            <div className="mb-2 text-sm text-[var(--gn-text-muted)]">
-              <UserProfileLink
-                userId={post.author.id}
-                className="font-semibold text-[#ff4500] hover:underline"
-              >
-                Profile post
-              </UserProfileLink>
-            </div>
-          )}
-          {editingPost ? (
-            <input
-              className="gn-input mt-1 w-full text-2xl font-bold text-[var(--gn-text)]"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              maxLength={TITLE_MAX_LEN}
-              aria-label="Post title"
-            />
-          ) : (
-            <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-              {post.title}
-            </h1>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-[var(--gn-text-muted)]">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <UserProfileLink
-                userId={post.author.id}
-                className="font-medium text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
-              >
-                {post.author.displayName ?? "member"}
-              </UserProfileLink>
-              <span>·</span>
-              <span title="Tier based on seeds">{authorTier}</span>
-              <span>·</span>
-              <span title="Net seeds from this grower's posts and comments">
-                {formatSeeds(post.author.seeds)} seeds
-              </span>
-              <span>·</span>
-              <span>{new Date(post.createdAt).toLocaleString()}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <PostShareButton
-                postId={post.id}
-                postTitle={post.title}
-                viewerId={viewerId}
+    <div className="w-full min-w-0 space-y-5 sm:space-y-6">
+      <article className="overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]">
+        <div className="p-3.5 sm:p-5">
+          <div className="flex items-start gap-2.5 sm:gap-3">
+            {post.community ? (
+              <CommunityIcon
+                iconKey={null}
+                nameFallback={post.community.name}
+                slugFallback={post.community.slug}
+                frameClassName={`${headerIconFrame} text-xs font-semibold`}
               />
-              <FollowUserButton
-                userId={post.author.id}
-                following={post.author.viewerFollowing ?? false}
-                viewerId={viewerId}
-                onFollowingChange={(v) =>
-                  setPost((p) => ({
-                    ...p,
-                    author: { ...p.author, viewerFollowing: v },
-                  }))
-                }
-                onFollowComplete={refreshPost}
+            ) : post.author.avatarUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={post.author.avatarUrl}
+                alt=""
+                className={`${headerIconFrame} object-cover text-xs font-semibold`}
               />
+            ) : (
+              <span
+                className={`${headerIconFrame} text-xs font-semibold`}
+                aria-hidden
+              >
+                {authorInitial}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+                {post.community ? (
+                  <>
+                    <Link
+                      href={`/community/${post.community.slug}`}
+                      className="font-semibold text-[var(--gn-text)] hover:underline"
+                    >
+                      {post.community.name.trim() || post.community.slug}
+                    </Link>
+                    <span aria-hidden>·</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium text-[var(--gn-text)]">
+                      Profile post
+                    </span>
+                    <span aria-hidden>·</span>
+                  </>
+                )}
+                <UserProfileLink
+                  userId={post.author.id}
+                  className="font-medium text-[var(--gn-text)] hover:text-[#ff4500] hover:underline"
+                >
+                  {post.author.displayName ?? "member"}
+                </UserProfileLink>
+                <span aria-hidden>·</span>
+                <span title="Tier based on seeds">{authorTier}</span>
+                <span aria-hidden>·</span>
+                <span title="Net seeds from this grower">
+                  {formatSeeds(post.author.seeds)} seeds
+                </span>
+                <span aria-hidden>·</span>
+                <span title={new Date(post.createdAt).toLocaleString()}>
+                  {new Date(post.createdAt).toLocaleString()}
+                </span>
+              </div>
+              {editingPost ? (
+                <input
+                  className="gn-input mt-2 w-full text-xl font-bold text-[var(--gn-text)] sm:text-2xl"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  maxLength={TITLE_MAX_LEN}
+                  aria-label="Post title"
+                />
+              ) : (
+                <h1 className="mt-2 text-xl font-bold leading-snug text-[var(--gn-text)] sm:text-2xl">
+                  {post.title}
+                </h1>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <FollowUserButton
+                  userId={post.author.id}
+                  following={post.author.viewerFollowing ?? false}
+                  viewerId={viewerId}
+                  onFollowingChange={(v) =>
+                    setPost((p) => ({
+                      ...p,
+                      author: { ...p.author, viewerFollowing: v },
+                    }))
+                  }
+                  onFollowComplete={refreshPost}
+                />
+                {isOp && !editingPost ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={startEditPost}
+                      disabled={busy || editBusy}
+                      className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void deletePost()}
+                      disabled={busy || editBusy}
+                      className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200 dark:hover:bg-red-950"
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : null}
+                {isOp && editingPost ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => void saveEditPost()}
+                      disabled={editBusy}
+                      className="rounded-full bg-[#ff4500] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {editBusy ? "Saving…" : "Save changes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditPost}
+                      disabled={editBusy}
+                      className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
-            {isOp && !editingPost ? (
-              <span className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
-                <button
-                  type="button"
-                  onClick={startEditPost}
-                  disabled={busy || editBusy}
-                  className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void deletePost()}
-                  disabled={busy || editBusy}
-                  className="rounded-full border border-red-300 bg-red-50 px-3 py-1 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200 dark:hover:bg-red-950"
-                >
-                  Delete
-                </button>
-              </span>
-            ) : null}
-            {isOp && editingPost ? (
-              <span className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => void saveEditPost()}
-                  disabled={editBusy}
-                  className="rounded-full bg-[#ff4500] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                >
-                  {editBusy ? "Saving…" : "Save changes"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEditPost}
-                  disabled={editBusy}
-                  className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--gn-text)] disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </span>
-            ) : null}
           </div>
-        </header>
+        </div>
+
         {editingPost ? (
-          <div className="gn-post-content-flow gn-card-subtle overflow-hidden">
-            <div className="p-4">
+          <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
+            <div className="p-3 sm:p-4">
               <PostEditor
                 key={editorMountKey}
                 embedded
@@ -872,7 +901,7 @@ export function PostView({
                 disabled={editBusy}
               />
             </div>
-            <div className="space-y-3 p-4">
+            <div className="space-y-3 border-t border-[var(--gn-divide)] p-3 sm:p-4">
               <PostMediaDropzone
                 disabled={editBusy}
                 onMediaReady={onEditMediaReady}
@@ -916,10 +945,10 @@ export function PostView({
             </div>
           </div>
         ) : showPostBody || showPostMedia ? (
-          <div className="gn-post-content-flow gn-card-subtle overflow-hidden">
+          <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
             {showPostBody ? (
               <div
-                className="gn-post-body prose prose-zinc max-w-none p-4 dark:prose-invert"
+                className="gn-post-body prose prose-zinc max-w-none px-3.5 py-4 prose-p:text-[0.9375rem] prose-p:leading-relaxed dark:prose-invert sm:px-5 sm:py-5"
                 dangerouslySetInnerHTML={{
                   __html: displayPostBodyHtml(post.bodyHtml),
                 }}
@@ -942,57 +971,103 @@ export function PostView({
             ) : null}
           </div>
         ) : null}
-        {error ? (
-          <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-            {error}
-          </p>
-        ) : null}
-        <section id="comments" className="scroll-mt-24">
-          <h2 className="text-lg font-semibold text-[var(--gn-text)]">
-            Comments
-          </h2>
-          <div className="mt-3 space-y-2">
-            <textarea
-              className="gn-input w-full p-3 text-sm"
-              rows={4}
-              placeholder="Join the discussion…"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            {replyTo ? (
-              <div className="text-xs text-[var(--gn-text-muted)]">
-                Replying to a thread.{" "}
-                <button
-                  type="button"
-                  className="text-[#ff4500] underline"
-                  onClick={() => setReplyTo(null)}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={submitComment}
-              disabled={busy}
-              className="rounded-full bg-[#ff4500] px-4 py-2 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:bg-[#ff5414] hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50"
+
+        <div
+          className="flex flex-wrap items-center gap-2 border-t border-[var(--gn-divide)] px-3.5 py-2.5 sm:gap-3 sm:px-5"
+          data-interactive
+        >
+          <VoteFeedPill
+            score={post.score}
+            upvotes={post.upvotes}
+            downvotes={post.downvotes}
+            viewerVote={post.viewerVote}
+            onUp={() => void votePost(1)}
+            onDown={() => void votePost(-1)}
+            disabled={busy}
+          />
+          <Link
+            href="#comments"
+            prefetch={false}
+            aria-label={`${commentsTotal} comments — jump to discussion`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="shrink-0 opacity-80"
+              aria-hidden
             >
-              Comment
-            </button>
-          </div>
-          <div className="mt-6">
-            <CommentTree
-              comments={comments}
-              viewerId={viewerId}
-              onReply={(id) => setReplyTo(id)}
-              onVoteComment={voteComment}
-              onSaveEdit={saveCommentEdit}
-              onReport={reportComment}
-              votingCommentId={votingCommentId}
-            />
-          </div>
-        </section>
-      </div>
-    </article>
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+            </svg>
+            <span className="tabular-nums">{compactCount(commentsTotal)}</span>
+            <span className="hidden sm:inline">comments</span>
+          </Link>
+          <PostShareButton
+            postId={post.id}
+            postTitle={post.title}
+            viewerId={viewerId}
+          />
+        </div>
+      </article>
+
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          {error}
+        </p>
+      ) : null}
+
+      <section
+        id="comments"
+        className="scroll-mt-20 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-3.5 shadow-[var(--gn-shadow-sm)] sm:scroll-mt-24 sm:p-5"
+      >
+        <h2 className="text-base font-semibold text-[var(--gn-text)] sm:text-lg">
+          Comments
+        </h2>
+        <div className="mt-3 space-y-2">
+          <textarea
+            className="gn-input min-h-[5.5rem] w-full p-3 text-sm sm:min-h-[6rem]"
+            rows={4}
+            placeholder="Join the discussion…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {replyTo ? (
+            <div className="text-xs text-[var(--gn-text-muted)]">
+              Replying to a thread.{" "}
+              <button
+                type="button"
+                className="font-medium text-[#ff4500] underline"
+                onClick={() => setReplyTo(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={submitComment}
+            disabled={busy}
+            className="w-full rounded-full bg-[#ff4500] px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:bg-[#ff5414] hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50 sm:w-auto"
+          >
+            Comment
+          </button>
+        </div>
+        <div className="mt-5 sm:mt-6">
+          <CommentTree
+            comments={comments}
+            viewerId={viewerId}
+            onReply={(id) => setReplyTo(id)}
+            onVoteComment={voteComment}
+            onSaveEdit={saveCommentEdit}
+            onReport={reportComment}
+            votingCommentId={votingCommentId}
+          />
+        </div>
+      </section>
+    </div>
   );
 }

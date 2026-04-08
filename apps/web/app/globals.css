@@ -328,6 +328,7 @@ html.dark body {
     box-sizing: border-box;
   }
 
+  /* Legacy class: carousels now crop via Tailwind; keep defaults for any old markup */
   .gn-post-media-attachments .gn-post-attachment-img {
     display: block;
     width: 100%;
@@ -335,7 +336,8 @@ html.dark body {
     max-height: min(56dvh, 42rem);
     height: auto;
     margin: 0 auto;
-    object-fit: contain;
+    object-fit: cover;
+    object-position: center;
     border-radius: calc(var(--gn-radius) * 0.85);
     border: 1px solid var(--gn-ring);
     background: var(--gn-surface-muted);

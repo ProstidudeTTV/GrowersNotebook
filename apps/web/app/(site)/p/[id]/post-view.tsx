@@ -850,7 +850,8 @@ export function PostView({
 
   return (
     <div className="w-full min-w-0 space-y-5 sm:space-y-6">
-      <article className="overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]">
+      <article className="relative z-20 overflow-visible rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]">
+        <div className="overflow-hidden rounded-t-2xl">
         <div className="p-3.5 sm:p-5">
           <div className="flex items-start gap-2.5 sm:gap-3">
             {post.community ? (
@@ -1119,9 +1120,10 @@ export function PostView({
             ) : null}
           </div>
         ) : null}
+        </div>
 
         <div
-          className="flex flex-col gap-2 border-t border-[var(--gn-divide)] px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5"
+          className="flex flex-col gap-2 rounded-b-2xl border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5"
           data-interactive
         >
           <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
@@ -1174,7 +1176,7 @@ export function PostView({
 
       <section
         id="comments"
-        className="scroll-mt-20 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-3.5 shadow-[var(--gn-shadow-sm)] sm:scroll-mt-24 sm:p-5"
+        className="relative z-10 scroll-mt-20 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-3.5 shadow-[var(--gn-shadow-sm)] sm:scroll-mt-24 sm:p-5"
       >
         <h2 className="text-base font-semibold text-[var(--gn-text)] sm:text-lg">
           Comments

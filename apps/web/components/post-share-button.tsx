@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -16,6 +23,8 @@ type ThreadSummary = {
 };
 
 type ListThreadsResponse = { items: ThreadSummary[] };
+
+type MenuRect = { left: number; top: number; minWidth: number };
 
 export function PostShareButton({
   postId,
@@ -35,6 +44,10 @@ export function PostShareButton({
   const [sendBusy, setSendBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
+  const [menuRect, setMenuRect] = useState<MenuRect | null>(null);
+  const [noticeRect, setNoticeRect] = useState<MenuRect | null>(null);
 
   const publicUrl = clientAbsolutePostUrl(postId);
   const shareBody = buildPostShareDmBody(postTitle, publicUrl);
@@ -43,10 +56,50 @@ export function PostShareButton({
     return getAccessTokenForApi(supabase);
   }, [supabase]);
 
+  const syncButtonRect = useCallback((): MenuRect | null => {
+    const el = buttonRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      left: r.left,
+      top: r.bottom + 4,
+      minWidth: Math.max(r.width, 12 * 16),
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      setMenuRect(null);
+      return;
+    }
+    setMenuRect(syncButtonRect());
+  }, [menuOpen, syncButtonRect]);
+
+  useLayoutEffect(() => {
+    if (!notice) {
+      setNoticeRect(null);
+      return;
+    }
+    setNoticeRect(syncButtonRect());
+  }, [notice, syncButtonRect]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onReposition = () => setMenuRect(syncButtonRect());
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [menuOpen, syncButtonRect]);
+
   useEffect(() => {
     if (!menuOpen && !pickerOpen) return;
     const onDoc = (e: MouseEvent) => {
-      if (root.current?.contains(e.target as Node)) return;
+      const t = e.target as Node;
+      if (root.current?.contains(t)) return;
+      if (menuPortalRef.current?.contains(t)) return;
       setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -125,9 +178,79 @@ export function PostShareButton({
     }
   };
 
+  const menuPortal =
+    menuOpen && menuRect && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={menuPortalRef}
+            className="gn-menu fixed z-[10050] min-w-[12rem] overflow-hidden py-1 shadow-2xl"
+            style={{
+              left: menuRect.left,
+              top: menuRect.top,
+              minWidth: menuRect.minWidth,
+            }}
+            role="menu"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
+              onClick={() => void copyLink()}
+            >
+              Copy link
+            </button>
+            {viewerId ? (
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
+                  onClick={openChatPicker}
+                >
+                  Send to chat…
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    router.push(
+                      `/messages?sharePost=${encodeURIComponent(postId)}`,
+                    );
+                  }}
+                >
+                  Open Messages (prefill)
+                </button>
+              </>
+            ) : null}
+          </div>,
+          document.body,
+        )
+      : null;
+
+  const noticePortal =
+    notice && noticeRect && typeof document !== "undefined"
+      ? createPortal(
+          <p
+            className="fixed z-[10060] max-w-[14rem] rounded-md border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] px-2 py-1 text-[0.7rem] text-[var(--gn-text)] shadow-lg"
+            style={{
+              left: noticeRect.left,
+              top: noticeRect.top,
+              minWidth: noticeRect.minWidth,
+            }}
+            role="status"
+          >
+            {notice}
+          </p>,
+          document.body,
+        )
+      : null;
+
   return (
     <div className="relative" ref={root}>
       <button
+        ref={buttonRef}
         type="button"
         aria-expanded={menuOpen}
         aria-haspopup="menu"
@@ -136,58 +259,12 @@ export function PostShareButton({
       >
         Share
       </button>
-      {notice ? (
-        <p
-          className="absolute left-0 top-full z-40 mt-1 max-w-[14rem] rounded-md border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] px-2 py-1 text-[0.7rem] text-[var(--gn-text)] shadow-md"
-          role="status"
-        >
-          {notice}
-        </p>
-      ) : null}
-      {menuOpen ? (
-        <div
-          className="gn-menu absolute left-0 top-full z-30 mt-1 min-w-[12rem] overflow-hidden py-1"
-          role="menu"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
-            onClick={() => void copyLink()}
-          >
-            Copy link
-          </button>
-          {viewerId ? (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
-                onClick={openChatPicker}
-              >
-                Send to chat…
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full px-3 py-2 text-left text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  router.push(
-                    `/messages?sharePost=${encodeURIComponent(postId)}`,
-                  );
-                }}
-              >
-                Open Messages (prefill)
-              </button>
-            </>
-          ) : null}
-        </div>
-      ) : null}
+      {menuPortal}
+      {noticePortal}
 
       {pickerOpen ? (
         <div
-          className="fixed inset-0 z-[460] flex items-center justify-center bg-black/55 p-4"
+          className="fixed inset-0 z-[10070] flex items-center justify-center bg-black/55 p-4"
           role="presentation"
           onClick={() => setPickerOpen(false)}
         >

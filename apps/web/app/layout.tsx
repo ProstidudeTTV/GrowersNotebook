@@ -37,10 +37,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased gn-app-canvas`}
-      >
+    <html
+      lang="en"
+      className={`dark gn-app-canvas ${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen antialiased">
         <Script id="gn-theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>

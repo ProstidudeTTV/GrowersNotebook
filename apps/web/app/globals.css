@@ -44,9 +44,10 @@ html:not(.dark) {
   --gn-radius-lg: 1.25rem;
 }
 
-/** Page backdrop: use on `body` and the main site column so flex children never show as flat black. */
+/** Page backdrop: on `html`, main column, etc. Solid fallback + gradients so flex never shows as empty black. */
 html:not(.dark) .gn-app-canvas {
-  background:
+  background-color: var(--gn-page-mid);
+  background-image:
     radial-gradient(
       ellipse 120% 85% at 50% -35%,
       rgb(255 255 255 / 0.92) 0%,
@@ -64,6 +65,7 @@ html:not(.dark) .gn-app-canvas {
       var(--gn-page-bottom) 100%
     );
   background-attachment: scroll;
+  min-height: 100%;
 }
 
 html:not(.dark) body {
@@ -75,9 +77,10 @@ html:not(.dark) body {
 /* ----- Dark (default) ----- */
 html.dark {
   --gn-accent: #ff6b35;
-  --gn-page-top: #12141a;
-  --gn-page-mid: #0d0f14;
-  --gn-page-bottom: #08090c;
+  /* Lifted from near-black so the page reads as a gradient, not #000 voids */
+  --gn-page-top: #1a1e2a;
+  --gn-page-mid: #131823;
+  --gn-page-bottom: #0f121c;
   --gn-surface: #13151b;
   --gn-surface-raised: #191c24;
   --gn-surface-elevated: #1e222b;
@@ -108,24 +111,31 @@ html.dark {
 }
 
 html.dark .gn-app-canvas {
-  background:
+  background-color: var(--gn-page-mid);
+  background-image:
     radial-gradient(
-      ellipse 100% 72% at 50% -28%,
-      rgb(120 135 180 / 0.08) 0%,
+      ellipse 110% 85% at 50% -25%,
+      rgb(130 155 220 / 0.14) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 75% 55% at 0% 100%,
+      rgb(255 107 53 / 0.09) 0%,
       transparent 52%
     ),
     radial-gradient(
-      ellipse 70% 50% at 0% 100%,
-      rgb(255 107 53 / 0.05) 0%,
-      transparent 55%
+      ellipse 60% 45% at 100% 85%,
+      rgb(90 110 180 / 0.06) 0%,
+      transparent 45%
     ),
     linear-gradient(
       180deg,
       var(--gn-page-top) 0%,
-      var(--gn-page-mid) 38%,
+      var(--gn-page-mid) 40%,
       var(--gn-page-bottom) 100%
     );
   background-attachment: scroll;
+  min-height: 100%;
 }
 
 html.dark body {

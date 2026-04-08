@@ -1,5 +1,5 @@
 ---
-description: Growers Notebook runs on Render + GitHub + Supabase; do not default to local dev.
+description: Growers Notebook ships via GitHub + Render + Supabase; close the loop on every real change.
 alwaysApply: true
 ---
 
@@ -7,13 +7,14 @@ alwaysApply: true
 
 The maintainer deploys **only** via this stack. **Do not** ask them to confirm Render / GitHub / Supabase or assume a local-only setup.
 
-- **GitHub**: Source of truth; changes reach production by **commit + push** to `main` (or the configured deploy branch).
-- **Render**: Hosts **Next.js web** and **Nest API** (`growers-notebook-web`, `growers-notebook-api`). Use env vars on those services (`INTERNAL_API_URL`, `NEXT_PUBLIC_API_URL`, `WEB_ORIGIN`, etc.), not `.env.local` assumptions.
-- **Supabase**: **Auth and Postgres** for the product. Redirect URLs, JWT, and pools are configured for **production**; see `infra/render/SUPABASE_AUTH.md` when relevant.
+- **GitHub**: Source of truth; production updates require **commit + push** to `main`.
+- **Render**: **growers-notebook-web**, **growers-notebook-api** (`render.yaml`). Env: service dashboard + `infra/render/SUPABASE_AUTH.md`.
+- **Supabase**: Auth + Postgres; migrations under `supabase/migrations/` must be applied in the project DB when schema changes.
 
 ## Agent behavior
 
-- Prefer fixes that work **in production** (same-origin API proxy, server env, CORS, `WEB_ORIGIN`).
-- Do **not** treat `localhost`, `.env.local`, or “run `npm run dev`” as the default explanation or fix unless the user **explicitly** says they are developing locally.
-- After code changes that affect deployed behavior, **commit and push** so Render can build; mention deploy timing if the user needs to wait for `live`.
-- Use **Render MCP** / dashboard and **Supabase MCP** when investigating live services instead of guessing.
+- Prefer fixes that work **in production** (proxy, `WEB_ORIGIN`, CORS). Do not default to localhost unless the user said local dev.
+- **Deploy / “why no new deploy?” / production status:** use **Render MCP** (`list_services`, `list_deploys`) and **GitHub MCP** (`list_commits` on `main`). Do not answer from memory—query MCPs in the same turn when the user asks about live state.
+- **After substantive edits** (multi-file feature, API + web, schema, or anything the user will expect on the site): before treating the task as done, run `git status`. If there are changes, **commit and push** in this workspace (unless the user explicitly said not to ship yet). **Do not** only say “push when ready”—execute `git add`, `git commit`, `git push` when the goal is shipping.
+- After a push, optionally verify with Render MCP that a deploy started or reached `live`.
+- Use **Supabase MCP** when checking DB/migrations/auth config instead of guessing.

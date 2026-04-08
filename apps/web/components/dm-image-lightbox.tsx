@@ -1,7 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type SyntheticEvent,
+} from "react";
 import { createPortal } from "react-dom";
+
+function naturalAspectFrom(
+  e: SyntheticEvent<HTMLImageElement>,
+): number | undefined {
+  const el = e.currentTarget;
+  const { naturalWidth: nw, naturalHeight: nh } = el;
+  if (nw < 1 || nh < 1) return undefined;
+  return nw / nh;
+}
 
 /**
  * Full-viewer overlay for DM attachments. Rendered with createPortal on
@@ -24,6 +38,9 @@ export function DmImageLightbox({
   const i = safe.length ? Math.min(index, safe.length - 1) : 0;
   const src = safe[i];
   const hasNav = safe.length > 1;
+  const [aspectRatio, setAspectRatio] = useState<number | undefined>(
+    undefined,
+  );
 
   const goPrev = useCallback(() => {
     setIndex((j) => (j <= 0 ? safe.length - 1 : j - 1));
@@ -38,6 +55,10 @@ export function DmImageLightbox({
       Math.min(Math.max(0, initialIndex), Math.max(0, urls.length - 1)),
     );
   }, [initialIndex, urls]);
+
+  useEffect(() => {
+    setAspectRatio(undefined);
+  }, [src]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -129,10 +150,16 @@ export function DmImageLightbox({
           style={{
             objectFit: "contain",
             objectPosition: "center",
+            display: "block",
             width: "auto",
             height: "auto",
             maxWidth: maxW,
             maxHeight: maxH,
+            ...(aspectRatio ? { aspectRatio } : {}),
+          }}
+          onLoad={(e) => {
+            const ar = naturalAspectFrom(e);
+            if (ar !== undefined) setAspectRatio(ar);
           }}
           decoding="async"
           fetchPriority="high"

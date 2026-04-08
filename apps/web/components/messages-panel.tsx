@@ -783,7 +783,7 @@ export function MessagesPanel() {
                                         <img
                                           src={url}
                                           alt=""
-                                          className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-cover object-center"
+                                          className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-contain object-center"
                                           sizes={`${DM_STACK_CARD_PX}px`}
                                         />
                                       </span>

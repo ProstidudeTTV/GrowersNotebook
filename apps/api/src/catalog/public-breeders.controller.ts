@@ -78,6 +78,7 @@ export class PublicBreedersController {
       user.sub,
       body.rating,
       body.body ?? '',
+      body.subRatings,
     );
   }
 }

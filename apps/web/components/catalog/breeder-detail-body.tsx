@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
+import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
 import { StarDisplay } from "@/components/catalog/star-display";
 import { apiFetch } from "@/lib/api-public";
 import type { BreedersListQuery } from "@/lib/catalog-list-urls";
@@ -34,6 +35,7 @@ export type BreederDetailJson = {
       id: string;
       rating: string;
       body: string;
+      subRatings: Record<string, unknown>;
       createdAt: string;
       author: { id: string; displayName: string | null };
     }>;
@@ -46,6 +48,7 @@ export type BreederDetailJson = {
       id: string;
       rating: string;
       body: string;
+      subRatings: Record<string, unknown>;
       media: CatalogStrainReviewMedia[];
       createdAt: string;
       strain: { slug: string; name: string };
@@ -59,6 +62,7 @@ export type BreederDetailJson = {
     id: string;
     rating: string;
     body: string;
+    subRatings: Record<string, unknown>;
     hidden: boolean;
   } | null;
 };
@@ -279,6 +283,7 @@ export async function BreederDetailBody({
                   </div>
                   <StarDisplay avg={r.rating} />
                 </div>
+                <CatalogSubRatingsSummary subRatings={r.subRatings} />
                 {r.body?.trim() ? (
                   <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                     {r.body.trim()}
@@ -337,6 +342,11 @@ export async function BreederDetailBody({
                 ? data.viewerReview.body
                 : null
             }
+            initialSubRatings={
+              data.viewerReview && !data.viewerReview.hidden
+                ? data.viewerReview.subRatings
+                : null
+            }
             disabled={!user}
             disabledMessage="Sign in to rate and review this breeder."
           />
@@ -362,6 +372,7 @@ export async function BreederDetailBody({
                 </Link>
                 <StarDisplay avg={r.rating} />
               </div>
+              <CatalogSubRatingsSummary subRatings={r.subRatings} />
               {r.body?.trim() ? (
                 <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                   {r.body.trim()}

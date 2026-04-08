@@ -141,3 +141,104 @@ export function InteractiveStarRating({
     </div>
   );
 }
+
+function CatalogStarGlyph({
+  filled,
+  accentClassName = "text-emerald-400",
+}: {
+  filled: boolean;
+  accentClassName?: string;
+}) {
+  return (
+    <svg
+      className={`h-8 w-8 shrink-0 ${
+        filled
+          ? accentClassName
+          : "text-neutral-500 opacity-45 dark:text-neutral-600 dark:opacity-70"
+      }`}
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <path fill="currentColor" d={STAR_PATH} />
+    </svg>
+  );
+}
+
+/** Integer 1–5; `null` = none chosen (all hollow). For required overall rating step. */
+export function CatalogOverallStarRow({
+  value,
+  onChange,
+  accentClassName,
+}: {
+  value: number | null;
+  onChange: (n: number) => void;
+  accentClassName?: string;
+}) {
+  const chosen = value ?? 0;
+  return (
+    <div
+      className="inline-flex items-center gap-0.5"
+      role="radiogroup"
+      aria-label="Overall rating"
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          role="radio"
+          aria-checked={value === n}
+          className="rounded p-0.5 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500"
+          onClick={() => onChange(n)}
+        >
+          <CatalogStarGlyph
+            filled={n <= chosen}
+            accentClassName={accentClassName}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Optional category: integer 1–5 or cleared. */
+export function CatalogOptionalSubStarRow({
+  value,
+  onChange,
+  accentClassName,
+}: {
+  value: number | null;
+  onChange: (n: number | null) => void;
+  accentClassName?: string;
+}) {
+  const chosen = value ?? 0;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="inline-flex items-center gap-0">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className="rounded p-0.5 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500"
+            onClick={() => onChange(n)}
+          >
+            <CatalogStarGlyph
+              filled={n <= chosen}
+              accentClassName={accentClassName}
+            />
+          </button>
+        ))}
+      </div>
+      {value != null ? (
+        <button
+          type="button"
+          className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)] underline-offset-2 hover:text-emerald-500 hover:underline"
+          onClick={() => onChange(null)}
+        >
+          Clear
+        </button>
+      ) : null}
+    </div>
+  );
+}

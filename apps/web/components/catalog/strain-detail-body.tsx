@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
+import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
 import { StarDisplay } from "@/components/catalog/star-display";
 import { apiFetch } from "@/lib/api-public";
 import type { StrainsListQuery } from "@/lib/catalog-list-urls";
@@ -35,6 +36,7 @@ export type StrainDetailJson = {
       id: string;
       rating: string;
       body: string;
+      subRatings: Record<string, unknown>;
       media: StrainReviewMedia[];
       createdAt: string;
       author: { id: string; displayName: string | null };
@@ -47,6 +49,7 @@ export type StrainDetailJson = {
     id: string;
     rating: string;
     body: string;
+    subRatings: Record<string, unknown>;
     media: StrainReviewMedia[];
     hidden: boolean;
   } | null;
@@ -257,6 +260,11 @@ export async function StrainDetailBody({
                 ? data.viewerReview.body
                 : null
             }
+            initialSubRatings={
+              data.viewerReview && !data.viewerReview.hidden
+                ? data.viewerReview.subRatings
+                : null
+            }
             initialMedia={
               data.viewerReview && !data.viewerReview.hidden
                 ? data.viewerReview.media
@@ -287,6 +295,7 @@ export async function StrainDetailBody({
                 </Link>
                 <StarDisplay avg={r.rating} />
               </div>
+              <CatalogSubRatingsSummary subRatings={r.subRatings} />
               {r.body?.trim() ? (
                 <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                   {r.body.trim()}

@@ -25,7 +25,8 @@ import {
   strainReviews,
   strains,
 } from '../db/schema';
-import type { PostMediaItem } from '../db/schema';
+import type { CatalogReviewSubRatings, PostMediaItem } from '../db/schema';
+import { normalizeCatalogSubRatings } from './catalog-sub-ratings.util';
 import { refreshBreederAggregates } from './catalog-aggregates';
 import {
   isPublicExcludedBreederSlug,
@@ -150,6 +151,7 @@ export class BreedersService {
         id: breederReviews.id,
         rating: breederReviews.rating,
         body: breederReviews.body,
+        subRatings: breederReviews.subRatings,
         createdAt: breederReviews.createdAt,
         updatedAt: breederReviews.updatedAt,
         authorId: breederReviews.authorId,
@@ -166,6 +168,7 @@ export class BreedersService {
       id: string;
       rating: string;
       body: string;
+      subRatings: CatalogReviewSubRatings;
       createdAt: Date;
       updatedAt: Date;
       hidden: boolean;
@@ -185,6 +188,7 @@ export class BreedersService {
           id: mine.id,
           rating: String(mine.rating),
           body: mine.body,
+          subRatings: (mine.subRatings ?? {}) as CatalogReviewSubRatings,
           createdAt: mine.createdAt,
           updatedAt: mine.updatedAt,
           hidden: mine.hiddenAt != null,
@@ -213,6 +217,7 @@ export class BreedersService {
         id: strainReviews.id,
         rating: strainReviews.rating,
         body: strainReviews.body,
+        subRatings: strainReviews.subRatings,
         media: strainReviews.media,
         createdAt: strainReviews.createdAt,
         authorId: strainReviews.authorId,
@@ -235,6 +240,7 @@ export class BreedersService {
           id: r.id,
           rating: String(r.rating),
           body: r.body,
+          subRatings: (r.subRatings ?? {}) as CatalogReviewSubRatings,
           createdAt: r.createdAt,
           updatedAt: r.updatedAt,
           author: {
@@ -252,6 +258,7 @@ export class BreedersService {
           id: r.id,
           rating: String(r.rating),
           body: r.body,
+          subRatings: (r.subRatings ?? {}) as CatalogReviewSubRatings,
           media: (r.media ?? []) as PostMediaItem[],
           createdAt: r.createdAt,
           strain: { slug: r.strainSlug, name: r.strainName },
@@ -268,9 +275,16 @@ export class BreedersService {
     };
   }
 
-  async upsertReview(slug: string, userId: string, rating: number, body: string) {
+  async upsertReview(
+    slug: string,
+    userId: string,
+    rating: number,
+    body: string,
+    subRatingsRaw?: unknown,
+  ) {
     if (rating < 1 || rating > 5)
       throw new BadRequestException('Rating must be between 1 and 5');
+    const subRatings = normalizeCatalogSubRatings(subRatingsRaw);
     const db = getDb();
     const [b] = await db
       .select()
@@ -301,6 +315,7 @@ export class BreedersService {
         .set({
           rating: String(rating),
           body: body ?? '',
+          subRatings,
           updatedAt: new Date(),
         })
         .where(eq(breederReviews.id, existing.id));
@@ -310,6 +325,7 @@ export class BreedersService {
         authorId: userId,
         rating: String(rating),
         body: body ?? '',
+        subRatings,
       });
     }
     await refreshBreederAggregates(db, b.id);
@@ -326,6 +342,7 @@ export class BreedersService {
       id: out!.id,
       rating: String(out!.rating),
       body: out!.body,
+      subRatings: (out!.subRatings ?? {}) as CatalogReviewSubRatings,
       createdAt: out!.createdAt,
       updatedAt: out!.updatedAt,
     };

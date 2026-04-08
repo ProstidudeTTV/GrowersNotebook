@@ -58,6 +58,20 @@ export const profiles = pgTable('profiles', {
 /** Attachments for a post (URLs to bucket objects or external https assets). */
 export type PostMediaItem = { url: string; type: 'image' | 'video' };
 
+/** Optional 1–5 sub-scores on strain / breeder reviews. */
+export type CatalogReviewSubRatings = Partial<
+  Record<
+    | 'effects'
+    | 'flavor'
+    | 'potency'
+    | 'taste'
+    | 'aroma'
+    | 'duration'
+    | 'onset',
+    number
+  >
+>;
+
 export const communities = pgTable(
   'communities',
   {
@@ -443,6 +457,10 @@ export const breederReviews = pgTable(
       .references(() => profiles.id, { onDelete: 'cascade' }),
     rating: numeric('rating', { precision: 3, scale: 2 }).notNull(),
     body: text('body').notNull().default(''),
+    subRatings: jsonb('sub_ratings')
+      .notNull()
+      .$type<CatalogReviewSubRatings>()
+      .default(sql`'{}'::jsonb`),
     hiddenAt: timestamp('hidden_at', { withTimezone: true }),
     hiddenBy: uuid('hidden_by').references(() => profiles.id, {
       onDelete: 'set null',
@@ -477,6 +495,10 @@ export const strainReviews = pgTable(
       .references(() => profiles.id, { onDelete: 'cascade' }),
     rating: numeric('rating', { precision: 3, scale: 2 }).notNull(),
     body: text('body').notNull().default(''),
+    subRatings: jsonb('sub_ratings')
+      .notNull()
+      .$type<CatalogReviewSubRatings>()
+      .default(sql`'{}'::jsonb`),
     media: jsonb('media')
       .notNull()
       .$type<PostMediaItem[]>()

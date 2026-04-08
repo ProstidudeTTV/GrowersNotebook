@@ -134,6 +134,13 @@
       "when": 1776700000000,
       "tag": "0018_post_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776800000000,
+      "tag": "0019_catalog_review_sub_ratings",
+      "breakpoints": true
     }
   ]
 }

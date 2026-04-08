@@ -21,11 +21,13 @@ import {
 import { getDb } from '../db';
 import {
   breeders,
+  type CatalogReviewSubRatings,
   type PostMediaItem,
   profiles,
   strainReviews,
   strains,
 } from '../db/schema';
+import { normalizeCatalogSubRatings } from './catalog-sub-ratings.util';
 import { refreshStrainAggregates } from './catalog-aggregates';
 import {
   isPublicExcludedBreederSlug,
@@ -197,6 +199,7 @@ export class StrainsService {
         id: strainReviews.id,
         rating: strainReviews.rating,
         body: strainReviews.body,
+        subRatings: strainReviews.subRatings,
         media: strainReviews.media,
         createdAt: strainReviews.createdAt,
         updatedAt: strainReviews.updatedAt,
@@ -214,6 +217,7 @@ export class StrainsService {
       id: string;
       rating: string;
       body: string;
+      subRatings: CatalogReviewSubRatings;
       media: PostMediaItem[];
       createdAt: Date;
       updatedAt: Date;
@@ -234,6 +238,7 @@ export class StrainsService {
           id: mine.id,
           rating: String(mine.rating),
           body: mine.body,
+          subRatings: (mine.subRatings ?? {}) as CatalogReviewSubRatings,
           media: (mine.media ?? []) as PostMediaItem[],
           createdAt: mine.createdAt,
           updatedAt: mine.updatedAt,
@@ -249,6 +254,7 @@ export class StrainsService {
           id: r.id,
           rating: String(r.rating),
           body: r.body,
+          subRatings: (r.subRatings ?? {}) as CatalogReviewSubRatings,
           media: (r.media ?? []) as PostMediaItem[],
           createdAt: r.createdAt,
           updatedAt: r.updatedAt,
@@ -270,10 +276,12 @@ export class StrainsService {
     userId: string,
     rating: number,
     body: string,
+    subRatingsRaw?: unknown,
     media?: { url: string; type: string }[],
   ) {
     if (rating < 1 || rating > 5)
       throw new BadRequestException('Rating must be between 1 and 5');
+    const subRatings = normalizeCatalogSubRatings(subRatingsRaw);
     const mediaItems = normalizeStrainReviewMedia(media);
     const db = getDb();
     const [s] = await db.select().from(strains).where(eq(strains.slug, slug));
@@ -302,6 +310,7 @@ export class StrainsService {
         .set({
           rating: String(rating),
           body: body ?? '',
+          subRatings,
           media: mediaItems,
           updatedAt: new Date(),
         })
@@ -312,6 +321,7 @@ export class StrainsService {
         authorId: userId,
         rating: String(rating),
         body: body ?? '',
+        subRatings,
         media: mediaItems,
       });
     }
@@ -329,6 +339,7 @@ export class StrainsService {
       id: out!.id,
       rating: String(out!.rating),
       body: out!.body,
+      subRatings: (out!.subRatings ?? {}) as CatalogReviewSubRatings,
       createdAt: out!.createdAt,
       updatedAt: out!.updatedAt,
     };

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -20,6 +21,50 @@ class CatalogReviewImageDto {
   type!: 'image';
 }
 
+class CatalogSubRatingsDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  effects?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  flavor?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  potency?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  taste?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  aroma?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  duration?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  onset?: number;
+}
+
 export class UpsertCatalogReviewDto {
   @IsNumber()
   @Min(1)
@@ -29,6 +74,12 @@ export class UpsertCatalogReviewDto {
   @IsOptional()
   @IsString()
   body?: string;
+
+  /** Optional 1–5 scores for Effects, Flavor, etc. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CatalogSubRatingsDto)
+  subRatings?: CatalogSubRatingsDto;
 
   /** Strain reviews only (ignored for breeder reviews). Max 8 https image URLs. */
   @IsOptional()

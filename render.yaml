@@ -18,7 +18,9 @@
 # so a sleeping API does not hang navigation indefinitely.
 #
 # Legacy Synapse services (`growers-synapse`, `growers-synapse-db`) were removed from this blueprint.
-# If they still exist in your Render account, delete them manually so you are not billed for unused infrastructure.
+# IMPORTANT: If `growers-synapse` still auto-deploys from this repo, builds WILL FAIL — there is no
+# root Dockerfile anymore. In the Render Dashboard: delete that web service (and the synapse Postgres
+# instance if unused), or at minimum turn off Auto-Deploy for it. API + web deploys are unaffected.
 
 services:
   - type: web

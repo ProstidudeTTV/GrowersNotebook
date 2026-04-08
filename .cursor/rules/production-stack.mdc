@@ -18,3 +18,12 @@ The maintainer deploys **only** via this stack. **Do not** ask them to confirm R
 - **After substantive edits** (multi-file feature, API + web, schema, or anything the user will expect on the site): before treating the task as done, run `git status`. If there are changes, **commit and push** in this workspace (unless the user explicitly said not to ship yet). **Do not** only say “push when ready”—execute `git add`, `git commit`, `git push` when the goal is shipping.
 - After a push, optionally verify with Render MCP that a deploy started or reached `live`.
 - Use **Supabase MCP** when checking DB/migrations/auth config instead of guessing.
+
+## Maintainer reminder (non-negotiable)
+
+The user has repeatedly asked that the agent **not** hand work back as instructions when this environment can do it.
+
+1. **Execute here** — Run shell commands, `git`, installs, builds, and tool/MCP calls **in the workspace**. If you would otherwise write “you should run…”, **run it yourself** (unless blocked: secrets only the user has, destructive ops they must confirm, or interactive login).
+2. **Use their MCPs** — For GitHub, Render, Supabase, Vercel, and any other enabled MCP: **read the tool schema, then call the tools** when the task touches that service. Do not guess deploy/state or give dashboard-only answers when an MCP can report fact.
+3. **Retry** — If a command fails, try another approach or diagnose; do not stop after one failure with only advice.
+4. **Persist shipping** — Substantive changes → **commit + push** when the intent is production (per **Agent behavior** above); leaving everything local is considered dropping the task.

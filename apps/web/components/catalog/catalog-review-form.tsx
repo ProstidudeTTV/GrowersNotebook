@@ -223,27 +223,18 @@ export function CatalogReviewForm({
               <h3 className="text-sm font-semibold text-[var(--gn-text)]">
                 Optional sub-ratings
               </h3>
-              <div className="mt-4 space-y-6">
-                {CATALOG_SUB_RATING_ROWS.map((row, ri) => (
-                  <div
-                    key={ri}
-                    className={`grid grid-cols-2 gap-x-4 gap-y-6 ${
-                      row.length >= 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"
-                    }`}
-                  >
-                    {row.map(({ key, label }) => (
-                      <div key={key}>
-                        <p className="text-xs font-medium text-[var(--gn-text)]">
-                          {label}
-                        </p>
-                        <div className="mt-2">
-                          <CatalogOptionalSubStarRow
-                            value={subs[key]}
-                            onChange={(v) => setSub(key, v)}
-                          />
-                        </div>
-                      </div>
-                    ))}
+              <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-5 min-[520px]:grid-cols-2 xl:grid-cols-3">
+                {CATALOG_SUB_RATING_ROWS.flat().map(({ key, label }) => (
+                  <div key={key} className="min-w-0">
+                    <p className="text-xs font-medium text-[var(--gn-text)]">
+                      {label}
+                    </p>
+                    <div className="mt-2">
+                      <CatalogOptionalSubStarRow
+                        value={subs[key]}
+                        onChange={(v) => setSub(key, v)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

@@ -145,19 +145,24 @@ export function InteractiveStarRating({
 function CatalogStarGlyph({
   filled,
   accentClassName = "text-emerald-400",
+  size = "md",
 }: {
   filled: boolean;
   accentClassName?: string;
+  /** `sm` fits narrow panels (e.g. strain preview overlay). */
+  size?: "sm" | "md";
 }) {
+  const dim = size === "sm" ? "h-6 w-6" : "h-8 w-8";
+  const wh = size === "sm" ? 24 : 32;
   return (
     <svg
-      className={`h-8 w-8 shrink-0 ${
+      className={`${dim} shrink-0 ${
         filled
           ? accentClassName
           : "text-neutral-500 opacity-45 dark:text-neutral-600 dark:opacity-70"
       }`}
-      width="32"
-      height="32"
+      width={wh}
+      height={wh}
       viewBox="0 0 24 24"
       aria-hidden
     >
@@ -171,10 +176,12 @@ export function CatalogOverallStarRow({
   value,
   onChange,
   accentClassName,
+  starSize = "md",
 }: {
   value: number | null;
   onChange: (n: number) => void;
   accentClassName?: string;
+  starSize?: "sm" | "md";
 }) {
   const chosen = value ?? 0;
   return (
@@ -195,6 +202,7 @@ export function CatalogOverallStarRow({
           <CatalogStarGlyph
             filled={n <= chosen}
             accentClassName={accentClassName}
+            size={starSize}
           />
         </button>
       ))}
@@ -207,25 +215,31 @@ export function CatalogOptionalSubStarRow({
   value,
   onChange,
   accentClassName,
+  starSize = "sm",
 }: {
   value: number | null;
   onChange: (n: number | null) => void;
   accentClassName?: string;
+  /** Default `sm` for dense grids / narrow side panels. */
+  starSize?: "sm" | "md";
 }) {
   const chosen = value ?? 0;
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="inline-flex items-center gap-0">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">
+      <div className="inline-flex shrink-0 items-center gap-0">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
-            className="rounded p-0.5 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className={`rounded outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+              starSize === "sm" ? "p-px" : "p-0.5"
+            }`}
             onClick={() => onChange(n)}
           >
             <CatalogStarGlyph
               filled={n <= chosen}
               accentClassName={accentClassName}
+              size={starSize}
             />
           </button>
         ))}

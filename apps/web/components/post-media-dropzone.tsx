@@ -114,9 +114,16 @@ export function PostMediaDropzone({
     [processFiles],
   );
 
+  const openPicker = useCallback(() => {
+    if (disabled || busy) return;
+    inputRef.current?.click();
+  }, [busy, disabled]);
+
   return (
-    <label
-      htmlFor={inputId}
+    <div
+      role="button"
+      tabIndex={disabled || busy ? -1 : 0}
+      aria-label="Upload images or video. Choose files or drag and drop media."
       className={[
         "relative flex min-h-[168px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 transition select-none",
         dragOver
@@ -124,6 +131,7 @@ export function PostMediaDropzone({
           : "border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-ring))]",
         disabled || busy ? "pointer-events-none opacity-60" : "",
       ].join(" ")}
+      onClick={openPicker}
       onDragEnter={(e) => {
         e.preventDefault();
         if (!disabled && !busy) setDragOver(true);
@@ -139,22 +147,21 @@ export function PostMediaDropzone({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          inputRef.current?.click();
+          openPicker();
         }
       }}
-      tabIndex={disabled || busy ? -1 : 0}
     >
       <input
         ref={inputRef}
         id={inputId}
         type="file"
         multiple
-        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.mov"
+        accept="image/*,video/*,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov"
         className="sr-only"
-        aria-label="Upload images or video"
+        tabIndex={-1}
+        aria-hidden
         disabled={disabled || busy}
         onChange={onPick}
-        onClick={(e) => e.stopPropagation()}
       />
       <div className="pointer-events-none flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]">
         <svg
@@ -181,6 +188,6 @@ export function PostMediaDropzone({
         Images up to 8 MB · Videos up to 50 MB · Multiple files · Shown below your
         text, not inside the editor
       </p>
-    </label>
+    </div>
   );
 }

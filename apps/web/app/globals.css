@@ -155,7 +155,14 @@ html.dark body {
       0 8px 32px -12px rgb(15 23 42 / 0.12);
   }
 
+  /**
+   * Dark: solid bar so the nav color stays stable; frosted glass picked up the
+   * page gradient after canvas tweaks and looked like an unintended nav change.
+   */
   html.dark .gn-header {
+    background: var(--gn-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow:
       0 1px 0 color-mix(in srgb, var(--gn-accent) 18%, transparent),
       0 12px 40px -16px rgb(0 0 0 / 0.35);

@@ -1,9 +1,7 @@
 import {
   Body,
   Controller,
-  forwardRef,
   Get,
-  Inject,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -18,7 +16,6 @@ import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CommentsService } from '../comments/comments.service';
 import { CurrentUser } from '../common/current-user.decorator';
 import { SearchSiteQueryDto } from '../common/dto/search-site.query.dto';
-import { MatrixService } from '../matrix/matrix.service';
 import { PostsService } from '../posts/posts.service';
 import { ListProfileCommentsQueryDto } from './dto/list-profile-comments.query';
 import { ListProfilePostsQueryDto } from './dto/list-profile-posts.query';
@@ -32,8 +29,6 @@ export class ProfilesController {
     private readonly profiles: ProfilesService,
     private readonly posts: PostsService,
     private readonly comments: CommentsService,
-    @Inject(forwardRef(() => MatrixService))
-    private readonly matrix: MatrixService,
   ) {}
 
   @Get('me')
@@ -48,18 +43,7 @@ export class ProfilesController {
     @CurrentUser() user: JwtUser,
     @Body() body: UpdateProfileDto,
   ) {
-    const out = await this.profiles.updateMe(user.sub, body);
-    if (
-      this.matrix.matrixConfigured() &&
-      body.displayName !== undefined
-    ) {
-      try {
-        await this.matrix.syncHomeserverDisplayName(user.sub, out.displayName);
-      } catch {
-        /* best-effort; messaging still works with old HS display name */
-      }
-    }
-    return out;
+    return this.profiles.updateMe(user.sub, body);
   }
 
   @Get(':id/posts')

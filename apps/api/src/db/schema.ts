@@ -502,16 +502,63 @@ export const catalogSuggestions = pgTable(
   ],
 );
 
-/**
- * Growers-wrapped Matrix 4S (secret storage) AES key — lets any device recover Megolm
- * backup after login. Ciphertext uses MATRIX_SSSS_WRAP_KEY on the API (see matrix-ssss-wrap.service).
- */
-export const profileMatrixSsssWrap = pgTable('profile_matrix_ssss_wrap', {
-  profileId: uuid('profile_id')
-    .primaryKey()
-    .references(() => profiles.id, { onDelete: 'cascade' }),
-  ciphertext: text('ciphertext').notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+/** Direct message thread between two profiles (canonical ordering user_low < user_high). */
+export const dmThreads = pgTable(
+  'dm_threads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userLow: uuid('user_low')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    userHigh: uuid('user_high')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('dm_threads_pair_uq').on(t.userLow, t.userHigh),
+    check('dm_threads_order_chk', sql`${t.userLow} < ${t.userHigh}`),
+    index('dm_threads_last_msg_idx').on(t.lastMessageAt),
+  ],
+);
+
+export const dmMessages = pgTable(
+  'dm_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => dmThreads.id, { onDelete: 'cascade' }),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('dm_messages_thread_created_idx').on(t.threadId, t.createdAt),
+  ],
+);
+
+export const dmThreadReads = pgTable(
+  'dm_thread_reads',
+  {
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => dmThreads.id, { onDelete: 'cascade' }),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    lastReadAt: timestamp('last_read_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.threadId, t.profileId] }),
+  ],
+);

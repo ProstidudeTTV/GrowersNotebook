@@ -1,4 +1,3 @@
-import path from "path";
 import type { NextConfig } from "next";
 import {
   plausibleEventDestination,
@@ -6,31 +5,6 @@ import {
 } from "./lib/plausible-proxy";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      const prev = config.resolve.alias;
-      const base =
-        typeof prev === "object" && prev !== null && !Array.isArray(prev)
-          ? prev
-          : {};
-      config.resolve.alias = {
-        ...base,
-        "@matrix-org/matrix-sdk-crypto-wasm": path.resolve(
-          __dirname,
-          "node_modules/@matrix-org/matrix-sdk-crypto-wasm",
-        ),
-      };
-    }
-    return config;
-  },
-  async headers() {
-    return [
-      {
-        source: "/wasm/:path*.wasm",
-        headers: [{ key: "Content-Type", value: "application/wasm" }],
-      },
-    ];
-  },
   async rewrites() {
     return [
       {

@@ -1,12 +1,10 @@
 # Render Blueprint: https://docs.render.com/infrastructure-as-code
 # Secrets: set in dashboard (DATABASE_URL / Supabase pooler, SUPABASE_*, WEB_ORIGIN on API;
-# MATRIX_SSSS_WRAP_KEY on API: 64 hex chars — wraps Matrix 4S keys per profile for cross-browser history;
 # use comma-separated WEB_ORIGIN values if users hit multiple hostnames (e.g. custom domain
-# and *.onrender.com). Browser API calls also go through Next.js /api/gn-proxy when possible;
-# NEXT_PUBLIC_* on web; SYNAPSE_* on API for messaging; SYNAPSE_JWT_SECRET on both API + Synapse).
+# and *.onrender.com). Browser API calls go through Next.js /api/gn-proxy when possible;
+# NEXT_PUBLIC_* on web.
 #
-# Messaging homeserver: `growers-synapse` (Docker) + Postgres `growers-synapse-db`.
-# Runbook: infra/render/synapse/README.md
+# Direct messages: plaintext in Supabase Postgres via Nest `DirectMessagesModule` (no Synapse).
 #
 # Supabase auth (email confirm / magic link): infra/render/SUPABASE_AUTH.md
 # Canonical public site: https://growersnotebook.com (custom domain on Render).
@@ -16,8 +14,11 @@
 # env NODE_ENV=development … (see build commands below).
 #
 # Latency: Free/spun-down web services cold-start (~30–60s). Starter “always on” reduces
-# first-byte time for the API, web app, and Synapse. The web app also uses parallel sidebar
-# fetches + timeouts so a sleeping API does not hang navigation indefinitely.
+# first-byte time for the API and web app. The web app uses parallel sidebar fetches + timeouts
+# so a sleeping API does not hang navigation indefinitely.
+#
+# Legacy Synapse services (`growers-synapse`, `growers-synapse-db`) were removed from this blueprint.
+# If they still exist in your Render account, delete them manually so you are not billed for unused infrastructure.
 
 services:
   - type: web
@@ -35,13 +36,6 @@ services:
         value: production
       - key: LISTEN_HOST
         value: "0.0.0.0"
-      # Cross-browser Matrix DM history: 64 hex chars (32 bytes). Generate once, set in dashboard:
-      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-      - key: MATRIX_SSSS_WRAP_KEY
-        sync: false
-      # Messaging (after Synapse is live — same values as in infra/render/synapse/README.md):
-      # SYNAPSE_BASE_URL, SYNAPSE_PUBLIC_BASE_URL, SYNAPSE_SERVER_NAME, SYNAPSE_JWT_SECRET,
-      # SYNAPSE_ADMIN_ACCESS_TOKEN
 
   - type: web
     name: growers-notebook-web
@@ -70,38 +64,3 @@ services:
       # Optional: Google Search Console HTML tag verification value
       - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
         sync: false
-
-  - type: web
-    name: growers-synapse
-    runtime: docker
-    region: oregon
-    plan: starter
-    dockerfilePath: ./infra/render/synapse/Dockerfile
-    dockerContext: ./infra/render/synapse
-    healthCheckPath: /_matrix/client/versions
-    disk:
-      name: synapse-data
-      mountPath: /data
-      sizeGB: 1
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: growers-synapse-db
-          property: connectionString
-      - key: SYNAPSE_REPORT_STATS
-        value: no
-      - key: SYNAPSE_SERVER_NAME
-        value: growers-synapse.onrender.com
-      - key: SYNAPSE_PUBLIC_BASE_URL
-        value: https://growers-synapse.onrender.com
-      - key: SYNAPSE_JWT_SECRET
-        sync: false
-      # Optional bootstrap: set in dashboard; patch_config writes registration_shared_secret to homeserver.yaml
-      - key: SYNAPSE_REGISTRATION_SHARED_SECRET
-        sync: false
-
-databases:
-  - name: growers-synapse-db
-    databaseName: synapse
-    user: synapse
-    region: oregon

@@ -12,7 +12,7 @@ import { FollowsModule } from './follows/follows.module';
 import { PostsModule } from './posts/posts.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProfilesModule } from './profiles/profiles.module';
-import { MatrixModule } from './matrix/matrix.module';
+import { DirectMessagesModule } from './direct-messages/direct-messages.module';
 import { VotesModule } from './votes/votes.module';
 import { getApiPackageRoot } from './paths';
 
@@ -41,7 +41,7 @@ const repoRoot = join(apiRoot, '..', '..');
     VotesModule,
     AdminModule,
     CatalogModule,
-    MatrixModule,
+    DirectMessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

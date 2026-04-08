@@ -1,6 +1,8 @@
 # Synapse (Matrix) — local Docker
 
-PostgreSQL and Synapse for development. Production can use Render Postgres from `render.yaml` (`growers-matrix-postgres`) and a Synapse deployment that points at that database.
+**Production messaging** on GrowersNotebook uses first-party DMs in Postgres, not Synapse. This compose file is **optional** if you want a local Matrix stack for experiments only.
+
+PostgreSQL and Synapse for development.
 
 ## First-time setup
 

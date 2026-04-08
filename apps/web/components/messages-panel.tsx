@@ -263,29 +263,6 @@ export function MessagesPanel() {
     router,
   ]);
 
-  useEffect(() => {
-    if (!activeThreadId || status !== "ready") return;
-    const ch = supabase
-      .channel(`dm:${activeThreadId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "dm_messages",
-          filter: `thread_id=eq.${activeThreadId}`,
-        },
-        () => {
-          void loadMessagesPage(activeThreadId);
-          void loadThreads();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(ch);
-    };
-  }, [activeThreadId, status, supabase, loadMessagesPage, loadThreads]);
-
   useLayoutEffect(() => {
     const el = timelineRef.current;
     if (!el || !scrollStickBottom.current) return;

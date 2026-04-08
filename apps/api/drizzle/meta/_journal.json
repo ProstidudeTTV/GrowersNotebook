@@ -113,6 +113,13 @@
       "when": 1776400000000,
       "tag": "0015_dm_messages_image_url",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1776500000000,
+      "tag": "0016_dm_messages_supabase_read_lockdown",
+      "breakpoints": true
     }
   ]
 }

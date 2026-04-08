@@ -44,7 +44,8 @@ html:not(.dark) {
   --gn-radius-lg: 1.25rem;
 }
 
-html:not(.dark) body {
+/** Page backdrop: use on `body` and the main site column so flex children never show as flat black. */
+html:not(.dark) .gn-app-canvas {
   background:
     radial-gradient(
       ellipse 120% 85% at 50% -35%,
@@ -63,6 +64,9 @@ html:not(.dark) body {
       var(--gn-page-bottom) 100%
     );
   background-attachment: scroll;
+}
+
+html:not(.dark) body {
   color: var(--gn-text);
   min-height: 100vh;
   font-family: var(--font-geist-sans), system-ui, sans-serif;
@@ -103,7 +107,7 @@ html.dark {
   --gn-radius-lg: 1.25rem;
 }
 
-html.dark body {
+html.dark .gn-app-canvas {
   background:
     radial-gradient(
       ellipse 100% 72% at 50% -28%,
@@ -122,6 +126,9 @@ html.dark body {
       var(--gn-page-bottom) 100%
     );
   background-attachment: scroll;
+}
+
+html.dark body {
   color: var(--gn-text);
   min-height: 100vh;
   font-family: var(--font-geist-sans), system-ui, sans-serif;

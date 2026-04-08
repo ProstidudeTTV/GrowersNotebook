@@ -88,7 +88,7 @@ export function SiteChrome({
           }
         />
 
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="gn-app-canvas min-w-0 flex-1">{children}</div>
       </div>
       {modal}
     </div>

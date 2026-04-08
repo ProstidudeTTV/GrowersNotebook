@@ -1121,44 +1121,48 @@ export function PostView({
         ) : null}
 
         <div
-          className="flex flex-wrap items-center gap-2 border-t border-[var(--gn-divide)] px-3.5 py-2.5 sm:gap-3 sm:px-5"
+          className="flex flex-col gap-2 border-t border-[var(--gn-divide)] px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5"
           data-interactive
         >
-          <VoteFeedPill
-            score={post.score}
-            upvotes={post.upvotes}
-            downvotes={post.downvotes}
-            viewerVote={post.viewerVote}
-            onUp={() => void votePost(1)}
-            onDown={() => void votePost(-1)}
-            disabled={busy}
-          />
-          <Link
-            href="#comments"
-            prefetch={false}
-            aria-label={`${commentsTotal} comments — jump to discussion`}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="shrink-0 opacity-80"
-              aria-hidden
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+            <VoteFeedPill
+              score={post.score}
+              upvotes={post.upvotes}
+              downvotes={post.downvotes}
+              viewerVote={post.viewerVote}
+              onUp={() => void votePost(1)}
+              onDown={() => void votePost(-1)}
+              disabled={busy}
+            />
+            <Link
+              href="#comments"
+              prefetch={false}
+              aria-label={`${commentsTotal} comments — jump to discussion`}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
             >
-              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-            </svg>
-            <span className="tabular-nums">{compactCount(commentsTotal)}</span>
-            <span className="hidden sm:inline">comments</span>
-          </Link>
-          <PostShareButton
-            postId={post.id}
-            postTitle={post.title}
-            viewerId={viewerId}
-          />
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="shrink-0 opacity-80"
+                aria-hidden
+              >
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+              </svg>
+              <span className="tabular-nums">{compactCount(commentsTotal)}</span>
+              <span className="hidden sm:inline">comments</span>
+            </Link>
+          </div>
+          <div className="flex shrink-0 items-center sm:justify-end">
+            <PostShareButton
+              postId={post.id}
+              postTitle={post.title}
+              viewerId={viewerId}
+            />
+          </div>
         </div>
       </article>
 

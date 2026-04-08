@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased gn-app-canvas`}
       >
         <Script id="gn-theme-init" strategy="beforeInteractive">
           {themeInitScript}

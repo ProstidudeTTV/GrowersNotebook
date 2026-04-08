@@ -19,6 +19,10 @@ import {
 const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
 
+/** Pixels: card size and diagonal step for overlapped stack previews */
+const DM_STACK_CARD_PX = 120;
+const DM_STACK_STEP_PX = 11;
+
 type PendingAttachment = {
   id: string;
   /** Local blob URL for instant preview; revoked after upload. */
@@ -644,6 +648,12 @@ export function MessagesPanel() {
                 ) : (
                   messages.map((ln) => {
                     const imgs = messageImageUrls(ln);
+                    const stackW =
+                      imgs.length <= 1
+                        ? undefined
+                        : DM_STACK_CARD_PX +
+                          (imgs.length - 1) * DM_STACK_STEP_PX;
+                    const stackH = stackW;
                     return (
                       <div
                         key={ln.id}
@@ -652,26 +662,60 @@ export function MessagesPanel() {
                         <div
                           className={`flex gap-2 ${imgs.length ? "items-start" : ""}`}
                         >
-                          {imgs.length > 0 ? (
-                            <div className="flex w-[4.5rem] shrink-0 flex-col gap-1 sm:w-[5.5rem]">
+                          {imgs.length === 1 ? (
+                            <button
+                              type="button"
+                              className="max-w-[min(11rem,42vw)] shrink-0 border-0 bg-transparent p-0"
+                              onClick={() =>
+                                setLightbox({ urls: imgs, index: 0 })
+                              }
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={imgs[0]}
+                                alt=""
+                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-sm"
+                              />
+                            </button>
+                          ) : imgs.length > 1 ? (
+                            <button
+                              type="button"
+                              className="relative shrink-0 border-0 bg-transparent p-0 text-left"
+                              style={{
+                                width: stackW,
+                                height: stackH,
+                                minWidth: stackW,
+                                minHeight: stackH,
+                              }}
+                              onClick={() =>
+                                setLightbox({
+                                  urls: imgs,
+                                  index: imgs.length - 1,
+                                })
+                              }
+                              aria-label={`${imgs.length} photos — open viewer`}
+                            >
                               {imgs.map((url, idx) => (
-                                <button
+                                <span
                                   key={`${ln.id}-${idx}-${url}`}
-                                  type="button"
-                                  className="block overflow-hidden rounded-md border border-[var(--gn-divide)] bg-black/5 p-0 ring-0"
-                                  onClick={() =>
-                                    setLightbox({ urls: imgs, index: idx })
-                                  }
+                                  className="absolute overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-md ring-1 ring-black/5"
+                                  style={{
+                                    left: idx * DM_STACK_STEP_PX,
+                                    top: idx * DM_STACK_STEP_PX,
+                                    width: DM_STACK_CARD_PX,
+                                    height: DM_STACK_CARD_PX,
+                                    zIndex: idx,
+                                  }}
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={url}
                                     alt=""
-                                    className="h-20 w-full cursor-zoom-in object-cover"
+                                    className="h-full w-full cursor-zoom-in object-contain"
                                   />
-                                </button>
+                                </span>
                               ))}
-                            </div>
+                            </button>
                           ) : null}
                           <div className="min-w-0 flex-1">
                             <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
@@ -741,7 +785,7 @@ export function MessagesPanel() {
                           <img
                             src={src}
                             alt=""
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain"
                           />
                         ) : null}
                         {att.uploading ? (

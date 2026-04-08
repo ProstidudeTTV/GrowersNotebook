@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
+import { buildNewStrainSuggestionPayload } from "@/lib/new-strain-suggestion-payload";
 
 type Kind =
   | "new_strain"
@@ -26,6 +27,7 @@ export function CatalogSuggestClient() {
   const [breederSlug, setBreederSlug] = useState("");
   const [effectsRaw, setEffectsRaw] = useState("");
   const [effectsNotes, setEffectsNotes] = useState("");
+  const [published, setPublished] = useState(true);
   const [website, setWebsite] = useState("");
   const [country, setCountry] = useState("");
 
@@ -53,14 +55,15 @@ export function CatalogSuggestClient() {
       let payload: Record<string, unknown> = {};
       switch (kind) {
         case "new_strain":
-          payload = {
-            slug: slug.trim(),
-            name: name.trim(),
-            description: description.trim() || undefined,
-            breederSlug: breederSlug.trim() || undefined,
+          payload = buildNewStrainSuggestionPayload({
+            slug,
+            name,
+            description,
+            breederSlug,
             effects,
-            effectsNotes: effectsNotes.trim() || undefined,
-          };
+            effectsNotes,
+            published,
+          });
           break;
         case "new_breeder":
           payload = {
@@ -230,7 +233,9 @@ export function CatalogSuggestClient() {
         <>
           <div>
             <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-              Tags (comma or newline separated, optional)
+              Effects / tags (comma or newline; stored as{" "}
+              <code className="text-[0.7rem]">effects[]</code> like catalog
+              strains)
             </label>
             <textarea
               value={effectsRaw}
@@ -241,7 +246,8 @@ export function CatalogSuggestClient() {
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-              Tag notes (optional)
+              Effects notes (<code className="text-[0.7rem]">effectsNotes</code>{" "}
+              — optional)
             </label>
             <input
               value={effectsNotes}
@@ -250,6 +256,26 @@ export function CatalogSuggestClient() {
             />
           </div>
         </>
+      ) : null}
+
+      {kind === "new_strain" ? (
+        <div className="flex items-start gap-2 rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3">
+          <input
+            id="strain-published"
+            type="checkbox"
+            checked={published}
+            onChange={(e) => setPublished(e.target.checked)}
+            className="mt-0.5"
+          />
+          <label htmlFor="strain-published" className="text-sm text-[var(--gn-text)]">
+            <span className="font-medium">Published</span>
+            <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+              Matches catalog <code className="text-[0.7rem]">published</code>.
+              Leave on so the entry goes live after staff approve (uncheck for
+              draft-only).
+            </span>
+          </label>
+        </div>
       ) : null}
 
       {showWebsiteCountry ? (

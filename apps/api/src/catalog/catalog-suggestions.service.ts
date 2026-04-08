@@ -102,22 +102,46 @@ export class CatalogSuggestionsService {
         const slug = String(p.slug ?? '').trim();
         const name = String(p.name ?? '').trim();
         if (!slug || !name) throw new BadRequestException('Invalid payload');
+
         let breederId: string | null = null;
-        if (p.breederSlug) {
-          const b = await this.breeders.findBySlug(String(p.breederSlug));
-          if (b) breederId = b.id;
-        } else if (p.breederId) {
-          const b = await this.breeders.findById(String(p.breederId));
+        const rawBreederId = p.breederId;
+        if (rawBreederId != null && String(rawBreederId).trim() !== '') {
+          const b = await this.breeders.findById(String(rawBreederId).trim());
           if (b) breederId = b.id;
         }
+        if (!breederId && p.breederSlug != null) {
+          const bs = String(p.breederSlug).trim();
+          if (bs) {
+            const b = await this.breeders.findBySlug(bs);
+            if (b) breederId = b.id;
+          }
+        }
+
+        const description =
+          p.description === undefined || p.description === null
+            ? null
+            : String(p.description);
+        const effects = Array.isArray(p.effects)
+          ? (p.effects as unknown[])
+              .map((x) => String(x).trim())
+              .filter((s) => s.length > 0)
+          : [];
+        const effectsNotes =
+          p.effectsNotes === undefined ||
+          p.effectsNotes === null ||
+          String(p.effectsNotes).trim() === ''
+            ? null
+            : String(p.effectsNotes);
+        const published = p.published === false ? false : true;
+
         await this.strains.createAdmin({
           slug,
           name,
-          description: (p.description as string) ?? null,
+          description,
           breederId,
-          effects: Array.isArray(p.effects) ? (p.effects as string[]) : [],
-          effectsNotes: (p.effectsNotes as string) ?? null,
-          published: p.published === false ? false : true,
+          effects,
+          effectsNotes,
+          published,
         });
         break;
       }

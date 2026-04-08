@@ -19,9 +19,19 @@ import {
 const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
 
-/** Pixels: card size and diagonal step for overlapped stack previews */
-const DM_STACK_CARD_PX = 120;
-const DM_STACK_STEP_PX = 11;
+/** Pixels: iMessage-style fanned photo stack */
+const DM_STACK_CARD_PX = 118;
+const DM_STACK_STEP_X = 10;
+const DM_STACK_STEP_Y = 8;
+const DM_STACK_ROTATION_PAD = 28;
+
+/** Back cards fan with alternating tilt; front card (last index) stays straight. */
+function dmStackCardRotation(index: number, total: number): number {
+  if (total <= 1 || index === total - 1) return 0;
+  const depth = total - 1 - index;
+  const sign = index % 2 === 0 ? -1 : 1;
+  return sign * Math.min(8, 3.2 + depth * 1.35);
+}
 
 type PendingAttachment = {
   id: string;
@@ -648,12 +658,19 @@ export function MessagesPanel() {
                 ) : (
                   messages.map((ln) => {
                     const imgs = messageImageUrls(ln);
+                    const n = imgs.length;
                     const stackW =
-                      imgs.length <= 1
+                      n <= 1
                         ? undefined
-                        : DM_STACK_CARD_PX +
-                          (imgs.length - 1) * DM_STACK_STEP_PX;
-                    const stackH = stackW;
+                        : (n - 1) * DM_STACK_STEP_X +
+                          DM_STACK_CARD_PX +
+                          DM_STACK_ROTATION_PAD;
+                    const stackH =
+                      n <= 1
+                        ? undefined
+                        : (n - 1) * DM_STACK_STEP_Y +
+                          DM_STACK_CARD_PX +
+                          DM_STACK_ROTATION_PAD;
                     return (
                       <div
                         key={ln.id}
@@ -674,48 +691,64 @@ export function MessagesPanel() {
                               <img
                                 src={imgs[0]}
                                 alt=""
-                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-sm"
+                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
                               />
                             </button>
                           ) : imgs.length > 1 ? (
-                            <button
-                              type="button"
-                              className="relative shrink-0 border-0 bg-transparent p-0 text-left"
-                              style={{
-                                width: stackW,
-                                height: stackH,
-                                minWidth: stackW,
-                                minHeight: stackH,
-                              }}
-                              onClick={() =>
-                                setLightbox({
-                                  urls: imgs,
-                                  index: imgs.length - 1,
-                                })
-                              }
-                              aria-label={`${imgs.length} photos — open viewer`}
-                            >
-                              {imgs.map((url, idx) => (
-                                <span
-                                  key={`${ln.id}-${idx}-${url}`}
-                                  className="absolute overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-md ring-1 ring-black/5"
-                                  style={{
-                                    left: idx * DM_STACK_STEP_PX,
-                                    top: idx * DM_STACK_STEP_PX,
-                                    width: DM_STACK_CARD_PX,
-                                    height: DM_STACK_CARD_PX,
-                                    zIndex: idx,
-                                  }}
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={url}
-                                    alt=""
-                                    className="h-full w-full cursor-zoom-in object-contain"
-                                  />
-                                </span>
-                              ))}
-                            </button>
+                            <div className="flex min-w-0 shrink-0 flex-col gap-1.5">
+                              <p className="text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
+                                {selfId && ln.senderId === selfId
+                                  ? `You sent ${imgs.length} photos`
+                                  : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`}
+                              </p>
+                              <button
+                                type="button"
+                                className="relative shrink-0 border-0 bg-transparent p-0 text-left"
+                                style={{
+                                  width: stackW,
+                                  height: stackH,
+                                  minWidth: stackW,
+                                  minHeight: stackH,
+                                }}
+                                onClick={() =>
+                                  setLightbox({
+                                    urls: imgs,
+                                    index: imgs.length - 1,
+                                  })
+                                }
+                                aria-label={`${imgs.length} photos — open viewer`}
+                              >
+                                {imgs.map((url, idx) => {
+                                  const rot = dmStackCardRotation(idx, imgs.length);
+                                  return (
+                                    <span
+                                      key={`${ln.id}-${idx}-${url}`}
+                                      className="absolute overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_4px_14px_rgba(0,0,0,0.12)] ring-1 ring-black/5 dark:shadow-[0_4px_14px_rgba(0,0,0,0.35)] dark:ring-white/10"
+                                      style={{
+                                        left:
+                                          idx * DM_STACK_STEP_X +
+                                          DM_STACK_ROTATION_PAD / 2,
+                                        top:
+                                          idx * DM_STACK_STEP_Y +
+                                          DM_STACK_ROTATION_PAD / 2,
+                                        width: DM_STACK_CARD_PX,
+                                        height: DM_STACK_CARD_PX,
+                                        zIndex: idx,
+                                        transform: `rotate(${rot}deg)`,
+                                        transformOrigin: "center center",
+                                      }}
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={url}
+                                        alt=""
+                                        className="h-full w-full cursor-zoom-in object-cover"
+                                      />
+                                    </span>
+                                  );
+                                })}
+                              </button>
+                            </div>
                           ) : null}
                           <div className="min-w-0 flex-1">
                             <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">

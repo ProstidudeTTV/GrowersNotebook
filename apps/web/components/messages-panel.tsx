@@ -461,25 +461,30 @@ export function MessagesPanel() {
   const onImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
+    const resetInput = () => {
+      requestAnimationFrame(() => {
+        input.value = "";
+      });
+    };
 
     if (!files?.length) {
-      input.value = "";
+      resetInput();
       return;
     }
     if (!selfId) {
       setActionError("Sign in to attach photos.");
-      input.value = "";
+      resetInput();
       return;
     }
 
     setActionError(null);
     const room = DM_ATTACH_MAX - pendingAttachments.length;
     if (room <= 0) {
-      input.value = "";
+      resetInput();
       return;
     }
     const list = Array.from(files).slice(0, room);
-    input.value = "";
+    resetInput();
     const newItems: PendingAttachment[] = list.map((file) => ({
       id:
         typeof crypto !== "undefined" && crypto.randomUUID

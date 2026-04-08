@@ -895,8 +895,16 @@ export function PostView({
   const onCommentImageFiles = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
-    input.value = "";
-    if (!files?.length) return;
+    if (!files?.length) {
+      requestAnimationFrame(() => {
+        input.value = "";
+      });
+      return;
+    }
+    const snapshot = Array.from(files);
+    requestAnimationFrame(() => {
+      input.value = "";
+    });
     const supabase = createClient();
     void (async () => {
       const uid =
@@ -910,7 +918,7 @@ export function PostView({
       setError(null);
       const room = COMMENT_ATTACH_MAX - pendingCommentImages.length;
       if (room <= 0) return;
-      const list = Array.from(files).slice(0, room);
+      const list = snapshot.slice(0, room);
       const newItems: PendingCommentImage[] = list.map((file) => ({
         id:
           typeof crypto !== "undefined" && crypto.randomUUID

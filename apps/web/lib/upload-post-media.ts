@@ -5,18 +5,54 @@ export const POST_MEDIA_BUCKET = "post-media";
 const IMAGE_MAX = 8 * 1024 * 1024;
 const VIDEO_MAX = 50 * 1024 * 1024;
 const IMAGE_MAX_EDGE = 1600;
-const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif)$/i;
+/** Samsung / Android often send `image/jpg`, generic `image/*`, or empty `type`. */
+const IMAGE_TYPES =
+  /^image\/(jpeg|jpg|pjpeg|png|webp|gif)$/i;
 const VIDEO_TYPES = /^video\/(mp4|webm|quicktime)$/i;
 
-/** Many mobile pickers leave `file.type` empty; infer from extension. */
+/**
+ * Many mobile pickers leave `file.type` empty or use non-standard MIME strings.
+ * Infer from type, extension, or (last resort) accept as image and let decode validate.
+ */
 function inferredImageMime(file: File): string | null {
-  if (file.type && IMAGE_TYPES.test(file.type)) return file.type;
+  const raw = (file.type ?? "").trim();
+  const t = raw.toLowerCase();
+  if (t === "image/heic" || t === "image/heif") return null;
+  if (t && IMAGE_TYPES.test(t)) {
+    if (t === "image/jpg" || t === "image/pjpeg") return "image/jpeg";
+    return raw;
+  }
+  if (t.startsWith("image/")) {
+    return "image/jpeg";
+  }
   const n = file.name.toLowerCase();
   if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
   if (n.endsWith(".png")) return "image/png";
   if (n.endsWith(".webp")) return "image/webp";
   if (n.endsWith(".gif")) return "image/gif";
+  if (!t && file.size > 0) {
+    return "image/jpeg";
+  }
   return null;
+}
+
+function inferredVideoMime(file: File): string | null {
+  const raw = (file.type ?? "").trim();
+  if (raw && VIDEO_TYPES.test(raw)) return raw;
+  const n = file.name.toLowerCase();
+  if (n.endsWith(".mp4")) return "video/mp4";
+  if (n.endsWith(".webm")) return "video/webm";
+  if (n.endsWith(".mov")) return "video/quicktime";
+  return null;
+}
+
+/** Gate uploads in UI (dropzone) — same rules as `uploadPostImage` / `uploadPostVideo`. */
+export function isProcessablePostImage(file: File): boolean {
+  return inferredImageMime(file) != null;
+}
+
+export function isProcessablePostVideo(file: File): boolean {
+  return inferredVideoMime(file) != null;
 }
 
 function extForVideo(mime: string): string {
@@ -114,7 +150,11 @@ export async function uploadPostImage(
   file: File,
 ): Promise<UploadPostMediaResult> {
   if (!inferredImageMime(file)) {
-    return { ok: false, message: "Use a JPEG, PNG, WebP, or GIF image." };
+    return {
+      ok: false,
+      message:
+        "Use a JPEG, PNG, WebP, or GIF image. (HEIC from some phone cameras is not supported yet—convert or re-save as JPEG in your gallery.)",
+    };
   }
   if (file.size > IMAGE_MAX) {
     return { ok: false, message: "Image must be 8 MB or smaller." };
@@ -166,7 +206,8 @@ export async function uploadPostVideo(
   userId: string,
   file: File,
 ): Promise<UploadPostMediaResult> {
-  if (!VIDEO_TYPES.test(file.type)) {
+  const videoMime = inferredVideoMime(file);
+  if (!videoMime) {
     return {
       ok: false,
       message: "Use an MP4, WebM, or MOV video.",
@@ -180,13 +221,13 @@ export async function uploadPostVideo(
     typeof crypto !== "undefined" && crypto.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const ext = extForVideo(file.type);
+  const ext = extForVideo(videoMime);
   const path = `${userId}/${id}.${ext}`;
 
   const { error } = await supabase.storage
     .from(POST_MEDIA_BUCKET)
     .upload(path, file, {
-      contentType: file.type,
+      contentType: videoMime,
       upsert: false,
     });
 

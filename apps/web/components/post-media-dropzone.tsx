@@ -3,7 +3,12 @@
 import { useCallback, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
-import { uploadPostImage, uploadPostVideo } from "@/lib/upload-post-media";
+import {
+  isProcessablePostImage,
+  isProcessablePostVideo,
+  uploadPostImage,
+  uploadPostVideo,
+} from "@/lib/upload-post-media";
 
 type PostMediaDropzoneProps = {
   disabled?: boolean;
@@ -23,11 +28,11 @@ export function PostMediaDropzone({
 
   const processFile = useCallback(
     async (file: File): Promise<boolean> => {
-      const okImage = /^image\/(jpeg|png|webp|gif)$/i.test(file.type);
-      const okVideo = /^video\/(mp4|webm|quicktime)$/i.test(file.type);
-      if (!okImage && !okVideo) {
+      const asVideo = isProcessablePostVideo(file);
+      const asImage = !asVideo && isProcessablePostImage(file);
+      if (!asImage && !asVideo) {
         onError?.(
-          "Drop an image (JPEG, PNG, WebP, GIF) or video (MP4, WebM, MOV).",
+          "Use a JPEG, PNG, WebP, GIF image or MP4/WebM/MOV video. If you picked a photo and nothing happened, try another gallery or save as JPEG—some phones use formats we cannot read in the browser yet.",
         );
         return false;
       }
@@ -45,7 +50,7 @@ export function PostMediaDropzone({
           onError?.("Sign in to upload media.");
           return false;
         }
-        if (okImage) {
+        if (asImage) {
           const r = await uploadPostImage(supabase, user.id, file);
           if (!r.ok) {
             onError?.(r.message);
@@ -98,9 +103,13 @@ export function PostMediaDropzone({
 
   const onPick = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const list = e.target.files;
-      e.target.value = "";
-      if (list?.length) void processFiles(Array.from(list));
+      const input = e.target;
+      const list = input.files;
+      const arr = list?.length ? Array.from(list) : [];
+      requestAnimationFrame(() => {
+        input.value = "";
+      });
+      if (arr.length) void processFiles(arr);
     },
     [processFiles],
   );

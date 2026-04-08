@@ -106,6 +106,13 @@
       "when": 1776300000000,
       "tag": "0014_dm_messenger",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1776400000000,
+      "tag": "0015_dm_messages_image_url",
+      "breakpoints": true
     }
   ]
 }

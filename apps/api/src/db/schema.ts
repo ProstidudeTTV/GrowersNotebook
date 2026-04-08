@@ -536,6 +536,8 @@ export const dmMessages = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     body: text('body').notNull(),
+    /** Public https URL in `post-media` bucket (set with optional caption in `body`). */
+    imageUrl: text('image_url'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

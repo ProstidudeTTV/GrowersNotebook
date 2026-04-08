@@ -46,7 +46,10 @@ export class DirectMessagesController {
     @CurrentUser() user: JwtUser,
     @Body() body: PostDmMessageDto,
   ) {
-    return this.dm.postMessage(threadId, user.sub, body.body.trim());
+    return this.dm.postMessage(threadId, user.sub, {
+      body: body.body?.trim() ?? '',
+      imageUrl: body.imageUrl?.trim() || undefined,
+    });
   }
 
   @Post('threads/:threadId/read')

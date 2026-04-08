@@ -1,9 +1,11 @@
 "use client";
 
+import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { apiFetch } from "@/lib/api-public";
 import { setMessagesUnreadAny } from "@/lib/messages-unread-store";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { uploadPostImage } from "@/lib/upload-post-media";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -11,6 +13,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ChangeEvent,
 } from "react";
 
 const POLL_MS = 3000;
@@ -26,6 +29,7 @@ type ThreadSummary = {
   lastMessage: {
     id: string;
     body: string;
+    imageUrl?: string | null;
     senderId: string;
     createdAt: string;
   } | null;
@@ -39,6 +43,7 @@ type MessageRow = {
   id: string;
   senderId: string;
   body: string;
+  imageUrl?: string | null;
   createdAt: string;
 };
 
@@ -61,6 +66,16 @@ function displayNameFor(
   return "Grower";
 }
 
+function threadPreviewLine(
+  m: ThreadSummary["lastMessage"],
+): string | null {
+  if (!m) return null;
+  const t = m.body?.trim() ?? "";
+  if (t) return t.length > 72 ? `${t.slice(0, 70)}…` : t;
+  if (m.imageUrl) return "Photo";
+  return null;
+}
+
 export function MessagesPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,7 +89,11 @@ export function MessagesPanel() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [draft, setDraft] = useState("");
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
@@ -318,17 +337,22 @@ export function MessagesPanel() {
 
   const sendMessage = async () => {
     const text = draft.trim();
-    if (!activeThreadId || !text) return;
+    if (!activeThreadId || (!text && !pendingImageUrl)) return;
     setActionError(null);
     try {
       const token = await fetchToken();
       if (!token) throw new Error("Not signed in.");
+      const payload: { body: string; imageUrl?: string } = {
+        body: text,
+      };
+      if (pendingImageUrl) payload.imageUrl = pendingImageUrl;
       await apiFetch(`/direct-messages/threads/${activeThreadId}/messages`, {
         method: "POST",
         token,
-        body: JSON.stringify({ body: text }),
+        body: JSON.stringify(payload),
       });
       setDraft("");
+      setPendingImageUrl(null);
       scrollStickBottom.current = true;
       await loadMessagesPage(activeThreadId);
       await loadThreads();
@@ -336,6 +360,32 @@ export function MessagesPanel() {
       setActionError(
         e instanceof Error ? e.message : "Could not send this message.",
       );
+    }
+  };
+
+  const onPickImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onImageFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !selfId) return;
+    setActionError(null);
+    setImageBusy(true);
+    try {
+      const r = await uploadPostImage(supabase, selfId, file);
+      if (!r.ok) {
+        setActionError(r.message);
+        return;
+      }
+      setPendingImageUrl(r.publicUrl);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not upload image.",
+      );
+    } finally {
+      setImageBusy(false);
     }
   };
 
@@ -361,6 +411,9 @@ export function MessagesPanel() {
 
   return (
     <div className="space-y-4 border-t border-[var(--gn-divide)] pt-4">
+      {lightboxSrc ? (
+        <DmImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+      ) : null}
       {actionError ? (
         <div
           className="rounded-lg border border-red-300/50 bg-red-500/10 px-4 py-3 text-sm text-[var(--gn-text)]"
@@ -419,7 +472,14 @@ export function MessagesPanel() {
                         aria-hidden
                       />
                       <span className="min-w-0 flex-1">
-                        {displayNameFor(t.peer.id, selfId, t.peer)}
+                        <span className="block font-medium">
+                          {displayNameFor(t.peer.id, selfId, t.peer)}
+                        </span>
+                        {threadPreviewLine(t.lastMessage) ? (
+                          <span className="mt-0.5 block truncate text-xs text-[var(--gn-text-muted)]">
+                            {threadPreviewLine(t.lastMessage)}
+                          </span>
+                        ) : null}
                       </span>
                     </span>
                   </button>
@@ -478,13 +538,28 @@ export function MessagesPanel() {
                       key={ln.id}
                       className="rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)]"
                     >
-                      <span className="font-medium text-[var(--gn-accent)]">
+                      <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
                         {displayNameFor(ln.senderId, selfId, activePeer)}
-                      </span>
-                      <span className="text-[var(--gn-text-muted)]"> · </span>
-                      <span className="whitespace-pre-wrap break-words text-[var(--gn-text)]">
-                        {ln.body}
-                      </span>
+                      </div>
+                      {ln.imageUrl ? (
+                        <button
+                          type="button"
+                          className="mt-1.5 block w-full max-w-full border-0 bg-transparent p-0 text-left"
+                          onClick={() => setLightboxSrc(ln.imageUrl!)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={ln.imageUrl}
+                            alt=""
+                            className="max-h-48 w-full max-w-full cursor-zoom-in object-contain"
+                          />
+                        </button>
+                      ) : null}
+                      {ln.body.trim() ? (
+                        <p className="mt-2 whitespace-pre-wrap break-words text-[var(--gn-text)]">
+                          {ln.body}
+                        </p>
+                      ) : null}
                     </div>
                   ))
                 )}
@@ -492,13 +567,33 @@ export function MessagesPanel() {
             )}
           </div>
           <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="sr-only"
+              tabIndex={-1}
+              onChange={(e) => void onImageFileChange(e)}
+            />
+            {pendingImageUrl ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-xs text-[var(--gn-text-muted)]">
+                <span className="text-[var(--gn-text)]">Image ready to send</span>
+                <button
+                  type="button"
+                  className="font-semibold text-[#ff6a38] hover:underline"
+                  onClick={() => setPendingImageUrl(null)}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
             <div className="flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Type a message…"
-                disabled={!activeThreadId}
+                disabled={!activeThreadId || imageBusy}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -508,8 +603,20 @@ export function MessagesPanel() {
               />
               <button
                 type="button"
+                className="shrink-0 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                disabled={!activeThreadId || imageBusy}
+                onClick={onPickImage}
+              >
+                Photo
+              </button>
+              <button
+                type="button"
                 className="rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
-                disabled={!activeThreadId || !draft.trim()}
+                disabled={
+                  !activeThreadId ||
+                  imageBusy ||
+                  (!draft.trim() && !pendingImageUrl)
+                }
                 onClick={() => void sendMessage()}
               >
                 Send

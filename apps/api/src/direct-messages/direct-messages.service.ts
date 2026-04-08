@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   and,
   desc,
@@ -32,7 +33,19 @@ export class DirectMessagesService {
   constructor(
     private readonly follows: FollowsService,
     private readonly profiles: ProfilesService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Only our Supabase `post-media` public URLs (same client upload path as posts). */
+  private isAllowedDmImageUrl(url: string): boolean {
+    const raw =
+      this.config.get<string>('SUPABASE_URL')?.trim() ||
+      this.config.get<string>('NEXT_PUBLIC_SUPABASE_URL')?.trim();
+    const base = raw?.replace(/\/+$/, '');
+    if (!base) return false;
+    const prefix = `${base}/storage/v1/object/public/post-media/`;
+    return url.startsWith(prefix);
+  }
 
   async openThread(userId: string, peerProfileId: string) {
     if (peerProfileId === userId) {
@@ -99,6 +112,7 @@ export class DirectMessagesService {
       last_message_at: string | null;
       created_at: string;
       last_body: string | null;
+      last_image_url: string | null;
       last_sender_id: string | null;
       last_created_at: string | null;
       last_message_id: string | null;
@@ -110,12 +124,13 @@ export class DirectMessagesService {
         t.last_message_at,
         t.created_at,
         lm.body AS last_body,
+        lm.image_url AS last_image_url,
         lm.sender_id AS last_sender_id,
         lm.created_at AS last_created_at,
         lm.id AS last_message_id
       FROM ${dmThreads} AS t
       LEFT JOIN LATERAL (
-        SELECT m.id, m.body, m.sender_id, m.created_at
+        SELECT m.id, m.body, m.image_url, m.sender_id, m.created_at
         FROM ${dmMessages} AS m
         WHERE m.thread_id = t.id
         ORDER BY m.created_at DESC, m.id DESC
@@ -184,13 +199,11 @@ export class DirectMessagesService {
           displayName: peerMap.get(peerId) ?? null,
         },
         lastMessage:
-          r.last_message_id &&
-          r.last_body != null &&
-          r.last_sender_id &&
-          r.last_created_at
+          r.last_message_id && r.last_sender_id && r.last_created_at
             ? {
                 id: r.last_message_id,
-                body: r.last_body,
+                body: r.last_body ?? '',
+                imageUrl: r.last_image_url ?? null,
                 senderId: r.last_sender_id,
                 createdAt: r.last_created_at,
               }
@@ -261,6 +274,7 @@ export class DirectMessagesService {
         id: dmMessages.id,
         senderId: dmMessages.senderId,
         body: dmMessages.body,
+        imageUrl: dmMessages.imageUrl,
         createdAt: dmMessages.createdAt,
       })
       .from(dmMessages)
@@ -295,6 +309,7 @@ export class DirectMessagesService {
         id: m.id,
         senderId: m.senderId,
         body: m.body,
+        imageUrl: m.imageUrl ?? null,
         createdAt: m.createdAt.toISOString(),
       })),
       oldestId: oldestId ?? null,
@@ -302,16 +317,34 @@ export class DirectMessagesService {
     };
   }
 
-  async postMessage(threadId: string, userId: string, body: string) {
+  async postMessage(
+    threadId: string,
+    userId: string,
+    payload: { body: string; imageUrl?: string },
+  ) {
     await this.ensureParticipant(threadId, userId);
+    const text = (payload.body ?? '').trim();
+    const imageUrl = payload.imageUrl?.trim();
+    if (!text && !imageUrl) {
+      throw new BadRequestException('Message must include text or an image.');
+    }
+    if (imageUrl && !this.isAllowedDmImageUrl(imageUrl)) {
+      throw new BadRequestException('Invalid image URL.');
+    }
     const db = getDb();
     const [msg] = await db
       .insert(dmMessages)
-      .values({ threadId, senderId: userId, body })
+      .values({
+        threadId,
+        senderId: userId,
+        body: text,
+        imageUrl: imageUrl || null,
+      })
       .returning({
         id: dmMessages.id,
         senderId: dmMessages.senderId,
         body: dmMessages.body,
+        imageUrl: dmMessages.imageUrl,
         createdAt: dmMessages.createdAt,
       });
     await db
@@ -322,6 +355,7 @@ export class DirectMessagesService {
       id: msg.id,
       senderId: msg.senderId,
       body: msg.body,
+      imageUrl: msg.imageUrl ?? null,
       createdAt: msg.createdAt.toISOString(),
     };
   }

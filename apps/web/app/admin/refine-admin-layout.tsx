@@ -21,14 +21,10 @@ import type { NotificationProvider } from "@refinedev/core";
 import { Refine } from "@refinedev/core";
 import dataProvider from "@refinedev/simple-rest";
 import routerProvider from "@refinedev/nextjs-router/app";
-import { App as AntdApp, ConfigProvider, theme } from "antd";
-import { useEffect, useState } from "react";
-import { adminAxios } from "@/lib/admin-axios";
+import { App as AntdApp, ConfigProvider, Spin, theme } from "antd";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { ADMIN_PROXY_PATH, adminAxios } from "@/lib/admin-axios";
 import { GrowersAdminSider } from "./growers-admin-sider";
-
-import { getPublicApiUrl } from "@/lib/public-api-url";
-
-const API = getPublicApiUrl();
 
 function useSiteDarkMode() {
   const [dark, setDark] = useState(true);
@@ -66,10 +62,28 @@ function useSiteDarkMode() {
   return dark;
 }
 
+/**
+ * Refine's simple-rest provider embeds `apiUrl` in request URLs. If that string is
+ * built during SSR (`NEXT_PUBLIC_API_URL`), the browser keeps calling the API
+ * host and hits CORS. Wait for the real origin, then point at the gn-proxy.
+ */
+function useBrowserAdminApiBase(): string | null {
+  const [base, setBase] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    setBase(`${window.location.origin}${ADMIN_PROXY_PATH}`);
+  }, []);
+  return base;
+}
+
 /** Refine + notifications must render under `<AntdApp>` so `App.useApp()` works. */
 function RefineAdminShell({ children }: { children: React.ReactNode }) {
   const notificationProvider = useNotificationProvider();
   const dark = useSiteDarkMode();
+  const adminApiBase = useBrowserAdminApiBase();
+  const restDataProvider = useMemo(
+    () => (adminApiBase ? dataProvider(adminApiBase, adminAxios) : null),
+    [adminApiBase],
+  );
 
   return (
     <ConfigProvider
@@ -78,9 +92,14 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       }}
     >
+      {!restDataProvider ? (
+        <div style={{ padding: "4rem", textAlign: "center" }}>
+          <Spin size="large" />
+        </div>
+      ) : (
       <Refine
         routerProvider={routerProvider}
-        dataProvider={dataProvider(`${API}/admin`, adminAxios)}
+        dataProvider={restDataProvider}
         notificationProvider={notificationProvider as NotificationProvider}
         resources={[
           {
@@ -192,6 +211,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
           {children}
         </ThemedLayout>
       </Refine>
+      )}
     </ConfigProvider>
   );
 }

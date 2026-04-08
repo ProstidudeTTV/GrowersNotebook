@@ -81,14 +81,16 @@ export function SiteChrome({
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={
-            "fixed bottom-0 left-0 top-14 z-50 w-60 max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:w-56 lg:max-w-none lg:border-r lg:transition-none " +
+            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-60 max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:w-56 lg:max-w-none lg:border-r lg:transition-none " +
             (mobileOpen
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0")
           }
         />
 
-        <div className="gn-app-canvas min-w-0 flex-1">{children}</div>
+        <div className="gn-app-canvas min-w-0 min-h-0 flex-1 overflow-x-hidden">
+          {children}
+        </div>
       </div>
       {modal}
     </div>

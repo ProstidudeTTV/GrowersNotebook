@@ -42,6 +42,11 @@ html:not(.dark) {
   --gn-menu-bg: rgba(255, 255, 255, 0.96);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
+  /**
+   * Mobile: SiteHeader is two rows (nav + search). Drawer/sidebar must start below
+   * the full stack, not a single `top-14`, or the first nav items sit under the header.
+   */
+  --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
 }
 
 /** Page backdrop: on `html`, main column, etc. Solid fallback + gradients so flex never shows as empty black. */
@@ -108,6 +113,7 @@ html.dark {
   --gn-menu-bg: rgba(25, 28, 36, 0.95);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
+  --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
 }
 
 html.dark .gn-app-canvas {

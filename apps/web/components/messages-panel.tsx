@@ -19,6 +19,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -132,7 +133,7 @@ export function MessagesPanel() {
     index: number;
   } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dmAttachInputId = useId();
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
   const sharePostPrefillDone = useRef<string | null>(null);
@@ -457,10 +458,6 @@ export function MessagesPanel() {
     }
   };
 
-  const onPickImage = () => {
-    fileInputRef.current?.click();
-  };
-
   const onImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
@@ -778,7 +775,7 @@ export function MessagesPanel() {
           </div>
           <div className="space-y-2">
             <input
-              ref={fileInputRef}
+              id={dmAttachInputId}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               multiple
@@ -857,9 +854,9 @@ export function MessagesPanel() {
                 </div>
               </div>
             ) : null}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
               <input
-                className="min-w-0 flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
+                className="min-h-11 min-w-0 w-full flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Type a message…"
@@ -871,38 +868,45 @@ export function MessagesPanel() {
                   }
                 }}
               />
-              <button
-                type="button"
-                className="shrink-0 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                disabled={
-                  !activeThreadId ||
-                  pendingAttachments.length >= DM_ATTACH_MAX
-                }
-                onClick={onPickImage}
-              >
-                Photo
-              </button>
-              <button
-                type="button"
-                className="rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
-                disabled={(() => {
-                  if (!activeThreadId) return true;
-                  const uploading = pendingAttachments.some((a) => a.uploading);
-                  const hasErr = pendingAttachments.some((a) => a.error);
-                  const remotes = pendingAttachments.filter((a) => a.remoteUrl);
-                  const incomplete =
-                    pendingAttachments.length > 0 &&
-                    remotes.length !== pendingAttachments.length;
-                  if (uploading || hasErr || incomplete) return true;
-                  return (
-                    !draft.trim() &&
-                    remotes.length === 0
-                  );
-                })()}
-                onClick={() => void sendMessage()}
-              >
-                Send
-              </button>
+              <div className="flex min-h-11 shrink-0 items-stretch gap-2 sm:min-h-0 sm:items-center">
+                {!activeThreadId ||
+                pendingAttachments.length >= DM_ATTACH_MAX ? (
+                  <span
+                    className="inline-flex flex-1 cursor-not-allowed items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] opacity-50 sm:flex-initial"
+                    aria-disabled
+                  >
+                    Photo
+                  </span>
+                ) : (
+                  <label
+                    htmlFor={dmAttachInputId}
+                    className="inline-flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:flex-initial"
+                  >
+                    Photo
+                  </label>
+                )}
+                <button
+                  type="button"
+                  className="min-w-[5.5rem] flex-1 rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50 sm:flex-initial"
+                  disabled={(() => {
+                    if (!activeThreadId) return true;
+                    const uploading = pendingAttachments.some((a) => a.uploading);
+                    const hasErr = pendingAttachments.some((a) => a.error);
+                    const remotes = pendingAttachments.filter((a) => a.remoteUrl);
+                    const incomplete =
+                      pendingAttachments.length > 0 &&
+                      remotes.length !== pendingAttachments.length;
+                    if (uploading || hasErr || incomplete) return true;
+                    return (
+                      !draft.trim() &&
+                      remotes.length === 0
+                    );
+                  })()}
+                  onClick={() => void sendMessage()}
+                >
+                  Send
+                </button>
+              </div>
             </div>
             <p className="text-xs leading-relaxed text-[var(--gn-text-muted)]">
               Private between you and the other person on GrowersNotebook, like

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -416,7 +417,7 @@ export function PostView({
     urls: string[];
     index: number;
   } | null>(null);
-  const commentFileInputRef = useRef<HTMLInputElement | null>(null);
+  const commentPhotoInputId = useId();
   const pendingCommentImagesRef = useRef(pendingCommentImages);
   pendingCommentImagesRef.current = pendingCommentImages;
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -1397,13 +1398,12 @@ export function PostView({
         ) : null}
         <div className="mt-3 space-y-2">
           <input
-            ref={commentFileInputRef}
+            id={commentPhotoInputId}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             className="sr-only"
             tabIndex={-1}
-            aria-hidden
             onChange={onCommentImageFiles}
           />
           <textarea
@@ -1414,18 +1414,23 @@ export function PostView({
             onChange={(e) => setText(e.target.value)}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={
-                busy ||
-                pendingCommentImages.length >= COMMENT_ATTACH_MAX ||
-                !viewerId
-              }
-              onClick={() => commentFileInputRef.current?.click()}
-              className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-            >
-              Add photos ({pendingCommentImages.length}/{COMMENT_ATTACH_MAX})
-            </button>
+            {busy ||
+            pendingCommentImages.length >= COMMENT_ATTACH_MAX ||
+            !viewerId ? (
+              <span
+                className="inline-flex rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] opacity-50"
+                aria-disabled
+              >
+                Add photos ({pendingCommentImages.length}/{COMMENT_ATTACH_MAX})
+              </span>
+            ) : (
+              <label
+                htmlFor={commentPhotoInputId}
+                className="inline-flex cursor-pointer touch-manipulation select-none rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+              >
+                Add photos ({pendingCommentImages.length}/{COMMENT_ATTACH_MAX})
+              </label>
+            )}
             {pendingCommentImages.length > 0 ? (
               <button
                 type="button"

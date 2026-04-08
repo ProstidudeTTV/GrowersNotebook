@@ -106,15 +106,15 @@ export function PostMediaDropzone({
   );
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          inputRef.current?.click();
-        }
-      }}
+    <label
+      htmlFor={inputId}
+      className={[
+        "relative flex min-h-[168px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 transition select-none",
+        dragOver
+          ? "border-[#ff4500] bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))]"
+          : "border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-ring))]",
+        disabled || busy ? "pointer-events-none opacity-60" : "",
+      ].join(" ")}
       onDragEnter={(e) => {
         e.preventDefault();
         if (!disabled && !busy) setDragOver(true);
@@ -127,16 +127,13 @@ export function PostMediaDropzone({
         e.preventDefault();
       }}
       onDrop={onDrop}
-      className={[
-        "relative flex min-h-[168px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 transition",
-        dragOver
-          ? "border-[#ff4500] bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))]"
-          : "border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-ring))]",
-        disabled || busy ? "pointer-events-none opacity-60" : "",
-      ].join(" ")}
-      onClick={() => {
-        if (!disabled && !busy) inputRef.current?.click();
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
       }}
+      tabIndex={disabled || busy ? -1 : 0}
     >
       <input
         ref={inputRef}
@@ -150,7 +147,7 @@ export function PostMediaDropzone({
         onChange={onPick}
         onClick={(e) => e.stopPropagation()}
       />
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]">
+      <div className="pointer-events-none flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]">
         <svg
           width="24"
           height="24"
@@ -168,13 +165,13 @@ export function PostMediaDropzone({
           />
         </svg>
       </div>
-      <p className="text-center text-sm font-medium text-[var(--gn-text)]">
-        {busy ? "Uploading…" : "Drag and drop or upload media"}
+      <p className="pointer-events-none text-center text-sm font-medium text-[var(--gn-text)]">
+        {busy ? "Uploading…" : "Tap to choose or drag and drop media"}
       </p>
-      <p className="text-center text-xs text-[var(--gn-text-muted)]">
-        Images up to 8 MB · Videos up to 50 MB · Select multiple files at once ·
-        Shown below your text on the post, not inside the editor
+      <p className="pointer-events-none text-center text-xs text-[var(--gn-text-muted)]">
+        Images up to 8 MB · Videos up to 50 MB · Multiple files · Shown below your
+        text, not inside the editor
       </p>
-    </div>
+    </label>
   );
 }

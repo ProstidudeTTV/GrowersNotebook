@@ -178,10 +178,10 @@ export function AppSidebar({
 
   return (
     <aside
-      className={`flex flex-col border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] ${className}`}
+      className={`flex min-h-0 flex-col border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] ${className}`}
       aria-label="Site"
     >
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 pb-6 pt-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-6 pt-3">
         <Link
           href={authed ? "/following" : "/"}
           className={navItem}

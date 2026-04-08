@@ -63,7 +63,7 @@ function SearchFallback() {
 
 export function SiteHeader({ leading }: { leading?: ReactNode }) {
   return (
-    <header className="gn-header sticky top-0 z-40">
+    <header className="gn-header sticky top-0 z-50">
       {/* Desktop: brand | search (centered) | messages / discord / auth */}
       <div className="hidden w-full flex-col lg:flex">
         <div className="flex min-h-14 w-full min-w-0">

@@ -8,13 +8,24 @@ const IMAGE_MAX_EDGE = 1600;
 const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif)$/i;
 const VIDEO_TYPES = /^video\/(mp4|webm|quicktime)$/i;
 
+/** Many mobile pickers leave `file.type` empty; infer from extension. */
+function inferredImageMime(file: File): string | null {
+  if (file.type && IMAGE_TYPES.test(file.type)) return file.type;
+  const n = file.name.toLowerCase();
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".gif")) return "image/gif";
+  return null;
+}
+
 function extForVideo(mime: string): string {
   if (/quicktime/i.test(mime)) return "mov";
   if (/webm/i.test(mime)) return "webm";
   return "mp4";
 }
 
-function blobToResizedJpeg(file: File): Promise<Blob> {
+function blobToResizedJpegWithImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -50,6 +61,38 @@ function blobToResizedJpeg(file: File): Promise<Blob> {
   });
 }
 
+async function blobToResizedJpeg(file: File): Promise<Blob> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bmp = await createImageBitmap(file, {
+        resizeWidth: IMAGE_MAX_EDGE,
+        resizeHeight: IMAGE_MAX_EDGE,
+      });
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Could not process image");
+        ctx.drawImage(bmp, 0, 0);
+        const out = await new Promise<Blob | null>((res) =>
+          canvas.toBlob((b) => res(b), "image/jpeg", 0.88),
+        );
+        if (!out) throw new Error("Could not encode image");
+        if (out.size > IMAGE_MAX) {
+          throw new Error("Processed image is still too large. Try a smaller file.");
+        }
+        return out;
+      } finally {
+        bmp.close();
+      }
+    } catch {
+      /* fall through — Safari / some GIFs work better via Image() */
+    }
+  }
+  return blobToResizedJpegWithImage(file);
+}
+
 export type UploadPostMediaResult =
   | { ok: true; publicUrl: string }
   | { ok: false; message: string };
@@ -59,7 +102,7 @@ export async function uploadPostImage(
   userId: string,
   file: File,
 ): Promise<UploadPostMediaResult> {
-  if (!IMAGE_TYPES.test(file.type)) {
+  if (!inferredImageMime(file)) {
     return { ok: false, message: "Use a JPEG, PNG, WebP, or GIF image." };
   }
   if (file.size > IMAGE_MAX) {

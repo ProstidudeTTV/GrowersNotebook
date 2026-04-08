@@ -54,13 +54,28 @@ export class DirectMessagesService {
 
   /** Only our Supabase `post-media` public URLs (same client upload path as posts). */
   private isAllowedDmImageUrl(url: string): boolean {
-    const raw =
-      this.config.get<string>('SUPABASE_URL')?.trim() ||
-      this.config.get<string>('NEXT_PUBLIC_SUPABASE_URL')?.trim();
-    const base = raw?.replace(/\/+$/, '');
-    if (!base) return false;
-    const prefix = `${base}/storage/v1/object/public/post-media/`;
-    return url.startsWith(prefix);
+    let parsed: URL;
+    try {
+      parsed = new URL(url.trim());
+    } catch {
+      return false;
+    }
+    if (parsed.protocol !== 'https:') return false;
+    const pathNeedle = '/storage/v1/object/public/post-media/';
+    if (!parsed.pathname.startsWith(pathNeedle)) return false;
+
+    const origins = new Set<string>();
+    for (const key of ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'] as const) {
+      const raw = this.config.get<string>(key)?.trim().replace(/\/+$/, '');
+      if (!raw) continue;
+      try {
+        origins.add(new URL(raw).origin);
+      } catch {
+        continue;
+      }
+    }
+    if (origins.size === 0) return false;
+    return origins.has(parsed.origin);
   }
 
   async openThread(userId: string, peerProfileId: string) {

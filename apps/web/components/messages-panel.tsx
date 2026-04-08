@@ -19,18 +19,21 @@ import {
 const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
 
-/** Pixels: iMessage-style fanned photo stack */
-const DM_STACK_CARD_PX = 118;
-const DM_STACK_STEP_X = 10;
-const DM_STACK_STEP_Y = 8;
-const DM_STACK_ROTATION_PAD = 28;
+/**
+ * iMessage-style fanned stack: every photo is the same square frame (no mixed
+ * aspect peek). Back cards sit up-and-left with alternating tilt; front stays flat.
+ */
+const DM_STACK_CARD_PX = 132;
+const DM_STACK_STEP_X = 14;
+const DM_STACK_STEP_Y = 11;
+const DM_STACK_ROTATION_PAD = 40;
 
-/** Back cards fan with alternating tilt; front card (last index) stays straight. */
+/** Back cards fan alternating left/right; top card (last index, highest z) = 0°. */
 function dmStackCardRotation(index: number, total: number): number {
   if (total <= 1 || index === total - 1) return 0;
   const depth = total - 1 - index;
   const sign = index % 2 === 0 ? -1 : 1;
-  return sign * Math.min(8, 3.2 + depth * 1.35);
+  return sign * Math.min(9, 4 + depth * 1.25);
 }
 
 type PendingAttachment = {
@@ -670,14 +673,15 @@ export function MessagesPanel() {
                         ? undefined
                         : (n - 1) * DM_STACK_STEP_Y +
                           DM_STACK_CARD_PX +
-                          DM_STACK_ROTATION_PAD;
+                          DM_STACK_ROTATION_PAD +
+                          22;
                     return (
                       <div
                         key={ln.id}
-                        className="rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)]"
+                        className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${n > 1 ? "overflow-visible" : ""}`}
                       >
                         <div
-                          className={`flex gap-2 ${imgs.length ? "items-start" : ""}`}
+                          className={`flex gap-2 overflow-visible ${imgs.length ? "items-start" : ""}`}
                         >
                           {imgs.length === 1 ? (
                             <button
@@ -691,11 +695,11 @@ export function MessagesPanel() {
                               <img
                                 src={imgs[0]}
                                 alt=""
-                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
+                                className="max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
                               />
                             </button>
                           ) : imgs.length > 1 ? (
-                            <div className="flex min-w-0 shrink-0 flex-col gap-1.5">
+                            <div className="flex min-w-0 shrink-0 flex-col gap-1.5 overflow-visible">
                               <p className="text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
                                 {selfId && ln.senderId === selfId
                                   ? `You sent ${imgs.length} photos`
@@ -703,7 +707,7 @@ export function MessagesPanel() {
                               </p>
                               <button
                                 type="button"
-                                className="relative shrink-0 border-0 bg-transparent p-0 text-left"
+                                className="relative shrink-0 overflow-visible border-0 bg-transparent p-0 text-left"
                                 style={{
                                   width: stackW,
                                   height: stackH,
@@ -719,11 +723,14 @@ export function MessagesPanel() {
                                 aria-label={`${imgs.length} photos — open viewer`}
                               >
                                 {imgs.map((url, idx) => {
-                                  const rot = dmStackCardRotation(idx, imgs.length);
+                                  const rot = dmStackCardRotation(
+                                    idx,
+                                    imgs.length,
+                                  );
                                   return (
                                     <span
                                       key={`${ln.id}-${idx}-${url}`}
-                                      className="absolute overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_4px_14px_rgba(0,0,0,0.12)] ring-1 ring-black/5 dark:shadow-[0_4px_14px_rgba(0,0,0,0.35)] dark:ring-white/10"
+                                      className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
                                       style={{
                                         left:
                                           idx * DM_STACK_STEP_X +
@@ -733,16 +740,21 @@ export function MessagesPanel() {
                                           DM_STACK_ROTATION_PAD / 2,
                                         width: DM_STACK_CARD_PX,
                                         height: DM_STACK_CARD_PX,
+                                        minWidth: DM_STACK_CARD_PX,
+                                        minHeight: DM_STACK_CARD_PX,
+                                        maxWidth: DM_STACK_CARD_PX,
+                                        maxHeight: DM_STACK_CARD_PX,
                                         zIndex: idx,
                                         transform: `rotate(${rot}deg)`,
-                                        transformOrigin: "center center",
+                                        transformOrigin: "50% 92%",
                                       }}
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
                                         src={url}
                                         alt=""
-                                        className="h-full w-full cursor-zoom-in object-cover"
+                                        className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-cover object-center"
+                                        sizes={`${DM_STACK_CARD_PX}px`}
                                       />
                                     </span>
                                   );

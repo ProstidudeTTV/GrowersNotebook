@@ -65,7 +65,7 @@ export function DmImageLightbox({
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5">
       <button
         type="button"
-        className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-black/75"
         aria-label="Close image viewer"
         onClick={onClose}
       />
@@ -109,7 +109,7 @@ export function DmImageLightbox({
         </span>
       </button>
       <div
-        className="relative z-10 flex max-h-[min(85vh,800px)] max-w-[min(92vw,960px)] items-center justify-center"
+        className="relative z-10 flex max-h-[min(94dvh,1200px)] max-w-[min(98vw,1400px)] items-center justify-center px-1"
         role="dialog"
         aria-modal="true"
         aria-label="Message images"
@@ -119,7 +119,9 @@ export function DmImageLightbox({
           key={src}
           src={src}
           alt={`Attachment ${i + 1} of ${safe.length}`}
-          className="h-auto w-auto max-h-[min(85vh,800px)] max-w-[min(92vw,960px)] border-0 object-contain shadow-none"
+          className="h-auto w-auto max-h-[min(94dvh,1200px)] max-w-[min(98vw,1400px)] border-0 object-contain shadow-none [image-rendering:auto] [backface-visibility:hidden] [transform:translateZ(0)]"
+          decoding="async"
+          fetchPriority="high"
         />
       </div>
     </div>

@@ -20,20 +20,30 @@ const POLL_MS = 3000;
 const DM_ATTACH_MAX = 8;
 
 /**
- * iMessage-style fanned stack: every photo is the same square frame (no mixed
- * aspect peek). Back cards sit up-and-left with alternating tilt; front stays flat.
+ * Vertical photo pile: same-size square tiles, mostly stacked along Y with a
+ * tiny ±X stagger and light rotation (not a diagonal staircase down-right).
  */
-const DM_STACK_CARD_PX = 132;
-const DM_STACK_STEP_X = 14;
-const DM_STACK_STEP_Y = 11;
-const DM_STACK_ROTATION_PAD = 40;
+const DM_STACK_CARD_PX = 128;
+/** How far each layer sits below the previous (down the column). Smaller = tighter pile. */
+const DM_STACK_OVERLAP_Y = 7;
+/** Tiny alternating horizontal nudge so back corners peek—cards stay on one vertical column. */
+const DM_STACK_JITTER_X = 2;
+const DM_STACK_ROTATION_PAD = 28;
 
-/** Back cards fan alternating left/right; top card (last index, highest z) = 0°. */
+/** Center of stack track + tiny ± jitter (avoids down-right staircase from left-anchored steps). */
+function dmStackCardLeft(stackInnerWidth: number, idx: number): number {
+  const center =
+    (stackInnerWidth - DM_STACK_CARD_PX) / 2 +
+    (idx % 2 === 0 ? -DM_STACK_JITTER_X : DM_STACK_JITTER_X);
+  return Math.max(0, Math.round(center * 10) / 10);
+}
+
+/** Back cards: very light tilt; front (last index) = 0°. */
 function dmStackCardRotation(index: number, total: number): number {
   if (total <= 1 || index === total - 1) return 0;
   const depth = total - 1 - index;
   const sign = index % 2 === 0 ? -1 : 1;
-  return sign * Math.min(9, 4 + depth * 1.25);
+  return sign * Math.min(4, 1.5 + depth * 0.65);
 }
 
 type PendingAttachment = {
@@ -665,16 +675,18 @@ export function MessagesPanel() {
                     const stackW =
                       n <= 1
                         ? undefined
-                        : (n - 1) * DM_STACK_STEP_X +
-                          DM_STACK_CARD_PX +
-                          DM_STACK_ROTATION_PAD;
+                        : DM_STACK_CARD_PX +
+                          DM_STACK_JITTER_X * 2 +
+                          DM_STACK_ROTATION_PAD +
+                          8;
                     const stackH =
                       n <= 1
                         ? undefined
-                        : (n - 1) * DM_STACK_STEP_Y +
+                        : (n - 1) * DM_STACK_OVERLAP_Y +
                           DM_STACK_CARD_PX +
                           DM_STACK_ROTATION_PAD +
-                          22;
+                          12;
+                    const stackInnerW = stackW ?? 0;
                     const bodyText = ln.body.trim();
                     const hasBody = bodyText.length > 0;
                     const hasMedia = imgs.length > 0;
@@ -752,12 +764,10 @@ export function MessagesPanel() {
                                         key={`${ln.id}-${idx}-${url}`}
                                         className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
                                         style={{
-                                          left:
-                                            idx * DM_STACK_STEP_X +
-                                            DM_STACK_ROTATION_PAD / 2,
+                                          left: dmStackCardLeft(stackInnerW, idx),
                                           top:
-                                            idx * DM_STACK_STEP_Y +
-                                            DM_STACK_ROTATION_PAD / 2,
+                                            DM_STACK_ROTATION_PAD / 2 +
+                                            idx * DM_STACK_OVERLAP_Y,
                                           width: DM_STACK_CARD_PX,
                                           height: DM_STACK_CARD_PX,
                                           minWidth: DM_STACK_CARD_PX,
@@ -766,7 +776,7 @@ export function MessagesPanel() {
                                           maxHeight: DM_STACK_CARD_PX,
                                           zIndex: idx,
                                           transform: `rotate(${rot}deg)`,
-                                          transformOrigin: "50% 92%",
+                                          transformOrigin: "50% 50%",
                                         }}
                                       >
                                         {/* eslint-disable-next-line @next/next/no-img-element */}

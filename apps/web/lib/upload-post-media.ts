@@ -64,10 +64,21 @@ function blobToResizedJpegWithImage(file: File): Promise<Blob> {
 async function blobToResizedJpeg(file: File): Promise<Blob> {
   if (typeof createImageBitmap === "function") {
     try {
-      const bmp = await createImageBitmap(file, {
-        resizeWidth: IMAGE_MAX_EDGE,
-        resizeHeight: IMAGE_MAX_EDGE,
-      });
+      const srcBmp = await createImageBitmap(file);
+      let w = srcBmp.width;
+      let h = srcBmp.height;
+      const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(w, h));
+      const tw = Math.max(1, Math.round(w * scale));
+      const th = Math.max(1, Math.round(h * scale));
+      let bmp = srcBmp;
+      if (tw !== w || th !== h) {
+        const resized = await createImageBitmap(srcBmp, {
+          resizeWidth: tw,
+          resizeHeight: th,
+        });
+        srcBmp.close();
+        bmp = resized;
+      }
       try {
         const canvas = document.createElement("canvas");
         canvas.width = bmp.width;

@@ -109,7 +109,7 @@ export function DmImageLightbox({
         </span>
       </button>
       <div
-        className="relative z-10 flex max-h-[min(94dvh,1200px)] max-w-[min(98vw,1400px)] items-center justify-center px-1"
+        className="relative z-10 box-border min-w-0 max-w-[min(92vw,28rem)] max-h-[min(72dvh,32rem)]"
         role="dialog"
         aria-modal="true"
         aria-label="Message images"
@@ -119,7 +119,7 @@ export function DmImageLightbox({
           key={src}
           src={src}
           alt={`Attachment ${i + 1} of ${safe.length}`}
-          className="h-auto w-auto max-h-[min(94dvh,1200px)] max-w-[min(98vw,1400px)] border-0 object-contain shadow-none [image-rendering:auto] [backface-visibility:hidden] [transform:translateZ(0)]"
+          className="block h-auto w-auto max-h-[min(72dvh,32rem)] max-w-full border-0 object-contain shadow-none [image-rendering:auto]"
           decoding="async"
           fetchPriority="high"
         />

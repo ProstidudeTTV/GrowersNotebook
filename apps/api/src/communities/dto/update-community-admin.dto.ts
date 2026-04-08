@@ -11,6 +11,14 @@ import { COMMUNITY_ICON_KEYS } from '../community-icon-keys';
 const ICON_OPTIONS = [...COMMUNITY_ICON_KEYS];
 
 export class UpdateCommunityAdminDto {
+  /**
+   * Admin UI (Refine) sends the full form including immutable `slug`.
+   * It is whitelisted here but ignored by {@link CommunitiesService.update}.
+   */
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
   @IsOptional()
   @IsString()
   @Length(2, 120)

@@ -175,6 +175,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
           {
             name: "catalog-suggestions",
             list: "/admin/catalog-suggestions",
+            show: "/admin/catalog-suggestions/review/:id",
             meta: {
               label: "Catalog suggestions inbox",
               parent: "catalog-inbox",

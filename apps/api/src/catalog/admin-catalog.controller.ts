@@ -173,6 +173,13 @@ export class AdminCatalogController {
     return rows;
   }
 
+  @Get('catalog-suggestions/:id')
+  async getSuggestion(@Param('id', ParseUUIDPipe) id: string) {
+    const row = await this.suggestions.findById(id);
+    if (!row) throw new NotFoundException();
+    return row;
+  }
+
   @Patch('catalog-suggestions/:id')
   moderateSuggestion(
     @Param('id', ParseUUIDPipe) id: string,

@@ -2,6 +2,7 @@
 
 import { List } from "@refinedev/antd";
 import { App, Button, Input, Modal, Table, Typography } from "antd";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
 
@@ -97,24 +98,42 @@ export default function AdminCatalogSuggestionsPage() {
             render: (_: unknown, r) =>
               new Date(r.createdAt).toLocaleString(),
           },
-          { title: "Kind", dataIndex: "kind" },
+          {
+            title: "Kind",
+            dataIndex: "kind",
+            render: (kind: string, r: Row) => (
+              <Link
+                href={`/admin/catalog-suggestions/review/${r.id}`}
+                className="font-medium text-[#1677ff] hover:underline"
+              >
+                {kind}
+              </Link>
+            ),
+          },
           { title: "Submitted by", dataIndex: "suggestedBy", ellipsis: true },
           {
             title: "Payload",
             render: (_: unknown, r) => (
-              <Typography.Paragraph
-                copyable
-                ellipsis={{ rows: 3 }}
-                style={{ maxWidth: 360, margin: 0 }}
+              <Link
+                href={`/admin/catalog-suggestions/review/${r.id}`}
+                className="block max-w-[360px] text-[var(--gn-text)] no-underline hover:text-[#1677ff]"
               >
-                {JSON.stringify(r.payload)}
-              </Typography.Paragraph>
+                <Typography.Paragraph
+                  ellipsis={{ rows: 3 }}
+                  style={{ margin: 0 }}
+                >
+                  {JSON.stringify(r.payload)}
+                </Typography.Paragraph>
+              </Link>
             ),
           },
           {
             title: "Actions",
             render: (_: unknown, r) => (
               <span className="flex flex-wrap gap-2">
+                <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
+                  <Button size="small">Review</Button>
+                </Link>
                 <Button
                   type="primary"
                   size="small"

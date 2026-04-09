@@ -13,6 +13,7 @@
     "render:delete-legacy-matrix": "node scripts/render-delete-legacy-matrix.mjs",
     "render:patch-notebook-services": "node scripts/render-patch-notebook-services.mjs",
     "render:patch-notebook-docker": "node scripts/render-patch-notebook-services.mjs --docker",
+    "render:deploy-notebook-services": "node scripts/render-patch-notebook-services.mjs --deploy-only",
     "render:build:web": "node scripts/render-build-web.mjs",
     "render:build:api": "node scripts/render-build-api.mjs"
   },

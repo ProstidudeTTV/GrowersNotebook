@@ -9,8 +9,10 @@
  *
  * Options:
  *   --dry-run   Print GET + PATCH bodies only
- *   --docker    Switch both services to Dockerfile builds (Dockerfile.growers-web / api).
- *               Use after those files exist on the repo branch Render deploys.
+ *   --docker       Switch both services to Dockerfile builds (Dockerfile.growers-web / api).
+ *                  Use after those files exist on the repo branch Render deploys.
+ *   --deploy       After patching, POST a deploy with clearCache=clear for web + API.
+ *   --deploy-only  Skip PATCH; only trigger those deploys (e.g. after a push raced ahead of Docker config).
  */
 const API = "https://api.render.com/v1";
 
@@ -19,6 +21,8 @@ const API_SERVICE_ID = "srv-d79imc14tr6s73cuit3g";
 
 const dryRun = process.argv.includes("--dry-run");
 const useDocker = process.argv.includes("--docker");
+const alsoDeploy = process.argv.includes("--deploy");
+const deployOnly = process.argv.includes("--deploy-only");
 
 const token = process.env.RENDER_API_KEY?.trim();
 if (!token && !dryRun) {
@@ -106,7 +110,29 @@ async function patchService(serviceId, body) {
   }
 }
 
+async function triggerDeploy(serviceId, name) {
+  const res = await fetch(`${API}/services/${serviceId}/deploys`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ clearCache: "clear" }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`POST deploy ${name} → ${res.status} ${text.slice(0, 1200)}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
 async function main() {
+  if (!deployOnly) {
   if (useDocker) {
     console.log("Switching growers-notebook-web to Docker…");
     await patchService(
@@ -152,13 +178,25 @@ async function main() {
     );
     console.log("  OK");
   }
+  }
 
-  if (!dryRun) {
+  if ((alsoDeploy || deployOnly) && !dryRun) {
+    console.log("Triggering deploy (clear build cache) for growers-notebook-web…");
+    await triggerDeploy(WEB_SERVICE_ID, "web");
+    console.log("  queued");
+    console.log("Triggering deploy (clear build cache) for growers-notebook-api…");
+    await triggerDeploy(API_SERVICE_ID, "api");
+    console.log("  queued");
+  }
+
+  if (!dryRun && !alsoDeploy && !deployOnly) {
     console.log(
       useDocker
-        ? "Done. Render should start a new deploy; if not, open each service → Manual Deploy."
-        : "Done. In the dashboard run Manual Deploy → Clear build cache & deploy (or push main).",
+        ? "Done. Run with --deploy to start builds immediately, or push / Manual Deploy in the dashboard."
+        : "Done. In the dashboard run Manual Deploy → Clear build cache & deploy (or push main). Use --deploy to trigger via API.",
     );
+  } else if (!dryRun && (alsoDeploy || deployOnly)) {
+    console.log("Deploys queued. Check Render dashboard or list_deploys for status.");
   }
 }
 

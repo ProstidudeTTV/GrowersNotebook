@@ -10,42 +10,31 @@
 # Canonical public site: https://growersnotebook.com (custom domain on Render).
 # Supabase Site URL + Redirect URLs + API WEB_ORIGIN must use the same origin users see in the browser.
 #
-# Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
-# env NODE_ENV=development … (see build commands below).
+# --- Runtime: Docker (repo-root Dockerfiles). Avoids Render native Node builds that have failed
+# in under a second with no logs on this workspace.
 #
-# --- Manual services: prefer `sh` + image `pnpm` (Render native env). Avoid npx/corepack in
-# Build Command — they have failed in under a second on this project.
+# Legacy native one-liners (if you must switch back in the dashboard):
+# Web:  sh scripts/render-build-web.sh  →  npx pnpm@9.15.9 --filter @growers/web start
+# API:  sh scripts/render-build-api.sh  →  npx pnpm@9.15.9 --filter @growers/api start:prod
 #
-# Web → Build Command:  sh scripts/render-build-web.sh
-# API → Build Command:  sh scripts/render-build-api.sh
-#
-# Equivalent: node scripts/render-build-*.mjs | npm run render:build:* (mjs runs the same pnpm lines on Linux)
-#
-# One-liner alternatives (no corepack; same as .mjs):
-# Web: export NPM_CONFIG_YES=true NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
-# API: export NPM_CONFIG_YES=true && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build
-#
-# Then: Manual Deploy → Clear build cache & deploy. Or: RENDER_API_KEY=rnd_... pnpm run render:patch-notebook-services
+# Live settings patch (API key):  RENDER_API_KEY=rnd_... pnpm run render:patch-notebook-services
+# Docker patch:                   RENDER_API_KEY=rnd_... pnpm run render:patch-notebook-services --docker
 #
 # Latency: Free/spun-down web services cold-start (~30–60s). Starter “always on” reduces
 # first-byte time for the API and web app. The web app uses parallel sidebar fetches + timeouts
 # so a sleeping API does not hang navigation indefinitely.
 #
-# Legacy Synapse services (`growers-synapse`, `growers-synapse-db`) were removed from this blueprint.
-# IMPORTANT: If `growers-synapse` still auto-deploys from this repo, builds WILL FAIL — there is no
-# root Dockerfile anymore. In the Render Dashboard: delete that web service (and the synapse Postgres
-# instance if unused), or at minimum turn off Auto-Deploy for it. API + web deploys are unaffected.
+# Legacy Synapse: if a `growers-synapse` service still auto-deploys from this repo, point it at
+# its own Dockerfile/context — do not reuse Dockerfile.growers-*.
 
 services:
   - type: web
     name: growers-notebook-api
-    runtime: node
+    runtime: docker
     region: oregon
     plan: starter
-    # Drizzle migrations run at every API boot via apps/api package.json start:prod (no Render pre-deploy UI needed).
-    # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
-    buildCommand: node scripts/render-build-api.mjs
-    startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
+    dockerfilePath: ./Dockerfile.growers-api
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: NPM_CONFIG_YES
@@ -59,12 +48,11 @@ services:
 
   - type: web
     name: growers-notebook-web
-    runtime: node
+    runtime: docker
     region: oregon
     plan: starter
-    # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
-    buildCommand: sh scripts/render-build-web.sh
-    startCommand: npx pnpm@9.15.9 --filter @growers/web start
+    dockerfilePath: ./Dockerfile.growers-web
+    dockerContext: .
     healthCheckPath: /
     envVars:
       - key: NPM_CONFIG_YES

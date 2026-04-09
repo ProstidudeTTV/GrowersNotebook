@@ -1,0 +1,11 @@
+node_modules
+.git
+.github
+.cursor
+**/.next
+**/dist
+.turbo
+*.log
+.env.local
+.env*.local
+terminals

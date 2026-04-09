@@ -1,0 +1,25 @@
+# Growers Notebook — Next.js web (Render). Full repo context for pnpm workspace.
+FROM node:20.18.1-bookworm-slim
+WORKDIR /app
+
+ENV NPM_CONFIG_YES=true
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps ./apps
+COPY scripts ./scripts
+
+ARG RENDER_GIT_COMMIT=dev
+ENV NEXT_PUBLIC_APP_BUILD_ID=${RENDER_GIT_COMMIT}
+
+# Install devDependencies too (Next/Tailwind/TS live in devDeps). Render injects
+# NEXT_PUBLIC_* and other env at build when marked available for builds.
+RUN NODE_ENV=development pnpm install --frozen-lockfile
+
+RUN NODE_ENV=production pnpm --filter @growers/web build
+
+EXPOSE 10000
+ENV PORT=10000
+ENV HOSTNAME=0.0.0.0
+
+CMD ["pnpm", "--filter", "@growers/web", "start"]

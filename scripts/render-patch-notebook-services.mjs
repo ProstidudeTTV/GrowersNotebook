@@ -9,6 +9,8 @@
  *
  * Options:
  *   --dry-run   Print GET + PATCH bodies only
+ *   --docker    Switch both services to Dockerfile builds (Dockerfile.growers-web / api).
+ *               Use after those files exist on the repo branch Render deploys.
  */
 const API = "https://api.render.com/v1";
 
@@ -16,6 +18,7 @@ const WEB_SERVICE_ID = "srv-d79imdmdqaus73dh2kj0";
 const API_SERVICE_ID = "srv-d79imc14tr6s73cuit3g";
 
 const dryRun = process.argv.includes("--dry-run");
+const useDocker = process.argv.includes("--docker");
 
 const token = process.env.RENDER_API_KEY?.trim();
 if (!token && !dryRun) {
@@ -45,7 +48,7 @@ async function getService(serviceId) {
   return JSON.parse(text);
 }
 
-function buildPatchPayload({ buildCommand, startCommand, healthCheckPath }) {
+function buildNativePatchPayload({ buildCommand, startCommand, healthCheckPath }) {
   const serviceDetails = {
     envSpecificDetails: {
       buildCommand,
@@ -58,12 +61,27 @@ function buildPatchPayload({ buildCommand, startCommand, healthCheckPath }) {
   return { serviceDetails };
 }
 
-async function patchService(serviceId, commands) {
+/** @param {{ dockerfilePath: string, dockerContext?: string, healthCheckPath?: string }} opts */
+function buildDockerPatchPayload({ dockerfilePath, dockerContext = ".", healthCheckPath }) {
+  const serviceDetails = {
+    env: "docker",
+    runtime: "docker",
+    envSpecificDetails: {
+      dockerContext,
+      dockerfilePath,
+    },
+  };
+  if (healthCheckPath != null && healthCheckPath !== "") {
+    serviceDetails.healthCheckPath = healthCheckPath;
+  }
+  return { serviceDetails };
+}
+
+async function patchService(serviceId, body) {
   const existing = await getService(serviceId);
-  if (!existing.serviceDetails?.envSpecificDetails) {
+  if (!existing.serviceDetails?.envSpecificDetails && !useDocker) {
     throw new Error(`GET ${serviceId}: missing serviceDetails.envSpecificDetails`);
   }
-  const body = buildPatchPayload(commands);
   if (dryRun) {
     console.log(`\n--- PATCH ${serviceId} ---\n`, JSON.stringify(body, null, 2));
     return;
@@ -89,24 +107,58 @@ async function patchService(serviceId, commands) {
 }
 
 async function main() {
-  console.log("Patching growers-notebook-web…");
-  await patchService(WEB_SERVICE_ID, {
-    buildCommand: "sh scripts/render-build-web.sh",
-    startCommand: "npx pnpm@9.15.9 --filter @growers/web start",
-    healthCheckPath: "/",
-  });
-  console.log("  OK");
+  if (useDocker) {
+    console.log("Switching growers-notebook-web to Docker…");
+    await patchService(
+      WEB_SERVICE_ID,
+      buildDockerPatchPayload({
+        dockerfilePath: "./Dockerfile.growers-web",
+        dockerContext: ".",
+        healthCheckPath: "/",
+      }),
+    );
+    console.log("  OK");
 
-  console.log("Patching growers-notebook-api…");
-  await patchService(API_SERVICE_ID, {
-    buildCommand: "sh scripts/render-build-api.sh",
-    startCommand: "npx pnpm@9.15.9 --filter @growers/api start:prod",
-    healthCheckPath: "/health",
-  });
-  console.log("  OK");
+    console.log("Switching growers-notebook-api to Docker…");
+    await patchService(
+      API_SERVICE_ID,
+      buildDockerPatchPayload({
+        dockerfilePath: "./Dockerfile.growers-api",
+        dockerContext: ".",
+        healthCheckPath: "/health",
+      }),
+    );
+    console.log("  OK");
+  } else {
+    console.log("Patching growers-notebook-web (native)…");
+    await patchService(
+      WEB_SERVICE_ID,
+      buildNativePatchPayload({
+        buildCommand: "sh scripts/render-build-web.sh",
+        startCommand: "npx pnpm@9.15.9 --filter @growers/web start",
+        healthCheckPath: "/",
+      }),
+    );
+    console.log("  OK");
+
+    console.log("Patching growers-notebook-api (native)…");
+    await patchService(
+      API_SERVICE_ID,
+      buildNativePatchPayload({
+        buildCommand: "sh scripts/render-build-api.sh",
+        startCommand: "npx pnpm@9.15.9 --filter @growers/api start:prod",
+        healthCheckPath: "/health",
+      }),
+    );
+    console.log("  OK");
+  }
 
   if (!dryRun) {
-    console.log("Done. In the dashboard run Manual Deploy → Clear build cache & deploy (or push main).");
+    console.log(
+      useDocker
+        ? "Done. Render should start a new deploy; if not, open each service → Manual Deploy."
+        : "Done. In the dashboard run Manual Deploy → Clear build cache & deploy (or push main).",
+    );
   }
 }
 

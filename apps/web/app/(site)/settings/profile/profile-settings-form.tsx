@@ -365,8 +365,8 @@ export function ProfileSettingsForm() {
               Show notebooks on public profile
             </span>
             <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
-              When off, other users won&apos;t see your NOTEBOOK grow diaries on
-              your profile or in the public notebooks list.
+              When off, other users won&apos;t see your notebooks on your
+              profile or in the public notebooks list.
             </span>
           </span>
         </label>

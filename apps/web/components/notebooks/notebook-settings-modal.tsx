@@ -134,7 +134,7 @@ export function NotebookSettingsModal({
         <Form.Item
           name="customStrainLabel"
           label="Strain label"
-          tooltip="Shown on your diary; optional if you use a catalog strain name."
+          tooltip="Shown on your notebook; optional if you use a catalog strain name."
         >
           <Input placeholder="Free-text strain name" />
         </Form.Item>

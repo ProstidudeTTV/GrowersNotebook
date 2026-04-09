@@ -88,7 +88,7 @@ function IconMessage({ className }: { className?: string }) {
   );
 }
 
-function IconGrowDiary({ className }: { className?: string }) {
+function IconNotebookNav({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -223,8 +223,8 @@ export function AppSidebar({
           className={navItem}
           onClick={afterNav}
         >
-          <IconGrowDiary className="shrink-0 opacity-90" />
-          Grow diaries
+          <IconNotebookNav className="shrink-0 opacity-90" />
+          Notebooks
         </Link>
 
         <div className="my-3 border-t border-[var(--gn-divide)]" />

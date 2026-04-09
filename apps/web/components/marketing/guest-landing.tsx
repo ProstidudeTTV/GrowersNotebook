@@ -225,11 +225,11 @@ export function GuestLanding({
                 <IconBook className="h-6 w-6" />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-[var(--gn-text)]">
-                Living grow notes
+                Notebooks
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
-                Post diaries, ask questions, and search what worked for others
-                — your notebook stays readable and searchable over time.
+                Share notebooks, ask questions, and search what worked for
+                others—your run stays readable and searchable over time.
               </p>
             </article>
             <article className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/70 p-6 shadow-[var(--gn-shadow-sm)]">

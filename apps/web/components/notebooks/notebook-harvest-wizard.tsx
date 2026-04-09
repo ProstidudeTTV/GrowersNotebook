@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
-import { NotebookImagePickDropzone } from "@/components/notebook-image-pick-dropzone";
+import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
 
 const STEPS = 3;
@@ -170,7 +170,7 @@ export function NotebookHarvestWizard({
           <div className="space-y-4">
             <p className="text-sm text-[var(--gn-text-muted)]">
               Log dry weight, quality, and plant count for readers and g/W
-              stats. You can update this anytime while the diary is in harvest.
+              stats. You can update this anytime while the notebook is in harvest.
             </p>
             <div>
               <label className="text-sm font-semibold text-[var(--gn-text)]">
@@ -223,14 +223,21 @@ export function NotebookHarvestWizard({
         {step === 2 ? (
           <div>
             <p className="text-sm text-[var(--gn-text-muted)]">
-              Upload finished-bud or trim photos, or paste https links (same
-              storage as forum posts).
+              Add harvest photos like forum posts (tap or drag), or paste https
+              links. Videos are not attached to harvest galleries.
             </p>
             <div className="mt-4">
-              <NotebookImagePickDropzone
+              <PostMediaDropzone
                 disabled={saving || remainingImageSlots <= 0}
-                remainingSlots={remainingImageSlots}
-                onImageUrl={appendUploadedImage}
+                onMediaReady={(url, kind) => {
+                  if (kind === "video") {
+                    setUploadError(
+                      "Harvest photos support images only, not video files.",
+                    );
+                    return;
+                  }
+                  appendUploadedImage(url);
+                }}
                 onError={(msg) => setUploadError(msg)}
               />
               {uploadError ? (

@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
-import { NotebookImagePickDropzone } from "@/components/notebook-image-pick-dropzone";
+import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
 import type { DosageUnit, TempUnit, VolumeUnit } from "@/lib/notebook-units";
 import {
@@ -628,14 +628,22 @@ export function NotebookWeekWizard({
           <div>
             <label className={labelClass}>Photos</label>
             <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Upload from your device or paste up to {MAX_IMAGES} https image
-              URLs.
+              Add images the same way as forum posts (tap or drag). You can also
+              paste up to {MAX_IMAGES} https image URLs below. Videos are not
+              stored on weekly entries.
             </p>
             <div className="mt-4">
-              <NotebookImagePickDropzone
+              <PostMediaDropzone
                 disabled={saving || remainingImageSlots <= 0}
-                remainingSlots={remainingImageSlots}
-                onImageUrl={appendUploadedImage}
+                onMediaReady={(url, kind) => {
+                  if (kind === "video") {
+                    setUploadError(
+                      "Weekly entries support photos only. Add a video link in notes if needed.",
+                    );
+                    return;
+                  }
+                  appendUploadedImage(url);
+                }}
                 onError={(msg) => setUploadError(msg)}
               />
               {uploadError ? (

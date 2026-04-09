@@ -48,7 +48,7 @@ export default function NewNotebookPage() {
         Set up your notebook
       </h1>
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        We&apos;ll create your grow diary and walk you through name, setup, and
+        We&apos;ll create your notebook and walk you through name, setup, and
         environment. After that, this page shows your summary and weekly entries;{" "}
         <strong className="font-medium text-[var(--gn-text)]">Add week</strong>{" "}
         opens the week-by-week log.

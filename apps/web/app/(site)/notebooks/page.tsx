@@ -15,8 +15,8 @@ type NotebookListItem = {
 };
 
 export const metadata: Metadata = {
-  title: `Grow diaries · ${SITE_NAME}`,
-  description: `Public grow diaries on ${SITE_NAME}.`,
+  title: `Notebooks · ${SITE_NAME}`,
+  description: `Public notebooks on ${SITE_NAME}.`,
   alternates: { canonical: canonicalPath("/notebooks") },
 };
 
@@ -72,9 +72,9 @@ export default async function NotebooksDirectoryPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-[var(--gn-text)]">Grow diaries</h1>
+      <h1 className="text-2xl font-bold text-[var(--gn-text)]">Notebooks</h1>
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Public notebooks from growers who share their diaries.
+        Public notebooks shared by the community.
       </p>
       <Link
         href="/notebooks/new"

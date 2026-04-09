@@ -32,6 +32,8 @@ import { NotebookSettingsModal } from "@/components/notebooks/notebook-settings-
 import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
 import { NotebookWeekSidebar } from "@/components/notebooks/notebook-week-sidebar";
 import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
+import { PostMediaCarousel } from "@/components/post-media-carousel";
+import type { PostMediaItem } from "@/lib/feed-post";
 
 type WeekNut = {
   customLabel: string | null;
@@ -106,6 +108,13 @@ type NbComment = {
 };
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
+
+function weekImagesAsPostMedia(urls: string[] | undefined): PostMediaItem[] {
+  if (!urls?.length) return [];
+  return urls
+    .filter(Boolean)
+    .map((url) => ({ url, type: "image" as const }));
+}
 
 export function NotebookDetailClient({
   initial,
@@ -535,23 +544,11 @@ export function NotebookDetailClient({
             ) : null}
           </dl>
           {nb.harvestImageUrls && nb.harvestImageUrls.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {nb.harvestImageUrls.slice(0, 8).map((url) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block h-28 w-28 overflow-hidden rounded-lg ring-1 ring-[var(--gn-border)]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                </a>
-              ))}
+            <div className="mt-3">
+              <PostMediaCarousel
+                embedded
+                items={weekImagesAsPostMedia(nb.harvestImageUrls)}
+              />
             </div>
           ) : null}
         </section>
@@ -641,23 +638,11 @@ export function NotebookDetailClient({
                   </div>
                 ) : null}
                 {w.imageUrls?.length ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {w.imageUrls.slice(0, 8).map((url) => (
-                      <a
-                        key={url}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block h-24 w-24 overflow-hidden rounded-lg ring-1 ring-[var(--gn-border)]"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </a>
-                    ))}
+                  <div className="mt-3">
+                    <PostMediaCarousel
+                      embedded
+                      items={weekImagesAsPostMedia(w.imageUrls)}
+                    />
                   </div>
                 ) : null}
               </li>

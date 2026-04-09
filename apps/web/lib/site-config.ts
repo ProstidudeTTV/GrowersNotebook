@@ -10,7 +10,7 @@ export const CANONICAL_PUBLIC_SITE_ORIGIN = "https://growersnotebook.com";
 
 /** Primary SEO focus: home cannabis cultivation community. */
 export const SITE_TAGLINE =
-  "Community for cannabis home growers — grow diaries, tips, strains, nutrients, and conversations with fellow growers.";
+  "Community for cannabis home growers — notebooks, tips, strains, nutrients, and conversations with fellow growers.";
 
 export const SEO_KEYWORDS = [
   "cannabis home grow",

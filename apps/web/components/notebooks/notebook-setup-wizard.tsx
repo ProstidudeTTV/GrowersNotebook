@@ -167,7 +167,7 @@ export function NotebookSetupWizard({
         {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
         <div className={step === 1 ? "space-y-2" : "hidden"} aria-hidden={step !== 1}>
             <p className="text-sm text-[var(--gn-text-muted)]">
-              Name this grow. Optional free-text strain label below—catalog
+              Name this notebook. Optional free-text strain label below—catalog
               linking stays as-is unless you clear it in Details later.
             </p>
             <Form.Item
@@ -180,7 +180,7 @@ export function NotebookSetupWizard({
             <Form.Item
               name="customStrainLabel"
               label="Strain label (optional)"
-              tooltip="Plain label on the diary; use Details if you need to change catalog link."
+              tooltip="Plain label on your notebook; use Details if you need to change catalog link."
             >
               <Input placeholder="e.g. Blue Dream" />
             </Form.Item>
@@ -188,13 +188,13 @@ export function NotebookSetupWizard({
 
         <div className={step === 2 ? "space-y-1" : "hidden"} aria-hidden={step !== 2}>
             <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
-              How you run this grow helps others compare setups. You can change
-              this anytime under Details on your notebook page.
+              How you run this notebook helps others compare setups. You can
+              change this anytime under Details on your notebook page.
             </p>
             <Form.Item
               name="preferredTempUnit"
               label="Temperature unit (weekly readings)"
-              tooltip="Week logs and this diary use this for °C vs °F. Values are stored as °C in the database."
+              tooltip="Week logs and this notebook use this for °C vs °F. Values are stored as °C in the database."
             >
               <Select options={[...TEMP_UNIT_OPTIONS]} />
             </Form.Item>

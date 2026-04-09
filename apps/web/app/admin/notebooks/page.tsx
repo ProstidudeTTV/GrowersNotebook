@@ -15,7 +15,7 @@ export default function AdminNotebooksPage() {
   });
 
   return (
-    <List title="Notebooks (grow diaries)" headerButtons={<CreateButton />}>
+    <List title="Notebooks" headerButtons={<CreateButton />}>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
       <Table
         {...tableProps}

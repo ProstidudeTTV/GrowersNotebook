@@ -30,7 +30,7 @@ services:
     plan: starter
     # Drizzle migrations run at every API boot via apps/api package.json start:prod (no Render pre-deploy UI needed).
     # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
-    buildCommand: env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && npx pnpm@9.15.9 --filter @growers/api build
+    buildCommand: bash scripts/render-build-api.sh
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
@@ -45,7 +45,7 @@ services:
     region: oregon
     plan: starter
     # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
-    buildCommand: export NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && env NODE_ENV=development npx pnpm@9.15.9 install --frozen-lockfile && env NODE_ENV=production npx pnpm@9.15.9 --filter @growers/web build
+    buildCommand: bash scripts/render-build-web.sh
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:

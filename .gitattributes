@@ -1,1 +1,3 @@
 infra/render/synapse/entrypoint.sh text eol=lf
+scripts/render-build-api.sh text eol=lf
+scripts/render-build-web.sh text eol=lf

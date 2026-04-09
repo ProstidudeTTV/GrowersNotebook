@@ -44,16 +44,11 @@ async function getService(serviceId) {
   return JSON.parse(text);
 }
 
-function buildPatchPayload(existing, { buildCommand, startCommand }) {
-  const sd = existing.serviceDetails;
-  if (!sd?.envSpecificDetails) {
-    throw new Error("Unexpected GET shape: missing serviceDetails.envSpecificDetails");
-  }
+/** Only envSpecificDetails — merging full serviceDetails re-sends ipAllowList etc. and returns 400 on non-Enterprise. */
+function buildPatchPayload({ buildCommand, startCommand }) {
   return {
     serviceDetails: {
-      ...sd,
       envSpecificDetails: {
-        ...sd.envSpecificDetails,
         buildCommand,
         startCommand,
       },
@@ -63,7 +58,10 @@ function buildPatchPayload(existing, { buildCommand, startCommand }) {
 
 async function patchService(serviceId, commands) {
   const existing = await getService(serviceId);
-  const body = buildPatchPayload(existing, commands);
+  if (!existing.serviceDetails?.envSpecificDetails) {
+    throw new Error(`GET ${serviceId}: missing serviceDetails.envSpecificDetails`);
+  }
+  const body = buildPatchPayload(commands);
   if (dryRun) {
     console.log(`\n--- PATCH ${serviceId} ---\n`, JSON.stringify(body, null, 2));
     return;

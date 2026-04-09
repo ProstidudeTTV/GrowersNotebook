@@ -1,6 +1,6 @@
 /**
  * PATCH growers-notebook-web and growers-notebook-api build/start commands via Render API.
- * Fetches each service first and merges into serviceDetails (some PATCH shapes reject partials).
+ * Fetches each service first to verify shape; PATCH sends only envSpecificDetails (see buildPatchPayload).
  *
  * Usage:
  *   $env:RENDER_API_KEY = 'rnd_...'   # PowerShell
@@ -89,14 +89,14 @@ async function patchService(serviceId, commands) {
 async function main() {
   console.log("Patching growers-notebook-web…");
   await patchService(WEB_SERVICE_ID, {
-    buildCommand: "npm run render:build:web",
+    buildCommand: "node scripts/render-build-web.mjs",
     startCommand: "npx pnpm@9.15.9 --filter @growers/web start",
   });
   console.log("  OK");
 
   console.log("Patching growers-notebook-api…");
   await patchService(API_SERVICE_ID, {
-    buildCommand: "npm run render:build:api",
+    buildCommand: "node scripts/render-build-api.mjs",
     startCommand: "npx pnpm@9.15.9 --filter @growers/api start:prod",
   });
   console.log("  OK");

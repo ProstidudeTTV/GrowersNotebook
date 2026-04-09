@@ -1,6 +1,6 @@
 /**
  * Render API build. Linux/Render: /bin/sh + npx pnpm.
- * Dashboard: npm run render:build:api
+ * Dashboard: node scripts/render-build-api.mjs (or npm run render:build:api)
  */
 import { spawnSync } from "node:child_process";
 

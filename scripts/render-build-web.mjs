@@ -1,6 +1,6 @@
 /**
  * Render web build. Linux/Render: /bin/sh + npx pnpm (no bare pnpm; no bash).
- * Dashboard Build Command: npm run render:build:web
+ * Dashboard Build Command: node scripts/render-build-web.mjs (or npm run render:build:web)
  */
 import { spawnSync } from "node:child_process";
 

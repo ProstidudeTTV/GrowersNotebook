@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import {
+  weekLogPhase,
+  weekPhaseNavActiveClass,
+  weekPhaseNavIdleClass,
+} from "@/lib/notebook-growth";
 
 export function NotebookWeekSidebar({
+  notebook,
   weeks,
   variant,
 }: {
+  notebook: NotebookDetailPayload;
   weeks: NotebookDetailPayload["weeks"];
   variant: "sidebar" | "mobile";
 }) {
@@ -66,19 +73,22 @@ export function NotebookWeekSidebar({
   return (
     <nav aria-label="Week calendar">
       {variant === "sidebar" ? (
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-          Week calendar
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+          Weeks
         </p>
       ) : null}
       <ol
         className={
           variant === "mobile"
-            ? "flex flex-nowrap gap-2 overflow-x-auto pb-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            : "mt-2 space-y-1"
+            ? "flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : "mt-1.5 space-y-0.5"
         }
       >
         {sorted.map((w) => {
           const on = active === w.weekIndex;
+          const phase = weekLogPhase(notebook, w.weekIndex);
+          const phaseActive = weekPhaseNavActiveClass(phase);
+          const phaseIdle = weekPhaseNavIdleClass(phase);
           return (
             <li key={w.id} className={variant === "mobile" ? "shrink-0" : ""}>
               <button
@@ -86,11 +96,10 @@ export function NotebookWeekSidebar({
                 onClick={() => scrollToWeek(w.weekIndex)}
                 className={[
                   variant === "mobile"
-                    ? "inline-flex rounded-full border px-3 py-1.5 text-sm"
-                    : "flex w-full items-center rounded-lg border px-3 py-2 text-left text-sm transition",
-                  on
-                    ? "border-emerald-500/50 bg-emerald-500/15 font-medium text-[var(--gn-text)]"
-                    : "border-[var(--gn-divide)] text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]",
+                    ? "inline-flex rounded-full border px-2.5 py-1 text-xs transition"
+                    : "flex w-full items-center rounded-md border px-2 py-1.5 text-left text-xs transition",
+                  on ? phaseActive : phaseIdle,
+                  !on ? "hover:brightness-110" : "",
                 ].join(" ")}
               >
                 W{w.weekIndex}

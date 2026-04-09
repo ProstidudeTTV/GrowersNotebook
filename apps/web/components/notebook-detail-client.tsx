@@ -19,6 +19,8 @@ import {
   showHarvestPanel,
   showStartFlowering,
   showStartVegetation,
+  weekLogPhase,
+  weekPhaseCardClass,
 } from "@/lib/notebook-growth";
 import {
   litersToDisplayVolume,
@@ -122,11 +124,11 @@ function StatTile({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/70 px-3 py-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+    <div className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/70 px-2 py-1.5">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
         {label}
       </p>
-      <div className="mt-1 text-sm font-medium text-[var(--gn-text)]">{children}</div>
+      <div className="mt-0.5 text-xs font-medium text-[var(--gn-text)]">{children}</div>
     </div>
   );
 }
@@ -348,16 +350,16 @@ export function NotebookDetailClient({
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-        <aside className="order-2 hidden w-52 shrink-0 lg:order-1 lg:block">
-          <div className="sticky top-20 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
-            <NotebookWeekSidebar weeks={nb.weeks} variant="sidebar" />
+    <div className="mx-auto max-w-6xl px-4 py-5">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
+        <aside className="order-2 hidden w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-16 lg:z-10 xl:top-[4.5rem]">
+          <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto overflow-x-hidden rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
+            <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="sidebar" />
           </div>
         </aside>
 
         <div className="order-1 min-w-0 flex-1 lg:order-2">
-          <div className="flex gap-4">
+          <div className="flex gap-2.5 sm:gap-3">
             <VoteFeedPill
               score={nb.score}
               upvotes={nb.upvotes}
@@ -368,13 +370,13 @@ export function NotebookDetailClient({
               disabled={voteBusy}
             />
             <div className="min-w-0 flex-1">
-              <div className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-5 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 shadow-sm sm:p-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h1 className="text-2xl font-bold text-[var(--gn-text)]">
+                    <h1 className="text-lg font-bold leading-snug text-[var(--gn-text)] sm:text-xl">
                       {nb.title}
                     </h1>
-                    <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+                    <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
                       <Link
                         href={`/u/${encodeURIComponent(nb.ownerId)}`}
                         className="text-[#ff4500] hover:underline"
@@ -395,14 +397,14 @@ export function NotebookDetailClient({
                       ) : null}
                     </p>
                     {(strainLabel || nb.growthStage) && (
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         {strainLabel ? (
-                          <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--gn-text)]">
+                          <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
                             {strainLabel}
                           </span>
                         ) : null}
                         {nb.growthStage ? (
-                          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
                             {GROWTH_STAGE_LABEL[nb.growthStage] ??
                               nb.growthStage}
                           </span>
@@ -411,26 +413,26 @@ export function NotebookDetailClient({
                     )}
                   </div>
                   {isOwner ? (
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                     {showHarvestPanel(nb) ? (
                       <button
                         type="button"
                         onClick={() => setHarvestWizardOpen(true)}
-                        className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                        className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
                       >
                         Harvest log
                       </button>
                     ) : null}
                     <Link
                       href={`/notebooks/${encodeURIComponent(nb.id)}/edit`}
-                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                      className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
                     >
                       Edit setup
                     </Link>
                     <button
                       type="button"
                       onClick={() => setSettingsOpen(true)}
-                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                      className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
                     >
                       Details
                     </button>
@@ -441,7 +443,7 @@ export function NotebookDetailClient({
                         setWeekEditTarget(null);
                         setWeekWizardOpen(true);
                       }}
-                      className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+                      className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
                     >
                       Add week
                     </button>
@@ -450,18 +452,18 @@ export function NotebookDetailClient({
                 </div>
 
               {isOwner && showStartVegetation(nb) ? (
-                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
-                  <p className="text-sm font-medium text-[var(--gn-text)]">
+                <div className="mt-3 rounded-lg border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
+                  <p className="text-xs font-medium text-[var(--gn-text)]">
                     Ready for vegetation?
                   </p>
-                  <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  <p className="mt-0.5 text-[11px] text-[var(--gn-text-muted)]">
                     You&apos;ve logged two germination weeks. Continue to
                     vegetation to track the next phase.
                   </p>
                   <button
                     type="button"
                     onClick={() => void transitionToVegetation()}
-                    className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-emerald-400"
                   >
                     Start vegetation
                   </button>
@@ -469,27 +471,27 @@ export function NotebookDetailClient({
               ) : null}
 
               {isOwner && showStartFlowering(nb) ? (
-                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
-                  <p className="text-sm font-medium text-[var(--gn-text)]">
+                <div className="mt-3 rounded-lg border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
+                  <p className="text-xs font-medium text-[var(--gn-text)]">
                     Start flowering
                   </p>
-                  <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  <p className="mt-0.5 text-[11px] text-[var(--gn-text-muted)]">
                     Two vegetation weeks logged—move to flower to unlock the
                     harvest log.
                   </p>
                   <button
                     type="button"
                     onClick={() => void transitionToFlowering()}
-                    className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-emerald-400"
                   >
                     Start flowering
                   </button>
                 </div>
               ) : null}
 
-              <div className="mt-4 lg:hidden">
-                <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface)]/40 p-3">
-                  <NotebookWeekSidebar weeks={nb.weeks} variant="mobile" />
+              <div className="mt-2 lg:hidden">
+                <div className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface)]/40 p-2">
+                  <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="mobile" />
                 </div>
               </div>
               </div>
@@ -497,11 +499,11 @@ export function NotebookDetailClient({
           </div>
 
       {showGrowingSetup ? (
-        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5">
-          <h2 className="text-sm font-semibold text-[var(--gn-text)]">
+        <section className="mt-5 rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 sm:p-3.5">
+          <h2 className="text-xs font-semibold text-[var(--gn-text)]">
             Growing setup
           </h2>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {nb.roomType ? (
               <StatTile label="Room">{nb.roomType}</StatTile>
             ) : null}
@@ -529,11 +531,11 @@ export function NotebookDetailClient({
             ) : null}
           </div>
           {nb.setupNotes?.trim() ? (
-            <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                 Setup notes
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+              <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
                 {nb.setupNotes}
               </p>
             </div>
@@ -544,12 +546,12 @@ export function NotebookDetailClient({
       {(nb.harvestDryWeightG ||
         nb.harvestQualityNotes?.trim() ||
         (nb.harvestImageUrls && nb.harvestImageUrls.length > 0)) && (
-        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5">
-          <h2 className="text-sm font-semibold text-[var(--gn-text)]">
+        <section className="mt-5 rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 sm:p-3.5">
+          <h2 className="text-xs font-semibold text-[var(--gn-text)]">
             Harvest
           </h2>
           {(nb.harvestDryWeightG || nb.gPerWatt || nb.gPerWattPerPlant) && (
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
               {nb.harvestDryWeightG ? (
                 <StatTile label="Dry weight">{`${nb.harvestDryWeightG} g`}</StatTile>
               ) : null}
@@ -562,17 +564,17 @@ export function NotebookDetailClient({
             </div>
           )}
           {nb.harvestQualityNotes ? (
-            <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                 Quality notes
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+              <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
                 {nb.harvestQualityNotes}
               </p>
             </div>
           ) : null}
           {nb.harvestImageUrls && nb.harvestImageUrls.length > 0 ? (
-            <div className="mt-4">
+            <div className="mt-2">
               <PostMediaCarousel
                 embedded
                 items={weekImagesAsPostMedia(nb.harvestImageUrls)}
@@ -582,24 +584,32 @@ export function NotebookDetailClient({
         </section>
       )}
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-[var(--gn-text)]">Weeks</h2>
+      <section className="mt-5">
+        <h2 className="text-base font-semibold text-[var(--gn-text)]">Weeks</h2>
         {nb.weeks.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+          <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
             No weekly entries yet.
           </p>
         ) : (
-          <ul className="mt-4 space-y-6">
-            {nb.weeks.map((w) => (
+          <ul className="mt-3 space-y-4">
+            {nb.weeks.map((w) => {
+              const phase = weekLogPhase(nb, w.weekIndex);
+              const phaseClass = weekPhaseCardClass(phase);
+              return (
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className="scroll-mt-24 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5"
+                className={`scroll-mt-20 rounded-lg p-3 sm:p-3.5 ${phaseClass}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-[var(--gn-text)]">
-                    Week {w.weekIndex}
-                  </p>
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <p className="text-sm font-semibold text-[var(--gn-text)]">
+                      Week {w.weekIndex}
+                    </p>
+                    <span className="text-[10px] font-medium text-[var(--gn-text-muted)]">
+                      {GROWTH_STAGE_LABEL[phase] ?? phase}
+                    </span>
+                  </div>
                   {isOwner ? (
                     <button
                       type="button"
@@ -615,11 +625,11 @@ export function NotebookDetailClient({
                   ) : null}
                 </div>
                 {w.notes ? (
-                  <div className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                       Notes
                     </p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
                       {w.notes}
                     </p>
                   </div>
@@ -683,13 +693,13 @@ export function NotebookDetailClient({
                   const hasMetrics = envTiles.length > 0 || feedTiles.length > 0;
                   if (!hasMetrics) return null;
                   return (
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-2 space-y-2">
                       {envTiles.length > 0 ? (
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                             Environment
                           </p>
-                          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                          <div className="mt-1 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
                             {envTiles.map((t) => (
                               <StatTile key={t.label} label={t.label}>
                                 {t.node}
@@ -700,10 +710,10 @@ export function NotebookDetailClient({
                       ) : null}
                       {feedTiles.length > 0 ? (
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                             Feed &amp; water
                           </p>
-                          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div className="mt-1 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                             {feedTiles.map((t) => (
                               <StatTile key={t.label} label={t.label}>
                                 {t.node}
@@ -716,11 +726,11 @@ export function NotebookDetailClient({
                   );
                 })()}
                 {w.nutrients.length > 0 ? (
-                  <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 px-2 py-1.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                       Nutrients
                     </p>
-                    <ul className="mt-2 space-y-1.5 text-sm text-[var(--gn-text)]">
+                    <ul className="mt-1 space-y-1 text-xs text-[var(--gn-text)]">
                       {w.nutrients.map((x, i) => (
                         <li
                           key={i}
@@ -740,7 +750,7 @@ export function NotebookDetailClient({
                   </div>
                 ) : null}
                 {w.imageUrls?.length ? (
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <PostMediaCarousel
                       embedded
                       items={weekImagesAsPostMedia(w.imageUrls)}
@@ -748,13 +758,14 @@ export function NotebookDetailClient({
                   </div>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>
 
-      <section className="mt-10 border-t border-[var(--gn-divide)] pt-8">
-        <h2 className="text-lg font-semibold text-[var(--gn-text)]">
+      <section className="mt-6 border-t border-[var(--gn-divide)] pt-5">
+        <h2 className="text-base font-semibold text-[var(--gn-text)]">
           Comments
         </h2>
         <ul className="mt-4 space-y-4">

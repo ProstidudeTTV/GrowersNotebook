@@ -122,44 +122,78 @@ type NbComment = {
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
 
+const sectionCapsClass =
+  "text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]";
+
+/** Short rule only under the heading text (not full card width). */
+function SectionCapsTitle({
+  children,
+  underlined,
+  className = "",
+}: {
+  children: ReactNode;
+  underlined?: boolean;
+  className?: string;
+}) {
+  return (
+    <p
+      className={`${sectionCapsClass} w-fit max-w-full ${
+        underlined
+          ? "border-b border-[var(--gn-divide)]/45 pb-1.5"
+          : ""
+      } ${className}`.trim()}
+    >
+      {children}
+    </p>
+  );
+}
+
 /** Structured metric grid (old diary layout) without bordered cells. */
 function MetricGrid({
   title,
   titleDivider,
   items,
+  metricsFlow = "grid",
   gridClass = "grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4",
 }: {
   /** Omit when the parent heading already names the section (e.g. Growing setup). */
   title?: string;
-  /** Subtle rule under the title (subsection emphasis). */
+  /** Subtle rule under the title (subsection emphasis), only as wide as the label. */
   titleDivider?: boolean;
+  /** `wrap` lays out metrics in a horizontal flow to save vertical space. */
+  metricsFlow?: "grid" | "wrap";
   items: { label: string; value: ReactNode; wide?: boolean }[];
   gridClass?: string;
 }) {
   if (!items.length) return null;
+  const isWrap = metricsFlow === "wrap";
   return (
-    <div className={title ? "mt-3" : "mt-2"}>
+    <div className="mt-2">
       {title ? (
-        <p
-          className={`text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)] ${
-            titleDivider
-              ? "border-b border-[var(--gn-divide)]/45 pb-2"
-              : ""
-          }`}
-        >
-          {title}
-        </p>
+        <SectionCapsTitle underlined={titleDivider}>{title}</SectionCapsTitle>
       ) : null}
-      <dl className={`${title ? "mt-2 " : ""}grid ${gridClass}`}>
+      <dl
+        className={`${title ? "mt-2 " : ""}${
+          isWrap ? "flex flex-wrap gap-x-5 gap-y-2" : `grid ${gridClass}`
+        }`}
+      >
         {items.map((item) => (
           <div
             key={item.label}
-            className={`min-w-0 ${item.wide ? "sm:col-span-2" : ""}`}
+            className={
+              isWrap
+                ? `min-w-0 shrink-0 ${item.wide ? "basis-full sm:basis-auto sm:min-w-[12rem]" : ""}`
+                : `min-w-0 ${item.wide ? "sm:col-span-2" : ""}`
+            }
           >
             <dt className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
               {item.label}
             </dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--gn-text)]">
+            <dd
+              className={`text-sm font-medium text-[var(--gn-text)] ${
+                isWrap ? "mt-0.5" : "mt-1"
+              }`}
+            >
               {item.value}
             </dd>
           </div>
@@ -676,10 +710,12 @@ export function NotebookDetailClient({
             No weekly entries yet.
           </p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-3 space-y-2.5">
             {nb.weeks.map((w) => {
               const phase = weekLogPhase(nb, w.weekIndex);
               const phaseClass = weekPhaseCardClass(phase);
+              const spots = weekNoteSpotsFromRow(w);
+              const hasNotes = spots.length > 0;
               const envItems: { key: string; value: ReactNode }[] = [];
               if (w.tempC != null && w.tempC !== "") {
                 envItems.push({
@@ -731,9 +767,9 @@ export function NotebookDetailClient({
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className={`scroll-mt-20 rounded-lg px-3 py-2.5 sm:px-3.5 sm:py-3 ${phaseClass}`}
+                className={`scroll-mt-20 rounded-lg px-3 py-2 sm:px-3.5 sm:py-2.5 ${phaseClass}`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-2">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-1.5">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
                       <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
@@ -771,23 +807,23 @@ export function NotebookDetailClient({
                   ) : null}
                 </div>
 
-                {(() => {
-                  const spots = weekNoteSpotsFromRow(w);
-                  if (!spots.length) return null;
-                  return (
-                    <div className="mt-3">
-                      {spots.length > 1 ? (
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                          Updates ({spots.length})
-                        </p>
-                      ) : (
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                          Notes
-                        </p>
-                      )}
+                <div
+                  className={
+                    hasNotes
+                      ? "mt-2 lg:grid lg:grid-cols-2 lg:gap-x-5 lg:items-start"
+                      : "mt-2"
+                  }
+                >
+                  {hasNotes ? (
+                    <div className="min-w-0">
+                      <SectionCapsTitle underlined>
+                        {spots.length > 1
+                          ? `Updates (${spots.length})`
+                          : "Notes"}
+                      </SectionCapsTitle>
                       <div
                         className={
-                          spots.length > 1 ? "mt-2 space-y-3" : "mt-2 space-y-2"
+                          spots.length > 1 ? "mt-2 space-y-2.5" : "mt-2 space-y-2"
                         }
                       >
                         {spots.map((spot, idx) => (
@@ -795,7 +831,7 @@ export function NotebookDetailClient({
                             key={idx}
                             className={
                               idx > 0
-                                ? "border-t border-[var(--gn-divide)]/35 pt-3"
+                                ? "border-t border-[var(--gn-divide)]/35 pt-2.5"
                                 : ""
                             }
                           >
@@ -805,83 +841,90 @@ export function NotebookDetailClient({
                             >
                               {formatNotebookWeekInstant(spot.at)}
                             </time>
-                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
+                            <p className="mt-0.5 whitespace-pre-wrap text-sm leading-snug text-[var(--gn-text)]">
                               {spot.body}
                             </p>
                           </div>
                         ))}
                       </div>
                     </div>
-                  );
-                })()}
+                  ) : null}
 
-                <MetricGrid
-                  title="Environment"
-                  gridClass="grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2"
-                  items={envItems.map((x) => ({
-                    label: x.key,
-                    value: x.value,
-                  }))}
-                />
+                  <div
+                    className={`min-w-0 space-y-1 ${hasNotes ? "mt-3 lg:mt-0" : ""}`}
+                  >
+                    {envItems.length > 0 ? (
+                      <MetricGrid
+                        title="Environment"
+                        titleDivider
+                        metricsFlow="wrap"
+                        items={envItems.map((x) => ({
+                          label: x.key,
+                          value: x.value,
+                        }))}
+                      />
+                    ) : null}
 
-                {(() => {
-                  const feedItems: {
-                    label: string;
-                    value: ReactNode;
-                    wide?: boolean;
-                  }[] = [];
-                  if (feedLineItems.length > 0) {
-                    feedItems.push({
-                      label: "Water / feed volume",
-                      value: feedLineItems[0].value,
-                    });
-                  }
-                  if (w.waterNotes != null && w.waterNotes !== "") {
-                    feedItems.push({
-                      label: "Water / feed notes",
-                      value: (
-                        <span className="whitespace-pre-wrap font-normal">
-                          {w.waterNotes}
-                        </span>
-                      ),
-                      wide: true,
-                    });
-                  }
-                  return feedItems.length > 0 ? (
-                    <MetricGrid
-                      title="Feed & water"
-                      titleDivider
-                      gridClass="grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
-                      items={feedItems}
-                    />
-                  ) : null;
-                })()}
-
-                {w.nutrients.length > 0 ? (
-                  <div className="mt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                      Nutrients
-                    </p>
-                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-[var(--gn-text)]">
-                      {w.nutrients.map((x, i) => (
-                        <li key={i}>
-                          <span className="font-medium">
-                            {x.productName ?? x.customLabel ?? "—"}
-                          </span>
-                          {x.dosage ? (
-                            <span className="text-[var(--gn-text-muted)]">
-                              {" "}
-                              — {x.dosage}
+                    {(() => {
+                      const feedItems: {
+                        label: string;
+                        value: ReactNode;
+                        wide?: boolean;
+                      }[] = [];
+                      if (feedLineItems.length > 0) {
+                        feedItems.push({
+                          label: "Water / feed volume",
+                          value: feedLineItems[0].value,
+                        });
+                      }
+                      if (w.waterNotes != null && w.waterNotes !== "") {
+                        feedItems.push({
+                          label: "Water / feed notes",
+                          value: (
+                            <span className="whitespace-pre-wrap font-normal">
+                              {w.waterNotes}
                             </span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                          ),
+                          wide: true,
+                        });
+                      }
+                      return feedItems.length > 0 ? (
+                        <MetricGrid
+                          title="Feed & water"
+                          titleDivider
+                          gridClass="grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-2"
+                          items={feedItems}
+                        />
+                      ) : null;
+                    })()}
+
+                    {w.nutrients.length > 0 ? (
+                      <div className="mt-2">
+                        <SectionCapsTitle underlined>
+                          Nutrients
+                        </SectionCapsTitle>
+                        <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm leading-snug text-[var(--gn-text)]">
+                          {w.nutrients.map((x, i) => (
+                            <li key={i}>
+                              <span className="font-medium">
+                                {x.productName ?? x.customLabel ?? "—"}
+                              </span>
+                              {x.dosage ? (
+                                <span className="text-[var(--gn-text-muted)]">
+                                  {" "}
+                                  — {x.dosage}
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
+                </div>
 
                 {w.imageUrls?.length ? (
-                  <div className="mt-2.5 overflow-hidden rounded-lg">
+                  <div className="mt-2 overflow-hidden rounded-lg">
                     <PostMediaCarousel
                       embedded
                       items={weekImagesAsPostMedia(w.imageUrls)}

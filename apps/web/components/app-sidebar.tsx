@@ -88,6 +88,27 @@ function IconMessage({ className }: { className?: string }) {
   );
 }
 
+function IconGrowDiary({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+      <path d="M8 7h8M8 11h8M8 15h5" />
+    </svg>
+  );
+}
+
 function IconUsers({ className }: { className?: string }) {
   return (
     <svg
@@ -197,6 +218,14 @@ export function AppSidebar({
             Messages
           </Link>
         ) : null}
+        <Link
+          href="/notebooks?status=active"
+          className={navItem}
+          onClick={afterNav}
+        >
+          <IconGrowDiary className="shrink-0 opacity-90" />
+          Grow diaries
+        </Link>
 
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 
@@ -207,9 +236,6 @@ export function AppSidebar({
         >
           <IconFlame className="shrink-0 text-[#ff4500]" />
           Hot this week
-        </Link>
-        <Link href="/notebooks" className={navItem} onClick={afterNav}>
-          Notebooks
         </Link>
         {hotWeekPost ? (
           <p className="mx-3 -mt-0.5 mb-1 line-clamp-2 text-xs leading-snug text-[var(--gn-text-muted)]">

@@ -73,12 +73,20 @@ export class NotebooksController {
   listPublic(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
     @CurrentUser() user?: JwtUser,
   ) {
+    const st =
+      status === 'active' || status === 'completed' || status === 'archived'
+        ? status
+        : undefined;
     return this.notebooks.listPublic({
       page: page ? Number(page) : 1,
       pageSize: pageSize ? Number(pageSize) : 24,
       viewerId: user?.sub,
+      status: st,
+      q: q?.trim() || undefined,
     });
   }
 

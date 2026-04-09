@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { SQL } from 'drizzle-orm';
 import {
   and,
   asc,
@@ -179,6 +180,8 @@ export class NotebooksService {
     page: number;
     pageSize: number;
     viewerId?: string;
+    status?: 'active' | 'completed' | 'archived';
+    q?: string;
   }) {
     const db = getDb();
     const page = Math.max(1, opts.page);
@@ -188,13 +191,30 @@ export class NotebooksService {
     const visibility = and(
       eq(profiles.profilePublic, true),
       eq(profiles.showNotebooksPublic, true),
-    );
+    )!;
+    const filters: SQL[] = [visibility];
+    if (opts.status) {
+      filters.push(eq(notebooks.status, opts.status));
+    }
+    const q = opts.q?.trim();
+    if (q) {
+      const pat = `%${q}%`;
+      filters.push(
+        or(
+          ilike(notebooks.title, pat),
+          ilike(notebooks.customStrainLabel, pat),
+          ilike(strains.name, pat),
+        )!,
+      );
+    }
+    const listWhere = and(...filters);
 
     const [{ total }] = await db
       .select({ total: count() })
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
-      .where(visibility);
+      .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .where(listWhere);
 
     const rows = await db
       .select({
@@ -214,7 +234,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
-      .where(visibility)
+      .where(listWhere)
       .orderBy(desc(notebooks.updatedAt))
       .offset(skip)
       .limit(pageSize);
@@ -627,6 +647,12 @@ export class NotebooksService {
     if (dto.setupWizardCompletedAt !== undefined) {
       patch.setupWizardCompletedAt = dto.setupWizardCompletedAt;
     }
+    if (dto.preferredTempUnit !== undefined) {
+      patch.preferredTempUnit = dto.preferredTempUnit;
+    }
+    if (dto.preferredVolumeUnit !== undefined) {
+      patch.preferredVolumeUnit = dto.preferredVolumeUnit;
+    }
 
     if (
       dto.growthStage !== undefined &&
@@ -717,6 +743,7 @@ export class NotebooksService {
         ec: dto.ec ?? null,
         ppm: dto.ppm?.trim() || null,
         waterNotes: dto.waterNotes?.trim() || null,
+        waterVolumeLiters: this.normalizeWaterVolumeLiters(dto.waterVolumeLiters),
         lightCycle: dto.lightCycle?.trim() || null,
         imageUrls,
       })
@@ -805,6 +832,11 @@ export class NotebooksService {
     if (dto.waterNotes !== undefined) {
       patch.waterNotes = dto.waterNotes?.trim() || null;
     }
+    if (dto.waterVolumeLiters !== undefined) {
+      patch.waterVolumeLiters = this.normalizeWaterVolumeLiters(
+        dto.waterVolumeLiters,
+      );
+    }
     if (dto.lightCycle !== undefined) {
       patch.lightCycle = dto.lightCycle?.trim() || null;
     }
@@ -848,6 +880,19 @@ export class NotebooksService {
       .set({ updatedAt: new Date() })
       .where(eq(notebooks.id, notebookId));
     return { ok: true as const };
+  }
+
+  private normalizeWaterVolumeLiters(
+    v: string | null | undefined,
+  ): string | null {
+    if (v == null) return null;
+    const t = String(v).trim();
+    if (!t) return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) {
+      throw new BadRequestException('Invalid water volume (liters).');
+    }
+    return t;
   }
 
   private async replaceWeekNutrients(

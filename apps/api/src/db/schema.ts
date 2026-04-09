@@ -693,6 +693,14 @@ export const notebooks = pgTable(
     setupWizardCompletedAt: timestamp('setup_wizard_completed_at', {
       withTimezone: true,
     }),
+    /** Env readings: Celsius vs Fahrenheit for this diary (UI converts). */
+    preferredTempUnit: varchar('preferred_temp_unit', { length: 1 })
+      .notNull()
+      .default('C'),
+    /** Feed/water volume: liters vs US gallons for display & entry. */
+    preferredVolumeUnit: varchar('preferred_volume_unit', { length: 3 })
+      .notNull()
+      .default('L'),
     growthStage: notebookGrowthStageEnum('growth_stage')
       .notNull()
       .default('germination'),
@@ -745,6 +753,11 @@ export const notebookWeeks = pgTable(
     ppm: varchar('ppm', { length: 32 }),
     /** How much / how often you watered, feed timing, etc. */
     waterNotes: text('water_notes'),
+    /** Total feed/water volume for the week, stored in liters (UI converts by notebook pref). */
+    waterVolumeLiters: numeric('water_volume_liters', {
+      precision: 12,
+      scale: 3,
+    }),
     lightCycle: text('light_cycle'),
     imageUrls: jsonb('image_urls')
       .notNull()

@@ -21,6 +21,8 @@ const GROWTH_STAGES = [
 const ROOM_TYPES = ['indoor', 'outdoor', 'greenhouse'] as const;
 const WATERING_TYPES = ['manual', 'drip', 'hydro', 'aeroponic'] as const;
 const START_TYPES = ['seed', 'clone', 'seedling'] as const;
+const NOTEBOOK_TEMP_UNITS = ['C', 'F'] as const;
+const NOTEBOOK_VOLUME_UNITS = ['L', 'gal'] as const;
 
 export class CreateNotebookDto {
   @IsString()
@@ -130,4 +132,12 @@ export class UpdateNotebookDto {
   @ArrayMaxSize(8)
   @IsString({ each: true })
   harvestImageUrls?: string[];
+
+  @IsOptional()
+  @IsIn([...NOTEBOOK_TEMP_UNITS])
+  preferredTempUnit?: (typeof NOTEBOOK_TEMP_UNITS)[number];
+
+  @IsOptional()
+  @IsIn([...NOTEBOOK_VOLUME_UNITS])
+  preferredVolumeUnit?: (typeof NOTEBOOK_VOLUME_UNITS)[number];
 }

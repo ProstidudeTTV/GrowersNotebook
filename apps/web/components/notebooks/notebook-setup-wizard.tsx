@@ -7,6 +7,12 @@ import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
+import {
+  normalizeTempUnit,
+  normalizeVolumeUnit,
+  TEMP_UNIT_OPTIONS,
+  VOLUME_UNIT_OPTIONS,
+} from "@/lib/notebook-units";
 
 const STEPS = 4;
 
@@ -53,6 +59,8 @@ export function NotebookSetupWizard({
     form.setFieldsValue({
       title: notebook.title,
       customStrainLabel: notebook.customStrainLabel ?? "",
+      preferredTempUnit: normalizeTempUnit(notebook.preferredTempUnit),
+      preferredVolumeUnit: normalizeVolumeUnit(notebook.preferredVolumeUnit),
       roomType: notebook.roomType ?? undefined,
       wateringType: notebook.wateringType ?? undefined,
       startType: notebook.startType ?? undefined,
@@ -95,6 +103,8 @@ export function NotebookSetupWizard({
       await patchBody({
         title,
         customStrainLabel: v.customStrainLabel?.trim() || null,
+        preferredTempUnit: normalizeTempUnit(v.preferredTempUnit),
+        preferredVolumeUnit: normalizeVolumeUnit(v.preferredVolumeUnit),
         roomType: v.roomType ?? null,
         wateringType: v.wateringType ?? null,
         startType: v.startType ?? null,
@@ -183,6 +193,20 @@ export function NotebookSetupWizard({
               How you run this grow helps others compare setups. You can change
               this anytime under Details on your notebook page.
             </p>
+            <Form.Item
+              name="preferredTempUnit"
+              label="Temperature unit (weekly readings)"
+              tooltip="Week logs and this diary use this for °C vs °F. Values are stored as °C in the database."
+            >
+              <Select options={[...TEMP_UNIT_OPTIONS]} />
+            </Form.Item>
+            <Form.Item
+              name="preferredVolumeUnit"
+              label="Water / feed volume unit"
+              tooltip="Used for structured volume in week entries (liters vs US gallons)."
+            >
+              <Select options={[...VOLUME_UNIT_OPTIONS]} />
+            </Form.Item>
             <Form.Item name="roomType" label="Room type">
               <Select allowClear placeholder="Select…" options={ROOM_OPTIONS} />
             </Form.Item>

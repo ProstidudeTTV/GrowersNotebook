@@ -19,6 +19,14 @@ import {
   showStartFlowering,
   showStartVegetation,
 } from "@/lib/notebook-growth";
+import {
+  litersToDisplayVolume,
+  normalizeTempUnit,
+  normalizeVolumeUnit,
+  tempCToDisplay,
+  tempSuffix,
+  volumeSuffix,
+} from "@/lib/notebook-units";
 import { NotebookHarvestWizard } from "@/components/notebooks/notebook-harvest-wizard";
 import { NotebookSettingsModal } from "@/components/notebooks/notebook-settings-modal";
 import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
@@ -41,6 +49,7 @@ type Week = {
   ec: string | null;
   ppm?: string | null;
   waterNotes?: string | null;
+  waterVolumeLiters?: string | null;
   lightCycle: string | null;
   imageUrls: string[];
   nutrients: WeekNut[];
@@ -67,6 +76,8 @@ export type NotebookDetailPayload = {
   /** ISO timestamp from API; used for first-run setup wizard cutoff. */
   createdAt?: string | null;
   setupWizardCompletedAt?: string | null;
+  preferredTempUnit?: string | null;
+  preferredVolumeUnit?: string | null;
   growthStage?: string;
   vegPhaseStartedAfterWeekIndex?: number | null;
   flowerPhaseStartedAfterWeekIndex?: number | null;
@@ -252,6 +263,8 @@ export function NotebookDetailClient({
   };
 
   const isOwner = viewerId === nb.ownerId;
+  const preferredTempUnit = normalizeTempUnit(nb.preferredTempUnit);
+  const preferredVolumeUnit = normalizeVolumeUnit(nb.preferredVolumeUnit);
   const strainLabel =
     nb.strain?.name?.trim() || nb.customStrainLabel?.trim() || null;
 
@@ -583,7 +596,10 @@ export function NotebookDetailClient({
                 ) : null}
                 <ul className="mt-2 text-xs text-[var(--gn-text-muted)]">
                   {w.tempC != null && w.tempC !== "" ? (
-                    <li>Temp: {w.tempC} °C</li>
+                    <li>
+                      Temp: {tempCToDisplay(preferredTempUnit, w.tempC)}{" "}
+                      {tempSuffix(preferredTempUnit)}
+                    </li>
                   ) : null}
                   {w.humidityPct != null && w.humidityPct !== "" ? (
                     <li>RH: {w.humidityPct}%</li>
@@ -591,9 +607,20 @@ export function NotebookDetailClient({
                   {w.ph != null && w.ph !== "" ? <li>pH: {w.ph}</li> : null}
                   {w.ec != null && w.ec !== "" ? <li>EC: {w.ec}</li> : null}
                   {w.ppm != null && w.ppm !== "" ? <li>PPM: {w.ppm}</li> : null}
+                  {w.waterVolumeLiters != null &&
+                  String(w.waterVolumeLiters).trim() !== "" ? (
+                    <li>
+                      Water / feed volume:{" "}
+                      {litersToDisplayVolume(
+                        preferredVolumeUnit,
+                        w.waterVolumeLiters,
+                      )}{" "}
+                      {volumeSuffix(preferredVolumeUnit)}
+                    </li>
+                  ) : null}
                   {w.waterNotes != null && w.waterNotes !== "" ? (
                     <li className="whitespace-pre-wrap">
-                      Water / feed: {w.waterNotes}
+                      Water / feed notes: {w.waterNotes}
                     </li>
                   ) : null}
                   {w.lightCycle ? <li>Light: {w.lightCycle}</li> : null}
@@ -699,6 +726,8 @@ export function NotebookDetailClient({
                 mode={weekWizardMode}
                 existingWeek={weekEditTarget}
                 nextWeekIndex={nextWeekIndex}
+                preferredTempUnit={preferredTempUnit}
+                preferredVolumeUnit={preferredVolumeUnit}
                 onClose={() => setWeekWizardOpen(false)}
                 onSaved={() => {
                   setWeekWizardOpen(false);

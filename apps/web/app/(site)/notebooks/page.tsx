@@ -15,18 +15,46 @@ type NotebookListItem = {
 };
 
 export const metadata: Metadata = {
-  title: `Notebooks · ${SITE_NAME}`,
+  title: `Grow diaries · ${SITE_NAME}`,
   description: `Public grow diaries on ${SITE_NAME}.`,
   alternates: { canonical: canonicalPath("/notebooks") },
 };
 
+function buildListQuery(opts: {
+  page: number;
+  pageSize: number;
+  status?: string;
+  q?: string;
+}): string {
+  const p = new URLSearchParams();
+  p.set("page", String(opts.page));
+  p.set("pageSize", String(opts.pageSize));
+  if (
+    opts.status === "active" ||
+    opts.status === "completed" ||
+    opts.status === "archived"
+  ) {
+    p.set("status", opts.status);
+  }
+  if (opts.q?.trim()) p.set("q", opts.q.trim());
+  return p.toString();
+}
+
 export default async function NotebooksDirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
 }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
+  const statusRaw = sp.status?.trim() ?? "";
+  const status =
+    statusRaw === "active" ||
+    statusRaw === "completed" ||
+    statusRaw === "archived"
+      ? statusRaw
+      : "";
+  const q = sp.q ?? "";
   let data: {
     items: NotebookListItem[];
     total: number;
@@ -34,19 +62,19 @@ export default async function NotebooksDirectoryPage({
     pageSize: number;
   };
   try {
-    data = await apiFetch<typeof data>(
-      `/notebooks?page=${page}&pageSize=24`,
-      { timeoutMs: 12_000 },
-    );
+    const qs = buildListQuery({ page, pageSize: 24, status, q });
+    data = await apiFetch<typeof data>(`/notebooks?${qs}`, {
+      timeoutMs: 12_000,
+    });
   } catch {
     data = { items: [], total: 0, page: 1, pageSize: 24 };
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-[var(--gn-text)]">Notebooks</h1>
+      <h1 className="text-2xl font-bold text-[var(--gn-text)]">Grow diaries</h1>
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Grow diaries shared by the community.
+        Public notebooks from growers who share their diaries.
       </p>
       <Link
         href="/notebooks/new"
@@ -54,6 +82,49 @@ export default async function NotebooksDirectoryPage({
       >
         Set up your notebook
       </Link>
+
+      <form
+        method="get"
+        className="mt-8 flex flex-col gap-4 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      >
+        <label className="block min-w-[12rem] flex-1 text-sm">
+          <span className="font-medium text-[var(--gn-text)]">Search</span>
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Title or strain…"
+            className="gn-input mt-1 w-full"
+            autoComplete="off"
+          />
+        </label>
+        <label className="block w-full text-sm sm:w-44">
+          <span className="font-medium text-[var(--gn-text)]">Status</span>
+          <select
+            name="status"
+            defaultValue={status}
+            className="gn-input mt-1 w-full"
+          >
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+          >
+            Apply filters
+          </button>
+          <Link
+            href="/notebooks"
+            className="rounded-full border border-[var(--gn-divide)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+          >
+            Clear
+          </Link>
+        </div>
+      </form>
 
       <ul className="mt-8 space-y-3">
         {data.items.map((n) => {
@@ -84,7 +155,12 @@ export default async function NotebooksDirectoryPage({
         <div className="mt-6 flex gap-4 text-sm">
           {data.page > 1 ? (
             <Link
-              href={`/notebooks?page=${data.page - 1}`}
+              href={`/notebooks?${buildListQuery({
+                page: data.page - 1,
+                pageSize: data.pageSize,
+                status,
+                q,
+              })}`}
               className="text-[#ff4500] hover:underline"
             >
               Previous
@@ -92,7 +168,12 @@ export default async function NotebooksDirectoryPage({
           ) : null}
           {data.page * data.pageSize < data.total ? (
             <Link
-              href={`/notebooks?page=${data.page + 1}`}
+              href={`/notebooks?${buildListQuery({
+                page: data.page + 1,
+                pageSize: data.pageSize,
+                status,
+                q,
+              })}`}
               className="text-[#ff4500] hover:underline"
             >
               Next

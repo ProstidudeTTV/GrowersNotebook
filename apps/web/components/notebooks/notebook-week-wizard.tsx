@@ -7,13 +7,36 @@ import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
 import { NotebookImagePickDropzone } from "@/components/notebook-image-pick-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
+import type { DosageUnit, TempUnit, VolumeUnit } from "@/lib/notebook-units";
+import {
+  DOSAGE_UNITS,
+  formatNutrientDosage,
+  isUuid,
+  litersToDisplayVolume,
+  parseDisplayTempToC,
+  parseDisplayVolumeToLiters,
+  parseNutrientDosage,
+  tempCToDisplay,
+  tempSuffix,
+  volumeSuffix,
+} from "@/lib/notebook-units";
 
 const STEPS = 5;
 const MAX_IMAGES = 8;
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
 
-type NutLine = { productId: string; customLabel: string; dosage: string };
+type NutLine = {
+  productId: string;
+  customLabel: string;
+  dosageAmount: string;
+  dosageUnit: DosageUnit;
+};
+
+const DOSAGE_AMOUNT_OPTS = Array.from({ length: 25 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}));
 
 function isHttpsImageUrl(s: string): boolean {
   const t = s.trim();
@@ -28,28 +51,55 @@ function isHttpsImageUrl(s: string): boolean {
 
 function linesFromWeek(w: WeekRow | null): NutLine[] {
   const list = w?.nutrients ?? [];
-  if (!list.length) return [{ productId: "", customLabel: "", dosage: "" }];
-  return list.map((n) => ({
-    productId: String((n as { productId?: string }).productId ?? ""),
-    customLabel: String((n as { customLabel?: string }).customLabel ?? ""),
-    dosage: String((n as { dosage?: string }).dosage ?? ""),
-  }));
+  if (!list.length)
+    return [
+      {
+        productId: "",
+        customLabel: "",
+        dosageAmount: "",
+        dosageUnit: "ml/L",
+      },
+    ];
+  return list.map((n) => {
+    const d = parseNutrientDosage(
+      String((n as { dosage?: string }).dosage ?? ""),
+    );
+    return {
+      productId: String((n as { productId?: string }).productId ?? ""),
+      customLabel: String((n as { customLabel?: string }).customLabel ?? ""),
+      dosageAmount: d.amount,
+      dosageUnit: d.unit,
+    };
+  });
 }
 
 function serializeNutrients(lines: NutLine[]) {
   return lines
-    .map((line, sortOrder) => ({
-      productId: line.productId.trim() ? line.productId.trim() : null,
-      customLabel: line.customLabel.trim() || null,
-      dosage: line.dosage.trim() || null,
-      sortOrder,
-    }))
-    .filter(
-      (l) =>
-        l.productId != null ||
-        (l.customLabel != null && l.customLabel !== "") ||
-        (l.dosage != null && l.dosage !== ""),
-    );
+    .map((line, sortOrder) => {
+      const customLabel = line.customLabel.trim() || null;
+      const dosage = formatNutrientDosage(
+        line.dosageAmount,
+        line.dosageUnit,
+      );
+      const row: {
+        productId?: string;
+        customLabel: string | null;
+        dosage: string | null;
+        sortOrder: number;
+      } = {
+        customLabel,
+        dosage,
+        sortOrder,
+      };
+      if (isUuid(line.productId)) row.productId = line.productId.trim();
+      return row;
+    })
+    .filter((l) => {
+      const hasP = typeof l.productId === "string" && l.productId.length > 0;
+      const hasL = l.customLabel != null && l.customLabel !== "";
+      const hasD = l.dosage != null && l.dosage !== "";
+      return hasP || hasL || hasD;
+    });
 }
 
 const inputClass =
@@ -63,6 +113,8 @@ export function NotebookWeekWizard({
   mode,
   existingWeek,
   nextWeekIndex,
+  preferredTempUnit,
+  preferredVolumeUnit,
   onClose,
   onSaved,
 }: {
@@ -71,6 +123,8 @@ export function NotebookWeekWizard({
   mode: "create" | "edit";
   existingWeek: WeekRow | null;
   nextWeekIndex: number;
+  preferredTempUnit: TempUnit;
+  preferredVolumeUnit: VolumeUnit;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -81,15 +135,16 @@ export function NotebookWeekWizard({
   const [weekIndex, setWeekIndex] = useState(nextWeekIndex);
   const [notes, setNotes] = useState("");
   const [copyNutrientsFromPreviousWeek, setCopyNutrients] = useState(false);
-  const [tempC, setTempC] = useState("");
+  const [tempInput, setTempInput] = useState("");
   const [humidityPct, setHumidityPct] = useState("");
   const [ph, setPh] = useState("");
   const [ec, setEc] = useState("");
   const [ppm, setPpm] = useState("");
   const [lightCycle, setLightCycle] = useState("");
   const [waterNotes, setWaterNotes] = useState("");
+  const [waterVolumeInput, setWaterVolumeInput] = useState("");
   const [nutrientLines, setNutrientLines] = useState<NutLine[]>([
-    { productId: "", customLabel: "", dosage: "" },
+    { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
   ]);
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -123,13 +178,19 @@ export function NotebookWeekWizard({
       setWeekIndex(w.weekIndex);
       setNotes(w.notes ?? "");
       setCopyNutrients(false);
-      setTempC(w.tempC ?? "");
+      setTempInput(tempCToDisplay(preferredTempUnit, w.tempC ?? null));
       setHumidityPct(w.humidityPct ?? "");
       setPh(w.ph ?? "");
       setEc(w.ec ?? "");
       setPpm(w.ppm ?? "");
       setLightCycle(w.lightCycle ?? "");
       setWaterNotes(w.waterNotes ?? "");
+      setWaterVolumeInput(
+        litersToDisplayVolume(
+          preferredVolumeUnit,
+          w.waterVolumeLiters ?? null,
+        ),
+      );
       setNutrientLines(linesFromWeek(w));
       const urls = (w.imageUrls ?? []).filter(Boolean);
       setImageUrls(urls.length ? urls : [""]);
@@ -137,17 +198,27 @@ export function NotebookWeekWizard({
       setWeekIndex(nextWeekIndex);
       setNotes("");
       setCopyNutrients(false);
-      setTempC("");
+      setTempInput("");
       setHumidityPct("");
       setPh("");
       setEc("");
       setPpm("");
       setLightCycle("");
       setWaterNotes("");
-      setNutrientLines([{ productId: "", customLabel: "", dosage: "" }]);
+      setWaterVolumeInput("");
+      setNutrientLines([
+        { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
+      ]);
       setImageUrls([""]);
     }
-  }, [open, mode, existingWeek, nextWeekIndex]);
+  }, [
+    open,
+    mode,
+    existingWeek,
+    nextWeekIndex,
+    preferredTempUnit,
+    preferredVolumeUnit,
+  ]);
 
   const stepTitle = [
     "Week & notes",
@@ -167,14 +238,28 @@ export function NotebookWeekWizard({
   function addNutrientLine() {
     setNutrientLines((prev) => [
       ...prev,
-      { productId: "", customLabel: "", dosage: "" },
+      {
+        productId: "",
+        customLabel: "",
+        dosageAmount: "",
+        dosageUnit: "ml/L",
+      },
     ]);
   }
 
   function removeNutrientLine(i: number) {
     setNutrientLines((prev) => {
       const next = prev.filter((_, j) => j !== i);
-      return next.length ? next : [{ productId: "", customLabel: "", dosage: "" }];
+      return next.length
+        ? next
+        : [
+            {
+              productId: "",
+              customLabel: "",
+              dosageAmount: "",
+              dosageUnit: "ml/L",
+            },
+          ];
     });
   }
 
@@ -216,13 +301,16 @@ export function NotebookWeekWizard({
 
       const shared = {
         notes: notes.trim() || null,
-        tempC: tempC.trim() || null,
+        tempC: parseDisplayTempToC(preferredTempUnit, tempInput),
         humidityPct: humidityPct.trim() || null,
         ph: ph.trim() || null,
         ec: ec.trim() || null,
         ppm: ppm.trim() || null,
         lightCycle: lightCycle.trim() || null,
         waterNotes: waterNotes.trim() || null,
+        waterVolumeLiters:
+          parseDisplayVolumeToLiters(preferredVolumeUnit, waterVolumeInput) ??
+          null,
         imageUrls: urls,
       };
 
@@ -324,11 +412,14 @@ export function NotebookWeekWizard({
               Room readings if you track them—all optional.
             </p>
             <div>
-              <label className={labelClass}>Temp °C</label>
+              <label className={labelClass}>
+                Temp ({tempSuffix(preferredTempUnit)})
+              </label>
               <input
                 className={`${inputClass} mt-1`}
-                value={tempC}
-                onChange={(e) => setTempC(e.target.value)}
+                value={tempInput}
+                onChange={(e) => setTempInput(e.target.value)}
+                inputMode="decimal"
               />
             </div>
             <div>
@@ -392,6 +483,23 @@ export function NotebookWeekWizard({
                 className={`${inputClass} mt-2`}
               />
             </div>
+            <div>
+              <label className={labelClass} htmlFor="nw-water-vol">
+                Total water / feed volume this week ({volumeSuffix(preferredVolumeUnit)})
+              </label>
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                Optional structured volume; notes above can still describe
+                timing and runoff.
+              </p>
+              <input
+                id="nw-water-vol"
+                className={`${inputClass} mt-2`}
+                value={waterVolumeInput}
+                onChange={(e) => setWaterVolumeInput(e.target.value)}
+                inputMode="decimal"
+                placeholder="e.g. 2.5"
+              />
+            </div>
             {mode === "create" ? (
               <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--gn-text)]">
                 <input
@@ -427,27 +535,9 @@ export function NotebookWeekWizard({
                       className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3"
                     >
                       <div className="grid gap-2 sm:grid-cols-3">
-                        <div className="sm:col-span-3">
-                          <label className="text-xs text-[var(--gn-text-muted)]">
-                            Product ID (optional UUID)
-                          </label>
-                          <input
-                            className={`${inputClass} mt-0.5`}
-                            value={line.productId}
-                            onChange={(e) =>
-                              setNutrientLines((prev) =>
-                                prev.map((l, j) =>
-                                  j === i
-                                    ? { ...l, productId: e.target.value }
-                                    : l,
-                                ),
-                              )
-                            }
-                          />
-                        </div>
                         <div className="sm:col-span-2">
                           <label className="text-xs text-[var(--gn-text-muted)]">
-                            Label
+                            Product label
                           </label>
                           <input
                             className={`${inputClass} mt-0.5`}
@@ -461,27 +551,60 @@ export function NotebookWeekWizard({
                                 ),
                               )
                             }
-                            placeholder="e.g. CalMag"
+                            placeholder="e.g. CalMag, Bloom A"
                           />
                         </div>
                         <div>
                           <label className="text-xs text-[var(--gn-text-muted)]">
-                            Dosage
+                            Amount (1–25)
                           </label>
-                          <input
+                          <select
                             className={`${inputClass} mt-0.5`}
-                            value={line.dosage}
+                            value={line.dosageAmount}
                             onChange={(e) =>
                               setNutrientLines((prev) =>
                                 prev.map((l, j) =>
                                   j === i
-                                    ? { ...l, dosage: e.target.value }
+                                    ? { ...l, dosageAmount: e.target.value }
                                     : l,
                                 ),
                               )
                             }
-                            placeholder="5 ml/gal"
-                          />
+                          >
+                            <option value="">—</option>
+                            {DOSAGE_AMOUNT_OPTS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="sm:col-span-3">
+                          <label className="text-xs text-[var(--gn-text-muted)]">
+                            Dosage unit
+                          </label>
+                          <select
+                            className={`${inputClass} mt-0.5`}
+                            value={line.dosageUnit}
+                            onChange={(e) =>
+                              setNutrientLines((prev) =>
+                                prev.map((l, j) =>
+                                  j === i
+                                    ? {
+                                        ...l,
+                                        dosageUnit: e.target.value as DosageUnit,
+                                      }
+                                    : l,
+                                ),
+                              )
+                            }
+                          >
+                            {DOSAGE_UNITS.map((u) => (
+                              <option key={u} value={u}>
+                                {u}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                       {nutrientLines.length > 1 ? (
@@ -577,7 +700,8 @@ export function NotebookWeekWizard({
                 Environment:
               </span>{" "}
               {[
-                tempC.trim() && `temp ${tempC.trim()}°C`,
+                tempInput.trim() &&
+                  `temp ${tempInput.trim()}${tempSuffix(preferredTempUnit)}`,
                 humidityPct.trim() && `RH ${humidityPct.trim()}%`,
                 ph.trim() && `pH ${ph.trim()}`,
                 ec.trim() && `EC ${ec.trim()}`,
@@ -591,9 +715,16 @@ export function NotebookWeekWizard({
               <span className="font-medium text-[var(--gn-text)]">
                 Water / feed:
               </span>{" "}
-              {waterNotes.trim()
-                ? `${waterNotes.trim().slice(0, 100)}${waterNotes.trim().length > 100 ? "…" : ""}`
-                : "—"}
+              {[
+                waterVolumeInput.trim() &&
+                  `vol ${waterVolumeInput.trim()} ${volumeSuffix(preferredVolumeUnit)}`,
+                waterNotes.trim()
+                  ? waterNotes.trim().slice(0, 100) +
+                    (waterNotes.trim().length > 100 ? "…" : "")
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
             </li>
             <li>
               <span className="font-medium text-[var(--gn-text)]">Photos:</span>{" "}

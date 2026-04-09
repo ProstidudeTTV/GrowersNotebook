@@ -35,6 +35,7 @@ import { NotebookSettingsModal } from "@/components/notebooks/notebook-settings-
 import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
 import { NotebookWeekSidebar } from "@/components/notebooks/notebook-week-sidebar";
 import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
+import { WeekNotesExpandable } from "@/components/notebooks/week-notes-expandable";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
 import type { PostMediaItem } from "@/lib/feed-post";
 
@@ -470,8 +471,8 @@ export function NotebookDetailClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-5">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-        <aside className="order-2 hidden w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-16 lg:z-10 xl:top-[4.5rem]">
-          <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto overflow-x-hidden rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
+        <aside className="order-2 hidden w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-20 lg:z-10 lg:max-h-[calc(min(100dvh,100vh)-5rem)] xl:top-24">
+          <div className="max-h-[min(calc(100dvh-5.5rem),calc(100vh-5.5rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
             <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="sidebar" />
           </div>
         </aside>
@@ -622,6 +623,7 @@ export function NotebookDetailClient({
             Growing setup
           </h2>
           <MetricGrid
+            metricsFlow="wrap"
             gridClass="grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
             items={[
               ...(nb.roomType
@@ -790,7 +792,16 @@ export function NotebookDetailClient({
 
               const showEnv = envItems.length > 0;
               const showFeed = feedItems.length > 0;
-              const envFeedPair = showEnv && showFeed;
+              const noteSpotsForExpandable = spots.map((s) => ({
+                body: s.body,
+                at: s.at,
+              }));
+              const weekBodyLgGrid =
+                showEnv && showFeed
+                  ? "lg:grid-cols-3"
+                  : showEnv || showFeed
+                    ? "lg:grid-cols-2"
+                    : "lg:grid-cols-1";
 
               return (
               <li
@@ -837,105 +848,79 @@ export function NotebookDetailClient({
                 </div>
 
                 <div
-                  className={
-                    hasNotes
-                      ? "mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.22fr)] lg:gap-x-6 lg:items-start"
-                      : "mt-2"
-                  }
+                  className={`mt-2 flex flex-col gap-4 lg:grid lg:items-start lg:gap-x-4 xl:gap-x-5 ${weekBodyLgGrid}`}
                 >
-                  {hasNotes ? (
+                  {showEnv ? (
                     <div className="min-w-0">
-                      <SectionCapsTitle underlined>
-                        {spots.length > 1
-                          ? `Updates (${spots.length})`
-                          : "Notes"}
-                      </SectionCapsTitle>
-                      <div
-                        className={
-                          spots.length > 1 ? "mt-2 space-y-2.5" : "mt-2 space-y-2"
-                        }
-                      >
-                        {spots.map((spot, idx) => (
-                          <div
-                            key={idx}
-                            className={
-                              idx > 0
-                                ? "border-t border-[var(--gn-divide)]/35 pt-2.5"
-                                : ""
-                            }
-                          >
-                            <time
-                              className="text-[10px] font-medium tabular-nums text-[var(--gn-text-muted)]"
-                              dateTime={spot.at}
-                            >
-                              {formatNotebookWeekInstant(spot.at)}
-                            </time>
-                            <p className="mt-0.5 whitespace-pre-wrap text-sm leading-snug text-[var(--gn-text)]">
-                              {spot.body}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
+                      <MetricGrid
+                        title="Environment"
+                        titleDivider
+                        metricsFlow="wrap"
+                        rootClassName="mt-0"
+                        items={envItems.map((x) => ({
+                          label: x.key,
+                          value: x.value,
+                        }))}
+                      />
                     </div>
                   ) : null}
 
-                  <div
-                    className={`min-w-0 ${hasNotes ? "mt-3 lg:mt-0 lg:border-l lg:border-[var(--gn-divide)]/30 lg:pl-5" : ""}`}
-                  >
-                    <div
-                      className={
-                        envFeedPair
-                          ? "grid gap-3 sm:gap-4 md:grid-cols-2 md:items-start"
-                          : "space-y-2"
-                      }
-                    >
-                      {showEnv ? (
-                        <MetricGrid
-                          title="Environment"
-                          titleDivider
-                          metricsFlow="wrap"
-                          rootClassName={envFeedPair ? "mt-0 sm:mt-0" : "mt-2"}
-                          items={envItems.map((x) => ({
-                            label: x.key,
-                            value: x.value,
-                          }))}
-                        />
-                      ) : null}
-                      {showFeed ? (
-                        <MetricGrid
-                          title="Feed & water"
-                          titleDivider
-                          rootClassName={envFeedPair ? "mt-0 sm:mt-0" : "mt-2"}
-                          gridClass="grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-2"
-                          items={feedItems}
-                        />
-                      ) : null}
-                    </div>
-
-                    {w.nutrients.length > 0 ? (
-                      <div className="mt-3">
-                        <SectionCapsTitle underlined>
-                          Nutrients
-                        </SectionCapsTitle>
-                        <ul className="mt-1.5 list-outside list-disc space-y-0.5 pl-5 text-sm leading-snug text-[var(--gn-text)]">
-                          {w.nutrients.map((x, i) => (
-                            <li key={i}>
-                              <span className="font-medium">
-                                {x.productName ?? x.customLabel ?? "—"}
-                              </span>
-                              {x.dosage ? (
-                                <span className="text-[var(--gn-text-muted)]">
-                                  {" "}
-                                  — {x.dosage}
-                                </span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
+                  <div className="min-w-0">
+                    {hasNotes ? (
+                      <WeekNotesExpandable
+                        title={
+                          <SectionCapsTitle underlined>
+                            {spots.length > 1
+                              ? `Updates (${spots.length})`
+                              : "Notes"}
+                          </SectionCapsTitle>
+                        }
+                        spots={noteSpotsForExpandable}
+                        formatInstant={formatNotebookWeekInstant}
+                      />
+                    ) : (
+                      <div>
+                        <SectionCapsTitle underlined>Notes</SectionCapsTitle>
+                        <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                          No notes for this week.
+                        </p>
                       </div>
-                    ) : null}
+                    )}
                   </div>
+
+                  {showFeed ? (
+                    <div className="min-w-0">
+                      <MetricGrid
+                        title="Feed & water"
+                        titleDivider
+                        rootClassName="mt-0"
+                        gridClass="grid-cols-1 gap-x-3 gap-y-2"
+                        items={feedItems}
+                      />
+                    </div>
+                  ) : null}
                 </div>
+
+                {w.nutrients.length > 0 ? (
+                  <div className="mt-3">
+                    <SectionCapsTitle underlined>Nutrients</SectionCapsTitle>
+                    <ul className="mt-1.5 list-outside list-disc space-y-0.5 pl-5 text-sm leading-snug text-[var(--gn-text)]">
+                      {w.nutrients.map((x, i) => (
+                        <li key={i}>
+                          <span className="font-medium">
+                            {x.productName ?? x.customLabel ?? "—"}
+                          </span>
+                          {x.dosage ? (
+                            <span className="text-[var(--gn-text-muted)]">
+                              {" "}
+                              — {x.dosage}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
 
                 {w.imageUrls?.length ? (
                   <div className="mt-2 overflow-hidden rounded-lg">

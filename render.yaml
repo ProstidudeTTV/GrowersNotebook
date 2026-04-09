@@ -62,6 +62,13 @@ services:
       # Baked into `next build` for metadata, auth redirects, and client-side canonical URLs.
       - key: NEXT_PUBLIC_SITE_URL
         value: https://growersnotebook.com
+      # Supabase browser client (Settings → API). Required at build time for NEXT_PUBLIC inlining.
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
       # Nest API origin (no trailing slash). Required for the app + dynamic sitemap entries.
       - key: NEXT_PUBLIC_API_URL
         sync: false

@@ -13,15 +13,14 @@
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
 #
-# --- Manual services: Render’s native build image already includes `pnpm` (no corepack/npx required).
-# If builds die in ~1s after switching to scripts, drop corepack — use `sh` + the scripts below.
+# --- Manual services: native image includes `pnpm`. Prefer Node entrypoints (no bash/sh):
 #
-# Web → Build Command:
-#   sh scripts/render-build-web.sh
-# API → Build Command:
-#   sh scripts/render-build-api.sh
+# Web → Build Command:  node scripts/render-build-web.mjs
+# API → Build Command:    node scripts/render-build-api.mjs
 #
-# One-liner alternatives (no corepack; same as scripts):
+# Fallback: sh scripts/render-build-web.sh  /  sh scripts/render-build-api.sh
+#
+# One-liner alternatives (no corepack; same as .mjs):
 # Web: export NPM_CONFIG_YES=true NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
 # API: export NPM_CONFIG_YES=true && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build
 #
@@ -44,7 +43,7 @@ services:
     plan: starter
     # Drizzle migrations run at every API boot via apps/api package.json start:prod (no Render pre-deploy UI needed).
     # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
-    buildCommand: sh scripts/render-build-api.sh
+    buildCommand: node scripts/render-build-api.mjs
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
@@ -61,7 +60,7 @@ services:
     region: oregon
     plan: starter
     # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
-    buildCommand: sh scripts/render-build-web.sh
+    buildCommand: node scripts/render-build-web.mjs
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:

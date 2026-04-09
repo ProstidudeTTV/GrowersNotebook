@@ -194,9 +194,9 @@ export class NotebooksService {
     const maxIdx = rows.length ? Math.max(...rows.map((r) => r.weekIndex)) : 0;
 
     if (nextStage === 'vegetation' && existing.growthStage === 'germination') {
-      if (rows.length < 2) {
+      if (rows.length < 1) {
         throw new BadRequestException(
-          'Add and save at least two germination weeks before starting vegetation.',
+          'Add and save at least one germination week before starting vegetation.',
         );
       }
       if (dto.vegPhaseStartedAfterWeekIndex !== maxIdx) {

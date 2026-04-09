@@ -21,7 +21,7 @@ export function vegetationWeekCount(nb: NotebookDetailPayload): number {
 
 export function showStartVegetation(nb: NotebookDetailPayload): boolean {
   const stage = nb.growthStage ?? "germination";
-  return stage === "germination" && nb.weeks.length >= 2;
+  return stage === "germination" && nb.weeks.length >= 1;
 }
 
 export function showStartFlowering(nb: NotebookDetailPayload): boolean {

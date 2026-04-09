@@ -575,8 +575,8 @@ export function NotebookDetailClient({
                     Ready for vegetation?
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--gn-text-muted)]">
-                    You&apos;ve logged two germination weeks. Continue to
-                    vegetation to track the next phase.
+                    You&apos;ve logged a germination week. Continue to vegetation
+                    to track the next phase.
                   </p>
                   <button
                     type="button"

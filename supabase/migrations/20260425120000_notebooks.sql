@@ -1,4 +1,4 @@
--- Mirrored from apps/api/drizzle/0020_notebooks.sql — NOTEBOOK grow diary + nutrients + profile toggle
+-- Keep in sync with apps/api/drizzle/0020_notebooks.sql — NOTEBOOK grow diary + nutrients + profile toggle
 DO $t$ BEGIN
   CREATE TYPE "public"."notebook_status" AS ENUM('active', 'completed', 'archived');
 EXCEPTION

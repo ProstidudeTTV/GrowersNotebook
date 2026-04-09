@@ -3,7 +3,8 @@ FROM node:20.18.1-bookworm-slim
 WORKDIR /app
 
 ENV NPM_CONFIG_YES=true
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+# corepack + pnpm fails on node:bookworm-slim in Render's Docker build; use npm -g.
+RUN npm install -g pnpm@9.15.9
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps ./apps

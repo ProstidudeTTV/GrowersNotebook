@@ -1,6 +1,6 @@
 /**
- * Render API build. Linux/Render: /bin/sh + npx pnpm.
- * Dashboard: node scripts/render-build-api.mjs (or npm run render:build:api)
+ * Render API build. Linux/Render: same as `sh scripts/render-build-api.sh` — image `pnpm`, no npx.
+ * Dashboard: node scripts/render-build-api.mjs | npm run render:build:api | sh scripts/render-build-api.sh
  */
 import { spawnSync } from "node:child_process";
 
@@ -23,7 +23,7 @@ if (process.platform === "win32") {
   runNpxPnpm(["install", "--frozen-lockfile"], { NODE_ENV: "development" });
   runNpxPnpm(["--filter", "@growers/api", "build"], {});
 } else {
-  const line = `NODE_ENV=development npx --yes pnpm@9.15.9 install --frozen-lockfile && npx --yes pnpm@9.15.9 --filter @growers/api build`;
+  const line = `NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build`;
   const result = spawnSync(line, {
     shell: "/bin/sh",
     stdio: "inherit",

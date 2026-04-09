@@ -1,4 +1,4 @@
-# One-time / on-demand: PATCH Render web+api Build Command to node scripts/render-build-*.mjs
+# One-time / on-demand: PATCH Render web+api Build Commands to sh scripts/render-build-*.sh
 # (MCP cannot update services.) Add repo secret RENDER_API_KEY (rnd_…), then run this workflow.
 name: Render — apply notebook build commands
 on:

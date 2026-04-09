@@ -13,13 +13,13 @@
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
 #
-# --- Manual services: use `node` for Build Command (avoids npm-run quirks in some Render images):
+# --- Manual services: prefer `sh` + image `pnpm` (Render native env). Avoid npx/corepack in
+# Build Command — they have failed in under a second on this project.
 #
-# Web → Build Command:  node scripts/render-build-web.mjs
-# API → Build Command:  node scripts/render-build-api.mjs
+# Web → Build Command:  sh scripts/render-build-web.sh
+# API → Build Command:  sh scripts/render-build-api.sh
 #
-# Equivalent: npm run render:build:web  /  npm run render:build:api (root package.json)
-# Shell fallback: sh scripts/render-build-web.sh  /  sh scripts/render-build-api.sh
+# Equivalent: node scripts/render-build-*.mjs | npm run render:build:* (mjs runs the same pnpm lines on Linux)
 #
 # One-liner alternatives (no corepack; same as .mjs):
 # Web: export NPM_CONFIG_YES=true NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
@@ -61,7 +61,7 @@ services:
     region: oregon
     plan: starter
     # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
-    buildCommand: node scripts/render-build-web.mjs
+    buildCommand: sh scripts/render-build-web.sh
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:

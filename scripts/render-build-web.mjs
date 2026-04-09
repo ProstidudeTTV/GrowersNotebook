@@ -1,6 +1,8 @@
 /**
- * Render web build. Linux/Render: /bin/sh + npx pnpm (no bare pnpm; no bash).
- * Dashboard Build Command: node scripts/render-build-web.mjs (or npm run render:build:web)
+ * Render web build. Linux/Render: same as `sh scripts/render-build-web.sh` — image `pnpm`, no npx.
+ * (npx/corepack can exit almost immediately on some Render builders; see repo history.)
+ * Windows: npx pnpm@9.15.9 for local parity without a global pnpm install.
+ * Dashboard: node scripts/render-build-web.mjs | npm run render:build:web | sh scripts/render-build-web.sh
  */
 import { spawnSync } from "node:child_process";
 
@@ -30,7 +32,7 @@ if (process.platform === "win32") {
     NEXT_PUBLIC_APP_BUILD_ID: sha,
   });
 } else {
-  const line = `export NEXT_PUBLIC_APP_BUILD_ID="${sha}" && NODE_ENV=development npx --yes pnpm@9.15.9 install --frozen-lockfile && NODE_ENV=production npx --yes pnpm@9.15.9 --filter @growers/web build`;
+  const line = `export NEXT_PUBLIC_APP_BUILD_ID="${sha}" && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build`;
   const result = spawnSync(line, {
     shell: "/bin/sh",
     stdio: "inherit",

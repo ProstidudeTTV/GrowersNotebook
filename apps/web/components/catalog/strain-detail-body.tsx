@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CatalogStrainBreederLink } from "@/components/catalog/catalog-strain-breeder-link";
 import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
 import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
@@ -180,13 +181,24 @@ export async function StrainDetailBody({
         {s.breeder && breederHref ? (
           <p className="text-sm text-[var(--gn-text-muted)]">
             Breeder:{" "}
-            <Link
-              href={breederHref}
-              scroll={false}
-              className="font-medium text-[#ff6a38] hover:underline"
-            >
-              {s.breeder.name}
-            </Link>
+            {listPreview ? (
+              <Link
+                href={breederHref}
+                scroll={false}
+                className="font-medium text-[#ff6a38] hover:underline"
+              >
+                {s.breeder.name}
+              </Link>
+            ) : (
+              <CatalogStrainBreederLink
+                href={breederHref}
+                strainSlug={s.slug}
+                breederSlug={s.breeder.slug}
+                className="font-medium text-[#ff6a38] hover:underline"
+              >
+                {s.breeder.name}
+              </CatalogStrainBreederLink>
+            )}
           </p>
         ) : null}
       </header>

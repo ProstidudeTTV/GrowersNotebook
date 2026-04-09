@@ -7,33 +7,26 @@ import {
   STRAINS_BREEDER_MODAL_RETURN_KEY,
 } from "@/components/catalog/breeder-modal-return";
 
-/**
- * When opening an intercepted `/breeders/[slug]` panel from the filtered strains
- * banner, remember the catalog list URL so closing the panel can `replace` there
- * instead of `history.back()` (which can skip past the filter or jump to notebook).
- */
-export function StrainsBreederFilterLink({
+/** Navigates to filtered strains and records return target for breeder panel dismiss. */
+export function BreederStrainsCatalogLink({
   breederSlug,
-  returnHref,
-  children,
   className,
+  children,
 }: {
   breederSlug: string;
-  /** Full path + query for the current strains list view (built on the server). */
-  returnHref: string;
-  children: ReactNode;
   className?: string;
+  children: ReactNode;
 }) {
-  const href = `/breeders/${encodeURIComponent(breederSlug)}`;
+  const href = `/strains?breederSlug=${encodeURIComponent(breederSlug)}`;
   const payload: BreederModalReturnPayload = {
     mode: "catalog-filter",
-    href: returnHref,
+    href,
     breederSlug,
   };
-
   return (
     <Link
       href={href}
+      replace
       scroll={false}
       className={className}
       onClick={() => {

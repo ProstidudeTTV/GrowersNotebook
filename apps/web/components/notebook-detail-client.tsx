@@ -137,7 +137,7 @@ function SectionCapsTitle({
 }) {
   return (
     <p
-      className={`${sectionCapsClass} w-fit max-w-full ${
+      className={`${sectionCapsClass} inline-block w-fit max-w-full ${
         underlined
           ? "border-b border-[var(--gn-divide)]/45 pb-1.5"
           : ""
@@ -155,6 +155,7 @@ function MetricGrid({
   items,
   metricsFlow = "grid",
   gridClass = "grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4",
+  rootClassName = "mt-2",
 }: {
   /** Omit when the parent heading already names the section (e.g. Growing setup). */
   title?: string;
@@ -164,11 +165,12 @@ function MetricGrid({
   metricsFlow?: "grid" | "wrap";
   items: { label: string; value: ReactNode; wide?: boolean }[];
   gridClass?: string;
+  rootClassName?: string;
 }) {
   if (!items.length) return null;
   const isWrap = metricsFlow === "wrap";
   return (
-    <div className="mt-2">
+    <div className={rootClassName}>
       {title ? (
         <SectionCapsTitle underlined={titleDivider}>{title}</SectionCapsTitle>
       ) : null}
@@ -763,14 +765,41 @@ export function NotebookDetailClient({
                 });
               }
 
+              const feedItems: {
+                label: string;
+                value: ReactNode;
+                wide?: boolean;
+              }[] = [];
+              if (feedLineItems.length > 0) {
+                feedItems.push({
+                  label: "Water / feed volume",
+                  value: feedLineItems[0].value,
+                });
+              }
+              if (w.waterNotes != null && w.waterNotes !== "") {
+                feedItems.push({
+                  label: "Water / feed notes",
+                  value: (
+                    <span className="whitespace-pre-wrap font-normal">
+                      {w.waterNotes}
+                    </span>
+                  ),
+                  wide: true,
+                });
+              }
+
+              const showEnv = envItems.length > 0;
+              const showFeed = feedItems.length > 0;
+              const envFeedPair = showEnv && showFeed;
+
               return (
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
                 className={`scroll-mt-20 rounded-lg px-3 py-2 sm:px-3.5 sm:py-2.5 ${phaseClass}`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-1.5">
-                  <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="w-fit max-w-[min(100%,42rem)] min-w-0 border-b border-[var(--gn-divide)]/40 pb-1.5">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
                       <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
                         Week {w.weekIndex}
@@ -810,7 +839,7 @@ export function NotebookDetailClient({
                 <div
                   className={
                     hasNotes
-                      ? "mt-2 lg:grid lg:grid-cols-2 lg:gap-x-5 lg:items-start"
+                      ? "mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.22fr)] lg:gap-x-6 lg:items-start"
                       : "mt-2"
                   }
                 >
@@ -851,59 +880,44 @@ export function NotebookDetailClient({
                   ) : null}
 
                   <div
-                    className={`min-w-0 space-y-1 ${hasNotes ? "mt-3 lg:mt-0" : ""}`}
+                    className={`min-w-0 ${hasNotes ? "mt-3 lg:mt-0 lg:border-l lg:border-[var(--gn-divide)]/30 lg:pl-5" : ""}`}
                   >
-                    {envItems.length > 0 ? (
-                      <MetricGrid
-                        title="Environment"
-                        titleDivider
-                        metricsFlow="wrap"
-                        items={envItems.map((x) => ({
-                          label: x.key,
-                          value: x.value,
-                        }))}
-                      />
-                    ) : null}
-
-                    {(() => {
-                      const feedItems: {
-                        label: string;
-                        value: ReactNode;
-                        wide?: boolean;
-                      }[] = [];
-                      if (feedLineItems.length > 0) {
-                        feedItems.push({
-                          label: "Water / feed volume",
-                          value: feedLineItems[0].value,
-                        });
+                    <div
+                      className={
+                        envFeedPair
+                          ? "grid gap-3 sm:gap-4 md:grid-cols-2 md:items-start"
+                          : "space-y-2"
                       }
-                      if (w.waterNotes != null && w.waterNotes !== "") {
-                        feedItems.push({
-                          label: "Water / feed notes",
-                          value: (
-                            <span className="whitespace-pre-wrap font-normal">
-                              {w.waterNotes}
-                            </span>
-                          ),
-                          wide: true,
-                        });
-                      }
-                      return feedItems.length > 0 ? (
+                    >
+                      {showEnv ? (
+                        <MetricGrid
+                          title="Environment"
+                          titleDivider
+                          metricsFlow="wrap"
+                          rootClassName={envFeedPair ? "mt-0 sm:mt-0" : "mt-2"}
+                          items={envItems.map((x) => ({
+                            label: x.key,
+                            value: x.value,
+                          }))}
+                        />
+                      ) : null}
+                      {showFeed ? (
                         <MetricGrid
                           title="Feed & water"
                           titleDivider
+                          rootClassName={envFeedPair ? "mt-0 sm:mt-0" : "mt-2"}
                           gridClass="grid-cols-1 gap-x-3 gap-y-2 sm:grid-cols-2"
                           items={feedItems}
                         />
-                      ) : null;
-                    })()}
+                      ) : null}
+                    </div>
 
                     {w.nutrients.length > 0 ? (
-                      <div className="mt-2">
+                      <div className="mt-3">
                         <SectionCapsTitle underlined>
                           Nutrients
                         </SectionCapsTitle>
-                        <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm leading-snug text-[var(--gn-text)]">
+                        <ul className="mt-1.5 list-outside list-disc space-y-0.5 pl-5 text-sm leading-snug text-[var(--gn-text)]">
                           {w.nutrients.map((x, i) => (
                             <li key={i}>
                               <span className="font-medium">

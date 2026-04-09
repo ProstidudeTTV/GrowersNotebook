@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BreederStrainsCatalogLink } from "@/components/catalog/breeder-strains-catalog-link";
 import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
 import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
@@ -159,8 +160,6 @@ export async function BreederDetailBody({
       ? breederPreviewPath(b.slug, listPreview, reviewsPage, srp)
       : `/breeders/${encodeURIComponent(b.slug)}?strainReviewsPage=${srp}${reviewsPage > 1 ? `&reviewsPage=${reviewsPage}` : ""}`;
 
-  const strainsFromBreederHref = `/strains?breederSlug=${encodeURIComponent(b.slug)}`;
-
   const breedersCrumb =
     variant === "page" ? (
       <Link href="/breeders" className="text-[#ff6a38] hover:underline">
@@ -234,14 +233,12 @@ export async function BreederDetailBody({
             </p>
           ) : null}
           <p className="text-sm">
-            <Link
-              href={strainsFromBreederHref}
-              replace
-              scroll={false}
+            <BreederStrainsCatalogLink
+              breederSlug={b.slug}
               className="font-medium text-[#ff6a38] hover:underline"
             >
               Strains from this breeder
-            </Link>
+            </BreederStrainsCatalogLink>
           </p>
         </aside>
       </div>

@@ -2,16 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import {
+  breederSlugsMatch,
+  type BreederModalReturnPayload,
+  STRAINS_BREEDER_MODAL_RETURN_KEY,
+} from "@/components/catalog/breeder-modal-return";
 import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
-import { STRAINS_BREEDER_MODAL_RETURN_KEY } from "@/components/catalog/strains-breeder-filter-link";
-
-type StoredReturn = { href: string; breederSlug: string };
 
 /**
- * Intercepted `/breeders/[slug]` modal. When opened from the strains catalog
- * filter banner, we store the return URL in sessionStorage so dismiss uses
- * `replace` back to `/strains?breederSlug=…` instead of `history.back()`
- * (which can pop past the filtered list).
+ * Intercepted `/breeders/[slug]` modal. Prefers `sessionStorage` so dismiss uses
+ * `replace` back to the strains catalog (filtered list or strain detail) instead
+ * of `history.back()` (which can return to notebook after a long chain).
  */
 export function CatalogInterceptBreederModal({
   children,
@@ -31,10 +32,11 @@ export function CatalogInterceptBreederModal({
     const raw = sessionStorage.getItem(STRAINS_BREEDER_MODAL_RETURN_KEY);
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as StoredReturn;
+        const parsed = JSON.parse(raw) as BreederModalReturnPayload;
         if (
-          typeof parsed?.href === "string" &&
-          parsed.breederSlug === breederSlug
+          (parsed.mode === "catalog-filter" || parsed.mode === "strain-detail") &&
+          typeof parsed.href === "string" &&
+          breederSlugsMatch(parsed.breederSlug, breederSlug)
         ) {
           sessionStorage.removeItem(STRAINS_BREEDER_MODAL_RETURN_KEY);
           router.replace(parsed.href, { scroll: false });

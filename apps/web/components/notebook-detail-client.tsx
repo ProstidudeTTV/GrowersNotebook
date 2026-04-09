@@ -140,6 +140,42 @@ function weekImagesAsPostMedia(urls: string[] | undefined): PostMediaItem[] {
     .map((url) => ({ url, type: "image" as const }));
 }
 
+/** Compact “label value · label value” row for week logs (no stat boxes). */
+function WeekMetricRow({
+  label,
+  items,
+}: {
+  label: string;
+  items: { key: string; value: ReactNode }[];
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="mt-2">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+        {label}
+      </p>
+      <p className="mt-1 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-xs leading-snug text-[var(--gn-text)]">
+        {items.map((item, i) => (
+          <span key={item.key} className="inline-flex items-baseline gap-0.5">
+            {i > 0 ? (
+              <span
+                className="mx-1 select-none text-[var(--gn-text-muted)]/35"
+                aria-hidden
+              >
+                ·
+              </span>
+            ) : null}
+            <span className="text-[var(--gn-text-muted)]">{item.key}</span>
+            <span className="font-medium tabular-nums text-[var(--gn-text)]">
+              {item.value}
+            </span>
+          </span>
+        ))}
+      </p>
+    </div>
+  );
+}
+
 export function NotebookDetailClient({
   initial,
   openSetupGuide = false,
@@ -591,19 +627,66 @@ export function NotebookDetailClient({
             No weekly entries yet.
           </p>
         ) : (
-          <ul className="mt-3 space-y-4">
+          <ul className="mt-3 space-y-3">
             {nb.weeks.map((w) => {
               const phase = weekLogPhase(nb, w.weekIndex);
               const phaseClass = weekPhaseCardClass(phase);
+              const envItems: { key: string; value: ReactNode }[] = [];
+              if (w.tempC != null && w.tempC !== "") {
+                envItems.push({
+                  key: "Temp",
+                  value: (
+                    <>
+                      {tempCToDisplay(preferredTempUnit, w.tempC)}{" "}
+                      {tempSuffix(preferredTempUnit)}
+                    </>
+                  ),
+                });
+              }
+              if (w.humidityPct != null && w.humidityPct !== "") {
+                envItems.push({
+                  key: "RH",
+                  value: `${w.humidityPct}%`,
+                });
+              }
+              if (w.ph != null && w.ph !== "") {
+                envItems.push({ key: "pH", value: w.ph });
+              }
+              if (w.ec != null && w.ec !== "") {
+                envItems.push({ key: "EC", value: w.ec });
+              }
+              if (w.ppm != null && w.ppm !== "") {
+                envItems.push({ key: "PPM", value: w.ppm });
+              }
+
+              const feedLineItems: { key: string; value: ReactNode }[] = [];
+              if (
+                w.waterVolumeLiters != null &&
+                String(w.waterVolumeLiters).trim() !== ""
+              ) {
+                feedLineItems.push({
+                  key: "Volume",
+                  value: (
+                    <>
+                      {litersToDisplayVolume(
+                        preferredVolumeUnit,
+                        w.waterVolumeLiters,
+                      )}{" "}
+                      {volumeSuffix(preferredVolumeUnit)}
+                    </>
+                  ),
+                });
+              }
+
               return (
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className={`scroll-mt-20 rounded-lg p-3 sm:p-3.5 ${phaseClass}`}
+                className={`scroll-mt-20 rounded-lg px-3 py-2.5 sm:px-3.5 sm:py-3 ${phaseClass}`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <p className="text-sm font-semibold text-[var(--gn-text)]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-2">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                    <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
                       Week {w.weekIndex}
                     </p>
                     <span className="text-[10px] font-medium text-[var(--gn-text-muted)]">
@@ -618,124 +701,48 @@ export function NotebookDetailClient({
                         setWeekEditTarget(w);
                         setWeekWizardOpen(true);
                       }}
-                      className="text-xs font-medium text-emerald-500 hover:underline"
+                      className="text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
                     >
                       Edit week
                     </button>
                   ) : null}
                 </div>
-                {w.notes ? (
-                  <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+
+                {w.notes?.trim() ? (
+                  <div className="mt-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
                       Notes
                     </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
                       {w.notes}
                     </p>
                   </div>
                 ) : null}
-                {(() => {
-                  const envTiles: { label: string; node: ReactNode }[] = [];
-                  if (w.tempC != null && w.tempC !== "") {
-                    envTiles.push({
-                      label: "Temp",
-                      node: (
-                        <>
-                          {tempCToDisplay(preferredTempUnit, w.tempC)}{" "}
-                          {tempSuffix(preferredTempUnit)}
-                        </>
-                      ),
-                    });
-                  }
-                  if (w.humidityPct != null && w.humidityPct !== "") {
-                    envTiles.push({
-                      label: "Humidity",
-                      node: `${w.humidityPct}% RH`,
-                    });
-                  }
-                  if (w.ph != null && w.ph !== "") {
-                    envTiles.push({ label: "pH", node: w.ph });
-                  }
-                  if (w.ec != null && w.ec !== "") {
-                    envTiles.push({ label: "EC", node: w.ec });
-                  }
-                  if (w.ppm != null && w.ppm !== "") {
-                    envTiles.push({ label: "PPM / TDS", node: w.ppm });
-                  }
-                  const feedTiles: { label: string; node: ReactNode }[] = [];
-                  if (
-                    w.waterVolumeLiters != null &&
-                    String(w.waterVolumeLiters).trim() !== ""
-                  ) {
-                    feedTiles.push({
-                      label: "Water / feed volume",
-                      node: (
-                        <>
-                          {litersToDisplayVolume(
-                            preferredVolumeUnit,
-                            w.waterVolumeLiters,
-                          )}{" "}
-                          {volumeSuffix(preferredVolumeUnit)}
-                        </>
-                      ),
-                    });
-                  }
-                  if (w.waterNotes != null && w.waterNotes !== "") {
-                    feedTiles.push({
-                      label: "Water / feed notes",
-                      node: (
-                        <span className="whitespace-pre-wrap font-normal">
-                          {w.waterNotes}
-                        </span>
-                      ),
-                    });
-                  }
-                  const hasMetrics = envTiles.length > 0 || feedTiles.length > 0;
-                  if (!hasMetrics) return null;
-                  return (
-                    <div className="mt-2 space-y-2">
-                      {envTiles.length > 0 ? (
-                        <div>
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-                            Environment
-                          </p>
-                          <div className="mt-1 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
-                            {envTiles.map((t) => (
-                              <StatTile key={t.label} label={t.label}>
-                                {t.node}
-                              </StatTile>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      {feedTiles.length > 0 ? (
-                        <div>
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-                            Feed &amp; water
-                          </p>
-                          <div className="mt-1 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                            {feedTiles.map((t) => (
-                              <StatTile key={t.label} label={t.label}>
-                                {t.node}
-                              </StatTile>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })()}
+
+                <WeekMetricRow label="Environment" items={envItems} />
+
+                {feedLineItems.length > 0 ? (
+                  <WeekMetricRow label="Feed & water" items={feedLineItems} />
+                ) : null}
+                {w.waterNotes != null && w.waterNotes !== "" ? (
+                  <div className="mt-1.5 sm:mt-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                      Water notes
+                    </p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
+                      {w.waterNotes}
+                    </p>
+                  </div>
+                ) : null}
+
                 {w.nutrients.length > 0 ? (
-                  <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 px-2 py-1.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  <div className="mt-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
                       Nutrients
                     </p>
-                    <ul className="mt-1 space-y-1 text-xs text-[var(--gn-text)]">
+                    <ul className="mt-1 space-y-0.5 text-xs text-[var(--gn-text)]">
                       {w.nutrients.map((x, i) => (
-                        <li
-                          key={i}
-                          className="flex flex-wrap gap-x-2 gap-y-0.5 border-b border-[var(--gn-divide)]/60 pb-1.5 last:border-0 last:pb-0"
-                        >
+                        <li key={i} className="flex flex-wrap gap-x-2">
                           <span className="font-medium">
                             {x.productName ?? x.customLabel ?? "—"}
                           </span>
@@ -749,8 +756,9 @@ export function NotebookDetailClient({
                     </ul>
                   </div>
                 ) : null}
+
                 {w.imageUrls?.length ? (
-                  <div className="mt-3">
+                  <div className="mt-2.5 overflow-hidden rounded-lg">
                     <PostMediaCarousel
                       embedded
                       items={weekImagesAsPostMedia(w.imageUrls)}

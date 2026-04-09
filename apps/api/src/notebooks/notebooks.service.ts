@@ -491,6 +491,15 @@ export class NotebooksService {
         status: dto.status ?? 'active',
       })
       .returning();
+
+    await this.createWeek(row.id, ownerId, {
+      weekIndex: 1,
+      notes: null,
+      imageUrls: [],
+      copyNutrientsFromPreviousWeek: false,
+      nutrients: [],
+    }, false);
+
     return row;
   }
 
@@ -548,6 +557,18 @@ export class NotebooksService {
     }
     if (dto.harvestQualityNotes !== undefined) {
       patch.harvestQualityNotes = dto.harvestQualityNotes?.trim() || null;
+    }
+    if (dto.roomType !== undefined) {
+      patch.roomType = dto.roomType ?? null;
+    }
+    if (dto.wateringType !== undefined) {
+      patch.wateringType = dto.wateringType ?? null;
+    }
+    if (dto.startType !== undefined) {
+      patch.startType = dto.startType ?? null;
+    }
+    if (dto.setupNotes !== undefined) {
+      patch.setupNotes = dto.setupNotes?.trim() || null;
     }
 
     const merged = { ...existing, ...patch };

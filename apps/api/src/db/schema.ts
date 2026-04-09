@@ -37,6 +37,25 @@ export const notebookStatusEnum = pgEnum('notebook_status', [
   'archived',
 ]);
 
+export const notebookRoomTypeEnum = pgEnum('notebook_room_type', [
+  'indoor',
+  'outdoor',
+  'greenhouse',
+]);
+
+export const notebookWateringTypeEnum = pgEnum('notebook_watering_type', [
+  'manual',
+  'drip',
+  'hydro',
+  'aeroponic',
+]);
+
+export const notebookStartTypeEnum = pgEnum('notebook_start_type', [
+  'seed',
+  'clone',
+  'seedling',
+]);
+
 /** Drizzle pgEnum helper type for suggestion kinds */
 export type CatalogSuggestionKind =
   (typeof catalogSuggestionKindEnum.enumValues)[number];
@@ -657,6 +676,11 @@ export const notebooks = pgTable(
       scale: 3,
     }),
     harvestQualityNotes: text('harvest_quality_notes'),
+    roomType: notebookRoomTypeEnum('room_type'),
+    wateringType: notebookWateringTypeEnum('watering_type'),
+    startType: notebookStartTypeEnum('start_type'),
+    /** Tent, lights, medium, etc. */
+    setupNotes: text('setup_notes'),
     /** Derived on save: harvest_dry_weight_g / total_light_watts */
     gPerWatt: numeric('g_per_watt', { precision: 14, scale: 6 }),
     /** Derived: g_per_watt / plant_count when both set */

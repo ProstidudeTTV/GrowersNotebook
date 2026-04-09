@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Checkbox,
+  Collapse,
+  Divider,
   Form,
   Input,
   InputNumber,
@@ -15,6 +17,7 @@ import {
   Typography,
 } from "antd";
 import { apiFetch } from "@/lib/api-public";
+import { NotebookStrainFields } from "@/components/notebook-strain-fields";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
@@ -25,6 +28,25 @@ const STATUSES = [
   { value: "active", label: "Active" },
   { value: "completed", label: "Completed" },
   { value: "archived", label: "Archived" },
+];
+
+const ROOM_OPTIONS = [
+  { value: "indoor", label: "Indoor" },
+  { value: "outdoor", label: "Outdoor" },
+  { value: "greenhouse", label: "Greenhouse" },
+];
+
+const WATERING_OPTIONS = [
+  { value: "manual", label: "Manual" },
+  { value: "drip", label: "Drip" },
+  { value: "hydro", label: "Hydro" },
+  { value: "aeroponic", label: "Aeroponic" },
+];
+
+const START_OPTIONS = [
+  { value: "seed", label: "Seed / germination" },
+  { value: "clone", label: "Clone" },
+  { value: "seedling", label: "Seedling" },
 ];
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
@@ -42,6 +64,15 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
     "copyNutrientsFromPreviousWeek",
     weekForm,
   );
+
+  const strainDisplaySeed = useMemo(() => {
+    if (!notebook) return "";
+    return (
+      notebook.strain?.name?.trim() ||
+      notebook.customStrainLabel?.trim() ||
+      ""
+    );
+  }, [notebook]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +99,10 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
         status: data.status,
         plantCount: data.plantCount,
         totalLightWatts: data.totalLightWatts ?? "",
+        roomType: data.roomType ?? undefined,
+        wateringType: data.wateringType ?? undefined,
+        startType: data.startType ?? undefined,
+        setupNotes: data.setupNotes ?? "",
         harvestDryWeightG: data.harvestDryWeightG ?? "",
         harvestQualityNotes: data.harvestQualityNotes ?? "",
       });
@@ -97,12 +132,21 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
         status: v.status,
         plantCount: v.plantCount ?? null,
         totalLightWatts: v.totalLightWatts?.trim() || null,
+        roomType: v.roomType ?? null,
+        wateringType: v.wateringType ?? null,
+        startType: v.startType ?? null,
+        setupNotes: v.setupNotes?.trim() || null,
         harvestDryWeightG: v.harvestDryWeightG?.trim() || null,
         harvestQualityNotes: v.harvestQualityNotes?.trim() || null,
       }),
     });
     await load();
   };
+
+  const harvestPanelOpenDefault =
+    notebook?.status === "completed" ||
+    !!notebook?.harvestDryWeightG?.toString().trim() ||
+    !!notebook?.harvestQualityNotes?.toString().trim();
 
   const openNewWeek = () => {
     setEditingWeek(null);
@@ -237,42 +281,73 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
       </div>
 
       <Form form={form} layout="vertical" className="mt-6" onFinish={() => void saveNotebook()}>
+        <Text strong className="block text-[var(--gn-text)]">
+          Basics
+        </Text>
         <Form.Item name="title" label="Title" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="strainId" label="Strain ID (catalog uuid)">
-          <Input />
-        </Form.Item>
-        <Form.Item name="customStrainLabel" label="Custom strain label">
-          <Input />
-        </Form.Item>
+        <NotebookStrainFields displaySeed={`${notebookId}:${strainDisplaySeed}`} />
         <Form.Item name="status" label="Status">
           <Select options={STATUSES} />
         </Form.Item>
-        <Form.Item name="plantCount" label="Plant count">
+
+        <Divider />
+        <Text strong className="block text-[var(--gn-text)]">
+          Growing setup
+        </Text>
+        <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+          Tent, lights, medium, and environment—document how you run this grow.
+        </p>
+        <Form.Item
+          name="roomType"
+          label="Room type"
+          tooltip="Where the grow runs: indoor tent, outdoor, or greenhouse."
+        >
+          <Select allowClear placeholder="Select…" options={ROOM_OPTIONS} />
+        </Form.Item>
+        <Form.Item
+          name="wateringType"
+          label="Watering / irrigation"
+          tooltip="How water and feed reach the plants."
+        >
+          <Select allowClear placeholder="Select…" options={WATERING_OPTIONS} />
+        </Form.Item>
+        <Form.Item
+          name="startType"
+          label="How you started"
+          tooltip="Seeds, clones, or seedlings when this notebook began—matches a first-week story."
+        >
+          <Select allowClear placeholder="Select…" options={START_OPTIONS} />
+        </Form.Item>
+        <Form.Item
+          name="plantCount"
+          label="Plant count"
+          tooltip="Number of plants in this run; used with harvest for g/W per plant."
+        >
           <InputNumber min={0} className="w-full" />
         </Form.Item>
-        <Form.Item name="totalLightWatts" label="Total light watts">
+        <Form.Item
+          name="totalLightWatts"
+          label="Total light (watts)"
+          tooltip="Combined draw of grow lighting for efficiency (g/W) after harvest."
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="harvestDryWeightG" label="Harvest dry weight (g)">
-          <Input />
+        <Form.Item
+          name="setupNotes"
+          label="Setup notes"
+          tooltip="Tent size, lights, fans, substrate, nutrients line—anything helpful for readers."
+        >
+          <Input.TextArea rows={4} placeholder="Describe your setup…" />
         </Form.Item>
-        <Form.Item name="harvestQualityNotes" label="Harvest quality">
-          <Input.TextArea rows={3} />
-        </Form.Item>
-        <Text type="secondary" className="mb-2 block">
-          g/W: {notebook.gPerWatt ?? "—"} · g/W/plant:{" "}
-          {notebook.gPerWattPerPlant ?? "—"}
-        </Text>
-        <Button type="primary" htmlType="submit">
-          Save notebook
-        </Button>
-      </Form>
 
-      <div className="mt-8">
+        <Divider />
+        <Text strong className="mb-2 block text-[var(--gn-text)]">
+          Weekly log
+        </Text>
         <div className="mb-2 flex items-center justify-between">
-          <Text strong>Weeks</Text>
+          <Text type="secondary">Week-by-week conditions and notes</Text>
           <Button type="default" onClick={openNewWeek}>
             Add week
           </Button>
@@ -282,6 +357,7 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
           dataSource={notebook.weeks}
           pagination={false}
           size="small"
+          className="mb-6"
           onRow={(record) => ({
             onClick: () => openEditWeek(record),
           })}
@@ -306,7 +382,47 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
             )}
           />
         </Table>
-      </div>
+
+        <Collapse
+          defaultActiveKey={harvestPanelOpenDefault ? ["harvest"] : []}
+          items={[
+            {
+              key: "harvest",
+              label: "Harvest and efficiency",
+              children: (
+                <>
+                  <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+                    Add this when you finish—or update dry weight and quality
+                    after your final trim. Not needed while the grow is early.
+                  </p>
+                  <Form.Item
+                    name="harvestDryWeightG"
+                    label="Harvest dry weight (g)"
+                    tooltip="Cured dry weight. You can save early and update later."
+                  >
+                    <Input />
+                  </Form.Item>
+                  <Form.Item
+                    name="harvestQualityNotes"
+                    label="Harvest quality"
+                    tooltip="Density, smell, trim notes, or anything about the finished product."
+                  >
+                    <Input.TextArea rows={3} />
+                  </Form.Item>
+                  <Text type="secondary" className="mb-2 block">
+                    g/W: {notebook.gPerWatt ?? "—"} · g/W/plant:{" "}
+                    {notebook.gPerWattPerPlant ?? "—"}
+                  </Text>
+                </>
+              ),
+            },
+          ]}
+        />
+
+        <Button type="primary" htmlType="submit" className="mt-6">
+          Save notebook
+        </Button>
+      </Form>
 
       <Modal
         title={editingWeek ? `Week ${editingWeek.weekIndex}` : "New week"}
@@ -321,6 +437,7 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
             name="weekIndex"
             label="Week #"
             rules={[{ required: !editingWeek }]}
+            tooltip="Sequential week of this grow; Week 1 is often germination or early veg."
           >
             <InputNumber min={1} className="w-full" disabled={!!editingWeek} />
           </Form.Item>
@@ -332,28 +449,56 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
               <Checkbox>Copy nutrients from previous week</Checkbox>
             </Form.Item>
           ) : null}
-          <Form.Item name="notes" label="Notes">
+          <Form.Item
+            name="notes"
+            label="Notes"
+            tooltip="What you did this week and how plants look."
+          >
             <Input.TextArea rows={4} />
           </Form.Item>
-          <Form.Item name="tempC" label="Temp °C">
+          <Form.Item
+            name="tempC"
+            label="Temp °C"
+            tooltip="Air or canopy temperature if you track it."
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="humidityPct" label="Humidity %">
+          <Form.Item
+            name="humidityPct"
+            label="Humidity %"
+            tooltip="Relative humidity in the grow space."
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="ph" label="pH">
+          <Form.Item name="ph" label="pH" tooltip="Solution or runoff pH if measured.">
             <Input />
           </Form.Item>
-          <Form.Item name="ec" label="EC">
+          <Form.Item
+            name="ec"
+            label="EC"
+            tooltip="Electrical conductivity of feed water (nutrient strength)."
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="lightCycle" label="Light cycle">
+          <Form.Item
+            name="lightCycle"
+            label="Light cycle"
+            tooltip="Hours on/off, e.g. 18/6 for veg or 12/12 for flower."
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="imageUrlsText" label="Image URLs (line break)">
+          <Form.Item
+            name="imageUrlsText"
+            label="Image URLs (line break)"
+            tooltip="One HTTPS image URL per line for this week."
+          >
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="nutrientsJson" label="Nutrients JSON">
+          <Form.Item
+            name="nutrientsJson"
+            label="Nutrients JSON"
+            tooltip='Array of lines: productId (uuid or null), customLabel, dosage, sortOrder. Example: [{"productId":null,"customLabel":"CalMag","dosage":"5ml/gal","sortOrder":0}]'
+          >
             <Input.TextArea
               rows={5}
               disabled={!editingWeek && !!copyPrevWatch}

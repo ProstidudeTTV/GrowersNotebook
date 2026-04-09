@@ -46,6 +46,10 @@ export type NotebookDetailPayload = {
   harvestQualityNotes: string | null;
   gPerWatt: string | null;
   gPerWattPerPlant: string | null;
+  roomType?: string | null;
+  wateringType?: string | null;
+  startType?: string | null;
+  setupNotes?: string | null;
   score: number;
   upvotes: number;
   downvotes: number;
@@ -225,21 +229,33 @@ export function NotebookDetailClient({
         </div>
       </div>
 
-      {(nb.harvestDryWeightG ||
+      {(nb.roomType ||
+        nb.wateringType ||
+        nb.startType ||
+        nb.setupNotes?.trim() ||
         nb.plantCount != null ||
-        nb.totalLightWatts ||
-        nb.harvestQualityNotes) && (
+        nb.totalLightWatts) && (
         <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
           <h2 className="text-sm font-semibold text-[var(--gn-text)]">
-            Harvest
+            Growing setup
           </h2>
           <dl className="mt-2 grid gap-1 text-sm text-[var(--gn-text-muted)]">
-            {nb.harvestDryWeightG ? (
+            {nb.roomType ? (
               <div>
-                Dry weight:{" "}
-                <span className="text-[var(--gn-text)]">
-                  {nb.harvestDryWeightG} g
-                </span>
+                Room:{" "}
+                <span className="text-[var(--gn-text)]">{nb.roomType}</span>
+              </div>
+            ) : null}
+            {nb.wateringType ? (
+              <div>
+                Watering:{" "}
+                <span className="text-[var(--gn-text)]">{nb.wateringType}</span>
+              </div>
+            ) : null}
+            {nb.startType ? (
+              <div>
+                Started from:{" "}
+                <span className="text-[var(--gn-text)]">{nb.startType}</span>
               </div>
             ) : null}
             {nb.plantCount != null ? (
@@ -253,6 +269,29 @@ export function NotebookDetailClient({
                 Light:{" "}
                 <span className="text-[var(--gn-text)]">
                   {nb.totalLightWatts} W
+                </span>
+              </div>
+            ) : null}
+            {nb.setupNotes?.trim() ? (
+              <p className="mt-2 whitespace-pre-wrap text-[var(--gn-text)]">
+                {nb.setupNotes}
+              </p>
+            ) : null}
+          </dl>
+        </section>
+      )}
+
+      {(nb.harvestDryWeightG || nb.harvestQualityNotes) && (
+        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+          <h2 className="text-sm font-semibold text-[var(--gn-text)]">
+            Harvest
+          </h2>
+          <dl className="mt-2 grid gap-1 text-sm text-[var(--gn-text-muted)]">
+            {nb.harvestDryWeightG ? (
+              <div>
+                Dry weight:{" "}
+                <span className="text-[var(--gn-text)]">
+                  {nb.harvestDryWeightG} g
                 </span>
               </div>
             ) : null}

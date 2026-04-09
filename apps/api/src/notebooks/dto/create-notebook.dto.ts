@@ -10,6 +10,9 @@ import {
 } from 'class-validator';
 
 const STATUSES = ['active', 'completed', 'archived'] as const;
+const ROOM_TYPES = ['indoor', 'outdoor', 'greenhouse'] as const;
+const WATERING_TYPES = ['manual', 'drip', 'hydro', 'aeroponic'] as const;
+const START_TYPES = ['seed', 'clone', 'seedling'] as const;
 
 export class CreateNotebookDto {
   @IsString()
@@ -78,4 +81,21 @@ export class UpdateNotebookDto {
   @IsString()
   @MaxLength(2000)
   harvestQualityNotes?: string | null;
+
+  @IsOptional()
+  @IsIn([...ROOM_TYPES])
+  roomType?: (typeof ROOM_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsIn([...WATERING_TYPES])
+  wateringType?: (typeof WATERING_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsIn([...START_TYPES])
+  startType?: (typeof START_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  setupNotes?: string | null;
 }

@@ -247,22 +247,25 @@ export default async function NotebooksDirectoryPage({
                 n.strain?.name?.trim() ||
                 n.customStrainLabel?.trim() ||
                 null;
+              const notebookHref = `/notebooks/${encodeURIComponent(n.id)}`;
               return (
                 <li key={n.id}>
-                  <article className="rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-4 shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
-                    <div className="flex gap-3 sm:gap-4">
+                  <article className="group relative rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-4 shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
+                    <Link
+                      href={notebookHref}
+                      className="absolute inset-0 z-10 rounded-2xl outline-none ring-[#ff4500] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
+                      aria-label={`Open notebook: ${n.title}`}
+                    />
+                    <div className="pointer-events-none relative z-20 flex gap-3 sm:gap-4">
                       <NotebookCardAvatar
                         avatarUrl={n.owner.avatarUrl}
                         displayName={n.owner.displayName}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
-                          <Link
-                            href={`/notebooks/${encodeURIComponent(n.id)}`}
-                            className="text-base font-semibold text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
-                          >
+                          <p className="text-base font-semibold text-[var(--gn-text)] transition-colors group-hover:text-[#ff5414]">
                             {n.title}
-                          </Link>
+                          </p>
                           <span
                             className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ${statusPillClass(n.status)}`}
                           >
@@ -272,7 +275,7 @@ export default async function NotebooksDirectoryPage({
                         <p className="mt-1.5 text-sm text-[var(--gn-text-muted)]">
                           <Link
                             href={`/u/${encodeURIComponent(n.owner.id)}`}
-                            className="font-medium text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
+                            className="relative z-30 inline pointer-events-auto font-medium text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
                           >
                             {growerName}
                           </Link>
@@ -282,7 +285,7 @@ export default async function NotebooksDirectoryPage({
                               {n.strain?.slug ? (
                                 <Link
                                   href={`/strains/${encodeURIComponent(n.strain.slug)}`}
-                                  className="hover:text-[#ff5414] hover:underline"
+                                  className="relative z-30 inline pointer-events-auto hover:text-[#ff5414] hover:underline"
                                 >
                                   {strainLabel}
                                 </Link>
@@ -296,7 +299,7 @@ export default async function NotebooksDirectoryPage({
                               {" · "}
                               <Link
                                 href={`/breeders/${encodeURIComponent(n.breeder.slug)}`}
-                                className="hover:text-[#ff5414] hover:underline"
+                                className="relative z-30 inline pointer-events-auto hover:text-[#ff5414] hover:underline"
                               >
                                 {n.breeder.name}
                               </Link>
@@ -367,7 +370,7 @@ export default async function NotebooksDirectoryPage({
               What are notebooks?
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
-              Notebooks are structured grow diaries: one plant (or run), weekly
+              Notebooks are structured logs: one plant (or run), weekly
               checkpoints, environment and feeding notes, and a timeline you
               (and the community) can follow from seed to harvest.
             </p>

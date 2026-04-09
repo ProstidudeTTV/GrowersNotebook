@@ -164,8 +164,8 @@ export function NotebookSetupWizard({
           </p>
         </div>
 
-        {step === 1 ? (
-          <div className="space-y-2">
+        {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
+        <div className={step === 1 ? "space-y-2" : "hidden"} aria-hidden={step !== 1}>
             <p className="text-sm text-[var(--gn-text-muted)]">
               Name this grow. Optional free-text strain label below—catalog
               linking stays as-is unless you clear it in Details later.
@@ -184,11 +184,9 @@ export function NotebookSetupWizard({
             >
               <Input placeholder="e.g. Blue Dream" />
             </Form.Item>
-          </div>
-        ) : null}
+        </div>
 
-        {step === 2 ? (
-          <div className="space-y-1">
+        <div className={step === 2 ? "space-y-1" : "hidden"} aria-hidden={step !== 2}>
             <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
               How you run this grow helps others compare setups. You can change
               this anytime under Details on your notebook page.
@@ -226,11 +224,9 @@ export function NotebookSetupWizard({
             <Form.Item name="totalLightWatts" label="Total light (watts)">
               <Input placeholder="Optional — for g/W after harvest" />
             </Form.Item>
-          </div>
-        ) : null}
+        </div>
 
-        {step === 3 ? (
-          <div>
+        <div className={step === 3 ? "" : "hidden"} aria-hidden={step !== 3}>
             <label className="block text-sm font-semibold text-[var(--gn-text)]">
               Setup notes
             </label>
@@ -245,11 +241,12 @@ export function NotebookSetupWizard({
                 className="mt-3"
               />
             </Form.Item>
-          </div>
-        ) : null}
+        </div>
 
-        {step === 4 ? (
-          <div className="space-y-3 text-sm">
+        <div
+          className={step === 4 ? "space-y-3 text-sm" : "hidden"}
+          aria-hidden={step !== 4}
+        >
             <h3 className="font-semibold text-[var(--gn-text)]">
               Ready to save?
             </h3>
@@ -266,8 +263,7 @@ export function NotebookSetupWizard({
             >
               Skip and finish later (only dismisses this guide)
             </button>
-          </div>
-        ) : null}
+        </div>
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
 

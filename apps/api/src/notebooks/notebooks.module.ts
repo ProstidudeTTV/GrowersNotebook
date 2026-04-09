@@ -12,7 +12,7 @@ import { NotebooksService } from './notebooks.service';
   imports: [
     ConfigModule,
     forwardRef(() => CatalogModule),
-    AuthModule,
+    forwardRef(() => AuthModule),
     forwardRef(() => ProfilesModule),
   ],
   controllers: [NotebooksController, AdminNotebooksController],

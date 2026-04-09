@@ -13,9 +13,16 @@ COPY scripts ./scripts
 ARG RENDER_GIT_COMMIT=dev
 ENV NEXT_PUBLIC_APP_BUILD_ID=${RENDER_GIT_COMMIT}
 
-# Install devDependencies too (Next/Tailwind/TS live in devDeps). Render injects
-# NEXT_PUBLIC_* and other env at build when marked available for builds.
+# Install devDependencies too (Next/Tailwind/TS live in devDeps).
 RUN NODE_ENV=development pnpm install --frozen-lockfile
+
+# Render passes service env as `docker build --build-arg`. Next inlines NEXT_PUBLIC_*
+# at compile time — without ARG here, those values never reach `next build`.
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 RUN NODE_ENV=production pnpm --filter @growers/web build
 

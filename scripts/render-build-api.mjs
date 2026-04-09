@@ -1,22 +1,37 @@
 /**
- * Render API build without bash/sh.
- * Dashboard Build Command: node scripts/render-build-api.mjs
+ * Render API build. Linux/Render: /bin/sh + npx pnpm.
+ * Dashboard: npm run render:build:api
  */
 import { spawnSync } from "node:child_process";
 
-function run(cmd, args, extraEnv) {
-  const result = spawnSync(cmd, args, {
+const pnpmArgs = ["--yes", "pnpm@9.15.9"];
+
+function runNpxPnpm(npmArgs, extraEnv) {
+  const result = spawnSync("npx", pnpmArgs.concat(npmArgs), {
     stdio: "inherit",
-    env: { ...process.env, ...extraEnv },
     shell: process.platform === "win32",
+    env: { ...process.env, NPM_CONFIG_YES: "true", ...extraEnv },
   });
   if (result.error) {
     console.error(result.error);
     process.exit(1);
   }
-  const code = result.status;
-  if (code !== 0) process.exit(code == null ? 1 : code);
+  if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-run("pnpm", ["install", "--frozen-lockfile"], { NODE_ENV: "development" });
-run("pnpm", ["--filter", "@growers/api", "build"], {});
+if (process.platform === "win32") {
+  runNpxPnpm(["install", "--frozen-lockfile"], { NODE_ENV: "development" });
+  runNpxPnpm(["--filter", "@growers/api", "build"], {});
+} else {
+  const line = `NODE_ENV=development npx --yes pnpm@9.15.9 install --frozen-lockfile && npx --yes pnpm@9.15.9 --filter @growers/api build`;
+  const result = spawnSync(line, {
+    shell: "/bin/sh",
+    stdio: "inherit",
+    env: { ...process.env, NPM_CONFIG_YES: "true" },
+  });
+  if (result.error) {
+    console.error(result.error);
+    process.exit(1);
+  }
+  process.exit(result.status === null ? 1 : result.status);
+}

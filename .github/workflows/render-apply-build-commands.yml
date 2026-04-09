@@ -1,0 +1,17 @@
+# One-time / on-demand: PATCH Render web+api Build Command to npm run render:build:*
+# (MCP cannot update services.) Add repo secret RENDER_API_KEY (rnd_…), then run this workflow.
+name: Render — apply notebook build commands
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: PATCH growers-notebook services
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: node scripts/render-patch-notebook-services.mjs

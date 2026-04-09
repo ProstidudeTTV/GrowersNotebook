@@ -1,4 +1,4 @@
-import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
+import { CatalogInterceptStrainModal } from "@/components/catalog/catalog-intercept-strain-modal";
 import { StrainDetailBody } from "@/components/catalog/strain-detail-body";
 
 export default async function StrainModalPage({
@@ -15,12 +15,12 @@ export default async function StrainModalPage({
   const strainPath = `/strains/${encodeURIComponent(safe)}`;
 
   return (
-    <CatalogDetailModal fullPageHref={strainPath}>
+    <CatalogInterceptStrainModal fullPageHref={strainPath}>
       <StrainDetailBody
         slug={safe}
         reviewsPage={reviewsPage}
         variant="modal"
       />
-    </CatalogDetailModal>
+    </CatalogInterceptStrainModal>
   );
 }

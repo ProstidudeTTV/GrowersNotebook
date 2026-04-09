@@ -236,6 +236,7 @@ export async function BreederDetailBody({
           <p className="text-sm">
             <Link
               href={strainsFromBreederHref}
+              replace
               scroll={false}
               className="font-medium text-[#ff6a38] hover:underline"
             >

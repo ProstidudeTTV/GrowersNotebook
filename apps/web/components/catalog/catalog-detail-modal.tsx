@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export function CatalogDetailModal({
   children,
@@ -18,8 +18,24 @@ export function CatalogDetailModal({
   onClose?: () => void;
 }) {
   const router = useRouter();
-  const defaultClose = useCallback(() => router.back(), [router]);
-  const close = onClose ?? defaultClose;
+  const dismissBusy = useRef(false);
+
+  const defaultClose = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const close = useCallback(() => {
+    if (dismissBusy.current) return;
+    dismissBusy.current = true;
+    try {
+      if (onClose) onClose();
+      else defaultClose();
+    } finally {
+      window.setTimeout(() => {
+        dismissBusy.current = false;
+      }, 400);
+    }
+  }, [onClose, defaultClose]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -19,6 +19,7 @@ function CatalogListPreviewOverlayInner({
     const p = new URLSearchParams(searchParams.toString());
     p.delete("detail");
     p.delete("reviewsPage");
+    p.delete("strainReviewsPage");
     const s = p.toString();
     router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
   }, [router, pathname, searchParams]);

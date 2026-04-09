@@ -6,7 +6,6 @@ import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
-import { NotebookStrainFields } from "@/components/notebook-strain-fields";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
 
 const STEPS = 4;
@@ -30,15 +29,6 @@ const START_OPTIONS = [
   { value: "seedling", label: "Seedling" },
 ];
 
-function strainSeed(nb: NotebookDetailPayload): string {
-  return (
-    nb.strain?.name?.trim() ||
-    nb.customStrainLabel?.trim() ||
-    nb.title?.trim() ||
-    ""
-  );
-}
-
 export function NotebookSetupWizard({
   open,
   notebook,
@@ -56,18 +46,12 @@ export function NotebookSetupWizard({
   const [error, setError] = useState<string | null>(null);
   const titleWatch = Form.useWatch("title", form);
 
-  const displaySeed = useMemo(
-    () => `${notebook.id}:${strainSeed(notebook)}`,
-    [notebook],
-  );
-
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setError(null);
     form.setFieldsValue({
       title: notebook.title,
-      strainId: notebook.strainId ?? "",
       customStrainLabel: notebook.customStrainLabel ?? "",
       roomType: notebook.roomType ?? undefined,
       wateringType: notebook.wateringType ?? undefined,
@@ -110,7 +94,6 @@ export function NotebookSetupWizard({
       }
       await patchBody({
         title,
-        strainId: v.strainId?.trim() ? v.strainId.trim() : null,
         customStrainLabel: v.customStrainLabel?.trim() || null,
         roomType: v.roomType ?? null,
         wateringType: v.wateringType ?? null,
@@ -143,18 +126,15 @@ export function NotebookSetupWizard({
     }
   }
 
-  const stepTitle = [
-    "Title & strain",
-    "Grow setup",
-    "Setup notes",
-    "Publish",
-  ][step - 1];
+  const stepTitle = ["Title", "Grow setup", "Setup notes", "Publish"][
+    step - 1
+  ];
 
   return (
     <NotebookCenteredModal
       open={open}
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-xl"
+      maxWidthClassName="max-w-4xl"
       title="Set up your notebook"
     >
       <Form form={form} layout="vertical" className="px-4 py-4">
@@ -177,8 +157,8 @@ export function NotebookSetupWizard({
         {step === 1 ? (
           <div className="space-y-2">
             <p className="text-sm text-[var(--gn-text-muted)]">
-              Name this grow and link a catalog strain if you have one—readers
-              can jump to the strain page from your diary.
+              Name this grow. Optional free-text strain label below—catalog
+              linking stays as-is unless you clear it in Details later.
             </p>
             <Form.Item
               name="title"
@@ -187,7 +167,13 @@ export function NotebookSetupWizard({
             >
               <Input placeholder="e.g. Blue Dream — spring 2026" />
             </Form.Item>
-            <NotebookStrainFields displaySeed={displaySeed} />
+            <Form.Item
+              name="customStrainLabel"
+              label="Strain label (optional)"
+              tooltip="Plain label on the diary; use Details if you need to change catalog link."
+            >
+              <Input placeholder="e.g. Blue Dream" />
+            </Form.Item>
           </div>
         ) : null}
 
@@ -195,7 +181,7 @@ export function NotebookSetupWizard({
           <div className="space-y-1">
             <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
               How you run this grow helps others compare setups. You can change
-              this anytime on the edit page.
+              this anytime under Details on your notebook page.
             </p>
             <Form.Item name="roomType" label="Room type">
               <Select allowClear placeholder="Select…" options={ROOM_OPTIONS} />
@@ -244,9 +230,9 @@ export function NotebookSetupWizard({
               Ready to save?
             </h3>
             <p className="text-[var(--gn-text-muted)]">
-              This stores your answers on the notebook. You can keep editing the
-              full form anytime; weekly logs use a separate step-by-step flow
-              when you add a week.
+              This saves your answers. You can update details anytime from{" "}
+              <strong className="text-[var(--gn-text)]">Details</strong> on this
+              page; weekly entries use <strong>Add week</strong>.
             </p>
             <button
               type="button"

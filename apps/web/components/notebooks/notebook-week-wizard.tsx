@@ -262,7 +262,7 @@ export function NotebookWeekWizard({
       open={open}
       title={title}
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-xl"
+      maxWidthClassName="max-w-4xl"
     >
       <div className="px-4 py-4">
         <div className="mb-4">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VoteFeedPill } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import {
@@ -12,7 +12,19 @@ import {
 } from "@/lib/vote-ui";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
-import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth";
+import {
+  GROWTH_STAGE_LABEL,
+  maxNotebookWeekIndex,
+  showHarvestPanel,
+  showStartFlowering,
+  showStartVegetation,
+} from "@/lib/notebook-growth";
+import { needsNotebookSetupWizard } from "@/lib/notebook-wizard";
+import { NotebookHarvestWizard } from "@/components/notebooks/notebook-harvest-wizard";
+import { NotebookSettingsModal } from "@/components/notebooks/notebook-settings-modal";
+import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
+import { NotebookWeekSidebar } from "@/components/notebooks/notebook-week-sidebar";
+import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
 
 type WeekNut = {
   customLabel: string | null;
@@ -83,6 +95,8 @@ type NbComment = {
   };
 };
 
+type WeekRow = NotebookDetailPayload["weeks"][number];
+
 export function NotebookDetailClient({
   initial,
 }: {
@@ -96,9 +110,45 @@ export function NotebookDetailClient({
   const [commentBody, setCommentBody] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
 
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false);
+  const setupAutoOpenedRef = useRef(false);
+  const [weekWizardOpen, setWeekWizardOpen] = useState(false);
+  const [weekWizardMode, setWeekWizardMode] = useState<"create" | "edit">(
+    "create",
+  );
+  const [weekEditTarget, setWeekEditTarget] = useState<WeekRow | null>(null);
+  const [harvestWizardOpen, setHarvestWizardOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const reloadNotebook = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      const data = await apiFetch<NotebookDetailPayload>(`/notebooks/${nb.id}`, {
+        token: token ?? undefined,
+      });
+      setNb(data);
+    } catch {
+      /* ignore */
+    }
+  }, [nb.id]);
+
   useEffect(() => {
     setNb(initial);
   }, [initial]);
+
+  useEffect(() => {
+    setupAutoOpenedRef.current = false;
+    setSetupWizardOpen(false);
+  }, [initial.id]);
+
+  useEffect(() => {
+    if (setupAutoOpenedRef.current) return;
+    if (needsNotebookSetupWizard(nb)) {
+      setupAutoOpenedRef.current = true;
+      setSetupWizardOpen(true);
+    }
+  }, [nb]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -192,61 +242,177 @@ export function NotebookDetailClient({
   const strainLabel =
     nb.strain?.name?.trim() || nb.customStrainLabel?.trim() || null;
 
+  const nextWeekIndex = useMemo(() => {
+    if (!nb.weeks?.length) return 1;
+    return Math.max(...nb.weeks.map((w) => w.weekIndex)) + 1;
+  }, [nb.weeks]);
+
+  const transitionToVegetation = async () => {
+    const supabase = createClient();
+    const token = await getAccessTokenForApi(supabase);
+    if (!token) return;
+    const m = maxNotebookWeekIndex(nb.weeks);
+    await apiFetch(`/notebooks/${nb.id}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({
+        growthStage: "vegetation",
+        vegPhaseStartedAfterWeekIndex: m,
+      }),
+    });
+    await reloadNotebook();
+  };
+
+  const transitionToFlowering = async () => {
+    const supabase = createClient();
+    const token = await getAccessTokenForApi(supabase);
+    if (!token) return;
+    const m = maxNotebookWeekIndex(nb.weeks);
+    await apiFetch(`/notebooks/${nb.id}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({
+        growthStage: "flower",
+        flowerPhaseStartedAfterWeekIndex: m,
+      }),
+    });
+    await reloadNotebook();
+  };
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex gap-4">
-        <VoteFeedPill
-          score={nb.score}
-          upvotes={nb.upvotes}
-          downvotes={nb.downvotes}
-          viewerVote={nb.viewerVote}
-          onUp={() => void vote(1)}
-          onDown={() => void vote(-1)}
-          disabled={voteBusy}
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-            {nb.title}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-            <Link
-              href={`/u/${encodeURIComponent(nb.ownerId)}`}
-              className="text-[#ff4500] hover:underline"
-            >
-              {nb.owner.displayName?.trim() || "Grower"}
-            </Link>
-            {strainLabel ? ` · ${strainLabel}` : ""}
-            {nb.growthStage ? (
-              <>
-                {" "}
-                ·{" "}
-                <span className="text-[var(--gn-text)]">
-                  {GROWTH_STAGE_LABEL[nb.growthStage] ?? nb.growthStage}
-                </span>
-              </>
-            ) : null}
-            {nb.strain?.slug ? (
-              <>
-                {" "}
-                <Link
-                  href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
-                  className="text-[#ff4500] hover:underline"
-                >
-                  (catalog)
-                </Link>
-              </>
-            ) : null}
-          </p>
-          {isOwner ? (
-            <Link
-              href={`/notebooks/${encodeURIComponent(nb.id)}/edit`}
-              className="mt-3 inline-block text-sm font-medium text-[#ff4500] hover:underline"
-            >
-              Edit notebook
-            </Link>
-          ) : null}
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        <aside className="order-2 hidden w-52 shrink-0 lg:order-1 lg:block">
+          <div className="sticky top-20 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+            <NotebookWeekSidebar weeks={nb.weeks} variant="sidebar" />
+          </div>
+        </aside>
+
+        <div className="order-1 min-w-0 flex-1 lg:order-2">
+          <div className="flex gap-4">
+            <VoteFeedPill
+              score={nb.score}
+              upvotes={nb.upvotes}
+              downvotes={nb.downvotes}
+              viewerVote={nb.viewerVote}
+              onUp={() => void vote(1)}
+              onDown={() => void vote(-1)}
+              disabled={voteBusy}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h1 className="text-2xl font-bold text-[var(--gn-text)]">
+                    {nb.title}
+                  </h1>
+                  <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                    <Link
+                      href={`/u/${encodeURIComponent(nb.ownerId)}`}
+                      className="text-[#ff4500] hover:underline"
+                    >
+                      {nb.owner.displayName?.trim() || "Grower"}
+                    </Link>
+                    {strainLabel ? ` · ${strainLabel}` : ""}
+                    {nb.growthStage ? (
+                      <>
+                        {" "}
+                        ·{" "}
+                        <span className="text-[var(--gn-text)]">
+                          {GROWTH_STAGE_LABEL[nb.growthStage] ?? nb.growthStage}
+                        </span>
+                      </>
+                    ) : null}
+                    {nb.strain?.slug ? (
+                      <>
+                        {" "}
+                        <Link
+                          href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
+                          className="text-[#ff4500] hover:underline"
+                        >
+                          (catalog)
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                {isOwner ? (
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    {showHarvestPanel(nb) ? (
+                      <button
+                        type="button"
+                        onClick={() => setHarvestWizardOpen(true)}
+                        className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                      >
+                        Harvest log
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setSettingsOpen(true)}
+                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                    >
+                      Details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWeekWizardMode("create");
+                        setWeekEditTarget(null);
+                        setWeekWizardOpen(true);
+                      }}
+                      className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+                    >
+                      Add week
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              {isOwner && showStartVegetation(nb) ? (
+                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
+                  <p className="text-sm font-medium text-[var(--gn-text)]">
+                    Ready for vegetation?
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                    You&apos;ve logged two germination weeks. Continue to
+                    vegetation to track the next phase.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void transitionToVegetation()}
+                    className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                  >
+                    Start vegetation
+                  </button>
+                </div>
+              ) : null}
+
+              {isOwner && showStartFlowering(nb) ? (
+                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
+                  <p className="text-sm font-medium text-[var(--gn-text)]">
+                    Start flowering
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                    Two vegetation weeks logged—move to flower to unlock the
+                    harvest log.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void transitionToFlowering()}
+                    className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                  >
+                    Start flowering
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="mt-4 lg:hidden">
+                <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+                  <NotebookWeekSidebar weeks={nb.weeks} variant="mobile" />
+                </div>
+              </div>
+            </div>
+          </div>
 
       {(nb.roomType ||
         nb.wateringType ||
@@ -370,11 +536,27 @@ export function NotebookDetailClient({
             {nb.weeks.map((w) => (
               <li
                 key={w.id}
-                className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4"
+                id={`week-${w.weekIndex}`}
+                className="scroll-mt-24 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4"
               >
-                <p className="font-semibold text-[var(--gn-text)]">
-                  Week {w.weekIndex}
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-[var(--gn-text)]">
+                    Week {w.weekIndex}
+                  </p>
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWeekWizardMode("edit");
+                        setWeekEditTarget(w);
+                        setWeekWizardOpen(true);
+                      }}
+                      className="text-xs font-medium text-emerald-500 hover:underline"
+                    >
+                      Edit week
+                    </button>
+                  ) : null}
+                </div>
                 {w.notes ? (
                   <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                     {w.notes}
@@ -475,6 +657,53 @@ export function NotebookDetailClient({
           </button>
         </div>
       </section>
+
+          {isOwner ? (
+            <>
+              <NotebookSetupWizard
+                open={setupWizardOpen}
+                notebook={nb}
+                onClose={() => setSetupWizardOpen(false)}
+                onCompleted={() => {
+                  setSetupWizardOpen(false);
+                  void reloadNotebook();
+                }}
+              />
+              <NotebookWeekWizard
+                open={weekWizardOpen}
+                notebookId={nb.id}
+                mode={weekWizardMode}
+                existingWeek={weekEditTarget}
+                nextWeekIndex={nextWeekIndex}
+                onClose={() => setWeekWizardOpen(false)}
+                onSaved={() => {
+                  setWeekWizardOpen(false);
+                  void reloadNotebook();
+                }}
+              />
+              <NotebookHarvestWizard
+                open={harvestWizardOpen}
+                notebook={nb}
+                notebookId={nb.id}
+                onClose={() => setHarvestWizardOpen(false)}
+                onSaved={() => {
+                  setHarvestWizardOpen(false);
+                  void reloadNotebook();
+                }}
+              />
+              <NotebookSettingsModal
+                open={settingsOpen}
+                notebook={nb}
+                onClose={() => setSettingsOpen(false)}
+                onSaved={() => {
+                  setSettingsOpen(false);
+                  void reloadNotebook();
+                }}
+              />
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

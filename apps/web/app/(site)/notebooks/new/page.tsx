@@ -72,7 +72,7 @@ export default function NewNotebookPage() {
             : customStrainLabel.trim() || null,
         }),
       });
-      router.push(`/notebooks/${encodeURIComponent(id)}/edit`);
+      router.push(`/notebooks/${encodeURIComponent(id)}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not create");
     } finally {

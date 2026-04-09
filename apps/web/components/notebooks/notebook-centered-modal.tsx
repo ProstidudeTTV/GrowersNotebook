@@ -11,14 +11,14 @@ export function NotebookCenteredModal({
   children,
   footer,
   onClose,
-  maxWidthClassName = "max-w-lg",
+  maxWidthClassName = "max-w-3xl",
 }: {
   open: boolean;
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
   onClose?: () => void;
-  /** Tailwind max-width, e.g. max-w-lg / max-w-xl */
+  /** Tailwind max-width, e.g. max-w-3xl / max-w-4xl */
   maxWidthClassName?: string;
 }) {
   useEffect(() => {
@@ -46,14 +46,14 @@ export function NotebookCenteredModal({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 max-h-[min(90vh,720px)] w-full ${maxWidthClassName} overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] text-[var(--gn-text)] shadow-xl`}
+        className={`relative z-10 max-h-[min(94vh,920px)] w-full ${maxWidthClassName} overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] text-[var(--gn-text)] shadow-xl`}
       >
         {title ? (
-          <div className="border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-sm font-semibold text-[var(--gn-text)]">{title}</h2>
+          <div className="border-b border-[var(--gn-divide)] px-5 py-4">
+            <h2 className="text-base font-semibold text-[var(--gn-text)]">{title}</h2>
           </div>
         ) : null}
-        <div className="max-h-[min(calc(90vh-4rem),640px)] overflow-y-auto">
+        <div className="max-h-[min(calc(94vh-5rem),860px)] overflow-y-auto">
           {children}
         </div>
         {footer ? (

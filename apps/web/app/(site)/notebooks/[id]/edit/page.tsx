@@ -1,5 +1,4 @@
-import { notFound } from "next/navigation";
-import { NotebookOwnerEdit } from "./notebook-owner-edit";
+import { notFound, redirect } from "next/navigation";
 import { isUuid } from "@/lib/is-uuid";
 
 export default async function NotebookEditPage({
@@ -9,5 +8,5 @@ export default async function NotebookEditPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  return <NotebookOwnerEdit notebookId={id} />;
+  redirect(`/notebooks/${id}`);
 }

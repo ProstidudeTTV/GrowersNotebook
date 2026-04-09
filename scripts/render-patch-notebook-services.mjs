@@ -1,6 +1,7 @@
 /**
  * PATCH growers-notebook-web and growers-notebook-api build/start commands via Render API.
- * Fetches each service first to verify shape; PATCH sends only envSpecificDetails (see buildPatchPayload).
+ * Fetches each service first to verify shape. PATCH sends a minimal serviceDetails body:
+ * healthCheckPath (optional) + envSpecificDetails only — never merge full GET serviceDetails (ipAllowList 400).
  *
  * Usage:
  *   $env:RENDER_API_KEY = 'rnd_...'   # PowerShell
@@ -44,16 +45,17 @@ async function getService(serviceId) {
   return JSON.parse(text);
 }
 
-/** Only envSpecificDetails — merging full serviceDetails re-sends ipAllowList etc. and returns 400 on non-Enterprise. */
-function buildPatchPayload({ buildCommand, startCommand }) {
-  return {
-    serviceDetails: {
-      envSpecificDetails: {
-        buildCommand,
-        startCommand,
-      },
+function buildPatchPayload({ buildCommand, startCommand, healthCheckPath }) {
+  const serviceDetails = {
+    envSpecificDetails: {
+      buildCommand,
+      startCommand,
     },
   };
+  if (healthCheckPath != null && healthCheckPath !== "") {
+    serviceDetails.healthCheckPath = healthCheckPath;
+  }
+  return { serviceDetails };
 }
 
 async function patchService(serviceId, commands) {
@@ -91,6 +93,7 @@ async function main() {
   await patchService(WEB_SERVICE_ID, {
     buildCommand: "sh scripts/render-build-web.sh",
     startCommand: "npx pnpm@9.15.9 --filter @growers/web start",
+    healthCheckPath: "/",
   });
   console.log("  OK");
 
@@ -98,6 +101,7 @@ async function main() {
   await patchService(API_SERVICE_ID, {
     buildCommand: "sh scripts/render-build-api.sh",
     startCommand: "npx pnpm@9.15.9 --filter @growers/api start:prod",
+    healthCheckPath: "/health",
   });
   console.log("  OK");
 

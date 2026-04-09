@@ -50,6 +50,8 @@ services:
     envVars:
       - key: NPM_CONFIG_YES
         value: "true"
+      - key: NODE_VERSION
+        value: "20.18.1"
       - key: NODE_ENV
         value: production
       - key: LISTEN_HOST
@@ -67,6 +69,8 @@ services:
     envVars:
       - key: NPM_CONFIG_YES
         value: "true"
+      - key: NODE_VERSION
+        value: "20.18.1"
       # Baked into `next build` for metadata, auth redirects, and client-side canonical URLs.
       - key: NEXT_PUBLIC_SITE_URL
         value: https://growersnotebook.com

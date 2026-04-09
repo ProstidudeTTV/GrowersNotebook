@@ -13,6 +13,18 @@
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
 #
+# --- URGENT: manual Web Services ignore this file until Blueprint-linked. If deploys fail in
+# ~1 second, the Dashboard “Build Command” is still the legacy `npx pnpm` line. Replace it.
+#
+# Web → Settings → Build Command (single line):
+# export NPM_CONFIG_YES=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && corepack enable && corepack prepare pnpm@9.15.9 --activate && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
+#
+# API → Settings → Build Command (single line):
+# export NPM_CONFIG_YES=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0 && corepack enable && corepack prepare pnpm@9.15.9 --activate && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build
+#
+# Alternative: bash scripts/render-build-web.sh  /  bash scripts/render-build-api.sh
+# Then: Manual Deploy → Clear build cache & deploy. Or: RENDER_API_KEY=rnd_... pnpm run render:patch-notebook-services
+#
 # Latency: Free/spun-down web services cold-start (~30–60s). Starter “always on” reduces
 # first-byte time for the API and web app. The web app uses parallel sidebar fetches + timeouts
 # so a sleeping API does not hang navigation indefinitely.

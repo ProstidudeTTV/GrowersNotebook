@@ -10,7 +10,8 @@
     "db:generate": "npx pnpm@9.15.9 --filter @growers/api db:generate",
     "db:migrate": "npx pnpm@9.15.9 --filter @growers/api db:migrate",
     "db:seed": "npx pnpm@9.15.9 --filter @growers/api db:seed",
-    "render:delete-legacy-matrix": "node scripts/render-delete-legacy-matrix.mjs"
+    "render:delete-legacy-matrix": "node scripts/render-delete-legacy-matrix.mjs",
+    "render:patch-notebook-services": "node scripts/render-patch-notebook-services.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

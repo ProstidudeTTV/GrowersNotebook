@@ -155,6 +155,13 @@
       "when": 1777000000000,
       "tag": "0021_notebook_setup_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1777100000000,
+      "tag": "0022_notebook_wizard_and_week_extras",
+      "breakpoints": true
     }
   ]
 }

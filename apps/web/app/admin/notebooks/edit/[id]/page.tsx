@@ -38,6 +38,8 @@ type WeekRow = {
   humidityPct: string | null;
   ph: string | null;
   ec: string | null;
+  ppm: string | null;
+  waterNotes: string | null;
   lightCycle: string | null;
   imageUrls: string[];
   nutrients: Record<string, unknown>[];
@@ -187,6 +189,8 @@ export default function AdminNotebookEditPage() {
       humidityPct: "",
       ph: "",
       ec: "",
+      ppm: "",
+      waterNotes: "",
       lightCycle: "",
       imageUrlsText: "",
       nutrientsJson: "[]",
@@ -204,6 +208,8 @@ export default function AdminNotebookEditPage() {
       humidityPct: w.humidityPct ?? "",
       ph: w.ph ?? "",
       ec: w.ec ?? "",
+      ppm: w.ppm ?? "",
+      waterNotes: w.waterNotes ?? "",
       lightCycle: w.lightCycle ?? "",
       imageUrlsText: (w.imageUrls ?? []).join("\n"),
       nutrientsJson: JSON.stringify(
@@ -243,6 +249,8 @@ export default function AdminNotebookEditPage() {
             humidityPct: v.humidityPct || null,
             ph: v.ph || null,
             ec: v.ec || null,
+            ppm: v.ppm || null,
+            waterNotes: v.waterNotes || null,
             lightCycle: v.lightCycle || null,
             imageUrls,
             nutrients,
@@ -257,6 +265,8 @@ export default function AdminNotebookEditPage() {
           humidityPct: v.humidityPct || null,
           ph: v.ph || null,
           ec: v.ec || null,
+          ppm: v.ppm || null,
+          waterNotes: v.waterNotes || null,
           lightCycle: v.lightCycle || null,
           imageUrls,
           copyNutrientsFromPreviousWeek: !!v.copyNutrientsFromPreviousWeek,
@@ -483,6 +493,16 @@ export default function AdminNotebookEditPage() {
           </Form.Item>
           <Form.Item name="ec" label="EC" tooltip="Feed strength.">
             <Input />
+          </Form.Item>
+          <Form.Item name="ppm" label="PPM / TDS" tooltip="Optional TDS.">
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="waterNotes"
+            label="Watering / feed notes"
+            tooltip="Volume, frequency, runoff."
+          >
+            <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item
             name="lightCycle"

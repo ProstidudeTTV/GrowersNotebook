@@ -14,6 +14,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  varchar,
 } from 'drizzle-orm/pg-core';
 
 export const roleEnum = pgEnum('role', ['member', 'moderator', 'admin']);
@@ -681,6 +682,10 @@ export const notebooks = pgTable(
     startType: notebookStartTypeEnum('start_type'),
     /** Tent, lights, medium, etc. */
     setupNotes: text('setup_notes'),
+    /** When null (and notebook is new enough), owner edit shows first-run setup wizard. */
+    setupWizardCompletedAt: timestamp('setup_wizard_completed_at', {
+      withTimezone: true,
+    }),
     /** Derived on save: harvest_dry_weight_g / total_light_watts */
     gPerWatt: numeric('g_per_watt', { precision: 14, scale: 6 }),
     /** Derived: g_per_watt / plant_count when both set */
@@ -714,6 +719,10 @@ export const notebookWeeks = pgTable(
     humidityPct: numeric('humidity_pct', { precision: 6, scale: 2 }),
     ph: numeric('ph', { precision: 5, scale: 2 }),
     ec: numeric('ec', { precision: 8, scale: 3 }),
+    /** Optional TDS / ppm if tracked separately from EC. */
+    ppm: varchar('ppm', { length: 32 }),
+    /** How much / how often you watered, feed timing, etc. */
+    waterNotes: text('water_notes'),
     lightCycle: text('light_cycle'),
     imageUrls: jsonb('image_urls')
       .notNull()

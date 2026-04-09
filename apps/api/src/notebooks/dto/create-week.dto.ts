@@ -44,6 +44,16 @@ export class CreateNotebookWeekDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(32)
+  ppm?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  waterNotes?: string | null;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(80)
   lightCycle?: string | null;
 
@@ -88,6 +98,16 @@ export class UpdateNotebookWeekDto {
   @IsString()
   @MaxLength(32)
   ec?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  ppm?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  waterNotes?: string | null;
 
   @IsOptional()
   @IsString()

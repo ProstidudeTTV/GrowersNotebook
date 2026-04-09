@@ -570,6 +570,9 @@ export class NotebooksService {
     if (dto.setupNotes !== undefined) {
       patch.setupNotes = dto.setupNotes?.trim() || null;
     }
+    if (dto.setupWizardCompletedAt !== undefined) {
+      patch.setupWizardCompletedAt = dto.setupWizardCompletedAt;
+    }
 
     const merged = { ...existing, ...patch };
     const derived = harvestDerived(
@@ -637,6 +640,8 @@ export class NotebooksService {
         humidityPct: dto.humidityPct ?? null,
         ph: dto.ph ?? null,
         ec: dto.ec ?? null,
+        ppm: dto.ppm?.trim() || null,
+        waterNotes: dto.waterNotes?.trim() || null,
         lightCycle: dto.lightCycle?.trim() || null,
         imageUrls,
       })
@@ -721,6 +726,10 @@ export class NotebooksService {
     if (dto.humidityPct !== undefined) patch.humidityPct = dto.humidityPct;
     if (dto.ph !== undefined) patch.ph = dto.ph;
     if (dto.ec !== undefined) patch.ec = dto.ec;
+    if (dto.ppm !== undefined) patch.ppm = dto.ppm?.trim() || null;
+    if (dto.waterNotes !== undefined) {
+      patch.waterNotes = dto.waterNotes?.trim() || null;
+    }
     if (dto.lightCycle !== undefined) {
       patch.lightCycle = dto.lightCycle?.trim() || null;
     }

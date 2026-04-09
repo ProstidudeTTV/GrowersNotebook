@@ -27,6 +27,8 @@ type Week = {
   humidityPct: string | null;
   ph: string | null;
   ec: string | null;
+  ppm?: string | null;
+  waterNotes?: string | null;
   lightCycle: string | null;
   imageUrls: string[];
   nutrients: WeekNut[];
@@ -50,6 +52,9 @@ export type NotebookDetailPayload = {
   wateringType?: string | null;
   startType?: string | null;
   setupNotes?: string | null;
+  /** ISO timestamp from API; used for first-run setup wizard cutoff. */
+  createdAt?: string | null;
+  setupWizardCompletedAt?: string | null;
   score: number;
   upvotes: number;
   downvotes: number;
@@ -348,6 +353,12 @@ export function NotebookDetailClient({
                   ) : null}
                   {w.ph != null && w.ph !== "" ? <li>pH: {w.ph}</li> : null}
                   {w.ec != null && w.ec !== "" ? <li>EC: {w.ec}</li> : null}
+                  {w.ppm != null && w.ppm !== "" ? <li>PPM: {w.ppm}</li> : null}
+                  {w.waterNotes != null && w.waterNotes !== "" ? (
+                    <li className="whitespace-pre-wrap">
+                      Water / feed: {w.waterNotes}
+                    </li>
+                  ) : null}
                   {w.lightCycle ? <li>Light: {w.lightCycle}</li> : null}
                 </ul>
                 {w.nutrients.length > 0 ? (

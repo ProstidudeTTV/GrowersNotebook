@@ -2,25 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
-  Checkbox,
   Collapse,
   Divider,
   Form,
   Input,
   InputNumber,
-  Modal,
   Select,
   Table,
   Typography,
 } from "antd";
 import { apiFetch } from "@/lib/api-public";
 import { NotebookStrainFields } from "@/components/notebook-strain-fields";
+import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
+import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import { needsNotebookSetupWizard } from "@/lib/notebook-wizard";
 
 const { Text } = Typography;
 
@@ -57,13 +58,13 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
   const [forbidden, setForbidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form] = Form.useForm();
-  const [weekOpen, setWeekOpen] = useState(false);
-  const [editingWeek, setEditingWeek] = useState<WeekRow | null>(null);
-  const [weekForm] = Form.useForm();
-  const copyPrevWatch = Form.useWatch(
-    "copyNutrientsFromPreviousWeek",
-    weekForm,
+  const [weekWizardOpen, setWeekWizardOpen] = useState(false);
+  const [weekWizardMode, setWeekWizardMode] = useState<"create" | "edit">(
+    "create",
   );
+  const [weekEditTarget, setWeekEditTarget] = useState<WeekRow | null>(null);
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false);
+  const setupAutoOpenedRef = useRef(false);
 
   const strainDisplaySeed = useMemo(() => {
     if (!notebook) return "";
@@ -117,6 +118,19 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setupAutoOpenedRef.current = false;
+    setSetupWizardOpen(false);
+  }, [notebookId]);
+
+  useEffect(() => {
+    if (!notebook || setupAutoOpenedRef.current) return;
+    if (needsNotebookSetupWizard(notebook)) {
+      setupAutoOpenedRef.current = true;
+      setSetupWizardOpen(true);
+    }
+  }, [notebook]);
+
   const saveNotebook = async () => {
     const v = await form.validateFields();
     const supabase = createClient();
@@ -148,97 +162,21 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
     !!notebook?.harvestDryWeightG?.toString().trim() ||
     !!notebook?.harvestQualityNotes?.toString().trim();
 
+  const nextWeekIndex = useMemo(() => {
+    if (!notebook?.weeks?.length) return 1;
+    return Math.max(...notebook.weeks.map((w) => w.weekIndex)) + 1;
+  }, [notebook]);
+
   const openNewWeek = () => {
-    setEditingWeek(null);
-    weekForm.resetFields();
-    const nextIdx =
-      (notebook?.weeks?.length
-        ? Math.max(...notebook.weeks.map((w) => w.weekIndex))
-        : 0) + 1;
-    weekForm.setFieldsValue({
-      weekIndex: nextIdx,
-      copyNutrientsFromPreviousWeek: false,
-      nutrientsJson: "[]",
-      imageUrlsText: "",
-    });
-    setWeekOpen(true);
+    setWeekWizardMode("create");
+    setWeekEditTarget(null);
+    setWeekWizardOpen(true);
   };
 
   const openEditWeek = (w: WeekRow) => {
-    setEditingWeek(w);
-    weekForm.setFieldsValue({
-      weekIndex: w.weekIndex,
-      notes: w.notes ?? "",
-      tempC: w.tempC ?? "",
-      humidityPct: w.humidityPct ?? "",
-      ph: w.ph ?? "",
-      ec: w.ec ?? "",
-      lightCycle: w.lightCycle ?? "",
-      imageUrlsText: (w.imageUrls ?? []).join("\n"),
-      nutrientsJson: JSON.stringify(
-        (w.nutrients ?? []).map((n) => ({
-          productId: (n as { productId?: string }).productId ?? null,
-          customLabel: (n as { customLabel?: string }).customLabel ?? null,
-          dosage: (n as { dosage?: string }).dosage ?? null,
-          sortOrder: (n as { sortOrder?: number }).sortOrder ?? 0,
-        })),
-        null,
-        2,
-      ),
-    });
-    setWeekOpen(true);
-  };
-
-  const saveWeek = async () => {
-    const v = await weekForm.validateFields();
-    const imageUrls = String(v.imageUrlsText ?? "")
-      .split(/\r?\n/)
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-    let nutrients: unknown[] = [];
-    try {
-      nutrients = JSON.parse(String(v.nutrientsJson ?? "[]")) as unknown[];
-    } catch {
-      return;
-    }
-    const supabase = createClient();
-    const token = await getAccessTokenForApi(supabase);
-    if (!token) return;
-    if (editingWeek) {
-      await apiFetch(`/notebooks/${notebookId}/weeks/${editingWeek.id}`, {
-        method: "PATCH",
-        token,
-        body: JSON.stringify({
-          notes: v.notes || null,
-          tempC: v.tempC || null,
-          humidityPct: v.humidityPct || null,
-          ph: v.ph || null,
-          ec: v.ec || null,
-          lightCycle: v.lightCycle || null,
-          imageUrls,
-          nutrients,
-        }),
-      });
-    } else {
-      await apiFetch(`/notebooks/${notebookId}/weeks`, {
-        method: "POST",
-        token,
-        body: JSON.stringify({
-          weekIndex: Number(v.weekIndex),
-          notes: v.notes || null,
-          tempC: v.tempC || null,
-          humidityPct: v.humidityPct || null,
-          ph: v.ph || null,
-          ec: v.ec || null,
-          lightCycle: v.lightCycle || null,
-          imageUrls,
-          copyNutrientsFromPreviousWeek: !!v.copyNutrientsFromPreviousWeek,
-          nutrients: v.copyNutrientsFromPreviousWeek ? undefined : nutrients,
-        }),
-      });
-    }
-    setWeekOpen(false);
-    await load();
+    setWeekWizardMode("edit");
+    setWeekEditTarget(w);
+    setWeekWizardOpen(true);
   };
 
   const deleteWeek = async (weekId: string) => {
@@ -424,88 +362,31 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
         </Button>
       </Form>
 
-      <Modal
-        title={editingWeek ? `Week ${editingWeek.weekIndex}` : "New week"}
-        open={weekOpen}
-        onCancel={() => setWeekOpen(false)}
-        onOk={() => void saveWeek()}
-        width={640}
-        destroyOnClose
-      >
-        <Form form={weekForm} layout="vertical">
-          <Form.Item
-            name="weekIndex"
-            label="Week #"
-            rules={[{ required: !editingWeek }]}
-            tooltip="Sequential week of this grow; Week 1 is often germination or early veg."
-          >
-            <InputNumber min={1} className="w-full" disabled={!!editingWeek} />
-          </Form.Item>
-          {!editingWeek ? (
-            <Form.Item
-              name="copyNutrientsFromPreviousWeek"
-              valuePropName="checked"
-            >
-              <Checkbox>Copy nutrients from previous week</Checkbox>
-            </Form.Item>
-          ) : null}
-          <Form.Item
-            name="notes"
-            label="Notes"
-            tooltip="What you did this week and how plants look."
-          >
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          <Form.Item
-            name="tempC"
-            label="Temp °C"
-            tooltip="Air or canopy temperature if you track it."
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="humidityPct"
-            label="Humidity %"
-            tooltip="Relative humidity in the grow space."
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="ph" label="pH" tooltip="Solution or runoff pH if measured.">
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="ec"
-            label="EC"
-            tooltip="Electrical conductivity of feed water (nutrient strength)."
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="lightCycle"
-            label="Light cycle"
-            tooltip="Hours on/off, e.g. 18/6 for veg or 12/12 for flower."
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="imageUrlsText"
-            label="Image URLs (line break)"
-            tooltip="One HTTPS image URL per line for this week."
-          >
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item
-            name="nutrientsJson"
-            label="Nutrients JSON"
-            tooltip='Array of lines: productId (uuid or null), customLabel, dosage, sortOrder. Example: [{"productId":null,"customLabel":"CalMag","dosage":"5ml/gal","sortOrder":0}]'
-          >
-            <Input.TextArea
-              rows={5}
-              disabled={!editingWeek && !!copyPrevWatch}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {notebook ? (
+        <>
+          <NotebookSetupWizard
+            open={setupWizardOpen}
+            notebook={notebook}
+            onClose={() => setSetupWizardOpen(false)}
+            onCompleted={() => {
+              setSetupWizardOpen(false);
+              void load();
+            }}
+          />
+          <NotebookWeekWizard
+            open={weekWizardOpen}
+            notebookId={notebookId}
+            mode={weekWizardMode}
+            existingWeek={weekEditTarget}
+            nextWeekIndex={nextWeekIndex}
+            onClose={() => setWeekWizardOpen(false)}
+            onSaved={() => {
+              setWeekWizardOpen(false);
+              void load();
+            }}
+          />
+        </>
+      ) : null}
     </main>
   );
 }

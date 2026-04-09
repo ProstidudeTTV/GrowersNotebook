@@ -98,4 +98,8 @@ export class UpdateNotebookDto {
   @IsString()
   @MaxLength(8000)
   setupNotes?: string | null;
+
+  @IsOptional()
+  @Type(() => Date)
+  setupWizardCompletedAt?: Date | null;
 }

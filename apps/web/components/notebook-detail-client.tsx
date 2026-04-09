@@ -125,11 +125,14 @@ type WeekRow = NotebookDetailPayload["weeks"][number];
 /** Structured metric grid (old diary layout) without bordered cells. */
 function MetricGrid({
   title,
+  titleDivider,
   items,
   gridClass = "grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4",
 }: {
   /** Omit when the parent heading already names the section (e.g. Growing setup). */
   title?: string;
+  /** Subtle rule under the title (subsection emphasis). */
+  titleDivider?: boolean;
   items: { label: string; value: ReactNode; wide?: boolean }[];
   gridClass?: string;
 }) {
@@ -137,7 +140,13 @@ function MetricGrid({
   return (
     <div className={title ? "mt-3" : "mt-2"}>
       {title ? (
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+        <p
+          className={`text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)] ${
+            titleDivider
+              ? "border-b border-[var(--gn-divide)]/45 pb-2"
+              : ""
+          }`}
+        >
           {title}
         </p>
       ) : null}
@@ -784,7 +793,11 @@ export function NotebookDetailClient({
                         {spots.map((spot, idx) => (
                           <div
                             key={idx}
-                            className="border-l-2 border-[var(--gn-divide)]/45 pl-3"
+                            className={
+                              idx > 0
+                                ? "border-t border-[var(--gn-divide)]/35 pt-3"
+                                : ""
+                            }
                           >
                             <time
                               className="text-[10px] font-medium tabular-nums text-[var(--gn-text-muted)]"
@@ -804,6 +817,7 @@ export function NotebookDetailClient({
 
                 <MetricGrid
                   title="Environment"
+                  gridClass="grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2"
                   items={envItems.map((x) => ({
                     label: x.key,
                     value: x.value,
@@ -836,6 +850,7 @@ export function NotebookDetailClient({
                   return feedItems.length > 0 ? (
                     <MetricGrid
                       title="Feed & water"
+                      titleDivider
                       gridClass="grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
                       items={feedItems}
                     />

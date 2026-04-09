@@ -15,6 +15,7 @@ The maintainer deploys **only** via this stack. **Do not** ask them to confirm R
 
 - Prefer fixes that work **in production** (proxy, `WEB_ORIGIN`, CORS). Do not default to localhost unless the user said local dev.
 - **Deploy / “why no new deploy?” / production status:** use **Render MCP** (`list_services`, `list_deploys`) and **GitHub MCP** (`list_commits` on `main`). Do not answer from memory—query MCPs in the same turn when the user asks about live state.
+- **Render `build_failed`:** Production **is** Render. Run **`get_deploy`** + **`list_logs`** (time-box to the deploy’s `startedAt`/`finishedAt`, try with and without `type: build`, paginate if `hasMore`) **before** treating anything as unknown. Only if the API still has no failure body, say that Render’s deploy API often omits it and the remaining detail may appear on that service’s **Events** entry—**same Render account**, not a different stack. Do not imply the maintainer is not using Render or offload with “go use Render first.”
 - **After substantive edits** (multi-file feature, API + web, schema, or anything the user will expect on the site): before treating the task as done, run `git status`. If there are changes, **commit and push** in this workspace (unless the user explicitly said not to ship yet). **Do not** only say “push when ready”—execute `git add`, `git commit`, `git push` when the goal is shipping.
 - After a push, optionally verify with Render MCP that a deploy started or reached `live`.
 - Use **Supabase MCP** when checking DB/migrations/auth config instead of guessing.

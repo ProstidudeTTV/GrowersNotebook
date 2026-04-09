@@ -5,9 +5,24 @@ alwaysApply: true
 
 # Render MCP (growers-notebook-*)
 
+The maintainer ships **only** on Render (`production-stack.mdc`). When deploys fail, **investigate with MCP/API in the same turn**—do not open with “check the Render dashboard” or wording that sounds like they are not already on Render.
+
 - `get_selected_workspace` → if wrong workspace, `list_workspaces` then `select_workspace` with the correct `ownerID`.
 - `list_services` → ids for **growers-notebook-web** / **growers-notebook-api**.
 - `list_deploys` + `serviceId` → latest **live** commit, `trigger`, timeline; use for “any new deploys?” and post-push checks.
-- `list_logs` / `get_deploy` when builds fail or regress.
+
+## Failed or regressing deploys (do this order)
+
+1. `list_deploys` → note `deployId`, `status`, `startedAt` / `finishedAt`, commit SHA.
+2. `get_deploy` with `serviceId` + `deployId` — record whatever fields exist (many failures have **no** message in the REST shape).
+3. `list_logs` with `resource: [serviceId]`:
+   - Narrow **`startTime` / `endTime`** (RFC3339) to the deploy window plus a short pad (e.g. ±30s).
+   - Prefer logs around the failure first; if empty, widen the window or drop `type` and paginate (`hasMore`, `nextStartTime` / `nextEndTime`).
+   - `type: [build]` may return nothing for very fast failures; retry without `type` or with `text` filters (`*error*`, `*failed*`, `==>`). The log `type` label in results may not match the filter—still use the payload.
+4. If step 3 is still empty: state clearly that **Render’s API did not return build log lines for this deploy**; the next surface is the **Events** timeline for that deploy in the **Render Dashboard** (same workspace), or Render Support—not localhost, not “another host.”
+
+## PATCH / API gotchas (Windows)
+
+PowerShell **`ConvertTo-Json`** can inject **newlines** inside long strings and **break** `buildCommand`. Prefer **`node scripts/render-patch-notebook-services.mjs`**, a one-line `*.json` file with `Invoke-RestMethod -InFile`, or `fetch` from a small `.mjs` script.
 
 **Reminder:** This MCP does not expose “manual trigger deploy”; rebuild-without-commit is dashboard-only. New code still requires a **git push** to `main` with auto-deploy on.

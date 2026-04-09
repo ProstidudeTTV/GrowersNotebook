@@ -162,6 +162,13 @@
       "when": 1777100000000,
       "tag": "0022_notebook_wizard_and_week_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1777200000000,
+      "tag": "0023_notebook_growth_stages",
+      "breakpoints": true
     }
   ]
 }

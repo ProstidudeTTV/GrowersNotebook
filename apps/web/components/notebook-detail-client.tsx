@@ -12,6 +12,7 @@ import {
 } from "@/lib/vote-ui";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth";
 
 type WeekNut = {
   customLabel: string | null;
@@ -55,6 +56,10 @@ export type NotebookDetailPayload = {
   /** ISO timestamp from API; used for first-run setup wizard cutoff. */
   createdAt?: string | null;
   setupWizardCompletedAt?: string | null;
+  growthStage?: string;
+  vegPhaseStartedAfterWeekIndex?: number | null;
+  flowerPhaseStartedAfterWeekIndex?: number | null;
+  harvestImageUrls?: string[];
   score: number;
   upvotes: number;
   downvotes: number;
@@ -211,6 +216,15 @@ export function NotebookDetailClient({
               {nb.owner.displayName?.trim() || "Grower"}
             </Link>
             {strainLabel ? ` · ${strainLabel}` : ""}
+            {nb.growthStage ? (
+              <>
+                {" "}
+                ·{" "}
+                <span className="text-[var(--gn-text)]">
+                  {GROWTH_STAGE_LABEL[nb.growthStage] ?? nb.growthStage}
+                </span>
+              </>
+            ) : null}
             {nb.strain?.slug ? (
               <>
                 {" "}
@@ -286,7 +300,9 @@ export function NotebookDetailClient({
         </section>
       )}
 
-      {(nb.harvestDryWeightG || nb.harvestQualityNotes) && (
+      {(nb.harvestDryWeightG ||
+        nb.harvestQualityNotes?.trim() ||
+        (nb.harvestImageUrls && nb.harvestImageUrls.length > 0)) && (
         <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
           <h2 className="text-sm font-semibold text-[var(--gn-text)]">
             Harvest
@@ -320,6 +336,26 @@ export function NotebookDetailClient({
               </p>
             ) : null}
           </dl>
+          {nb.harvestImageUrls && nb.harvestImageUrls.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {nb.harvestImageUrls.slice(0, 8).map((url) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block h-28 w-28 overflow-hidden rounded-lg ring-1 ring-[var(--gn-border)]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          ) : null}
         </section>
       )}
 

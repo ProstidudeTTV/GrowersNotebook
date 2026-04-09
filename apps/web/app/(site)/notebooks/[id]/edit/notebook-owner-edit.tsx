@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
-  Collapse,
   Divider,
   Form,
   Input,
@@ -16,11 +15,19 @@ import {
 } from "antd";
 import { apiFetch } from "@/lib/api-public";
 import { NotebookStrainFields } from "@/components/notebook-strain-fields";
+import { NotebookHarvestWizard } from "@/components/notebooks/notebook-harvest-wizard";
 import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
 import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import {
+  GROWTH_STAGE_LABEL,
+  maxNotebookWeekIndex,
+  showHarvestPanel,
+  showStartFlowering,
+  showStartVegetation,
+} from "@/lib/notebook-growth";
 import { needsNotebookSetupWizard } from "@/lib/notebook-wizard";
 
 const { Text } = Typography;
@@ -65,6 +72,7 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
   const [weekEditTarget, setWeekEditTarget] = useState<WeekRow | null>(null);
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
   const setupAutoOpenedRef = useRef(false);
+  const [harvestWizardOpen, setHarvestWizardOpen] = useState(false);
 
   const strainDisplaySeed = useMemo(() => {
     if (!notebook) return "";
@@ -104,8 +112,6 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
         wateringType: data.wateringType ?? undefined,
         startType: data.startType ?? undefined,
         setupNotes: data.setupNotes ?? "",
-        harvestDryWeightG: data.harvestDryWeightG ?? "",
-        harvestQualityNotes: data.harvestQualityNotes ?? "",
       });
     } catch {
       setNotebook(null);
@@ -150,17 +156,44 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
         wateringType: v.wateringType ?? null,
         startType: v.startType ?? null,
         setupNotes: v.setupNotes?.trim() || null,
-        harvestDryWeightG: v.harvestDryWeightG?.trim() || null,
-        harvestQualityNotes: v.harvestQualityNotes?.trim() || null,
       }),
     });
     await load();
   };
 
-  const harvestPanelOpenDefault =
-    notebook?.status === "completed" ||
-    !!notebook?.harvestDryWeightG?.toString().trim() ||
-    !!notebook?.harvestQualityNotes?.toString().trim();
+  const transitionToVegetation = async () => {
+    if (!notebook) return;
+    const supabase = createClient();
+    const token = await getAccessTokenForApi(supabase);
+    if (!token) return;
+    const m = maxNotebookWeekIndex(notebook.weeks);
+    await apiFetch(`/notebooks/${notebookId}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({
+        growthStage: "vegetation",
+        vegPhaseStartedAfterWeekIndex: m,
+      }),
+    });
+    await load();
+  };
+
+  const transitionToFlowering = async () => {
+    if (!notebook) return;
+    const supabase = createClient();
+    const token = await getAccessTokenForApi(supabase);
+    if (!token) return;
+    const m = maxNotebookWeekIndex(notebook.weeks);
+    await apiFetch(`/notebooks/${notebookId}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({
+        growthStage: "flower",
+        flowerPhaseStartedAfterWeekIndex: m,
+      }),
+    });
+    await load();
+  };
 
   const nextWeekIndex = useMemo(() => {
     if (!notebook?.weeks?.length) return 1;
@@ -208,7 +241,17 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-[var(--gn-text)]">Edit notebook</h1>
+        <div>
+          <h1 className="text-xl font-bold text-[var(--gn-text)]">Edit notebook</h1>
+          <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+            Stage:{" "}
+            <span className="font-medium text-[var(--gn-text)]">
+              {GROWTH_STAGE_LABEL[notebook.growthStage ?? "germination"] ||
+                notebook.growthStage ||
+                "Germination"}
+            </span>
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => router.push(`/notebooks/${encodeURIComponent(notebookId)}`)}
@@ -321,41 +364,85 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
           />
         </Table>
 
-        <Collapse
-          defaultActiveKey={harvestPanelOpenDefault ? ["harvest"] : []}
-          items={[
-            {
-              key: "harvest",
-              label: "Harvest and efficiency",
-              children: (
-                <>
-                  <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
-                    Add this when you finish—or update dry weight and quality
-                    after your final trim. Not needed while the grow is early.
-                  </p>
-                  <Form.Item
-                    name="harvestDryWeightG"
-                    label="Harvest dry weight (g)"
-                    tooltip="Cured dry weight. You can save early and update later."
-                  >
-                    <Input />
-                  </Form.Item>
-                  <Form.Item
-                    name="harvestQualityNotes"
-                    label="Harvest quality"
-                    tooltip="Density, smell, trim notes, or anything about the finished product."
-                  >
-                    <Input.TextArea rows={3} />
-                  </Form.Item>
-                  <Text type="secondary" className="mb-2 block">
-                    g/W: {notebook.gPerWatt ?? "—"} · g/W/plant:{" "}
-                    {notebook.gPerWattPerPlant ?? "—"}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
+        {showStartVegetation(notebook) ? (
+          <div className="mb-6 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
+            <p className="text-sm font-medium text-[var(--gn-text)]">
+              Ready for vegetation?
+            </p>
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              You&apos;ve logged two germination weeks. Start vegetation to move
+              the diary to the next phase (this banner won&apos;t show again).
+            </p>
+            <button
+              type="button"
+              onClick={() => void transitionToVegetation()}
+              className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+            >
+              Start vegetation
+            </button>
+          </div>
+        ) : null}
+
+        {showStartFlowering(notebook) ? (
+          <div className="mb-6 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
+            <p className="text-sm font-medium text-[var(--gn-text)]">
+              Start flowering
+            </p>
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              You&apos;ve logged two vegetation weeks. Switch to flower to unlock
+              the full harvest log (this banner goes away after you continue).
+            </p>
+            <button
+              type="button"
+              onClick={() => void transitionToFlowering()}
+              className="mt-3 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+            >
+              Start flowering
+            </button>
+          </div>
+        ) : null}
+
+        {showHarvestPanel(notebook) ? (
+          <>
+            <Divider />
+            <Text strong className="mb-2 block text-[var(--gn-text)]">
+              Harvest
+            </Text>
+            <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+              Available during flower and harvest. Use the guided log for weight,
+              notes, plant count, and up to eight photos (upload or URL).
+            </p>
+            <div className="mb-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-4">
+              <p className="text-sm text-[var(--gn-text)]">
+                Dry weight:{" "}
+                <span className="font-medium">
+                  {notebook.harvestDryWeightG?.toString().trim() || "—"}
+                </span>{" "}
+                g · Photos:{" "}
+                {notebook.harvestImageUrls?.length ?? 0}
+              </p>
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                g/W: {notebook.gPerWatt ?? "—"} · g/W/plant:{" "}
+                {notebook.gPerWattPerPlant ?? "—"}
+              </p>
+              <Button
+                type="primary"
+                className="mt-3"
+                onClick={() => setHarvestWizardOpen(true)}
+              >
+                {notebook.growthStage === "harvest"
+                  ? "Update harvest log"
+                  : "Open harvest log"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <p className="mb-6 text-sm text-[var(--gn-text-muted)]">
+            <Text strong className="text-[var(--gn-text)]">Harvest</Text> —
+            after you start flowering, a harvest section appears here with a
+            guided log (dry weight, notes, plant count, and up to eight photos).
+          </p>
+        )}
 
         <Button type="primary" htmlType="submit" className="mt-6">
           Save notebook
@@ -382,6 +469,16 @@ export function NotebookOwnerEdit({ notebookId }: { notebookId: string }) {
             onClose={() => setWeekWizardOpen(false)}
             onSaved={() => {
               setWeekWizardOpen(false);
+              void load();
+            }}
+          />
+          <NotebookHarvestWizard
+            open={harvestWizardOpen}
+            notebook={notebook}
+            notebookId={notebookId}
+            onClose={() => setHarvestWizardOpen(false)}
+            onSaved={() => {
+              setHarvestWizardOpen(false);
               void load();
             }}
           />

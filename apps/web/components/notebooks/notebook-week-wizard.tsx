@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import { NotebookImagePickDropzone } from "@/components/notebook-image-pick-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
 
 const STEPS = 5;
@@ -91,11 +92,31 @@ export function NotebookWeekWizard({
     { productId: "", customLabel: "", dosage: "" },
   ]);
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const filledImageSlots = useMemo(
+    () => imageUrls.map((s) => s.trim()).filter(Boolean).length,
+    [imageUrls],
+  );
+  const remainingImageSlots = MAX_IMAGES - filledImageSlots;
+
+  const appendUploadedImage = useCallback((url: string) => {
+    const t = url.trim();
+    if (!t) return;
+    setImageUrls((prev) => {
+      const core = prev.map((s) => s.trim()).filter(Boolean);
+      if (core.includes(t) || core.length >= MAX_IMAGES) return prev;
+      const next = [...core, t];
+      return next.length < MAX_IMAGES ? [...next, ""] : next;
+    });
+    setUploadError(null);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setError(null);
+    setUploadError(null);
     setSaving(false);
     if (mode === "edit" && existingWeek) {
       const w = existingWeek;
@@ -484,10 +505,21 @@ export function NotebookWeekWizard({
           <div>
             <label className={labelClass}>Photos</label>
             <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Up to {MAX_IMAGES} image URLs (https only), same as catalog
-              reviews.
+              Upload from your device or paste up to {MAX_IMAGES} https image
+              URLs.
             </p>
-            <div className="mt-3 flex justify-end">
+            <div className="mt-4">
+              <NotebookImagePickDropzone
+                disabled={saving || remainingImageSlots <= 0}
+                remainingSlots={remainingImageSlots}
+                onImageUrl={appendUploadedImage}
+                onError={(msg) => setUploadError(msg)}
+              />
+              {uploadError ? (
+                <p className="mt-2 text-xs text-red-400">{uploadError}</p>
+              ) : null}
+            </div>
+            <div className="mt-4 flex justify-end">
               {imageUrls.length < MAX_IMAGES ? (
                 <button
                   type="button"

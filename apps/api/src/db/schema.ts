@@ -57,6 +57,13 @@ export const notebookStartTypeEnum = pgEnum('notebook_start_type', [
   'seedling',
 ]);
 
+export const notebookGrowthStageEnum = pgEnum('notebook_growth_stage', [
+  'germination',
+  'vegetation',
+  'flower',
+  'harvest',
+]);
+
 /** Drizzle pgEnum helper type for suggestion kinds */
 export type CatalogSuggestionKind =
   (typeof catalogSuggestionKindEnum.enumValues)[number];
@@ -686,6 +693,21 @@ export const notebooks = pgTable(
     setupWizardCompletedAt: timestamp('setup_wizard_completed_at', {
       withTimezone: true,
     }),
+    growthStage: notebookGrowthStageEnum('growth_stage')
+      .notNull()
+      .default('germination'),
+    /** Max week index when leaving germination; veg weeks have week_index > this. */
+    vegPhaseStartedAfterWeekIndex: integer(
+      'veg_phase_started_after_week_index',
+    ),
+    /** Max week index when leaving vegetation; flower weeks have week_index > this. */
+    flowerPhaseStartedAfterWeekIndex: integer(
+      'flower_phase_started_after_week_index',
+    ),
+    harvestImageUrls: jsonb('harvest_image_urls')
+      .notNull()
+      .$type<string[]>()
+      .default(sql`'[]'::jsonb`),
     /** Derived on save: harvest_dry_weight_g / total_light_watts */
     gPerWatt: numeric('g_per_watt', { precision: 14, scale: 6 }),
     /** Derived: g_per_watt / plant_count when both set */

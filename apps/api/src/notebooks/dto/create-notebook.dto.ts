@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -10,6 +12,12 @@ import {
 } from 'class-validator';
 
 const STATUSES = ['active', 'completed', 'archived'] as const;
+const GROWTH_STAGES = [
+  'germination',
+  'vegetation',
+  'flower',
+  'harvest',
+] as const;
 const ROOM_TYPES = ['indoor', 'outdoor', 'greenhouse'] as const;
 const WATERING_TYPES = ['manual', 'drip', 'hydro', 'aeroponic'] as const;
 const START_TYPES = ['seed', 'clone', 'seedling'] as const;
@@ -102,4 +110,24 @@ export class UpdateNotebookDto {
   @IsOptional()
   @Type(() => Date)
   setupWizardCompletedAt?: Date | null;
+
+  @IsOptional()
+  @IsIn([...GROWTH_STAGES])
+  growthStage?: (typeof GROWTH_STAGES)[number];
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  vegPhaseStartedAfterWeekIndex?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  flowerPhaseStartedAfterWeekIndex?: number | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsString({ each: true })
+  harvestImageUrls?: string[];
 }

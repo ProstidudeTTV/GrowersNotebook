@@ -94,6 +94,60 @@ export class NotebooksService {
     return out;
   }
 
+  private async assertNotebookGrowthTransition(
+    notebookId: string,
+    existing: typeof notebooks.$inferSelect,
+    dto: UpdateNotebookDto,
+  ) {
+    const nextStage = dto.growthStage;
+    if (nextStage === undefined || nextStage === existing.growthStage) return;
+
+    const db = getDb();
+    const rows = await db
+      .select({ weekIndex: notebookWeeks.weekIndex })
+      .from(notebookWeeks)
+      .where(eq(notebookWeeks.notebookId, notebookId));
+    const maxIdx = rows.length ? Math.max(...rows.map((r) => r.weekIndex)) : 0;
+
+    if (nextStage === 'vegetation' && existing.growthStage === 'germination') {
+      if (rows.length < 2) {
+        throw new BadRequestException(
+          'Add and save at least two germination weeks before starting vegetation.',
+        );
+      }
+      if (dto.vegPhaseStartedAfterWeekIndex !== maxIdx) {
+        throw new BadRequestException(
+          'Start vegetation from the latest week — refresh and try again.',
+        );
+      }
+    }
+
+    if (nextStage === 'flower' && existing.growthStage === 'vegetation') {
+      const boundary = existing.vegPhaseStartedAfterWeekIndex ?? 0;
+      const vegWeeks = rows.filter((r) => r.weekIndex > boundary);
+      if (vegWeeks.length < 2) {
+        throw new BadRequestException(
+          'Add at least two vegetation weeks before starting flower.',
+        );
+      }
+      if (dto.flowerPhaseStartedAfterWeekIndex !== maxIdx) {
+        throw new BadRequestException(
+          'Start flowering from the latest week — refresh and try again.',
+        );
+      }
+    }
+
+    if (
+      nextStage === 'harvest' &&
+      existing.growthStage !== 'flower' &&
+      existing.growthStage !== 'harvest'
+    ) {
+      throw new BadRequestException(
+        'Harvest logging unlocks after the flowering stage.',
+      );
+    }
+  }
+
   private async assertStrainExists(strainId: string | null | undefined) {
     if (!strainId) return;
     const db = getDb();
@@ -572,6 +626,27 @@ export class NotebooksService {
     }
     if (dto.setupWizardCompletedAt !== undefined) {
       patch.setupWizardCompletedAt = dto.setupWizardCompletedAt;
+    }
+
+    if (
+      dto.growthStage !== undefined &&
+      dto.growthStage !== existing.growthStage
+    ) {
+      await this.assertNotebookGrowthTransition(id, existing, dto);
+    }
+
+    if (dto.growthStage !== undefined) {
+      patch.growthStage = dto.growthStage;
+    }
+    if (dto.vegPhaseStartedAfterWeekIndex !== undefined) {
+      patch.vegPhaseStartedAfterWeekIndex = dto.vegPhaseStartedAfterWeekIndex;
+    }
+    if (dto.flowerPhaseStartedAfterWeekIndex !== undefined) {
+      patch.flowerPhaseStartedAfterWeekIndex =
+        dto.flowerPhaseStartedAfterWeekIndex;
+    }
+    if (dto.harvestImageUrls !== undefined) {
+      patch.harvestImageUrls = this.normalizeWeekImages(dto.harvestImageUrls);
     }
 
     const merged = { ...existing, ...patch };

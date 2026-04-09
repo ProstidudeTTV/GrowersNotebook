@@ -11,11 +11,6 @@ import {
 
 const STATUSES = ['active', 'completed', 'archived'] as const;
 
-export class CreateNotebookAdminDto extends CreateNotebookDto {
-  @IsUUID()
-  ownerId!: string;
-}
-
 export class CreateNotebookDto {
   @IsString()
   @MaxLength(200)
@@ -33,6 +28,12 @@ export class CreateNotebookDto {
   @IsOptional()
   @IsIn([...STATUSES])
   status?: (typeof STATUSES)[number];
+}
+
+/** Admin creates a notebook for any user (requires `ownerId`). */
+export class CreateNotebookAdminDto extends CreateNotebookDto {
+  @IsUUID()
+  ownerId!: string;
 }
 
 export class UpdateNotebookDto {

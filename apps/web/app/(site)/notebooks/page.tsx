@@ -9,8 +9,13 @@ type NotebookListItem = {
   status: string;
   updatedAt: string;
   customStrainLabel: string | null;
-  owner: { id: string; displayName: string | null };
+  owner: {
+    id: string;
+    displayName: string | null;
+    avatarUrl?: string | null;
+  };
   strain: { slug: string; name: string | null } | null;
+  breeder: { slug: string; name: string } | null;
   score: number;
 };
 
@@ -25,6 +30,8 @@ function buildListQuery(opts: {
   pageSize: number;
   status?: string;
   q?: string;
+  grower?: string;
+  breeder?: string;
 }): string {
   const p = new URLSearchParams();
   p.set("page", String(opts.page));
@@ -37,13 +44,74 @@ function buildListQuery(opts: {
     p.set("status", opts.status);
   }
   if (opts.q?.trim()) p.set("q", opts.q.trim());
+  if (opts.grower?.trim()) p.set("grower", opts.grower.trim());
+  if (opts.breeder?.trim()) p.set("breeder", opts.breeder.trim());
   return p.toString();
+}
+
+function formatListDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function statusPillClass(status: string): string {
+  switch (status) {
+    case "active":
+      return "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25";
+    case "completed":
+      return "bg-sky-500/15 text-sky-200 ring-sky-500/25";
+    case "archived":
+      return "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] ring-[var(--gn-divide)]";
+    default:
+      return "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] ring-[var(--gn-divide)]";
+  }
+}
+
+function NotebookCardAvatar({
+  avatarUrl,
+  displayName,
+}: {
+  avatarUrl?: string | null;
+  displayName: string | null;
+}) {
+  const label = (displayName ?? "Grower").trim();
+  const initial = label.charAt(0).toUpperCase() || "?";
+  const frame =
+    "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+  if (avatarUrl?.trim()) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={avatarUrl.trim()}
+        alt=""
+        className={`${frame} object-cover`}
+      />
+    );
+  }
+  return (
+    <span className={frame} aria-hidden>
+      {initial}
+    </span>
+  );
 }
 
 export default async function NotebooksDirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    status?: string;
+    q?: string;
+    grower?: string;
+    breeder?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
@@ -55,6 +123,8 @@ export default async function NotebooksDirectoryPage({
       ? statusRaw
       : "";
   const q = sp.q ?? "";
+  const grower = sp.grower ?? "";
+  const breeder = sp.breeder ?? "";
   let data: {
     items: NotebookListItem[];
     total: number;
@@ -62,7 +132,14 @@ export default async function NotebooksDirectoryPage({
     pageSize: number;
   };
   try {
-    const qs = buildListQuery({ page, pageSize: 24, status, q });
+    const qs = buildListQuery({
+      page,
+      pageSize: 24,
+      status,
+      q,
+      grower,
+      breeder,
+    });
     data = await apiFetch<typeof data>(`/notebooks?${qs}`, {
       timeoutMs: 12_000,
     });
@@ -70,117 +147,262 @@ export default async function NotebooksDirectoryPage({
     data = { items: [], total: 0, page: 1, pageSize: 24 };
   }
 
+  const filterBase = { status, q, grower, breeder };
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-[var(--gn-text)]">Notebooks</h1>
-      <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Public notebooks shared by the community.
-      </p>
-      <Link
-        href="/notebooks/new"
-        className="mt-6 inline-flex rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] hover:bg-[#ff5414]"
-      >
-        Set up your notebook
-      </Link>
-
-      <form
-        method="get"
-        className="mt-8 flex flex-col gap-4 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:flex-row sm:flex-wrap sm:items-end"
-      >
-        <label className="block min-w-[12rem] flex-1 text-sm">
-          <span className="font-medium text-[var(--gn-text)]">Search</span>
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Title or strain…"
-            className="gn-input mt-1 w-full"
-            autoComplete="off"
-          />
-        </label>
-        <label className="block w-full text-sm sm:w-44">
-          <span className="font-medium text-[var(--gn-text)]">Status</span>
-          <select
-            name="status"
-            defaultValue={status}
-            className="gn-input mt-1 w-full"
-          >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
-          >
-            Apply filters
-          </button>
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <div className="lg:grid lg:grid-cols-[1fr_min(22rem,34%)] lg:items-start lg:gap-10">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--gn-text)]">
+            Notebooks
+          </h1>
+          <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+            Public notebooks shared by the community.
+          </p>
           <Link
-            href="/notebooks"
-            className="rounded-full border border-[var(--gn-divide)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+            href="/notebooks/new"
+            className="mt-6 inline-flex rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] hover:bg-[#ff5414]"
           >
-            Clear
+            Set up your notebook
           </Link>
-        </div>
-      </form>
 
-      <ul className="mt-8 space-y-3">
-        {data.items.map((n) => {
-          const grower = n.owner.displayName?.trim() || "Grower";
-          const strain =
-            n.strain?.name?.trim() || n.customStrainLabel?.trim() || null;
-          return (
-            <li key={n.id}>
-              <Link
-                href={`/notebooks/${encodeURIComponent(n.id)}`}
-                className="block rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 transition hover:border-[var(--gn-text-muted)]"
+          <form
+            method="get"
+            className="mt-8 flex flex-col gap-4 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-[var(--gn-text)]">
+                  Search
+                </span>
+                <input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Title or strain…"
+                  className="gn-input mt-1 w-full"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-[var(--gn-text)]">
+                  Grower
+                </span>
+                <input
+                  name="grower"
+                  defaultValue={grower}
+                  placeholder="Display name…"
+                  className="gn-input mt-1 w-full"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-[var(--gn-text)]">
+                  Breeder
+                </span>
+                <input
+                  name="breeder"
+                  defaultValue={breeder}
+                  placeholder="Name or slug…"
+                  className="gn-input mt-1 w-full"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="block w-full text-sm sm:col-span-2 sm:w-48">
+                <span className="font-medium text-[var(--gn-text)]">
+                  Status
+                </span>
+                <select
+                  name="status"
+                  defaultValue={status}
+                  className="gn-input mt-1 w-full sm:max-w-xs"
+                >
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
               >
-                <p className="font-semibold text-[var(--gn-text)]">{n.title}</p>
-                <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                  {grower}
-                  {strain ? ` · ${strain}` : ""}
-                </p>
-                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                  Score {n.score} · {n.status}
-                </p>
+                Apply filters
+              </button>
+              <Link
+                href="/notebooks"
+                className="inline-flex items-center rounded-full border border-[var(--gn-divide)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+              >
+                Clear
               </Link>
-            </li>
-          );
-        })}
-      </ul>
+            </div>
+          </form>
 
-      {data.total > data.pageSize ? (
-        <div className="mt-6 flex gap-4 text-sm">
-          {data.page > 1 ? (
-            <Link
-              href={`/notebooks?${buildListQuery({
-                page: data.page - 1,
-                pageSize: data.pageSize,
-                status,
-                q,
-              })}`}
-              className="text-[#ff4500] hover:underline"
-            >
-              Previous
-            </Link>
+          <ul className="mt-8 space-y-4">
+            {data.items.map((n) => {
+              const growerName =
+                n.owner.displayName?.trim() || "Grower";
+              const strainLabel =
+                n.strain?.name?.trim() ||
+                n.customStrainLabel?.trim() ||
+                null;
+              return (
+                <li key={n.id}>
+                  <article className="rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-4 shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
+                    <div className="flex gap-3 sm:gap-4">
+                      <NotebookCardAvatar
+                        avatarUrl={n.owner.avatarUrl}
+                        displayName={n.owner.displayName}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <Link
+                            href={`/notebooks/${encodeURIComponent(n.id)}`}
+                            className="text-base font-semibold text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
+                          >
+                            {n.title}
+                          </Link>
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ${statusPillClass(n.status)}`}
+                          >
+                            {n.status}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-sm text-[var(--gn-text-muted)]">
+                          <Link
+                            href={`/u/${encodeURIComponent(n.owner.id)}`}
+                            className="font-medium text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
+                          >
+                            {growerName}
+                          </Link>
+                          {strainLabel ? (
+                            <>
+                              {" · "}
+                              {n.strain?.slug ? (
+                                <Link
+                                  href={`/strains/${encodeURIComponent(n.strain.slug)}`}
+                                  className="hover:text-[#ff5414] hover:underline"
+                                >
+                                  {strainLabel}
+                                </Link>
+                              ) : (
+                                strainLabel
+                              )}
+                            </>
+                          ) : null}
+                          {n.breeder ? (
+                            <>
+                              {" · "}
+                              <Link
+                                href={`/breeders/${encodeURIComponent(n.breeder.slug)}`}
+                                className="hover:text-[#ff5414] hover:underline"
+                              >
+                                {n.breeder.name}
+                              </Link>
+                            </>
+                          ) : null}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--gn-text-muted)]">
+                          <span>
+                            Score{" "}
+                            <span className="font-medium text-[var(--gn-text)]">
+                              {n.score}
+                            </span>
+                          </span>
+                          <span className="hidden sm:inline">·</span>
+                          <span>Updated {formatListDate(n.updatedAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+
+          {data.total > data.pageSize ? (
+            <div className="mt-6 flex gap-4 text-sm">
+              {data.page > 1 ? (
+                <Link
+                  href={`/notebooks?${buildListQuery({
+                    page: data.page - 1,
+                    pageSize: data.pageSize,
+                    ...filterBase,
+                  })}`}
+                  className="text-[#ff4500] hover:underline"
+                >
+                  Previous
+                </Link>
+              ) : null}
+              {data.page * data.pageSize < data.total ? (
+                <Link
+                  href={`/notebooks?${buildListQuery({
+                    page: data.page + 1,
+                    pageSize: data.pageSize,
+                    ...filterBase,
+                  })}`}
+                  className="text-[#ff4500] hover:underline"
+                >
+                  Next
+                </Link>
+              ) : null}
+            </div>
           ) : null}
-          {data.page * data.pageSize < data.total ? (
-            <Link
-              href={`/notebooks?${buildListQuery({
-                page: data.page + 1,
-                pageSize: data.pageSize,
-                status,
-                q,
-              })}`}
-              className="text-[#ff4500] hover:underline"
-            >
-              Next
-            </Link>
+
+          {data.items.length === 0 ? (
+            <p className="mt-8 text-sm text-[var(--gn-text-muted)]">
+              No notebooks match these filters. Try widening search or{" "}
+              <Link href="/notebooks" className="text-[#ff4500] hover:underline">
+                clear filters
+              </Link>
+              .
+            </p>
           ) : null}
         </div>
-      ) : null}
+
+        <aside className="mt-12 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:mt-0 lg:border-t-0 lg:border-l lg:border-[var(--gn-border)] lg:pl-8 lg:pt-2">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              What are notebooks?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
+              Notebooks are structured grow diaries: one plant (or run), weekly
+              checkpoints, environment and feeding notes, and a timeline you
+              (and the community) can follow from seed to harvest.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              How to start
+            </h2>
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--gn-text)]">
+              <li>
+                Sign in, then open{" "}
+                <Link
+                  href="/notebooks/new"
+                  className="text-[#ff4500] hover:underline"
+                >
+                  Set up your notebook
+                </Link>
+                .
+              </li>
+              <li>
+                Add title, strain (from the catalog or a custom label), and
+                your first week.
+              </li>
+              <li>
+                Keep logging weeks—readers can filter by grower, breeder, and
+                status from this directory.
+              </li>
+            </ol>
+          </div>
+          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-sm text-[var(--gn-text-muted)]">
+            Profiles must be public with notebooks shared for a diary to appear
+            here. You can change that anytime in account settings.
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }

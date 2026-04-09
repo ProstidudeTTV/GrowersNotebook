@@ -75,6 +75,8 @@ export class NotebooksController {
     @Query('pageSize') pageSize?: string,
     @Query('status') status?: string,
     @Query('q') q?: string,
+    @Query('grower') grower?: string,
+    @Query('breeder') breeder?: string,
     @CurrentUser() user?: JwtUser,
   ) {
     const st =
@@ -87,6 +89,8 @@ export class NotebooksController {
       viewerId: user?.sub,
       status: st,
       q: q?.trim() || undefined,
+      grower: grower?.trim() || undefined,
+      breeder: breeder?.trim() || undefined,
     });
   }
 

@@ -14,6 +14,7 @@ import {
   eq,
   ilike,
   inArray,
+  isNotNull,
   lt,
   max,
   or,
@@ -22,6 +23,7 @@ import {
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { getDb } from '../db';
 import {
+  breeders,
   notebookVotes,
   notebookWeekNutrients,
   notebookWeeks,
@@ -265,6 +267,8 @@ export class NotebooksService {
     viewerId?: string;
     status?: 'active' | 'completed' | 'archived';
     q?: string;
+    grower?: string;
+    breeder?: string;
   }) {
     const db = getDb();
     const page = Math.max(1, opts.page);
@@ -290,6 +294,21 @@ export class NotebooksService {
         )!,
       );
     }
+    const grower = opts.grower?.trim();
+    if (grower) {
+      const pat = `%${grower}%`;
+      filters.push(ilike(profiles.displayName, pat));
+    }
+    const breederQ = opts.breeder?.trim();
+    if (breederQ) {
+      const pat = `%${breederQ}%`;
+      filters.push(
+        and(
+          isNotNull(breeders.id),
+          or(ilike(breeders.name, pat), ilike(breeders.slug, pat))!,
+        )!,
+      );
+    }
     const listWhere = and(...filters);
 
     const [{ total }] = await db
@@ -297,6 +316,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(listWhere);
 
     const rows = await db
@@ -309,6 +329,8 @@ export class NotebooksService {
         },
         strainSlug: strains.slug,
         strainName: strains.name,
+        breederSlug: breeders.slug,
+        breederName: breeders.name,
         score: notebookScoreExpr.as('score'),
         upvotes: notebookUpVotesExpr.as('upvotes'),
         downvotes: notebookDownVotesExpr.as('downvotes'),
@@ -317,6 +339,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(listWhere)
       .orderBy(desc(notebooks.updatedAt))
       .offset(skip)
@@ -363,6 +386,8 @@ export class NotebooksService {
         },
         strainSlug: strains.slug,
         strainName: strains.name,
+        breederSlug: breeders.slug,
+        breederName: breeders.name,
         score: notebookScoreExpr.as('score'),
         upvotes: notebookUpVotesExpr.as('upvotes'),
         downvotes: notebookDownVotesExpr.as('downvotes'),
@@ -371,6 +396,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(eq(notebooks.ownerId, opts.ownerId))
       .orderBy(desc(notebooks.updatedAt))
       .offset(skip)
@@ -389,6 +415,8 @@ export class NotebooksService {
     owner: { id: string; displayName: string | null; avatarUrl: string | null };
     strainSlug: string | null;
     strainName: string | null;
+    breederSlug: string | null;
+    breederName: string | null;
     score: number;
     upvotes: number;
     downvotes: number;
@@ -400,6 +428,10 @@ export class NotebooksService {
       strain: r.strainSlug
         ? { slug: r.strainSlug, name: r.strainName }
         : null,
+      breeder:
+        r.breederSlug && r.breederName
+          ? { slug: r.breederSlug, name: r.breederName }
+          : null,
       score: Number(r.score),
       upvotes: Number(r.upvotes),
       downvotes: Number(r.downvotes),

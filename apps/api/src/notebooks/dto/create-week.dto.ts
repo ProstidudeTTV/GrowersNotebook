@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsInt,
@@ -10,6 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { WeekNutrientLineDto } from './week-nutrient-line.dto';
+import { WeekNoteSpotDto } from './week-note-spot.dto';
 
 export class CreateNotebookWeekDto {
   @Type(() => Number)
@@ -21,6 +23,14 @@ export class CreateNotebookWeekDto {
   @IsString()
   @MaxLength(20_000)
   notes?: string | null;
+
+  /** Up to three timestamped note blocks (mid-week updates). Preferred over `notes`. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @ValidateNested({ each: true })
+  @Type(() => WeekNoteSpotDto)
+  noteSpots?: WeekNoteSpotDto[];
 
   @IsOptional()
   @IsString()
@@ -83,6 +93,13 @@ export class UpdateNotebookWeekDto {
   @IsString()
   @MaxLength(20_000)
   notes?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @ValidateNested({ each: true })
+  @Type(() => WeekNoteSpotDto)
+  noteSpots?: WeekNoteSpotDto[];
 
   @IsOptional()
   @IsString()

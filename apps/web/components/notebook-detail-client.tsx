@@ -44,10 +44,16 @@ type WeekNut = {
   productName: string | null;
 };
 
+type WeekNoteSpot = { body: string; at: string };
+
 type Week = {
   id: string;
   weekIndex: number;
+  /** Up to three timestamped updates from API; legacy rows may only have `notes`. */
+  noteSpots?: WeekNoteSpot[];
   notes: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   tempC: string | null;
   humidityPct: string | null;
   ph: string | null;
@@ -138,6 +144,52 @@ function weekImagesAsPostMedia(urls: string[] | undefined): PostMediaItem[] {
   return urls
     .filter(Boolean)
     .map((url) => ({ url, type: "image" as const }));
+}
+
+function formatNotebookWeekInstant(iso: string | undefined | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function weekEntryWasEdited(
+  created: string | undefined | null,
+  updated: string | undefined | null,
+): boolean {
+  if (!created || !updated) return false;
+  return new Date(updated).getTime() - new Date(created).getTime() > 1500;
+}
+
+function weekNoteSpotsFromRow(w: Week): WeekNoteSpot[] {
+  const spots = w.noteSpots;
+  if (Array.isArray(spots) && spots.length > 0) {
+    const out: WeekNoteSpot[] = [];
+    for (const s of spots.slice(0, 3)) {
+      const body = String(s?.body ?? "").trim();
+      if (!body) continue;
+      const raw = s?.at;
+      const at =
+        typeof raw === "string" && !Number.isNaN(Date.parse(raw))
+          ? new Date(raw).toISOString()
+          : w.createdAt
+            ? new Date(w.createdAt).toISOString()
+            : new Date().toISOString();
+      out.push({ body, at });
+    }
+    return out;
+  }
+  if (w.notes?.trim()) {
+    const at =
+      w.createdAt && !Number.isNaN(Date.parse(w.createdAt))
+        ? new Date(w.createdAt).toISOString()
+        : new Date().toISOString();
+    return [{ body: w.notes.trim(), at }];
+  }
+  return [];
 }
 
 /** Compact “label value · label value” row for week logs (no stat boxes). */
@@ -684,14 +736,28 @@ export function NotebookDetailClient({
                 id={`week-${w.weekIndex}`}
                 className={`scroll-mt-20 rounded-lg px-3 py-2.5 sm:px-3.5 sm:py-3 ${phaseClass}`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-2">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                    <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
-                      Week {w.weekIndex}
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--gn-divide)]/40 pb-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                      <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
+                        Week {w.weekIndex}
+                      </p>
+                      <span className="text-[10px] font-medium text-[var(--gn-text-muted)]">
+                        {GROWTH_STAGE_LABEL[phase] ?? phase}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] leading-snug text-[var(--gn-text-muted)]">
+                      {w.createdAt ? (
+                        <time dateTime={w.createdAt}>
+                          {formatNotebookWeekInstant(w.createdAt)}
+                        </time>
+                      ) : null}
+                      {weekEntryWasEdited(w.createdAt, w.updatedAt) ? (
+                        <span className="ml-1.5 font-medium text-[var(--gn-text-muted)]">
+                          (edited)
+                        </span>
+                      ) : null}
                     </p>
-                    <span className="text-[10px] font-medium text-[var(--gn-text-muted)]">
-                      {GROWTH_STAGE_LABEL[phase] ?? phase}
-                    </span>
                   </div>
                   {isOwner ? (
                     <button
@@ -701,23 +767,52 @@ export function NotebookDetailClient({
                         setWeekEditTarget(w);
                         setWeekWizardOpen(true);
                       }}
-                      className="text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
+                      className="shrink-0 text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
                     >
                       Edit week
                     </button>
                   ) : null}
                 </div>
 
-                {w.notes?.trim() ? (
-                  <div className="mt-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
-                      Notes
-                    </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
-                      {w.notes}
-                    </p>
-                  </div>
-                ) : null}
+                {(() => {
+                  const spots = weekNoteSpotsFromRow(w);
+                  if (!spots.length) return null;
+                  return (
+                    <div className="mt-2">
+                      {spots.length > 1 ? (
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                          Updates ({spots.length})
+                        </p>
+                      ) : (
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                          Notes
+                        </p>
+                      )}
+                      <div className="mt-1 space-y-2">
+                        {spots.map((spot, idx) => (
+                          <div
+                            key={idx}
+                            className={
+                              idx > 0
+                                ? "border-t border-[var(--gn-divide)]/25 pt-2"
+                                : ""
+                            }
+                          >
+                            <time
+                              className="text-[10px] tabular-nums text-[var(--gn-text-muted)]"
+                              dateTime={spot.at}
+                            >
+                              {formatNotebookWeekInstant(spot.at)}
+                            </time>
+                            <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
+                              {spot.body}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <WeekMetricRow label="Environment" items={envItems} />
 

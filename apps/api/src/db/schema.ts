@@ -748,6 +748,11 @@ export const notebookWeeks = pgTable(
       .notNull()
       .references(() => notebooks.id, { onDelete: 'cascade' }),
     weekIndex: integer('week_index').notNull(),
+    /** Up to three mid-week updates; each { body, at } with ISO `at`. Legacy `notes` may still exist. */
+    noteEntries: jsonb('note_entries')
+      .notNull()
+      .$type<{ body: string; at: string }[]>()
+      .default(sql`'[]'::jsonb`),
     notes: text('notes'),
     tempC: numeric('temp_c', { precision: 6, scale: 2 }),
     humidityPct: numeric('humidity_pct', { precision: 6, scale: 2 }),

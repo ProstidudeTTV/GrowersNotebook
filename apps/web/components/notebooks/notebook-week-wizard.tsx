@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -23,8 +23,58 @@ import {
 
 const STEPS = 5;
 const MAX_IMAGES = 8;
+const MAX_NOTE_SLOTS = 3;
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
+
+type NoteSlot = { body: string; at?: string };
+
+function emptyNoteSlots(): NoteSlot[] {
+  return Array.from({ length: MAX_NOTE_SLOTS }, () => ({ body: "" }));
+}
+
+function slotsFromWeekRow(w: WeekRow): NoteSlot[] {
+  const slots = emptyNoteSlots();
+  const raw = (w as { noteSpots?: { body?: string; at?: string }[] }).noteSpots;
+  if (Array.isArray(raw) && raw.length > 0) {
+    raw.slice(0, MAX_NOTE_SLOTS).forEach((s, i) => {
+      slots[i] = {
+        body: String(s?.body ?? ""),
+        at: typeof s?.at === "string" ? s.at : undefined,
+      };
+    });
+    return slots;
+  }
+  if (w.notes?.trim()) {
+    slots[0] = {
+      body: w.notes,
+      at:
+        typeof w.createdAt === "string" && w.createdAt
+          ? w.createdAt
+          : undefined,
+    };
+  }
+  return slots;
+}
+
+function buildNoteSpotsPayload(
+  slots: NoteSlot[],
+  initial: NoteSlot[] | null,
+): { body: string; at?: string }[] {
+  const out: { body: string; at?: string }[] = [];
+  for (let i = 0; i < MAX_NOTE_SLOTS; i++) {
+    const body = slots[i].body.trim();
+    if (!body) continue;
+    const init = initial?.[i];
+    const unchanged =
+      !!init &&
+      init.body.trim() === body &&
+      typeof init.at === "string" &&
+      init.at.length > 0;
+    out.push(unchanged ? { body, at: init.at } : { body });
+  }
+  return out.slice(0, MAX_NOTE_SLOTS);
+}
 
 type NutLine = {
   productId: string;
@@ -133,7 +183,8 @@ export function NotebookWeekWizard({
   const [error, setError] = useState<string | null>(null);
 
   const [weekIndex, setWeekIndex] = useState(nextWeekIndex);
-  const [notes, setNotes] = useState("");
+  const [noteSlots, setNoteSlots] = useState<NoteSlot[]>(emptyNoteSlots);
+  const initialNoteSlotsRef = useRef<NoteSlot[] | null>(null);
   const [copyNutrientsFromPreviousWeek, setCopyNutrients] = useState(false);
   const [tempInput, setTempInput] = useState("");
   const [humidityPct, setHumidityPct] = useState("");
@@ -175,7 +226,9 @@ export function NotebookWeekWizard({
     if (mode === "edit" && existingWeek) {
       const w = existingWeek;
       setWeekIndex(w.weekIndex);
-      setNotes(w.notes ?? "");
+      const loaded = slotsFromWeekRow(w);
+      setNoteSlots(loaded);
+      initialNoteSlotsRef.current = loaded.map((s) => ({ ...s }));
       setCopyNutrients(false);
       setTempInput(tempCToDisplay(preferredTempUnit, w.tempC ?? null));
       setHumidityPct(w.humidityPct ?? "");
@@ -194,7 +247,8 @@ export function NotebookWeekWizard({
       setImageUrls(urls.length ? urls : [""]);
     } else {
       setWeekIndex(nextWeekIndex);
-      setNotes("");
+      setNoteSlots(emptyNoteSlots());
+      initialNoteSlotsRef.current = null;
       setCopyNutrients(false);
       setTempInput("");
       setHumidityPct("");
@@ -296,8 +350,12 @@ export function NotebookWeekWizard({
       const token = await getAccessTokenForApi(supabase);
       if (!token) throw new Error("Sign in to save.");
 
+      const noteSpots = buildNoteSpotsPayload(
+        noteSlots,
+        mode === "edit" ? initialNoteSlotsRef.current : null,
+      );
       const shared = {
-        notes: notes.trim() || null,
+        noteSpots,
         tempC: parseDisplayTempToC(preferredTempUnit, tempInput),
         humidityPct: humidityPct.trim() || null,
         ph: ph.trim() || null,
@@ -369,8 +427,8 @@ export function NotebookWeekWizard({
         {step === 1 ? (
           <div className="space-y-4">
             <p className="text-sm text-[var(--gn-text-muted)]">
-              Capture what changed this week—training, defoliation, pests, or
-              anything notable.
+              Add up to three dated notes for this week—main log plus mid-week
+              updates if something changes.
             </p>
             {mode === "create" ? (
               <div>
@@ -387,19 +445,33 @@ export function NotebookWeekWizard({
                 />
               </div>
             ) : null}
-            <div>
-              <label className={labelClass} htmlFor="nw-notes">
-                Notes
-              </label>
-              <textarea
-                id="nw-notes"
-                rows={6}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="What did you do this week?"
-                className={`${inputClass} mt-1`}
-              />
-            </div>
+            {noteSlots.map((slot, i) => (
+              <div key={i}>
+                <label className={labelClass} htmlFor={`nw-notes-${i}`}>
+                  {i === 0
+                    ? "Primary note"
+                    : `Mid-week update ${i} (optional)`}
+                </label>
+                <textarea
+                  id={`nw-notes-${i}`}
+                  rows={i === 0 ? 5 : 4}
+                  value={slot.body}
+                  onChange={(e) =>
+                    setNoteSlots((prev) => {
+                      const next = [...prev];
+                      next[i] = { ...next[i], body: e.target.value };
+                      return next;
+                    })
+                  }
+                  placeholder={
+                    i === 0
+                      ? "What happened this week?"
+                      : "Anything that changed later in the week?"
+                  }
+                  className={`${inputClass} mt-1`}
+                />
+              </div>
+            ))}
           </div>
         ) : null}
 
@@ -687,9 +759,15 @@ export function NotebookWeekWizard({
             </li>
             <li>
               <span className="font-medium text-[var(--gn-text)]">Notes:</span>{" "}
-              {notes.trim()
-                ? `${notes.trim().slice(0, 120)}${notes.trim().length > 120 ? "…" : ""}`
-                : "—"}
+              {(() => {
+                const preview = noteSlots
+                  .map((s) => s.body.trim())
+                  .filter(Boolean)
+                  .join(" · ");
+                return preview.length
+                  ? `${preview.slice(0, 140)}${preview.length > 140 ? "…" : ""}`
+                  : "—";
+              })()}
             </li>
             <li>
               <span className="font-medium text-[var(--gn-text)]">

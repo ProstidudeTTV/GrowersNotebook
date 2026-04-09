@@ -95,6 +95,89 @@ export class NotebooksService {
     return out;
   }
 
+  private normalizeNoteSpotsInput(
+    spots: { body: string; at?: string | null }[] | undefined | null,
+  ): { body: string; at: string }[] {
+    if (!spots?.length) return [];
+    const out: { body: string; at: string }[] = [];
+    for (const s of spots) {
+      const body = (s.body ?? '').trim();
+      if (!body) continue;
+      if (out.length >= 3) break;
+      const rawAt = s.at?.trim();
+      let at: string;
+      if (rawAt && !Number.isNaN(Date.parse(rawAt))) {
+        at = new Date(rawAt).toISOString();
+      } else {
+        at = new Date().toISOString();
+      }
+      out.push({ body, at });
+    }
+    return out;
+  }
+
+  private noteEntriesFromCreateDto(dto: {
+    noteSpots?: { body: string; at?: string | null }[] | null;
+    notes?: string | null;
+  }): { noteEntries: { body: string; at: string }[]; notes: string | null } {
+    const fromSpots = this.normalizeNoteSpotsInput(dto.noteSpots);
+    if (fromSpots.length > 0) {
+      return {
+        noteEntries: fromSpots,
+        notes: fromSpots.map((n) => n.body).join('\n\n') || null,
+      };
+    }
+    const legacy = dto.notes?.trim() || null;
+    if (legacy) {
+      const at = new Date().toISOString();
+      return {
+        noteEntries: [{ body: legacy, at }],
+        notes: legacy,
+      };
+    }
+    return { noteEntries: [], notes: null };
+  }
+
+  private computeNoteSpotsForApi(w: {
+    noteEntries: unknown;
+    notes: string | null;
+    createdAt: Date;
+  }): { body: string; at: string }[] {
+    const raw = w.noteEntries;
+    if (Array.isArray(raw) && raw.length > 0) {
+      const out: { body: string; at: string }[] = [];
+      for (const e of raw.slice(0, 3)) {
+        const body = String((e as { body?: unknown })?.body ?? '').trim();
+        if (!body) continue;
+        const atRaw = (e as { at?: unknown })?.at;
+        const atStr =
+          typeof atRaw === 'string' && !Number.isNaN(Date.parse(atRaw))
+            ? new Date(atRaw).toISOString()
+            : new Date(w.createdAt).toISOString();
+        out.push({ body, at: atStr });
+      }
+      if (out.length) return out;
+    }
+    if (w.notes?.trim()) {
+      return [
+        {
+          body: w.notes.trim(),
+          at: new Date(w.createdAt).toISOString(),
+        },
+      ];
+    }
+    return [];
+  }
+
+  private mapWeekRowForApi(w: typeof notebookWeeks.$inferSelect) {
+    const noteSpots = this.computeNoteSpotsForApi(w);
+    const { noteEntries: _ne, ...rest } = w;
+    return {
+      ...rest,
+      noteSpots,
+    };
+  }
+
   private async assertNotebookGrowthTransition(
     notebookId: string,
     existing: typeof notebooks.$inferSelect,
@@ -417,7 +500,7 @@ export class NotebooksService {
       downvotes: Number(row.downvotes),
       viewerVote: row.viewerVote,
       weeks: weeks.map((w) => ({
-        ...w,
+        ...this.mapWeekRowForApi(w),
         imageUrls: Array.isArray(w.imageUrls)
           ? (w.imageUrls as string[])
           : [],
@@ -516,7 +599,7 @@ export class NotebooksService {
       downvotes: Number(row.downvotes),
       viewerVote: null,
       weeks: weeks.map((w) => ({
-        ...w,
+        ...this.mapWeekRowForApi(w),
         imageUrls: Array.isArray(w.imageUrls)
           ? (w.imageUrls as string[])
           : [],
@@ -737,12 +820,14 @@ export class NotebooksService {
     }
 
     const imageUrls = this.normalizeWeekImages(dto.imageUrls);
+    const { noteEntries, notes: notesCol } = this.noteEntriesFromCreateDto(dto);
     const [week] = await db
       .insert(notebookWeeks)
       .values({
         notebookId,
         weekIndex: dto.weekIndex,
-        notes: dto.notes?.trim() || null,
+        noteEntries,
+        notes: notesCol,
         tempC: dto.tempC ?? null,
         humidityPct: dto.humidityPct ?? null,
         ph: dto.ph ?? null,
@@ -803,7 +888,7 @@ export class NotebooksService {
       .set({ updatedAt: new Date() })
       .where(eq(notebooks.id, notebookId));
 
-    return week!;
+    return this.mapWeekRowForApi(week!);
   }
 
   async updateWeek(
@@ -846,6 +931,20 @@ export class NotebooksService {
     if (dto.lightCycle !== undefined) {
       patch.lightCycle = dto.lightCycle?.trim() || null;
     }
+    if (dto.noteSpots !== undefined) {
+      const normalized = this.normalizeNoteSpotsInput(dto.noteSpots);
+      patch.noteEntries = normalized;
+      patch.notes =
+        normalized.length > 0
+          ? normalized.map((n) => n.body).join('\n\n')
+          : null;
+    } else if (dto.notes !== undefined) {
+      patch.notes = dto.notes?.trim() || null;
+      patch.noteEntries =
+        patch.notes != null && patch.notes !== ''
+          ? [{ body: patch.notes, at: new Date().toISOString() }]
+          : [];
+    }
     if (dto.imageUrls !== undefined) {
       patch.imageUrls = this.normalizeWeekImages(dto.imageUrls);
     }
@@ -865,7 +964,7 @@ export class NotebooksService {
       .select()
       .from(notebookWeeks)
       .where(eq(notebookWeeks.id, weekId));
-    return updated!;
+    return this.mapWeekRowForApi(updated!);
   }
 
   async deleteWeek(notebookId: string, weekId: string, ownerId: string, isAdmin: boolean) {

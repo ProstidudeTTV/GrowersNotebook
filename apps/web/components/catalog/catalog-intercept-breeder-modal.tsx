@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import {
   breederSlugsMatch,
-  type BreederModalReturnPayload,
   STRAINS_BREEDER_MODAL_RETURN_KEY,
 } from "@/components/catalog/breeder-modal-return";
 import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
@@ -32,10 +31,19 @@ export function CatalogInterceptBreederModal({
     const raw = sessionStorage.getItem(STRAINS_BREEDER_MODAL_RETURN_KEY);
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as BreederModalReturnPayload;
+        const parsed = JSON.parse(raw) as {
+          mode?: string;
+          href?: string;
+          breederSlug?: string;
+        };
+        const modeOk =
+          parsed.mode === "catalog-filter" ||
+          parsed.mode === "strain-detail" ||
+          parsed.mode === undefined;
         if (
-          (parsed.mode === "catalog-filter" || parsed.mode === "strain-detail") &&
+          modeOk &&
           typeof parsed.href === "string" &&
+          typeof parsed.breederSlug === "string" &&
           breederSlugsMatch(parsed.breederSlug, breederSlug)
         ) {
           sessionStorage.removeItem(STRAINS_BREEDER_MODAL_RETURN_KEY);

@@ -66,6 +66,8 @@ export function NotebookSetupWizard({
       startType: notebook.startType ?? undefined,
       plantCount: notebook.plantCount ?? undefined,
       totalLightWatts: notebook.totalLightWatts ?? "",
+      vegLightCycle: notebook.vegLightCycle ?? "",
+      flowerLightCycle: notebook.flowerLightCycle ?? "",
       setupNotes: notebook.setupNotes ?? "",
     });
   }, [open, notebook, form]);
@@ -110,6 +112,8 @@ export function NotebookSetupWizard({
         startType: v.startType ?? null,
         plantCount: v.plantCount ?? null,
         totalLightWatts: v.totalLightWatts?.trim() || null,
+        vegLightCycle: v.vegLightCycle?.trim() || null,
+        flowerLightCycle: v.flowerLightCycle?.trim() || null,
         setupNotes: v.setupNotes?.trim() || null,
         setupWizardCompletedAt: new Date().toISOString(),
       });
@@ -223,6 +227,20 @@ export function NotebookSetupWizard({
             </Form.Item>
             <Form.Item name="totalLightWatts" label="Total light (watts)">
               <Input placeholder="Optional — for g/W after harvest" />
+            </Form.Item>
+            <Form.Item
+              name="vegLightCycle"
+              label="Vegetation light schedule"
+              tooltip="Photoperiod during veg (e.g. 18/6). Stored on the notebook, not on weekly entries."
+            >
+              <Input placeholder="e.g. 18/6" />
+            </Form.Item>
+            <Form.Item
+              name="flowerLightCycle"
+              label="Flower light schedule"
+              tooltip="Photoperiod during flower (e.g. 12/12)."
+            >
+              <Input placeholder="e.g. 12/12" />
             </Form.Item>
         </div>
 

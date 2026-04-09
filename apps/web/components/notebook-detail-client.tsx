@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VoteFeedPill } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
@@ -80,6 +81,10 @@ export type NotebookDetailPayload = {
   setupWizardCompletedAt?: string | null;
   preferredTempUnit?: string | null;
   preferredVolumeUnit?: string | null;
+  /** Photoperiod for vegetation (e.g. 18/6); notebook-level. */
+  vegLightCycle?: string | null;
+  /** Photoperiod for flower (e.g. 12/12); notebook-level. */
+  flowerLightCycle?: string | null;
   growthStage?: string;
   vegPhaseStartedAfterWeekIndex?: number | null;
   flowerPhaseStartedAfterWeekIndex?: number | null;
@@ -108,6 +113,23 @@ type NbComment = {
 };
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
+
+function StatTile({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/70 px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+        {label}
+      </p>
+      <div className="mt-1 text-sm font-medium text-[var(--gn-text)]">{children}</div>
+    </div>
+  );
+}
 
 function weekImagesAsPostMedia(urls: string[] | undefined): PostMediaItem[] {
   if (!urls?.length) return [];
@@ -282,6 +304,17 @@ export function NotebookDetailClient({
     return Math.max(...nb.weeks.map((w) => w.weekIndex)) + 1;
   }, [nb.weeks]);
 
+  const showGrowingSetup = !!(
+    nb.roomType ||
+    nb.wateringType ||
+    nb.startType ||
+    nb.setupNotes?.trim() ||
+    nb.plantCount != null ||
+    nb.totalLightWatts ||
+    nb.vegLightCycle?.trim() ||
+    nb.flowerLightCycle?.trim()
+  );
+
   const transitionToVegetation = async () => {
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
@@ -335,42 +368,49 @@ export function NotebookDetailClient({
               disabled={voteBusy}
             />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-                    {nb.title}
-                  </h1>
-                  <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                    <Link
-                      href={`/u/${encodeURIComponent(nb.ownerId)}`}
-                      className="text-[#ff4500] hover:underline"
-                    >
-                      {nb.owner.displayName?.trim() || "Grower"}
-                    </Link>
-                    {strainLabel ? ` · ${strainLabel}` : ""}
-                    {nb.growthStage ? (
-                      <>
-                        {" "}
-                        ·{" "}
-                        <span className="text-[var(--gn-text)]">
-                          {GROWTH_STAGE_LABEL[nb.growthStage] ?? nb.growthStage}
-                        </span>
-                      </>
-                    ) : null}
-                    {nb.strain?.slug ? (
-                      <>
-                        {" "}
-                        <Link
-                          href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
-                          className="text-[#ff4500] hover:underline"
-                        >
-                          (catalog)
-                        </Link>
-                      </>
-                    ) : null}
-                  </p>
-                </div>
-                {isOwner ? (
+              <div className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-5 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h1 className="text-2xl font-bold text-[var(--gn-text)]">
+                      {nb.title}
+                    </h1>
+                    <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+                      <Link
+                        href={`/u/${encodeURIComponent(nb.ownerId)}`}
+                        className="text-[#ff4500] hover:underline"
+                      >
+                        {nb.owner.displayName?.trim() || "Grower"}
+                      </Link>
+                      {nb.strain?.slug ? (
+                        <>
+                          {" "}
+                          ·{" "}
+                          <Link
+                            href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
+                            className="text-[#ff4500] hover:underline"
+                          >
+                            Strain catalog
+                          </Link>
+                        </>
+                      ) : null}
+                    </p>
+                    {(strainLabel || nb.growthStage) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {strainLabel ? (
+                          <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--gn-text)]">
+                            {strainLabel}
+                          </span>
+                        ) : null}
+                        {nb.growthStage ? (
+                          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                            {GROWTH_STAGE_LABEL[nb.growthStage] ??
+                              nb.growthStage}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  {isOwner ? (
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     {showHarvestPanel(nb) ? (
                       <button
@@ -407,7 +447,7 @@ export function NotebookDetailClient({
                     </button>
                   </div>
                 ) : null}
-              </div>
+                </div>
 
               {isOwner && showStartVegetation(nb) ? (
                 <div className="mt-4 rounded-xl border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-4">
@@ -448,103 +488,91 @@ export function NotebookDetailClient({
               ) : null}
 
               <div className="mt-4 lg:hidden">
-                <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+                <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface)]/40 p-3">
                   <NotebookWeekSidebar weeks={nb.weeks} variant="mobile" />
                 </div>
+              </div>
               </div>
             </div>
           </div>
 
-      {(nb.roomType ||
-        nb.wateringType ||
-        nb.startType ||
-        nb.setupNotes?.trim() ||
-        nb.plantCount != null ||
-        nb.totalLightWatts) && (
-        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+      {showGrowingSetup ? (
+        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-[var(--gn-text)]">
             Growing setup
           </h2>
-          <dl className="mt-2 grid gap-1 text-sm text-[var(--gn-text-muted)]">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {nb.roomType ? (
-              <div>
-                Room:{" "}
-                <span className="text-[var(--gn-text)]">{nb.roomType}</span>
-              </div>
+              <StatTile label="Room">{nb.roomType}</StatTile>
             ) : null}
             {nb.wateringType ? (
-              <div>
-                Watering:{" "}
-                <span className="text-[var(--gn-text)]">{nb.wateringType}</span>
-              </div>
+              <StatTile label="Watering">{nb.wateringType}</StatTile>
             ) : null}
             {nb.startType ? (
-              <div>
-                Started from:{" "}
-                <span className="text-[var(--gn-text)]">{nb.startType}</span>
-              </div>
+              <StatTile label="Started from">{nb.startType}</StatTile>
             ) : null}
             {nb.plantCount != null ? (
-              <div>
-                Plants:{" "}
-                <span className="text-[var(--gn-text)]">{nb.plantCount}</span>
-              </div>
+              <StatTile label="Plants">{nb.plantCount}</StatTile>
             ) : null}
             {nb.totalLightWatts ? (
-              <div>
-                Light:{" "}
-                <span className="text-[var(--gn-text)]">
-                  {nb.totalLightWatts} W
-                </span>
-              </div>
+              <StatTile label="Total light">{`${nb.totalLightWatts} W`}</StatTile>
             ) : null}
-            {nb.setupNotes?.trim() ? (
-              <p className="mt-2 whitespace-pre-wrap text-[var(--gn-text)]">
+            {nb.vegLightCycle?.trim() ? (
+              <StatTile label="Veg light schedule">
+                {nb.vegLightCycle.trim()}
+              </StatTile>
+            ) : null}
+            {nb.flowerLightCycle?.trim() ? (
+              <StatTile label="Flower light schedule">
+                {nb.flowerLightCycle.trim()}
+              </StatTile>
+            ) : null}
+          </div>
+          {nb.setupNotes?.trim() ? (
+            <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                Setup notes
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                 {nb.setupNotes}
               </p>
-            ) : null}
-          </dl>
+            </div>
+          ) : null}
         </section>
-      )}
+      ) : null}
 
       {(nb.harvestDryWeightG ||
         nb.harvestQualityNotes?.trim() ||
         (nb.harvestImageUrls && nb.harvestImageUrls.length > 0)) && (
-        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+        <section className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-[var(--gn-text)]">
             Harvest
           </h2>
-          <dl className="mt-2 grid gap-1 text-sm text-[var(--gn-text-muted)]">
-            {nb.harvestDryWeightG ? (
-              <div>
-                Dry weight:{" "}
-                <span className="text-[var(--gn-text)]">
-                  {nb.harvestDryWeightG} g
-                </span>
-              </div>
-            ) : null}
-            {nb.gPerWatt ? (
-              <div>
-                g/W:{" "}
-                <span className="text-[var(--gn-text)]">{nb.gPerWatt}</span>
-              </div>
-            ) : null}
-            {nb.gPerWattPerPlant ? (
-              <div>
-                g/W/plant:{" "}
-                <span className="text-[var(--gn-text)]">
-                  {nb.gPerWattPerPlant}
-                </span>
-              </div>
-            ) : null}
-            {nb.harvestQualityNotes ? (
-              <p className="mt-2 whitespace-pre-wrap text-[var(--gn-text)]">
+          {(nb.harvestDryWeightG || nb.gPerWatt || nb.gPerWattPerPlant) && (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {nb.harvestDryWeightG ? (
+                <StatTile label="Dry weight">{`${nb.harvestDryWeightG} g`}</StatTile>
+              ) : null}
+              {nb.gPerWatt ? (
+                <StatTile label="g / W">{nb.gPerWatt}</StatTile>
+              ) : null}
+              {nb.gPerWattPerPlant ? (
+                <StatTile label="g / W / plant">{nb.gPerWattPerPlant}</StatTile>
+              ) : null}
+            </div>
+          )}
+          {nb.harvestQualityNotes ? (
+            <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                Quality notes
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
                 {nb.harvestQualityNotes}
               </p>
-            ) : null}
-          </dl>
+            </div>
+          ) : null}
           {nb.harvestImageUrls && nb.harvestImageUrls.length > 0 ? (
-            <div className="mt-3">
+            <div className="mt-4">
               <PostMediaCarousel
                 embedded
                 items={weekImagesAsPostMedia(nb.harvestImageUrls)}
@@ -566,7 +594,7 @@ export function NotebookDetailClient({
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className="scroll-mt-24 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4"
+                className="scroll-mt-24 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 sm:p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-[var(--gn-text)]">
@@ -587,58 +615,132 @@ export function NotebookDetailClient({
                   ) : null}
                 </div>
                 {w.notes ? (
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
-                    {w.notes}
-                  </p>
+                  <div className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-3 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                      Notes
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+                      {w.notes}
+                    </p>
+                  </div>
                 ) : null}
-                <ul className="mt-2 text-xs text-[var(--gn-text-muted)]">
-                  {w.tempC != null && w.tempC !== "" ? (
-                    <li>
-                      Temp: {tempCToDisplay(preferredTempUnit, w.tempC)}{" "}
-                      {tempSuffix(preferredTempUnit)}
-                    </li>
-                  ) : null}
-                  {w.humidityPct != null && w.humidityPct !== "" ? (
-                    <li>RH: {w.humidityPct}%</li>
-                  ) : null}
-                  {w.ph != null && w.ph !== "" ? <li>pH: {w.ph}</li> : null}
-                  {w.ec != null && w.ec !== "" ? <li>EC: {w.ec}</li> : null}
-                  {w.ppm != null && w.ppm !== "" ? <li>PPM: {w.ppm}</li> : null}
-                  {w.waterVolumeLiters != null &&
-                  String(w.waterVolumeLiters).trim() !== "" ? (
-                    <li>
-                      Water / feed volume:{" "}
-                      {litersToDisplayVolume(
-                        preferredVolumeUnit,
-                        w.waterVolumeLiters,
-                      )}{" "}
-                      {volumeSuffix(preferredVolumeUnit)}
-                    </li>
-                  ) : null}
-                  {w.waterNotes != null && w.waterNotes !== "" ? (
-                    <li className="whitespace-pre-wrap">
-                      Water / feed notes: {w.waterNotes}
-                    </li>
-                  ) : null}
-                  {w.lightCycle ? <li>Light: {w.lightCycle}</li> : null}
-                </ul>
+                {(() => {
+                  const envTiles: { label: string; node: ReactNode }[] = [];
+                  if (w.tempC != null && w.tempC !== "") {
+                    envTiles.push({
+                      label: "Temp",
+                      node: (
+                        <>
+                          {tempCToDisplay(preferredTempUnit, w.tempC)}{" "}
+                          {tempSuffix(preferredTempUnit)}
+                        </>
+                      ),
+                    });
+                  }
+                  if (w.humidityPct != null && w.humidityPct !== "") {
+                    envTiles.push({
+                      label: "Humidity",
+                      node: `${w.humidityPct}% RH`,
+                    });
+                  }
+                  if (w.ph != null && w.ph !== "") {
+                    envTiles.push({ label: "pH", node: w.ph });
+                  }
+                  if (w.ec != null && w.ec !== "") {
+                    envTiles.push({ label: "EC", node: w.ec });
+                  }
+                  if (w.ppm != null && w.ppm !== "") {
+                    envTiles.push({ label: "PPM / TDS", node: w.ppm });
+                  }
+                  const feedTiles: { label: string; node: ReactNode }[] = [];
+                  if (
+                    w.waterVolumeLiters != null &&
+                    String(w.waterVolumeLiters).trim() !== ""
+                  ) {
+                    feedTiles.push({
+                      label: "Water / feed volume",
+                      node: (
+                        <>
+                          {litersToDisplayVolume(
+                            preferredVolumeUnit,
+                            w.waterVolumeLiters,
+                          )}{" "}
+                          {volumeSuffix(preferredVolumeUnit)}
+                        </>
+                      ),
+                    });
+                  }
+                  if (w.waterNotes != null && w.waterNotes !== "") {
+                    feedTiles.push({
+                      label: "Water / feed notes",
+                      node: (
+                        <span className="whitespace-pre-wrap font-normal">
+                          {w.waterNotes}
+                        </span>
+                      ),
+                    });
+                  }
+                  const hasMetrics = envTiles.length > 0 || feedTiles.length > 0;
+                  if (!hasMetrics) return null;
+                  return (
+                    <div className="mt-4 space-y-4">
+                      {envTiles.length > 0 ? (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                            Environment
+                          </p>
+                          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                            {envTiles.map((t) => (
+                              <StatTile key={t.label} label={t.label}>
+                                {t.node}
+                              </StatTile>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {feedTiles.length > 0 ? (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                            Feed &amp; water
+                          </p>
+                          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {feedTiles.map((t) => (
+                              <StatTile key={t.label} label={t.label}>
+                                {t.node}
+                              </StatTile>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
                 {w.nutrients.length > 0 ? (
-                  <div className="mt-2 text-sm text-[var(--gn-text)]">
-                    <p className="text-xs font-medium text-[var(--gn-text-muted)]">
+                  <div className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 px-3 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                       Nutrients
                     </p>
-                    <ul className="mt-1 list-inside list-disc">
+                    <ul className="mt-2 space-y-1.5 text-sm text-[var(--gn-text)]">
                       {w.nutrients.map((x, i) => (
-                        <li key={i}>
-                          {(x.productName ?? x.customLabel ?? "—") +
-                            (x.dosage ? ` — ${x.dosage}` : "")}
+                        <li
+                          key={i}
+                          className="flex flex-wrap gap-x-2 gap-y-0.5 border-b border-[var(--gn-divide)]/60 pb-1.5 last:border-0 last:pb-0"
+                        >
+                          <span className="font-medium">
+                            {x.productName ?? x.customLabel ?? "—"}
+                          </span>
+                          {x.dosage ? (
+                            <span className="text-[var(--gn-text-muted)]">
+                              {x.dosage}
+                            </span>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
                   </div>
                 ) : null}
                 {w.imageUrls?.length ? (
-                  <div className="mt-3">
+                  <div className="mt-4">
                     <PostMediaCarousel
                       embedded
                       items={weekImagesAsPostMedia(w.imageUrls)}

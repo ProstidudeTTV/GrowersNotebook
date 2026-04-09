@@ -140,7 +140,6 @@ export function NotebookWeekWizard({
   const [ph, setPh] = useState("");
   const [ec, setEc] = useState("");
   const [ppm, setPpm] = useState("");
-  const [lightCycle, setLightCycle] = useState("");
   const [waterNotes, setWaterNotes] = useState("");
   const [waterVolumeInput, setWaterVolumeInput] = useState("");
   const [nutrientLines, setNutrientLines] = useState<NutLine[]>([
@@ -183,7 +182,6 @@ export function NotebookWeekWizard({
       setPh(w.ph ?? "");
       setEc(w.ec ?? "");
       setPpm(w.ppm ?? "");
-      setLightCycle(w.lightCycle ?? "");
       setWaterNotes(w.waterNotes ?? "");
       setWaterVolumeInput(
         litersToDisplayVolume(
@@ -203,7 +201,6 @@ export function NotebookWeekWizard({
       setPh("");
       setEc("");
       setPpm("");
-      setLightCycle("");
       setWaterNotes("");
       setWaterVolumeInput("");
       setNutrientLines([
@@ -306,7 +303,7 @@ export function NotebookWeekWizard({
         ph: ph.trim() || null,
         ec: ec.trim() || null,
         ppm: ppm.trim() || null,
-        lightCycle: lightCycle.trim() || null,
+        lightCycle: null,
         waterNotes: waterNotes.trim() || null,
         waterVolumeLiters:
           parseDisplayVolumeToLiters(preferredVolumeUnit, waterVolumeInput) ??
@@ -452,15 +449,6 @@ export function NotebookWeekWizard({
                 className={`${inputClass} mt-1`}
                 value={ppm}
                 onChange={(e) => setPpm(e.target.value)}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Light cycle</label>
-              <input
-                className={`${inputClass} mt-1`}
-                value={lightCycle}
-                onChange={(e) => setLightCycle(e.target.value)}
-                placeholder="e.g. 18/6 or 12/12"
               />
             </div>
           </div>
@@ -714,7 +702,6 @@ export function NotebookWeekWizard({
                 ph.trim() && `pH ${ph.trim()}`,
                 ec.trim() && `EC ${ec.trim()}`,
                 ppm.trim() && `ppm ${ppm.trim()}`,
-                lightCycle.trim() && `lights ${lightCycle.trim()}`,
               ]
                 .filter(Boolean)
                 .join(", ") || "—"}

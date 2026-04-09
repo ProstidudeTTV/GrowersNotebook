@@ -63,6 +63,8 @@ type NotebookDetail = {
   wateringType: string | null;
   startType: string | null;
   setupNotes: string | null;
+  vegLightCycle: string | null;
+  flowerLightCycle: string | null;
   weeks: WeekRow[];
 };
 
@@ -136,6 +138,8 @@ export default function AdminNotebookEditPage() {
         wateringType: data.wateringType ?? undefined,
         startType: data.startType ?? undefined,
         setupNotes: data.setupNotes ?? "",
+        vegLightCycle: data.vegLightCycle ?? "",
+        flowerLightCycle: data.flowerLightCycle ?? "",
         harvestDryWeightG: data.harvestDryWeightG ?? "",
         harvestQualityNotes: data.harvestQualityNotes ?? "",
       });
@@ -165,6 +169,8 @@ export default function AdminNotebookEditPage() {
         wateringType: v.wateringType ?? null,
         startType: v.startType ?? null,
         setupNotes: v.setupNotes?.trim() || null,
+        vegLightCycle: v.vegLightCycle?.trim() || null,
+        flowerLightCycle: v.flowerLightCycle?.trim() || null,
         harvestDryWeightG: v.harvestDryWeightG?.trim() || null,
         harvestQualityNotes: v.harvestQualityNotes?.trim() || null,
       });
@@ -191,7 +197,6 @@ export default function AdminNotebookEditPage() {
       ec: "",
       ppm: "",
       waterNotes: "",
-      lightCycle: "",
       imageUrlsText: "",
       nutrientsJson: "[]",
       copyNutrientsFromPreviousWeek: false,
@@ -210,7 +215,6 @@ export default function AdminNotebookEditPage() {
       ec: w.ec ?? "",
       ppm: w.ppm ?? "",
       waterNotes: w.waterNotes ?? "",
-      lightCycle: w.lightCycle ?? "",
       imageUrlsText: (w.imageUrls ?? []).join("\n"),
       nutrientsJson: JSON.stringify(
         (w.nutrients ?? []).map((n) => ({
@@ -251,7 +255,7 @@ export default function AdminNotebookEditPage() {
             ec: v.ec || null,
             ppm: v.ppm || null,
             waterNotes: v.waterNotes || null,
-            lightCycle: v.lightCycle || null,
+            lightCycle: null,
             imageUrls,
             nutrients,
           },
@@ -267,7 +271,7 @@ export default function AdminNotebookEditPage() {
           ec: v.ec || null,
           ppm: v.ppm || null,
           waterNotes: v.waterNotes || null,
-          lightCycle: v.lightCycle || null,
+          lightCycle: null,
           imageUrls,
           copyNutrientsFromPreviousWeek: !!v.copyNutrientsFromPreviousWeek,
           nutrients:
@@ -352,6 +356,20 @@ export default function AdminNotebookEditPage() {
           tooltip="Combined lighting for g/W after harvest."
         >
           <Input />
+        </Form.Item>
+        <Form.Item
+          name="vegLightCycle"
+          label="Vegetation light schedule"
+          tooltip="Notebook-level (e.g. 18/6), not stored on individual weeks."
+        >
+          <Input placeholder="e.g. 18/6" />
+        </Form.Item>
+        <Form.Item
+          name="flowerLightCycle"
+          label="Flower light schedule"
+          tooltip="e.g. 12/12"
+        >
+          <Input placeholder="e.g. 12/12" />
         </Form.Item>
         <Form.Item
           name="setupNotes"
@@ -503,13 +521,6 @@ export default function AdminNotebookEditPage() {
             tooltip="Volume, frequency, runoff."
           >
             <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item
-            name="lightCycle"
-            label="Light cycle"
-            tooltip="e.g. 18/6 or 12/12."
-          >
-            <Input placeholder="e.g. 18/6" />
           </Form.Item>
           <Form.Item
             name="imageUrlsText"

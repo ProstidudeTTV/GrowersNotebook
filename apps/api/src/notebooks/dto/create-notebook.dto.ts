@@ -140,4 +140,14 @@ export class UpdateNotebookDto {
   @IsOptional()
   @IsIn([...NOTEBOOK_VOLUME_UNITS])
   preferredVolumeUnit?: (typeof NOTEBOOK_VOLUME_UNITS)[number];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  vegLightCycle?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  flowerLightCycle?: string | null;
 }

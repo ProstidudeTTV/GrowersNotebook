@@ -653,6 +653,12 @@ export class NotebooksService {
     if (dto.preferredVolumeUnit !== undefined) {
       patch.preferredVolumeUnit = dto.preferredVolumeUnit;
     }
+    if (dto.vegLightCycle !== undefined) {
+      patch.vegLightCycle = dto.vegLightCycle?.trim() || null;
+    }
+    if (dto.flowerLightCycle !== undefined) {
+      patch.flowerLightCycle = dto.flowerLightCycle?.trim() || null;
+    }
 
     if (
       dto.growthStage !== undefined &&

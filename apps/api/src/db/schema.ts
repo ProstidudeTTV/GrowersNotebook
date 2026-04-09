@@ -701,6 +701,10 @@ export const notebooks = pgTable(
     preferredVolumeUnit: varchar('preferred_volume_unit', { length: 3 })
       .notNull()
       .default('L'),
+    /** Photoperiod during vegetation (e.g. 18/6), notebook-level. */
+    vegLightCycle: text('veg_light_cycle'),
+    /** Photoperiod during flower (e.g. 12/12), notebook-level. */
+    flowerLightCycle: text('flower_light_cycle'),
     growthStage: notebookGrowthStageEnum('growth_stage')
       .notNull()
       .default('germination'),

@@ -169,6 +169,20 @@
       "when": 1777200000000,
       "tag": "0023_notebook_growth_stages",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777300000000,
+      "tag": "0024_notebook_unit_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1777400000000,
+      "tag": "0025_notebook_veg_flower_light",
+      "breakpoints": true
     }
   ]
 }

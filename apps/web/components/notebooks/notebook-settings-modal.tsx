@@ -66,6 +66,8 @@ export function NotebookSettingsModal({
       preferredVolumeUnit: normalizeVolumeUnit(notebook.preferredVolumeUnit),
       plantCount: notebook.plantCount ?? undefined,
       totalLightWatts: notebook.totalLightWatts ?? "",
+      vegLightCycle: notebook.vegLightCycle ?? "",
+      flowerLightCycle: notebook.flowerLightCycle ?? "",
       roomType: notebook.roomType ?? undefined,
       wateringType: notebook.wateringType ?? undefined,
       startType: notebook.startType ?? undefined,
@@ -169,6 +171,20 @@ export function NotebookSettingsModal({
         </Form.Item>
         <Form.Item name="totalLightWatts" label="Total light (watts)">
           <Input />
+        </Form.Item>
+        <Form.Item
+          name="vegLightCycle"
+          label="Vegetation light schedule"
+          tooltip="Photoperiod during veg (e.g. 18/6). Applies to the whole notebook, not individual weeks."
+        >
+          <Input placeholder="e.g. 18/6" />
+        </Form.Item>
+        <Form.Item
+          name="flowerLightCycle"
+          label="Flower light schedule"
+          tooltip="Photoperiod during flower (e.g. 12/12)."
+        >
+          <Input placeholder="e.g. 12/12" />
         </Form.Item>
         <Form.Item name="setupNotes" label="Setup notes">
           <Input.TextArea rows={4} />

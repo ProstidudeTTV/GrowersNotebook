@@ -1,5 +1,5 @@
-import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
 import { BreederDetailBody } from "@/components/catalog/breeder-detail-body";
+import { CatalogInterceptBreederModal } from "@/components/catalog/catalog-intercept-breeder-modal";
 
 export default async function BreederModalPage({
   params,
@@ -16,13 +16,16 @@ export default async function BreederModalPage({
   const breederPath = `/breeders/${encodeURIComponent(safe)}`;
 
   return (
-    <CatalogDetailModal fullPageHref={breederPath}>
+    <CatalogInterceptBreederModal
+      fullPageHref={breederPath}
+      breederSlug={safe}
+    >
       <BreederDetailBody
         slug={safe}
         reviewsPage={reviewsPage}
         strainReviewsPage={strainReviewsPage}
         variant="modal"
       />
-    </CatalogDetailModal>
+    </CatalogInterceptBreederModal>
   );
 }

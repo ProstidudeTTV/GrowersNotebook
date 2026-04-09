@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StrainDetailBody } from "@/components/catalog/strain-detail-body";
 import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
+import { StrainsBreederFilterLink } from "@/components/catalog/strains-breeder-filter-link";
 import { StarDisplay } from "@/components/catalog/star-display";
 import { StrainsCatalogToolbar } from "@/components/catalog/strains-catalog-toolbar";
 import { apiFetch } from "@/lib/api-public";
@@ -132,6 +133,23 @@ export default async function StrainsPage({
       minReviewsRaw && minReviewsN >= 1 ? minReviewsRaw : undefined,
   };
 
+  /** Breeder drawer dismiss: replace here (no `detail`) so filter is preserved. */
+  const strainsReturnHrefForBreederModal = (() => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (sort !== "name") p.set("sort", sort);
+    if (breederSlug) p.set("breederSlug", breederSlug);
+    if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+      p.set("minRating", minRatingRaw);
+    }
+    if (minReviewsRaw && minReviewsN >= 1) {
+      p.set("minReviews", minReviewsRaw);
+    }
+    if (page > 1) p.set("page", String(page));
+    const s = p.toString();
+    return s ? `/strains?${s}` : "/strains";
+  })();
+
   return (
     <main className="w-full max-w-none px-3 py-5 sm:px-4 sm:py-6 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-10 2xl:pl-5 2xl:pr-14">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
@@ -153,12 +171,13 @@ export default async function StrainsPage({
           {filterBreederName ? (
             <>
               Showing strains linked to{" "}
-              <Link
-                href={`/breeders/${encodeURIComponent(breederSlug)}`}
+              <StrainsBreederFilterLink
+                breederSlug={breederSlug}
+                returnHref={strainsReturnHrefForBreederModal}
                 className="font-medium text-[#ff6a38] hover:underline"
               >
                 {filterBreederName}
-              </Link>
+              </StrainsBreederFilterLink>
               .{" "}
             </>
           ) : (

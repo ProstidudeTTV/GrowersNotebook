@@ -19,7 +19,6 @@ import {
   showStartFlowering,
   showStartVegetation,
 } from "@/lib/notebook-growth";
-import { needsNotebookSetupWizard } from "@/lib/notebook-wizard";
 import { NotebookHarvestWizard } from "@/components/notebooks/notebook-harvest-wizard";
 import { NotebookSettingsModal } from "@/components/notebooks/notebook-settings-modal";
 import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizard";
@@ -99,8 +98,11 @@ type WeekRow = NotebookDetailPayload["weeks"][number];
 
 export function NotebookDetailClient({
   initial,
+  openSetupGuide = false,
 }: {
   initial: NotebookDetailPayload;
+  /** When true (e.g. `/notebooks/:id?setup=1` or via `/edit`), owner sees the setup wizard once. */
+  openSetupGuide?: boolean;
 }) {
   const router = useRouter();
   const [nb, setNb] = useState(initial);
@@ -111,7 +113,8 @@ export function NotebookDetailClient({
   const [commentBusy, setCommentBusy] = useState(false);
 
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
-  const setupAutoOpenedRef = useRef(false);
+  /** Avoid re-opening the setup modal on every render while `?setup=1` is still in the URL. */
+  const setupFromUrlOpenedRef = useRef(false);
   const [weekWizardOpen, setWeekWizardOpen] = useState(false);
   const [weekWizardMode, setWeekWizardMode] = useState<"create" | "edit">(
     "create",
@@ -128,27 +131,37 @@ export function NotebookDetailClient({
         token: token ?? undefined,
       });
       setNb(data);
+      return data;
     } catch {
       /* ignore */
     }
+    return undefined;
   }, [nb.id]);
+
+  const clearSetupQuery = useCallback(() => {
+    if (!openSetupGuide) return;
+    router.replace(`/notebooks/${nb.id}`);
+  }, [openSetupGuide, router, nb.id]);
 
   useEffect(() => {
     setNb(initial);
   }, [initial]);
 
   useEffect(() => {
-    setupAutoOpenedRef.current = false;
+    setupFromUrlOpenedRef.current = false;
     setSetupWizardOpen(false);
   }, [initial.id]);
 
   useEffect(() => {
-    if (setupAutoOpenedRef.current) return;
-    if (needsNotebookSetupWizard(nb)) {
-      setupAutoOpenedRef.current = true;
-      setSetupWizardOpen(true);
+    if (!openSetupGuide) {
+      setupFromUrlOpenedRef.current = false;
+      return;
     }
-  }, [nb]);
+    if (setupFromUrlOpenedRef.current) return;
+    if (!viewerId || viewerId !== nb.ownerId) return;
+    setupFromUrlOpenedRef.current = true;
+    setSetupWizardOpen(true);
+  }, [openSetupGuide, viewerId, nb.ownerId]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -346,6 +359,12 @@ export function NotebookDetailClient({
                         Harvest log
                       </button>
                     ) : null}
+                    <Link
+                      href={`/notebooks/${encodeURIComponent(nb.id)}/edit`}
+                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                    >
+                      Edit setup
+                    </Link>
                     <button
                       type="button"
                       onClick={() => setSettingsOpen(true)}
@@ -663,10 +682,15 @@ export function NotebookDetailClient({
               <NotebookSetupWizard
                 open={setupWizardOpen}
                 notebook={nb}
-                onClose={() => setSetupWizardOpen(false)}
-                onCompleted={() => {
+                onClose={() => {
                   setSetupWizardOpen(false);
-                  void reloadNotebook();
+                  clearSetupQuery();
+                }}
+                onCompleted={async () => {
+                  setSetupWizardOpen(false);
+                  await reloadNotebook();
+                  router.refresh();
+                  clearSetupQuery();
                 }}
               />
               <NotebookWeekWizard

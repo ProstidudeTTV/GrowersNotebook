@@ -52,7 +52,7 @@ export default async function NotebooksDirectoryPage({
         href="/notebooks/new"
         className="mt-6 inline-flex rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] hover:bg-[#ff5414]"
       >
-        Start a notebook
+        Set up your notebook
       </Link>
 
       <ul className="mt-8 space-y-3">

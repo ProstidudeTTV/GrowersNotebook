@@ -8,5 +8,5 @@ export default async function NotebookEditPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  redirect(`/notebooks/${id}`);
+  redirect(`/notebooks/${id}?setup=1`);
 }

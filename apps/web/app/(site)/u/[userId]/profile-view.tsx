@@ -499,7 +499,7 @@ export function ProfileView({
                     href="/notebooks/new"
                     className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414]"
                   >
-                    New notebook
+                    Set up your notebook
                   </Link>
                 </div>
               ) : null}

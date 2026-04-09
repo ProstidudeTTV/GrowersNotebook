@@ -34,11 +34,15 @@ export async function generateMetadata({
 
 export default async function NotebookDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ setup?: string }>;
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
+  const sp = await searchParams;
+  const openSetupGuide = sp.setup === "1";
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
   let data: NotebookDetailPayload;
@@ -51,5 +55,7 @@ export default async function NotebookDetailPage({
     notFound();
   }
 
-  return <NotebookDetailClient initial={data} />;
+  return (
+    <NotebookDetailClient initial={data} openSetupGuide={openSetupGuide} />
+  );
 }

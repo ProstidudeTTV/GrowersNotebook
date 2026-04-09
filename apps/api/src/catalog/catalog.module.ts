@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { NameBlocklistModule } from '../name-blocklist/name-blocklist.module';
 import { BreedersService } from './breeders.service';
@@ -11,7 +11,7 @@ import { StrainCsvImportService } from './strain-csv-import.service';
 import { StrainsService } from './strains.service';
 
 @Module({
-  imports: [NameBlocklistModule, AuthModule],
+  imports: [NameBlocklistModule, forwardRef(() => AuthModule)],
   controllers: [
     PublicBreedersController,
     PublicStrainsController,

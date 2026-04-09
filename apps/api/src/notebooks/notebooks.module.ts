@@ -11,7 +11,7 @@ import { NotebooksService } from './notebooks.service';
 @Module({
   imports: [
     ConfigModule,
-    CatalogModule,
+    forwardRef(() => CatalogModule),
     AuthModule,
     forwardRef(() => ProfilesModule),
   ],

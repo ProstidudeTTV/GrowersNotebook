@@ -91,14 +91,14 @@ async function patchService(serviceId, commands) {
 async function main() {
   console.log("Patching growers-notebook-web…");
   await patchService(WEB_SERVICE_ID, {
-    buildCommand: "bash scripts/render-build-web.sh",
+    buildCommand: "sh scripts/render-build-web.sh",
     startCommand: "npx pnpm@9.15.9 --filter @growers/web start",
   });
   console.log("  OK");
 
   console.log("Patching growers-notebook-api…");
   await patchService(API_SERVICE_ID, {
-    buildCommand: "bash scripts/render-build-api.sh",
+    buildCommand: "sh scripts/render-build-api.sh",
     startCommand: "npx pnpm@9.15.9 --filter @growers/api start:prod",
   });
   console.log("  OK");

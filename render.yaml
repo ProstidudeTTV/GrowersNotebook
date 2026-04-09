@@ -13,16 +13,18 @@
 # Build: Render sets NODE_ENV=production so pnpm skips devDependencies. Prefix install with
 # env NODE_ENV=development … (see build commands below).
 #
-# --- URGENT: manual Web Services ignore this file until Blueprint-linked. If deploys fail in
-# ~1 second, the Dashboard “Build Command” is still the legacy `npx pnpm` line. Replace it.
+# --- Manual services: Render’s native build image already includes `pnpm` (no corepack/npx required).
+# If builds die in ~1s after switching to scripts, drop corepack — use `sh` + the scripts below.
 #
-# Web → Settings → Build Command (single line):
-# export NPM_CONFIG_YES=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && corepack enable && corepack prepare pnpm@9.15.9 --activate && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
+# Web → Build Command:
+#   sh scripts/render-build-web.sh
+# API → Build Command:
+#   sh scripts/render-build-api.sh
 #
-# API → Settings → Build Command (single line):
-# export NPM_CONFIG_YES=true COREPACK_ENABLE_DOWNLOAD_PROMPT=0 && corepack enable && corepack prepare pnpm@9.15.9 --activate && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build
+# One-liner alternatives (no corepack; same as scripts):
+# Web: export NPM_CONFIG_YES=true NEXT_PUBLIC_APP_BUILD_ID="${RENDER_GIT_COMMIT:-dev}" && NODE_ENV=development pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @growers/web build
+# API: export NPM_CONFIG_YES=true && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @growers/api build
 #
-# Alternative: bash scripts/render-build-web.sh  /  bash scripts/render-build-api.sh
 # Then: Manual Deploy → Clear build cache & deploy. Or: RENDER_API_KEY=rnd_... pnpm run render:patch-notebook-services
 #
 # Latency: Free/spun-down web services cold-start (~30–60s). Starter “always on” reduces
@@ -42,7 +44,7 @@ services:
     plan: starter
     # Drizzle migrations run at every API boot via apps/api package.json start:prod (no Render pre-deploy UI needed).
     # /health reports catalogTablesPresent when strains/breeders exist (see AppController).
-    buildCommand: bash scripts/render-build-api.sh
+    buildCommand: sh scripts/render-build-api.sh
     startCommand: npx pnpm@9.15.9 --filter @growers/api start:prod
     healthCheckPath: /health
     envVars:
@@ -59,7 +61,7 @@ services:
     region: oregon
     plan: starter
     # NEXT_PUBLIC_APP_BUILD_ID lets the browser detect deploys and auto-reload (see /api/build-info).
-    buildCommand: bash scripts/render-build-web.sh
+    buildCommand: sh scripts/render-build-web.sh
     startCommand: npx pnpm@9.15.9 --filter @growers/web start
     healthCheckPath: /
     envVars:

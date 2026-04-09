@@ -122,19 +122,40 @@ type NbComment = {
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
 
-function StatTile({
-  label,
-  children,
+/** Structured metric grid (old diary layout) without bordered cells. */
+function MetricGrid({
+  title,
+  items,
+  gridClass = "grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4",
 }: {
-  label: string;
-  children: ReactNode;
+  /** Omit when the parent heading already names the section (e.g. Growing setup). */
+  title?: string;
+  items: { label: string; value: ReactNode; wide?: boolean }[];
+  gridClass?: string;
 }) {
+  if (!items.length) return null;
   return (
-    <div className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/70 px-2 py-1.5">
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-        {label}
-      </p>
-      <div className="mt-0.5 text-xs font-medium text-[var(--gn-text)]">{children}</div>
+    <div className={title ? "mt-3" : "mt-2"}>
+      {title ? (
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+          {title}
+        </p>
+      ) : null}
+      <dl className={`${title ? "mt-2 " : ""}grid ${gridClass}`}>
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className={`min-w-0 ${item.wide ? "sm:col-span-2" : ""}`}
+          >
+            <dt className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              {item.label}
+            </dt>
+            <dd className="mt-1 text-sm font-medium text-[var(--gn-text)]">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -190,42 +211,6 @@ function weekNoteSpotsFromRow(w: Week): WeekNoteSpot[] {
     return [{ body: w.notes.trim(), at }];
   }
   return [];
-}
-
-/** Compact “label value · label value” row for week logs (no stat boxes). */
-function WeekMetricRow({
-  label,
-  items,
-}: {
-  label: string;
-  items: { key: string; value: ReactNode }[];
-}) {
-  if (!items.length) return null;
-  return (
-    <div className="mt-2">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-xs leading-snug text-[var(--gn-text)]">
-        {items.map((item, i) => (
-          <span key={item.key} className="inline-flex items-baseline gap-0.5">
-            {i > 0 ? (
-              <span
-                className="mx-1 select-none text-[var(--gn-text-muted)]/35"
-                aria-hidden
-              >
-                ·
-              </span>
-            ) : null}
-            <span className="text-[var(--gn-text-muted)]">{item.key}</span>
-            <span className="font-medium tabular-nums text-[var(--gn-text)]">
-              {item.value}
-            </span>
-          </span>
-        ))}
-      </p>
-    </div>
-  );
 }
 
 export function NotebookDetailClient({
@@ -591,39 +576,43 @@ export function NotebookDetailClient({
           <h2 className="text-xs font-semibold text-[var(--gn-text)]">
             Growing setup
           </h2>
-          <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-            {nb.roomType ? (
-              <StatTile label="Room">{nb.roomType}</StatTile>
-            ) : null}
-            {nb.wateringType ? (
-              <StatTile label="Watering">{nb.wateringType}</StatTile>
-            ) : null}
-            {nb.startType ? (
-              <StatTile label="Started from">{nb.startType}</StatTile>
-            ) : null}
-            {nb.plantCount != null ? (
-              <StatTile label="Plants">{nb.plantCount}</StatTile>
-            ) : null}
-            {nb.totalLightWatts ? (
-              <StatTile label="Total light">{`${nb.totalLightWatts} W`}</StatTile>
-            ) : null}
-            {nb.vegLightCycle?.trim() ? (
-              <StatTile label="Veg light schedule">
-                {nb.vegLightCycle.trim()}
-              </StatTile>
-            ) : null}
-            {nb.flowerLightCycle?.trim() ? (
-              <StatTile label="Flower light schedule">
-                {nb.flowerLightCycle.trim()}
-              </StatTile>
-            ) : null}
-          </div>
+          <MetricGrid
+            gridClass="grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
+            items={[
+              ...(nb.roomType
+                ? [{ label: "Room", value: nb.roomType }]
+                : []),
+              ...(nb.wateringType
+                ? [{ label: "Watering", value: nb.wateringType }]
+                : []),
+              ...(nb.startType
+                ? [{ label: "Started from", value: nb.startType }]
+                : []),
+              ...(nb.plantCount != null
+                ? [{ label: "Plants", value: nb.plantCount }]
+                : []),
+              ...(nb.totalLightWatts
+                ? [{ label: "Total light", value: `${nb.totalLightWatts} W` }]
+                : []),
+              ...(nb.vegLightCycle?.trim()
+                ? [{ label: "Veg light schedule", value: nb.vegLightCycle.trim() }]
+                : []),
+              ...(nb.flowerLightCycle?.trim()
+                ? [
+                    {
+                      label: "Flower light schedule",
+                      value: nb.flowerLightCycle.trim(),
+                    },
+                  ]
+                : []),
+            ]}
+          />
           {nb.setupNotes?.trim() ? (
-            <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            <div className="mt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                 Setup notes
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
+              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                 {nb.setupNotes}
               </p>
             </div>
@@ -638,25 +627,24 @@ export function NotebookDetailClient({
           <h2 className="text-xs font-semibold text-[var(--gn-text)]">
             Harvest
           </h2>
-          {(nb.harvestDryWeightG || nb.gPerWatt || nb.gPerWattPerPlant) && (
-            <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-              {nb.harvestDryWeightG ? (
-                <StatTile label="Dry weight">{`${nb.harvestDryWeightG} g`}</StatTile>
-              ) : null}
-              {nb.gPerWatt ? (
-                <StatTile label="g / W">{nb.gPerWatt}</StatTile>
-              ) : null}
-              {nb.gPerWattPerPlant ? (
-                <StatTile label="g / W / plant">{nb.gPerWattPerPlant}</StatTile>
-              ) : null}
-            </div>
-          )}
+          <MetricGrid
+            gridClass="grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3"
+            items={[
+              ...(nb.harvestDryWeightG
+                ? [{ label: "Dry weight", value: `${nb.harvestDryWeightG} g` }]
+                : []),
+              ...(nb.gPerWatt ? [{ label: "g / W", value: nb.gPerWatt }] : []),
+              ...(nb.gPerWattPerPlant
+                ? [{ label: "g / W / plant", value: nb.gPerWattPerPlant }]
+                : []),
+            ]}
+          />
           {nb.harvestQualityNotes ? (
-            <div className="mt-2 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)]/50 px-2 py-1.5">
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            <div className="mt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                 Quality notes
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--gn-text)]">
+              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                 {nb.harvestQualityNotes}
               </p>
             </div>
@@ -697,8 +685,8 @@ export function NotebookDetailClient({
               }
               if (w.humidityPct != null && w.humidityPct !== "") {
                 envItems.push({
-                  key: "RH",
-                  value: `${w.humidityPct}%`,
+                  key: "Humidity",
+                  value: `${w.humidityPct}% RH`,
                 });
               }
               if (w.ph != null && w.ph !== "") {
@@ -778,33 +766,33 @@ export function NotebookDetailClient({
                   const spots = weekNoteSpotsFromRow(w);
                   if (!spots.length) return null;
                   return (
-                    <div className="mt-2">
+                    <div className="mt-3">
                       {spots.length > 1 ? (
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                           Updates ({spots.length})
                         </p>
                       ) : (
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                           Notes
                         </p>
                       )}
-                      <div className="mt-1 space-y-2">
+                      <div
+                        className={
+                          spots.length > 1 ? "mt-2 space-y-3" : "mt-2 space-y-2"
+                        }
+                      >
                         {spots.map((spot, idx) => (
                           <div
                             key={idx}
-                            className={
-                              idx > 0
-                                ? "border-t border-[var(--gn-divide)]/25 pt-2"
-                                : ""
-                            }
+                            className="border-l-2 border-[var(--gn-divide)]/45 pl-3"
                           >
                             <time
-                              className="text-[10px] tabular-nums text-[var(--gn-text-muted)]"
+                              className="text-[10px] font-medium tabular-nums text-[var(--gn-text-muted)]"
                               dateTime={spot.at}
                             >
                               {formatNotebookWeekInstant(spot.at)}
                             </time>
-                            <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                               {spot.body}
                             </p>
                           </div>
@@ -814,36 +802,61 @@ export function NotebookDetailClient({
                   );
                 })()}
 
-                <WeekMetricRow label="Environment" items={envItems} />
+                <MetricGrid
+                  title="Environment"
+                  items={envItems.map((x) => ({
+                    label: x.key,
+                    value: x.value,
+                  }))}
+                />
 
-                {feedLineItems.length > 0 ? (
-                  <WeekMetricRow label="Feed & water" items={feedLineItems} />
-                ) : null}
-                {w.waterNotes != null && w.waterNotes !== "" ? (
-                  <div className="mt-1.5 sm:mt-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
-                      Water notes
-                    </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-[var(--gn-text)]">
-                      {w.waterNotes}
-                    </p>
-                  </div>
-                ) : null}
+                {(() => {
+                  const feedItems: {
+                    label: string;
+                    value: ReactNode;
+                    wide?: boolean;
+                  }[] = [];
+                  if (feedLineItems.length > 0) {
+                    feedItems.push({
+                      label: "Water / feed volume",
+                      value: feedLineItems[0].value,
+                    });
+                  }
+                  if (w.waterNotes != null && w.waterNotes !== "") {
+                    feedItems.push({
+                      label: "Water / feed notes",
+                      value: (
+                        <span className="whitespace-pre-wrap font-normal">
+                          {w.waterNotes}
+                        </span>
+                      ),
+                      wide: true,
+                    });
+                  }
+                  return feedItems.length > 0 ? (
+                    <MetricGrid
+                      title="Feed & water"
+                      gridClass="grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2"
+                      items={feedItems}
+                    />
+                  ) : null;
+                })()}
 
                 {w.nutrients.length > 0 ? (
-                  <div className="mt-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--gn-text-muted)]">
+                  <div className="mt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                       Nutrients
                     </p>
-                    <ul className="mt-1 space-y-0.5 text-xs text-[var(--gn-text)]">
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-[var(--gn-text)]">
                       {w.nutrients.map((x, i) => (
-                        <li key={i} className="flex flex-wrap gap-x-2">
+                        <li key={i}>
                           <span className="font-medium">
                             {x.productName ?? x.customLabel ?? "—"}
                           </span>
                           {x.dosage ? (
                             <span className="text-[var(--gn-text-muted)]">
-                              {x.dosage}
+                              {" "}
+                              — {x.dosage}
                             </span>
                           ) : null}
                         </li>

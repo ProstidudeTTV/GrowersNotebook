@@ -1,6 +1,7 @@
 "use client";
 
 import { Form, Input, InputNumber, Select } from "antd";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
@@ -174,10 +175,42 @@ export function NotebookSetupWizard({
 
         {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
         <div className={step === 1 ? "space-y-3" : "hidden"} aria-hidden={step !== 1}>
-            <p className="text-sm text-[var(--gn-text-muted)]">
-              Name this notebook. Optional free-text strain label below—catalog
-              linking stays as-is unless you clear it in Details later.
-            </p>
+            {notebook.strain?.slug ? (
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                This notebook is linked to the catalog strain{" "}
+                <Link
+                  href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
+                  className="font-medium text-[#ff4500] hover:underline"
+                >
+                  {notebook.strain.name?.trim() || notebook.strain.slug}
+                </Link>
+                . The optional label below is extra display text. To pick a
+                different cultivar, use{" "}
+                <strong className="text-[var(--gn-text)]">Details</strong> and
+                browse the{" "}
+                <Link
+                  href="/strains"
+                  className="font-medium text-[#ff4500] hover:underline"
+                >
+                  Strains
+                </Link>{" "}
+                catalog.
+              </p>
+            ) : (
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                Name this notebook. Optional free-text strain label below. To
+                link a{" "}
+                <Link
+                  href="/strains"
+                  className="font-medium text-[#ff4500] hover:underline"
+                >
+                  catalog strain
+                </Link>{" "}
+                (strain page, breeders, directory filters), open{" "}
+                <strong className="text-[var(--gn-text)]">Details</strong> after
+                this guide and choose one from Strains.
+              </p>
+            )}
             <Form.Item
               name="title"
               label={<span className="text-[var(--gn-text)]">Title</span>}
@@ -188,7 +221,7 @@ export function NotebookSetupWizard({
             <Form.Item
               name="customStrainLabel"
               label="Strain label (optional)"
-              tooltip="Plain label on your notebook; use Details if you need to change catalog link."
+              tooltip="Shown on your notebook. Catalog strain (if any) is set under Details; browse /strains to compare cultivars."
             >
               <Input placeholder="e.g. Blue Dream" />
             </Form.Item>
@@ -275,7 +308,14 @@ export function NotebookSetupWizard({
             <p className="text-[var(--gn-text-muted)]">
               This saves your answers. You can update details anytime from{" "}
               <strong className="text-[var(--gn-text)]">Details</strong> on this
-              page; weekly entries use <strong>Add week</strong>.
+              page—including linking a cultivar from the{" "}
+              <Link
+                href="/strains"
+                className="font-medium text-[#ff4500] hover:underline"
+              >
+                Strains
+              </Link>{" "}
+              catalog. Weekly entries use <strong>Add week</strong>.
             </p>
             <button
               type="button"

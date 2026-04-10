@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import { NotebookStrainFields } from "@/components/notebook-strain-fields";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
 import {
   normalizeTempUnit,
@@ -60,6 +61,7 @@ export function NotebookSettingsModal({
     setError(null);
     form.setFieldsValue({
       title: notebook.title,
+      strainId: notebook.strainId ?? "",
       customStrainLabel: notebook.customStrainLabel ?? "",
       status: notebook.status,
       preferredTempUnit: normalizeTempUnit(notebook.preferredTempUnit),
@@ -88,6 +90,7 @@ export function NotebookSettingsModal({
         token,
         body: JSON.stringify({
           title: v.title?.trim(),
+          strainId: v.strainId?.trim() ? v.strainId.trim() : null,
           customStrainLabel: v.customStrainLabel?.trim() || null,
           status: v.status,
           preferredTempUnit: normalizeTempUnit(v.preferredTempUnit),
@@ -120,30 +123,49 @@ export function NotebookSettingsModal({
         size="middle"
         className="px-5 py-3 sm:px-6 sm:py-4"
       >
-        {notebook.strain?.slug ? (
-          <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
-            Catalog strain:{" "}
-            <Link
-              href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
-              className="font-medium text-[#ff4500] hover:underline"
-            >
-              {notebook.strain.name?.trim() || notebook.strain.slug}
-            </Link>
-            <span className="ml-1 text-xs">
-              (change via admin if you need a different catalog link)
-            </span>
-          </p>
-        ) : null}
+        <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+          {notebook.strain?.slug ? (
+            <>
+              Catalog strain:{" "}
+              <Link
+                href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
+                className="font-medium text-[#ff4500] hover:underline"
+              >
+                {notebook.strain.name?.trim() || notebook.strain.slug}
+              </Link>
+              . Browse all cultivars in the{" "}
+              <Link
+                href="/strains"
+                className="font-medium text-[#ff4500] hover:underline"
+              >
+                Strains
+              </Link>{" "}
+              catalog; use search below to link a different entry.
+            </>
+          ) : (
+            <>
+              Link this diary to a cultivar with catalog search below, or open
+              the{" "}
+              <Link
+                href="/strains"
+                className="font-medium text-[#ff4500] hover:underline"
+              >
+                Strains
+              </Link>{" "}
+              directory to browse.
+            </>
+          )}
+        </p>
         <Form.Item name="title" label="Title" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item
-          name="customStrainLabel"
-          label="Strain label"
-          tooltip="Shown on your notebook; optional if you use a catalog strain name."
-        >
-          <Input placeholder="Free-text strain name" />
-        </Form.Item>
+        <NotebookStrainFields
+          displaySeed={
+            notebook.strain?.name?.trim() ||
+            notebook.customStrainLabel?.trim() ||
+            ""
+          }
+        />
         <Form.Item name="status" label="Status">
           <Select options={STATUSES} />
         </Form.Item>

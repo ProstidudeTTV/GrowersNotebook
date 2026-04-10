@@ -1,6 +1,7 @@
 "use client";
 
 import { Form, Input } from "antd";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 
@@ -71,6 +72,12 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
         <span className="text-sm font-medium text-[var(--gn-text)]">
           Strain (catalog search)
         </span>
+        <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
+          <Link href="/strains" className="text-[#ff4500] hover:underline">
+            Open Strains directory
+          </Link>{" "}
+          to browse the full catalog.
+        </p>
         <input
           value={q}
           onChange={(e) => {

@@ -53,6 +53,19 @@ export default function NewNotebookPage() {
         <strong className="font-medium text-[var(--gn-text)]">Add week</strong>{" "}
         opens the week-by-week log.
       </p>
+      <p className="mt-3 text-sm text-[var(--gn-text-muted)]">
+        To tie your diary to a cultivar in the directory and on strain pages,
+        use{" "}
+        <strong className="font-medium text-[var(--gn-text)]">Details</strong>{" "}
+        after setup and pick from the{" "}
+        <Link
+          href="/strains"
+          className="font-medium text-[#ff4500] hover:underline"
+        >
+          Strains
+        </Link>{" "}
+        catalog (or keep a free-text label only).
+      </p>
       <Link
         href="/notebooks"
         className="mt-4 inline-block text-sm text-[#ff4500] hover:underline"

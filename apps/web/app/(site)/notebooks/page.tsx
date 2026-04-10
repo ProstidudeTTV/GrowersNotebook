@@ -391,8 +391,15 @@ export default async function NotebooksDirectoryPage({
                 .
               </li>
               <li>
-                Add title, strain (from the catalog or a custom label), and
-                your first week.
+                Add title and your first week. Link a cultivar from the{" "}
+                <Link href="/strains" className="text-[#ff4500] hover:underline">
+                  Strains
+                </Link>{" "}
+                catalog (or a custom label) under{" "}
+                <strong className="font-medium text-[var(--gn-text)]">
+                  Details
+                </strong>{" "}
+                on your notebook.
               </li>
               <li>
                 Keep logging weeks—readers can filter by grower, breeder, and

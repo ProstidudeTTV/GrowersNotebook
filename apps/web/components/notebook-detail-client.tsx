@@ -75,6 +75,7 @@ export type NotebookDetailPayload = {
   customStrainLabel: string | null;
   status: string;
   strain: { slug: string; name: string | null } | null;
+  breeder?: { slug: string; name: string } | null;
   plantCount: number | null;
   totalLightWatts: string | null;
   harvestDryWeightG: string | null;
@@ -146,6 +147,51 @@ function SectionCapsTitle({
     >
       {children}
     </p>
+  );
+}
+
+/** Primary section title (sentence case); underline matches text width only. */
+function SectionHeading({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <h2
+      className={`inline-block w-fit max-w-full border-b border-[var(--gn-divide)]/45 pb-1.5 text-xs font-semibold text-[var(--gn-text)] sm:text-sm ${className}`.trim()}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function NotebookHeaderAvatar({
+  avatarUrl,
+  displayName,
+}: {
+  avatarUrl?: string | null;
+  displayName: string | null;
+}) {
+  const label = (displayName ?? "Grower").trim();
+  const initial = label.charAt(0).toUpperCase() || "?";
+  const frame =
+    "flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)] sm:h-12 sm:w-12";
+  if (avatarUrl?.trim()) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={avatarUrl.trim()}
+        alt=""
+        className={`${frame} object-cover`}
+      />
+    );
+  }
+  return (
+    <span className={frame} aria-hidden>
+      {initial}
+    </span>
   );
 }
 
@@ -489,49 +535,74 @@ export function NotebookDetailClient({
               disabled={voteBusy}
             />
             <div className="min-w-0 flex-1">
-              <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 shadow-sm sm:p-3.5">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h1 className="text-lg font-bold leading-snug text-[var(--gn-text)] sm:text-xl">
-                      {nb.title}
-                    </h1>
-                    <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-                      <Link
-                        href={`/u/${encodeURIComponent(nb.ownerId)}`}
-                        className="text-[#ff4500] hover:underline"
-                      >
-                        {nb.owner.displayName?.trim() || "Grower"}
-                      </Link>
-                      {nb.strain?.slug ? (
-                        <>
-                          {" "}
-                          ·{" "}
+              <div className="rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-4">
+                <div className="flex gap-3 sm:gap-4">
+                  <NotebookHeaderAvatar
+                    avatarUrl={nb.owner.avatarUrl}
+                    displayName={nb.owner.displayName}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h1 className="text-lg font-bold leading-snug text-[var(--gn-text)] sm:text-xl">
+                          {nb.title}
+                        </h1>
+                        <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
                           <Link
-                            href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
-                            className="text-[#ff4500] hover:underline"
+                            href={`/u/${encodeURIComponent(nb.ownerId)}`}
+                            className="font-medium text-[#ff4500] hover:underline"
                           >
-                            Strain catalog
+                            {nb.owner.displayName?.trim() || "Grower"}
                           </Link>
-                        </>
-                      ) : null}
-                    </p>
-                    {(strainLabel || nb.growthStage) && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {strainLabel ? (
-                          <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
-                            {strainLabel}
-                          </span>
-                        ) : null}
-                        {nb.growthStage ? (
-                          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
-                            {GROWTH_STAGE_LABEL[nb.growthStage] ??
-                              nb.growthStage}
-                          </span>
-                        ) : null}
+                          {nb.strain?.slug ? (
+                            <>
+                              {" "}
+                              ·{" "}
+                              <Link
+                                href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
+                                className="text-[#ff4500] hover:underline"
+                              >
+                                {nb.strain.name?.trim() ||
+                                  strainLabel ||
+                                  "Strain"}
+                              </Link>
+                            </>
+                          ) : strainLabel ? (
+                            <>
+                              {" "}
+                              · {strainLabel}
+                            </>
+                          ) : null}
+                          {nb.breeder ? (
+                            <>
+                              {" "}
+                              ·{" "}
+                              <Link
+                                href={`/breeders/${encodeURIComponent(nb.breeder.slug)}`}
+                                className="text-[#ff4500] hover:underline"
+                              >
+                                {nb.breeder.name}
+                              </Link>
+                            </>
+                          ) : null}
+                        </p>
+                        {(strainLabel || nb.growthStage) && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {strainLabel ? (
+                              <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
+                                {strainLabel}
+                              </span>
+                            ) : null}
+                            {nb.growthStage ? (
+                              <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
+                                {GROWTH_STAGE_LABEL[nb.growthStage] ??
+                                  nb.growthStage}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {isOwner ? (
+                      {isOwner ? (
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                     {showHarvestPanel(nb) ? (
                       <button
@@ -568,6 +639,8 @@ export function NotebookDetailClient({
                     </button>
                   </div>
                 ) : null}
+                    </div>
+                  </div>
                 </div>
 
               {isOwner && showStartVegetation(nb) ? (
@@ -618,12 +691,11 @@ export function NotebookDetailClient({
           </div>
 
       {showGrowingSetup ? (
-        <section className="mt-5 rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 sm:p-3.5">
-          <h2 className="text-xs font-semibold text-[var(--gn-text)]">
-            Growing setup
-          </h2>
+        <section className="mt-5 rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-3.5">
+          <SectionHeading>Growing setup</SectionHeading>
           <MetricGrid
             metricsFlow="wrap"
+            rootClassName="mt-2"
             gridClass="grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
             items={[
               ...(nb.roomType
@@ -656,10 +728,8 @@ export function NotebookDetailClient({
           />
           {nb.setupNotes?.trim() ? (
             <div className="mt-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                Setup notes
-              </p>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
+              <SectionCapsTitle underlined>Setup notes</SectionCapsTitle>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                 {nb.setupNotes}
               </p>
             </div>
@@ -670,11 +740,10 @@ export function NotebookDetailClient({
       {(nb.harvestDryWeightG ||
         nb.harvestQualityNotes?.trim() ||
         (nb.harvestImageUrls && nb.harvestImageUrls.length > 0)) && (
-        <section className="mt-5 rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3 sm:p-3.5">
-          <h2 className="text-xs font-semibold text-[var(--gn-text)]">
-            Harvest
-          </h2>
+        <section className="mt-5 rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-3.5">
+          <SectionHeading>Harvest</SectionHeading>
           <MetricGrid
+            rootClassName="mt-2"
             gridClass="grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3"
             items={[
               ...(nb.harvestDryWeightG
@@ -688,10 +757,8 @@ export function NotebookDetailClient({
           />
           {nb.harvestQualityNotes ? (
             <div className="mt-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                Quality notes
-              </p>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
+              <SectionCapsTitle underlined>Quality notes</SectionCapsTitle>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                 {nb.harvestQualityNotes}
               </p>
             </div>
@@ -708,9 +775,9 @@ export function NotebookDetailClient({
       )}
 
       <section className="mt-5">
-        <h2 className="text-base font-semibold text-[var(--gn-text)]">Weeks</h2>
+        <SectionHeading>Weeks</SectionHeading>
         {nb.weeks.length === 0 ? (
-          <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
+          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
             No weekly entries yet.
           </p>
         ) : (
@@ -807,7 +874,7 @@ export function NotebookDetailClient({
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className={`scroll-mt-20 rounded-lg px-3 py-2 sm:px-3.5 sm:py-2.5 ${phaseClass}`}
+                className={`scroll-mt-20 rounded-2xl px-3 py-2.5 shadow-sm ring-1 ring-black/5 sm:px-4 sm:py-3 dark:ring-white/5 ${phaseClass}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="w-fit max-w-[min(100%,42rem)] min-w-0 border-b border-[var(--gn-divide)]/40 pb-1.5">
@@ -937,10 +1004,8 @@ export function NotebookDetailClient({
         )}
       </section>
 
-      <section className="mt-6 border-t border-[var(--gn-divide)] pt-5">
-        <h2 className="text-base font-semibold text-[var(--gn-text)]">
-          Comments
-        </h2>
+      <section className="mt-6 pt-2">
+        <SectionHeading>Comments</SectionHeading>
         <ul className="mt-4 space-y-4">
           {comments.map((c) => (
             <li

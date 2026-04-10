@@ -31,7 +31,9 @@ export function WeekNotesExpandable({
           <div
             key={idx}
             className={
-              idx > 0 ? "border-t border-[var(--gn-divide)]/35 pt-2.5" : ""
+              idx > 0
+                ? "mt-2.5 border-l-2 border-[var(--gn-divide)]/45 pl-3"
+                : ""
             }
           >
             <time

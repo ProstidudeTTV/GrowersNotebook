@@ -451,6 +451,8 @@ export class NotebooksService {
         },
         strainSlug: strains.slug,
         strainName: strains.name,
+        breederSlug: breeders.slug,
+        breederName: breeders.name,
         score: notebookScoreExpr.as('score'),
         upvotes: notebookUpVotesExpr.as('upvotes'),
         downvotes: notebookDownVotesExpr.as('downvotes'),
@@ -459,6 +461,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(eq(notebooks.id, id));
     if (!row) throw new NotFoundException('Notebook not found');
     await this.assertNotebookReadableByOwnerSettings(
@@ -527,6 +530,10 @@ export class NotebooksService {
       strain: row.strainSlug
         ? { slug: row.strainSlug, name: row.strainName }
         : null,
+      breeder:
+        row.breederSlug && row.breederName
+          ? { slug: row.breederSlug, name: row.breederName }
+          : null,
       score: Number(row.score),
       upvotes: Number(row.upvotes),
       downvotes: Number(row.downvotes),
@@ -554,6 +561,8 @@ export class NotebooksService {
         },
         strainSlug: strains.slug,
         strainName: strains.name,
+        breederSlug: breeders.slug,
+        breederName: breeders.name,
         score: notebookScoreExpr.as('score'),
         upvotes: notebookUpVotesExpr.as('upvotes'),
         downvotes: notebookDownVotesExpr.as('downvotes'),
@@ -562,6 +571,7 @@ export class NotebooksService {
       .from(notebooks)
       .innerJoin(profiles, eq(notebooks.ownerId, profiles.id))
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
+      .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(eq(notebooks.id, id));
     if (!row) throw new NotFoundException('Notebook not found');
 
@@ -626,6 +636,10 @@ export class NotebooksService {
       strain: row.strainSlug
         ? { slug: row.strainSlug, name: row.strainName }
         : null,
+      breeder:
+        row.breederSlug && row.breederName
+          ? { slug: row.breederSlug, name: row.breederName }
+          : null,
       score: Number(row.score),
       upvotes: Number(row.upvotes),
       downvotes: Number(row.downvotes),

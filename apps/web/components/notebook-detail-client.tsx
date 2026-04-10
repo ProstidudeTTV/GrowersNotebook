@@ -517,129 +517,127 @@ export function NotebookDetailClient({
   return (
     <div className="mx-auto max-w-6xl px-4 py-5">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-        <aside className="order-2 hidden w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-20 lg:z-10 lg:max-h-[calc(min(100dvh,100vh)-5rem)] xl:top-24">
-          <div className="max-h-[min(calc(100dvh-5.5rem),calc(100vh-5.5rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
+        <aside className="order-2 hidden h-fit w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-24 lg:z-20 lg:max-h-[calc(min(100dvh,100vh)-6.5rem)] xl:top-28">
+          <div className="max-h-[min(calc(100dvh-7rem),calc(100vh-7rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
             <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="sidebar" />
           </div>
         </aside>
 
         <div className="order-1 min-w-0 flex-1 lg:order-2">
-          <div className="flex gap-2.5 sm:gap-3">
-            <VoteFeedPill
-              score={nb.score}
-              upvotes={nb.upvotes}
-              downvotes={nb.downvotes}
-              viewerVote={nb.viewerVote}
-              onUp={() => void vote(1)}
-              onDown={() => void vote(-1)}
-              disabled={voteBusy}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-4">
-                <div className="flex gap-3 sm:gap-4">
-                  <NotebookHeaderAvatar
-                    avatarUrl={nb.owner.avatarUrl}
-                    displayName={nb.owner.displayName}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h1 className="text-lg font-bold leading-snug text-[var(--gn-text)] sm:text-xl">
-                          {nb.title}
-                        </h1>
-                        <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-                          <Link
-                            href={`/u/${encodeURIComponent(nb.ownerId)}`}
-                            className="font-medium text-[#ff4500] hover:underline"
-                          >
-                            {nb.owner.displayName?.trim() || "Grower"}
-                          </Link>
-                          {nb.strain?.slug ? (
-                            <>
-                              {" "}
-                              ·{" "}
-                              <Link
-                                href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
-                                className="text-[#ff4500] hover:underline"
-                              >
-                                {nb.strain.name?.trim() ||
-                                  strainLabel ||
-                                  "Strain"}
-                              </Link>
-                            </>
-                          ) : strainLabel ? (
-                            <>
-                              {" "}
-                              · {strainLabel}
-                            </>
+              <div className="w-full rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+                  <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
+                    <NotebookHeaderAvatar
+                      avatarUrl={nb.owner.avatarUrl}
+                      displayName={nb.owner.displayName}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h1 className="text-lg font-bold leading-snug text-[var(--gn-text)] sm:text-xl">
+                        {nb.title}
+                      </h1>
+                      <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+                        <Link
+                          href={`/u/${encodeURIComponent(nb.ownerId)}`}
+                          className="font-medium text-[#ff4500] hover:underline"
+                        >
+                          {nb.owner.displayName?.trim() || "Grower"}
+                        </Link>
+                        {nb.strain?.slug ? (
+                          <>
+                            {" "}
+                            ·{" "}
+                            <Link
+                              href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
+                              className="text-[#ff4500] hover:underline"
+                            >
+                              {nb.strain.name?.trim() ||
+                                strainLabel ||
+                                "Strain"}
+                            </Link>
+                          </>
+                        ) : strainLabel ? (
+                          <>
+                            {" "}
+                            · {strainLabel}
+                          </>
+                        ) : null}
+                        {nb.breeder ? (
+                          <>
+                            {" "}
+                            ·{" "}
+                            <Link
+                              href={`/breeders/${encodeURIComponent(nb.breeder.slug)}`}
+                              className="text-[#ff4500] hover:underline"
+                            >
+                              {nb.breeder.name}
+                            </Link>
+                          </>
+                        ) : null}
+                      </p>
+                      {(strainLabel || nb.growthStage) && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {strainLabel ? (
+                            <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
+                              {strainLabel}
+                            </span>
                           ) : null}
-                          {nb.breeder ? (
-                            <>
-                              {" "}
-                              ·{" "}
-                              <Link
-                                href={`/breeders/${encodeURIComponent(nb.breeder.slug)}`}
-                                className="text-[#ff4500] hover:underline"
-                              >
-                                {nb.breeder.name}
-                              </Link>
-                            </>
+                          {nb.growthStage ? (
+                            <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
+                              {GROWTH_STAGE_LABEL[nb.growthStage] ??
+                                nb.growthStage}
+                            </span>
                           ) : null}
-                        </p>
-                        {(strainLabel || nb.growthStage) && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {strainLabel ? (
-                              <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
-                                {strainLabel}
-                              </span>
-                            ) : null}
-                            {nb.growthStage ? (
-                              <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
-                                {GROWTH_STAGE_LABEL[nb.growthStage] ??
-                                  nb.growthStage}
-                              </span>
-                            ) : null}
-                          </div>
-                        )}
-                      </div>
-                      {isOwner ? (
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                    {showHarvestPanel(nb) ? (
-                      <button
-                        type="button"
-                        onClick={() => setHarvestWizardOpen(true)}
-                        className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
-                      >
-                        Harvest log
-                      </button>
-                    ) : null}
-                    <Link
-                      href={`/notebooks/${encodeURIComponent(nb.id)}/edit`}
-                      className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
-                    >
-                      Edit setup
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => setSettingsOpen(true)}
-                      className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
-                    >
-                      Details
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setWeekWizardMode("create");
-                        setWeekEditTarget(null);
-                        setWeekWizardOpen(true);
-                      }}
-                      className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
-                    >
-                      Add week
-                    </button>
-                  </div>
-                ) : null}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  <div className="flex w-full shrink-0 flex-col items-start gap-2 sm:w-auto sm:items-end">
+                    <VoteFeedPill
+                      score={nb.score}
+                      upvotes={nb.upvotes}
+                      downvotes={nb.downvotes}
+                      viewerVote={nb.viewerVote}
+                      onUp={() => void vote(1)}
+                      onDown={() => void vote(-1)}
+                      disabled={voteBusy}
+                    />
+                    {isOwner ? (
+                      <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:w-auto">
+                        {showHarvestPanel(nb) ? (
+                          <button
+                            type="button"
+                            onClick={() => setHarvestWizardOpen(true)}
+                            className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                          >
+                            Harvest log
+                          </button>
+                        ) : null}
+                        <Link
+                          href={`/notebooks/${encodeURIComponent(nb.id)}/edit`}
+                          className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                        >
+                          Edit setup
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsOpen(true)}
+                          className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                        >
+                          Details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWeekWizardMode("create");
+                            setWeekEditTarget(null);
+                            setWeekWizardOpen(true);
+                          }}
+                          className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+                        >
+                          Add week
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -687,8 +685,6 @@ export function NotebookDetailClient({
                 </div>
               </div>
               </div>
-            </div>
-          </div>
 
       {showGrowingSetup ? (
         <section className="mt-5 rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-3.5">

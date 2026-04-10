@@ -88,7 +88,7 @@ export function SiteChrome({
           }
         />
 
-        <div className="gn-app-canvas min-w-0 min-h-0 flex-1 overflow-x-hidden">
+        <div className="gn-app-canvas min-w-0 min-h-0 flex-1 overflow-x-clip">
           {children}
         </div>
       </div>

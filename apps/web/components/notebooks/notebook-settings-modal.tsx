@@ -113,9 +113,13 @@ export function NotebookSettingsModal({
       open={open}
       title="Notebook details"
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-4xl"
     >
-      <Form form={form} layout="vertical" className="px-5 py-4">
+      <Form
+        form={form}
+        layout="vertical"
+        size="middle"
+        className="px-5 py-3 sm:px-6 sm:py-4"
+      >
         {notebook.strain?.slug ? (
           <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
             Catalog strain:{" "}
@@ -192,12 +196,12 @@ export function NotebookSettingsModal({
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-5 flex justify-end gap-2 border-t border-[var(--gn-divide)] pt-4">
           <button
             type="button"
             disabled={saving}
             onClick={onClose}
-            className="rounded-lg border border-[var(--gn-divide)] px-4 py-2 text-sm text-[var(--gn-text)]"
+            className="rounded-lg border border-[var(--gn-divide)] px-4 py-1.5 text-sm text-[var(--gn-text)]"
           >
             Cancel
           </button>
@@ -205,7 +209,7 @@ export function NotebookSettingsModal({
             type="button"
             disabled={saving}
             onClick={() => void save()}
-            className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400 disabled:opacity-45"
+            className="rounded-full bg-emerald-500 px-5 py-1.5 text-sm font-semibold text-neutral-950 hover:bg-emerald-400 disabled:opacity-45"
           >
             {saving ? "Saving…" : "Save"}
           </button>

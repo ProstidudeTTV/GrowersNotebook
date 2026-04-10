@@ -152,8 +152,14 @@ function serializeNutrients(lines: NutLine[]) {
     });
 }
 
-const inputClass =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+const fieldShell =
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+
+/** Single-line fields: shorter control height */
+const inputClass = `${fieldShell} py-1.5 min-h-[2.25rem]`;
+
+/** Multi-line notes */
+const textareaClass = `${fieldShell} py-2`;
 
 const labelClass = "block text-sm font-semibold text-[var(--gn-text)]";
 
@@ -405,10 +411,9 @@ export function NotebookWeekWizard({
       open={open}
       title={title}
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-4xl"
     >
-      <div className="px-4 py-4">
-        <div className="mb-4">
+      <div className="px-5 py-3 sm:px-6 sm:py-4">
+        <div className="mb-3">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -468,7 +473,7 @@ export function NotebookWeekWizard({
                       ? "What happened this week?"
                       : "Anything that changed later in the week?"
                   }
-                  className={`${inputClass} mt-1`}
+                  className={`${textareaClass} mt-1`}
                 />
               </div>
             ))}
@@ -540,7 +545,7 @@ export function NotebookWeekWizard({
                 rows={4}
                 value={waterNotes}
                 onChange={(e) => setWaterNotes(e.target.value)}
-                className={`${inputClass} mt-2`}
+                className={`${textareaClass} mt-2`}
               />
             </div>
             <div>
@@ -812,7 +817,7 @@ export function NotebookWeekWizard({
           <p className="mt-4 text-sm text-red-400">{error}</p>
         ) : null}
 
-        <div className="mt-8 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-4">
           <button
             type="button"
             disabled={step <= 1 || saving}
@@ -829,7 +834,7 @@ export function NotebookWeekWizard({
                 if (step === 1 && mode === "create" && !(weekIndex >= 1)) return;
                 setStep((s) => Math.min(STEPS, s + 1));
               }}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -838,7 +843,7 @@ export function NotebookWeekWizard({
               type="button"
               disabled={saving}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save week"}
             </button>

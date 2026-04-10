@@ -22,8 +22,12 @@ function isHttpsImageUrl(s: string): boolean {
   }
 }
 
-const inputClass =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+const fieldShell =
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+
+const inputClass = `${fieldShell} py-1.5 min-h-[2.25rem]`;
+
+const textareaClass = `${fieldShell} py-2`;
 
 export function NotebookHarvestWizard({
   open,
@@ -147,10 +151,10 @@ export function NotebookHarvestWizard({
       open={open}
       title="Harvest log"
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-xl"
+      maxWidthClassName="max-w-[min(40rem,calc(100vw-1.5rem))]"
     >
-      <div className="px-4 py-4">
-        <div className="mb-4">
+      <div className="px-5 py-3 sm:px-6 sm:py-4">
+        <div className="mb-3">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -201,8 +205,8 @@ export function NotebookHarvestWizard({
                 Quality & trim notes
               </label>
               <textarea
-                className={`${inputClass} mt-1`}
-                rows={6}
+                className={`${textareaClass} mt-1`}
+                rows={5}
                 value={harvestQualityNotes}
                 onChange={(e) => setHarvestQualityNotes(e.target.value)}
                 placeholder="Density, smell, trimming, cure notes…"
@@ -317,7 +321,7 @@ export function NotebookHarvestWizard({
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
 
-        <div className="mt-8 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-4">
           <button
             type="button"
             disabled={step <= 1 || saving}
@@ -331,7 +335,7 @@ export function NotebookHarvestWizard({
               type="button"
               disabled={saving}
               onClick={() => setStep((s) => Math.min(STEPS, s + 1))}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -340,7 +344,7 @@ export function NotebookHarvestWizard({
               type="button"
               disabled={saving}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save harvest"}
             </button>

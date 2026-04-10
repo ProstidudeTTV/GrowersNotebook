@@ -148,11 +148,15 @@ export function NotebookSetupWizard({
     <NotebookCenteredModal
       open={open}
       onClose={() => (!saving ? onClose() : undefined)}
-      maxWidthClassName="max-w-4xl"
       title="Set up your notebook"
     >
-      <Form form={form} layout="vertical" className="px-4 py-4">
-        <div className="mb-4">
+      <Form
+        form={form}
+        layout="vertical"
+        size="middle"
+        className="px-5 py-3 sm:px-6 sm:py-4"
+      >
+        <div className="mb-3">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -169,7 +173,7 @@ export function NotebookSetupWizard({
         </div>
 
         {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
-        <div className={step === 1 ? "space-y-2" : "hidden"} aria-hidden={step !== 1}>
+        <div className={step === 1 ? "space-y-3" : "hidden"} aria-hidden={step !== 1}>
             <p className="text-sm text-[var(--gn-text-muted)]">
               Name this notebook. Optional free-text strain label below—catalog
               linking stays as-is unless you clear it in Details later.
@@ -254,9 +258,9 @@ export function NotebookSetupWizard({
             </p>
             <Form.Item name="setupNotes" noStyle>
               <Input.TextArea
-                rows={8}
+                rows={6}
                 placeholder="Describe your setup…"
-                className="mt-3"
+                className="mt-2"
               />
             </Form.Item>
         </div>
@@ -285,7 +289,7 @@ export function NotebookSetupWizard({
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
 
-        <div className="mt-8 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-4">
           <button
             type="button"
             disabled={step <= 1 || saving}
@@ -308,7 +312,7 @@ export function NotebookSetupWizard({
                 }
                 setStep((s) => Math.min(STEPS, s + 1));
               }}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -317,7 +321,7 @@ export function NotebookSetupWizard({
               type="button"
               disabled={saving}
               onClick={() => void finishSetup()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save notebook setup"}
             </button>

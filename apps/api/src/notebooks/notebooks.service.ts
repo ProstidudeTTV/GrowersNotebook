@@ -269,6 +269,8 @@ export class NotebooksService {
     q?: string;
     grower?: string;
     breeder?: string;
+    /** Default: by last update. `hot` = highest vote score, then recently updated. */
+    sort?: 'updated' | 'hot';
   }) {
     const db = getDb();
     const page = Math.max(1, opts.page);
@@ -311,6 +313,8 @@ export class NotebooksService {
     }
     const listWhere = and(...filters);
 
+    const sortHot = opts.sort === 'hot';
+
     const [{ total }] = await db
       .select({ total: count() })
       .from(notebooks)
@@ -341,7 +345,11 @@ export class NotebooksService {
       .leftJoin(strains, eq(notebooks.strainId, strains.id))
       .leftJoin(breeders, eq(strains.breederId, breeders.id))
       .where(listWhere)
-      .orderBy(desc(notebooks.updatedAt))
+      .orderBy(
+        ...(sortHot
+          ? [desc(notebookScoreExpr), desc(notebooks.updatedAt)]
+          : [desc(notebooks.updatedAt)]),
+      )
       .offset(skip)
       .limit(pageSize);
 

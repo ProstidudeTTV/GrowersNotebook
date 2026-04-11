@@ -24,6 +24,12 @@ export type SidebarHotPost = {
   score: number;
 };
 
+export type SidebarHotNotebook = {
+  id: string;
+  title: string;
+  score: number;
+};
+
 function IconFlame({ className }: { className?: string }) {
   return (
     <svg
@@ -155,12 +161,14 @@ const navItem =
 export function AppSidebar({
   followedCommunities,
   hotWeekPost,
+  hotNotebooks,
   authed,
   onNavigate,
   className = "",
 }: {
   followedCommunities: SidebarCommunity[];
   hotWeekPost: SidebarHotPost | null;
+  hotNotebooks: SidebarHotNotebook[];
   authed: boolean;
   /** Close mobile drawer after navigation */
   onNavigate?: () => void;
@@ -246,6 +254,32 @@ export function AppSidebar({
         ) : (
           <p className="mx-3 -mt-0.5 mb-1 text-xs text-[var(--gn-text-muted)]">
             No posts in the last week yet.
+          </p>
+        )}
+
+        <p className="mt-4 px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+          Hot notebooks
+        </p>
+        {hotNotebooks.length > 0 ? (
+          <ul className="mx-3 mt-1.5 space-y-2">
+            {hotNotebooks.map((n, i) => (
+              <li key={n.id}>
+                <Link
+                  href={`/notebooks/${encodeURIComponent(n.id)}`}
+                  className="block rounded-lg px-2 py-1.5 text-xs leading-snug text-[var(--gn-text-muted)] transition-colors hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                  onClick={afterNav}
+                >
+                  <span className="font-medium text-[var(--gn-text)]">
+                    #{i + 1}:
+                  </span>{" "}
+                  {truncateTitle(n.title, 42)} · {formatVoteScore(n.score)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mx-3 mt-1.5 text-xs text-[var(--gn-text-muted)]">
+            No public notebooks with votes yet.
           </p>
         )}
 

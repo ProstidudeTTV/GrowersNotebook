@@ -1,5 +1,9 @@
 import { SiteChrome } from "@/components/site-chrome";
-import type { SidebarCommunity, SidebarHotPost } from "@/components/app-sidebar";
+import type {
+  SidebarCommunity,
+  SidebarHotNotebook,
+  SidebarHotPost,
+} from "@/components/app-sidebar";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -17,7 +21,7 @@ export default async function SiteLayout({
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
 
-  const [followingRows, hotRes] = await Promise.all([
+  const [followingRows, hotRes, hotNotebooksRes] = await Promise.all([
     token
       ? apiFetch<
           Array<{
@@ -52,6 +56,14 @@ export default async function SiteLayout({
       token: token ?? undefined,
       timeoutMs: SIDEBAR_API_TIMEOUT_MS,
     }).catch(() => ({ items: [] as Array<{ id: string; title: string; score: number }> })),
+    apiFetch<{
+      items: Array<{ id: string; title: string; score: number }>;
+    }>("/notebooks?page=1&pageSize=3&sort=hot", {
+      token: token ?? undefined,
+      timeoutMs: SIDEBAR_API_TIMEOUT_MS,
+    }).catch(() => ({
+      items: [] as Array<{ id: string; title: string; score: number }>,
+    })),
   ]);
 
   const followedCommunities: SidebarCommunity[] = followingRows;
@@ -60,10 +72,19 @@ export default async function SiteLayout({
     ? { id: first.id, title: first.title, score: first.score }
     : null;
 
+  const hotNotebooks: SidebarHotNotebook[] = hotNotebooksRes.items.map(
+    (n) => ({
+      id: n.id,
+      title: n.title,
+      score: n.score,
+    }),
+  );
+
   return (
     <SiteChrome
       initialFollowedCommunities={followedCommunities}
       initialHotWeekPost={hotWeekPost}
+      initialHotNotebooks={hotNotebooks}
       authed={!!token}
       modal={modal}
     >

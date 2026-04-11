@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   AppSidebar,
   type SidebarCommunity,
+  type SidebarHotNotebook,
   type SidebarHotPost,
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
@@ -32,12 +33,14 @@ export function SiteChrome({
   modal,
   initialFollowedCommunities,
   initialHotWeekPost,
+  initialHotNotebooks,
   authed,
 }: {
   children: React.ReactNode;
   modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
   initialHotWeekPost: SidebarHotPost | null;
+  initialHotNotebooks: SidebarHotNotebook[];
   authed: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,6 +81,7 @@ export function SiteChrome({
         <AppSidebar
           followedCommunities={followed}
           hotWeekPost={initialHotWeekPost}
+          hotNotebooks={initialHotNotebooks}
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={

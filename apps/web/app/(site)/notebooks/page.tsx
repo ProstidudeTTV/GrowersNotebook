@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-public";
-import { formatVoteScore } from "@/lib/grower-display";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
-
-type HotNotebookSpotlight = {
-  id: string;
-  title: string;
-  score: number;
-};
 
 type NotebookListItem = {
   id: string;
@@ -66,12 +59,6 @@ function formatListDate(iso: string): string {
   } catch {
     return iso;
   }
-}
-
-function truncateNotebookTitle(title: string, maxChars: number) {
-  const t = title.trim();
-  if (t.length <= maxChars) return t;
-  return `${t.slice(0, maxChars - 1)}…`;
 }
 
 function statusPillClass(status: string): string {
@@ -156,19 +143,19 @@ export default async function NotebooksDirectoryPage({
     }>(`/notebooks?${qs}`, {
       timeoutMs: listTimeout,
     }).catch(() => null),
-    apiFetch<{ items: HotNotebookSpotlight[] }>(
+    apiFetch<{ items: NotebookListItem[] }>(
       "/notebooks?page=1&pageSize=3&sort=hot",
       { timeoutMs: listTimeout },
-    ).catch(() => ({ items: [] as HotNotebookSpotlight[] })),
-    apiFetch<{ items: HotNotebookSpotlight[] }>(
+    ).catch(() => ({ items: [] as NotebookListItem[] })),
+    apiFetch<{ items: NotebookListItem[] }>(
       "/notebooks?page=1&pageSize=3",
       { timeoutMs: listTimeout },
-    ).catch(() => ({ items: [] as HotNotebookSpotlight[] })),
+    ).catch(() => ({ items: [] as NotebookListItem[] })),
   ]);
 
   const data =
     listRes ?? { items: [], total: 0, page: 1, pageSize: 24 };
-  const hotNotebooks =
+  const hotNotebooks: NotebookListItem[] =
     hotByVotes.items.length > 0 ? hotByVotes.items : hotRecent.items;
   const hotNotebooksSource: "votes" | "recent" =
     hotByVotes.items.length > 0 ? "votes" : "recent";
@@ -176,91 +163,76 @@ export default async function NotebooksDirectoryPage({
   const filterBase = { status, q, grower, breeder };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[min(22rem,36%)_1fr] lg:items-start lg:gap-10">
-        <aside className="order-2 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:order-1 lg:border-t-0 lg:border-r lg:border-[var(--gn-border)] lg:pr-8 lg:pt-0">
-          <section className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-              Hot notebooks
-            </h2>
-            <p className="mt-1 text-xs leading-snug text-[var(--gn-text-muted)]">
-              {hotNotebooksSource === "votes"
-                ? "Top by community votes (then recently updated)."
-                : "Recently updated public diaries—vote ranking unavailable."}
-            </p>
-            {hotNotebooks.length > 0 ? (
-              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--gn-text)] marker:text-[var(--gn-text-muted)]">
-                {hotNotebooks.map((n) => (
-                  <li key={n.id} className="pl-1">
+    <main className="mx-auto max-w-[88rem] px-4 py-8">
+      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,17.5rem)_minmax(0,1fr)_minmax(0,19rem)] lg:items-start lg:gap-8">
+        {/* Left: hot notebooks — one boxed card per notebook */}
+        <aside className="order-2 space-y-4 border-t border-[var(--gn-border)] pt-10 lg:order-1 lg:border-t-0 lg:border-r lg:border-[var(--gn-border)] lg:pr-6 lg:pt-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            Hot notebooks
+          </h2>
+          <p className="text-xs leading-snug text-[var(--gn-text-muted)]">
+            {hotNotebooksSource === "votes"
+              ? "Top by community votes, then recently updated."
+              : "Recently updated—vote ranking unavailable on this build."}
+          </p>
+          {hotNotebooks.length > 0 ? (
+            <div className="space-y-3">
+              {hotNotebooks.map((n, i) => {
+                const growerName =
+                  n.owner.displayName?.trim() || "Grower";
+                const href = `/notebooks/${encodeURIComponent(n.id)}`;
+                return (
+                  <article
+                    key={n.id}
+                    className="group relative overflow-hidden rounded-xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
+                  >
                     <Link
-                      href={`/notebooks/${encodeURIComponent(n.id)}`}
-                      className="font-medium text-[#ff4500] hover:underline"
-                    >
-                      {truncateNotebookTitle(n.title, 48)}
-                    </Link>
-                    <span className="text-[var(--gn-text-muted)]">
-                      {" "}
-                      · {formatVoteScore(n.score)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="mt-3 text-sm text-[var(--gn-text-muted)]">
-                No public notebooks yet.
-              </p>
-            )}
-          </section>
-
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-              What are notebooks?
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
-              Notebooks are structured logs: one plant (or run), weekly
-              checkpoints, environment and feeding notes, and a timeline you
-              (and the community) can follow from seed to harvest.
+                      href={href}
+                      className="absolute inset-0 z-10 rounded-xl outline-none ring-[#ff4500] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
+                      aria-label={`Open notebook: ${n.title}`}
+                    />
+                    <div className="relative z-20 flex gap-2.5 pointer-events-none">
+                      <NotebookCardAvatar
+                        avatarUrl={n.owner.avatarUrl}
+                        displayName={n.owner.displayName}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                          #{i + 1}
+                        </p>
+                        <p className="text-sm font-semibold leading-snug text-[var(--gn-text)] transition-colors group-hover:text-[#ff5414] line-clamp-2">
+                          {n.title}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--gn-text-muted)] truncate">
+                          {growerName}
+                        </p>
+                        <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
+                          Score{" "}
+                          <span className="font-medium text-[var(--gn-text)]">
+                            {n.score}
+                          </span>
+                          <span className="mx-1">·</span>
+                          <span
+                            className={`inline rounded-full px-1.5 py-0.5 capitalize ring-1 ${statusPillClass(n.status)}`}
+                          >
+                            {n.status}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--gn-text-muted)]">
+              No public notebooks yet.
             </p>
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-              How to start
-            </h2>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--gn-text)]">
-              <li>
-                Sign in, then open{" "}
-                <Link
-                  href="/notebooks/new"
-                  className="text-[#ff4500] hover:underline"
-                >
-                  Set up your notebook
-                </Link>
-                .
-              </li>
-              <li>
-                Add title and your first week. Link a cultivar from the{" "}
-                <Link href="/strains" className="text-[#ff4500] hover:underline">
-                  Strains
-                </Link>{" "}
-                catalog (or a custom label) under{" "}
-                <strong className="font-medium text-[var(--gn-text)]">
-                  Details
-                </strong>{" "}
-                on your notebook.
-              </li>
-              <li>
-                Keep logging weeks—readers can filter by grower, breeder, and
-                status from this directory.
-              </li>
-            </ol>
-          </div>
-          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-sm text-[var(--gn-text-muted)]">
-            Profiles must be public with notebooks shared for a diary to appear
-            here. You can change that anytime in account settings.
-          </div>
+          )}
         </aside>
 
-        <div className="order-1 lg:order-2">
+        {/* Center: directory (unchanged) */}
+        <div className="order-1 lg:order-2 min-w-0">
           <h1 className="text-2xl font-bold text-[var(--gn-text)]">
             Notebooks
           </h1>
@@ -471,6 +443,56 @@ export default async function NotebooksDirectoryPage({
             </p>
           ) : null}
         </div>
+
+        {/* Right: explainer copy */}
+        <aside className="order-3 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:border-t-0 lg:border-l lg:border-[var(--gn-border)] lg:pl-6 lg:pt-0">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              What are notebooks?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
+              Notebooks are structured logs: one plant (or run), weekly
+              checkpoints, environment and feeding notes, and a timeline you
+              (and the community) can follow from seed to harvest.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              How to start
+            </h2>
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--gn-text)]">
+              <li>
+                Sign in, then open{" "}
+                <Link
+                  href="/notebooks/new"
+                  className="text-[#ff4500] hover:underline"
+                >
+                  Set up your notebook
+                </Link>
+                .
+              </li>
+              <li>
+                Add title and your first week. Link a cultivar from the{" "}
+                <Link href="/strains" className="text-[#ff4500] hover:underline">
+                  Strains
+                </Link>{" "}
+                catalog (or a custom label) under{" "}
+                <strong className="font-medium text-[var(--gn-text)]">
+                  Details
+                </strong>{" "}
+                on your notebook.
+              </li>
+              <li>
+                Keep logging weeks—readers can filter by grower, breeder, and
+                status from this directory.
+              </li>
+            </ol>
+          </div>
+          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-sm text-[var(--gn-text-muted)]">
+            Profiles must be public with notebooks shared for a diary to appear
+            here. You can change that anytime in account settings.
+          </div>
+        </aside>
       </div>
     </main>
   );

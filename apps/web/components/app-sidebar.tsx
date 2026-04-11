@@ -162,6 +162,7 @@ export function AppSidebar({
   followedCommunities,
   hotWeekPost,
   hotNotebooks,
+  hotNotebooksSource,
   authed,
   onNavigate,
   className = "",
@@ -169,6 +170,7 @@ export function AppSidebar({
   followedCommunities: SidebarCommunity[];
   hotWeekPost: SidebarHotPost | null;
   hotNotebooks: SidebarHotNotebook[];
+  hotNotebooksSource: "votes" | "recent";
   authed: boolean;
   /** Close mobile drawer after navigation */
   onNavigate?: () => void;
@@ -237,51 +239,58 @@ export function AppSidebar({
 
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 
-        <Link
-          href="/hot"
-          className={navItem}
-          onClick={afterNav}
-        >
-          <IconFlame className="shrink-0 text-[#ff4500]" />
-          Hot this week
-        </Link>
-        {hotWeekPost ? (
-          <p className="mx-3 -mt-0.5 mb-1 line-clamp-2 text-xs leading-snug text-[var(--gn-text-muted)]">
-            <span className="font-medium text-[var(--gn-text)]">#1:</span>{" "}
-            {truncateTitle(hotWeekPost.title, 44)} ·{" "}
-            {formatVoteScore(hotWeekPost.score)}
-          </p>
-        ) : (
-          <p className="mx-3 -mt-0.5 mb-1 text-xs text-[var(--gn-text-muted)]">
-            No posts in the last week yet.
-          </p>
-        )}
+        <div className="mx-1 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)]/55 p-1.5 shadow-sm">
+          <Link
+            href="/hot"
+            className={navItem}
+            onClick={afterNav}
+          >
+            <IconFlame className="shrink-0 text-[#ff4500]" />
+            Hot this week
+          </Link>
+          {hotWeekPost ? (
+            <p className="mx-2 mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--gn-text-muted)]">
+              <span className="font-medium text-[var(--gn-text)]">#1:</span>{" "}
+              {truncateTitle(hotWeekPost.title, 44)} ·{" "}
+              {formatVoteScore(hotWeekPost.score)}
+            </p>
+          ) : (
+            <p className="mx-2 mt-0.5 text-xs text-[var(--gn-text-muted)]">
+              No posts in the last week yet.
+            </p>
+          )}
 
-        <p className="mt-4 px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-          Hot notebooks
-        </p>
-        {hotNotebooks.length > 0 ? (
-          <ul className="mx-3 mt-1.5 space-y-2">
-            {hotNotebooks.map((n, i) => (
-              <li key={n.id}>
-                <Link
-                  href={`/notebooks/${encodeURIComponent(n.id)}`}
-                  className="block rounded-lg px-2 py-1.5 text-xs leading-snug text-[var(--gn-text-muted)] transition-colors hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
-                  onClick={afterNav}
-                >
-                  <span className="font-medium text-[var(--gn-text)]">
-                    #{i + 1}:
-                  </span>{" "}
-                  {truncateTitle(n.title, 42)} · {formatVoteScore(n.score)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mx-3 mt-1.5 text-xs text-[var(--gn-text-muted)]">
-            No public notebooks with votes yet.
+          <p className="mx-2 mt-2.5 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+            Hot notebooks
           </p>
-        )}
+          <p className="mx-2 mt-0.5 text-[0.65rem] leading-snug text-[var(--gn-text-muted)]">
+            {hotNotebooksSource === "votes"
+              ? "Top by community votes (then recently updated)."
+              : "Recently updated public diaries (vote sort unavailable)."}
+          </p>
+          {hotNotebooks.length > 0 ? (
+            <ul className="mx-1 mt-1.5 space-y-1">
+              {hotNotebooks.map((n, i) => (
+                <li key={n.id}>
+                  <Link
+                    href={`/notebooks/${encodeURIComponent(n.id)}`}
+                    className="block rounded-lg px-2 py-1.5 text-xs leading-snug text-[var(--gn-text-muted)] transition-colors hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                    onClick={afterNav}
+                  >
+                    <span className="font-medium text-[var(--gn-text)]">
+                      #{i + 1}:
+                    </span>{" "}
+                    {truncateTitle(n.title, 42)} · {formatVoteScore(n.score)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mx-2 mt-1.5 text-xs text-[var(--gn-text-muted)]">
+              No public notebooks yet.
+            </p>
+          )}
+        </div>
 
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 

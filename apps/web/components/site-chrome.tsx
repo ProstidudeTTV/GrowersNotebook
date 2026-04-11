@@ -33,14 +33,16 @@ export function SiteChrome({
   modal,
   initialFollowedCommunities,
   initialHotWeekPost,
-  initialHotNotebooks,
+  initialHotNotebooks = [],
+  initialHotNotebooksSource = "recent",
   authed,
 }: {
   children: React.ReactNode;
   modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
   initialHotWeekPost: SidebarHotPost | null;
-  initialHotNotebooks: SidebarHotNotebook[];
+  initialHotNotebooks?: SidebarHotNotebook[];
+  initialHotNotebooksSource?: "votes" | "recent";
   authed: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -82,6 +84,7 @@ export function SiteChrome({
           followedCommunities={followed}
           hotWeekPost={initialHotWeekPost}
           hotNotebooks={initialHotNotebooks}
+          hotNotebooksSource={initialHotNotebooksSource}
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={

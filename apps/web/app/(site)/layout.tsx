@@ -21,7 +21,8 @@ export default async function SiteLayout({
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
 
-  const [followingRows, hotRes, hotNotebooksRes] = await Promise.all([
+  const [followingRows, hotRes, hotNotebooksRes, recentNotebooksRes] =
+    await Promise.all([
     token
       ? apiFetch<
           Array<{
@@ -64,6 +65,14 @@ export default async function SiteLayout({
     }).catch(() => ({
       items: [] as Array<{ id: string; title: string; score: number }>,
     })),
+    apiFetch<{
+      items: Array<{ id: string; title: string; score: number }>;
+    }>("/notebooks?page=1&pageSize=3", {
+      token: token ?? undefined,
+      timeoutMs: SIDEBAR_API_TIMEOUT_MS,
+    }).catch(() => ({
+      items: [] as Array<{ id: string; title: string; score: number }>,
+    })),
   ]);
 
   const followedCommunities: SidebarCommunity[] = followingRows;
@@ -72,19 +81,27 @@ export default async function SiteLayout({
     ? { id: first.id, title: first.title, score: first.score }
     : null;
 
-  const hotNotebooks: SidebarHotNotebook[] = hotNotebooksRes.items.map(
-    (n) => ({
+  const mapNb = (
+    items: Array<{ id: string; title: string; score: number }>,
+  ): SidebarHotNotebook[] =>
+    items.map((n) => ({
       id: n.id,
       title: n.title,
       score: n.score,
-    }),
-  );
+    }));
+
+  const fromHot = mapNb(hotNotebooksRes.items);
+  const fromRecent = mapNb(recentNotebooksRes.items);
+  const hotNotebooks = fromHot.length > 0 ? fromHot : fromRecent;
+  const hotNotebooksSource: "votes" | "recent" =
+    fromHot.length > 0 ? "votes" : "recent";
 
   return (
     <SiteChrome
       initialFollowedCommunities={followedCommunities}
       initialHotWeekPost={hotWeekPost}
       initialHotNotebooks={hotNotebooks}
+      initialHotNotebooksSource={hotNotebooksSource}
       authed={!!token}
       modal={modal}
     >

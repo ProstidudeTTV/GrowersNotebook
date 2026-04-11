@@ -151,7 +151,57 @@ export default async function NotebooksDirectoryPage({
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <div>
+      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[min(22rem,36%)_1fr] lg:items-start lg:gap-10">
+        <aside className="order-2 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:order-1 lg:border-t-0 lg:border-r lg:border-[var(--gn-border)] lg:pr-8 lg:pt-0">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              What are notebooks?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
+              Notebooks are structured logs: one plant (or run), weekly
+              checkpoints, environment and feeding notes, and a timeline you
+              (and the community) can follow from seed to harvest.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              How to start
+            </h2>
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-[var(--gn-text)]">
+              <li>
+                Sign in, then open{" "}
+                <Link
+                  href="/notebooks/new"
+                  className="text-[#ff4500] hover:underline"
+                >
+                  Set up your notebook
+                </Link>
+                .
+              </li>
+              <li>
+                Add title and your first week. Link a cultivar from the{" "}
+                <Link href="/strains" className="text-[#ff4500] hover:underline">
+                  Strains
+                </Link>{" "}
+                catalog (or a custom label) under{" "}
+                <strong className="font-medium text-[var(--gn-text)]">
+                  Details
+                </strong>{" "}
+                on your notebook.
+              </li>
+              <li>
+                Keep logging weeks—readers can filter by grower, breeder, and
+                status from this directory.
+              </li>
+            </ol>
+          </div>
+          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-sm text-[var(--gn-text-muted)]">
+            Profiles must be public with notebooks shared for a diary to appear
+            here. You can change that anytime in account settings.
+          </div>
+        </aside>
+
+        <div className="order-1 lg:order-2">
           <h1 className="text-2xl font-bold text-[var(--gn-text)]">
             Notebooks
           </h1>
@@ -361,6 +411,7 @@ export default async function NotebooksDirectoryPage({
               .
             </p>
           ) : null}
+        </div>
       </div>
     </main>
   );

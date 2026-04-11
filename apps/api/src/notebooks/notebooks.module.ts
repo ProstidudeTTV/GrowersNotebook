@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ProfilesModule } from '../profiles/profiles.module';
 import { AdminNotebooksController } from './admin-notebooks.controller';
 import { NotebookCommentsService } from './notebook-comments.service';
@@ -14,6 +15,7 @@ import { NotebooksService } from './notebooks.service';
     forwardRef(() => CatalogModule),
     forwardRef(() => AuthModule),
     forwardRef(() => ProfilesModule),
+    NotificationsModule,
   ],
   controllers: [NotebooksController, AdminNotebooksController],
   providers: [NotebooksService, NotebookCommentsService],

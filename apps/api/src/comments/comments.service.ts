@@ -10,6 +10,7 @@ import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { viewerVoteFromRow } from '../common/normalize-viewer-vote';
 import { getDb } from '../db';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import {
   commentReports,
@@ -52,6 +53,7 @@ export class CommentsService {
   constructor(
     private readonly profiles: ProfilesService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private normalizeIncomingImageUrls(urls: string[] | undefined): string[] {
@@ -84,20 +86,30 @@ export class CommentsService {
   ) {
     const db = getDb();
     const [post] = await db
-      .select({ id: posts.id })
+      .select({
+        id: posts.id,
+        authorId: posts.authorId,
+        title: posts.title,
+      })
       .from(posts)
       .where(eq(posts.id, dto.postId));
     if (!post) throw new NotFoundException('Post not found');
 
+    let parentCommentAuthorId: string | null = null;
     if (dto.parentId) {
       const [parent] = await db
-        .select({ id: comments.id, postId: comments.postId })
+        .select({
+          id: comments.id,
+          postId: comments.postId,
+          authorId: comments.authorId,
+        })
         .from(comments)
         .where(eq(comments.id, dto.parentId));
       if (!parent) throw new NotFoundException('Parent comment not found');
       if (parent.postId !== dto.postId) {
         throw new BadRequestException('Parent is on a different post');
       }
+      parentCommentAuthorId = parent.authorId;
     }
 
     const text = (dto.body ?? '').trim();
@@ -116,6 +128,35 @@ export class CommentsService {
         imageUrls,
       })
       .returning();
+
+    let notifyUserId: string | null = null;
+    let isReply = false;
+    if (dto.parentId && parentCommentAuthorId) {
+      if (parentCommentAuthorId !== authorId) {
+        notifyUserId = parentCommentAuthorId;
+        isReply = true;
+      }
+    } else if (post.authorId !== authorId) {
+      notifyUserId = post.authorId;
+    }
+    if (notifyUserId) {
+      const preview =
+        text.length > 0
+          ? text.length > 120
+            ? `${text.slice(0, 120)}…`
+            : text
+          : imageUrls.length > 0
+            ? 'New comment with image'
+            : 'New comment';
+      const title = isReply
+        ? 'Reply to your comment'
+        : 'New comment on your post';
+      const body = isReply
+        ? `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`
+        : `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`;
+      await this.notifications.createForUser(notifyUserId, title, body);
+    }
+
     return row;
   }
 

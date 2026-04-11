@@ -141,6 +141,38 @@ export function AuthNav() {
     return () => subscription.unsubscribe();
   }, [applySession]);
 
+  /** Live unread badge + list freshness when the API inserts a notification row. */
+  useEffect(() => {
+    if (!sessionUserId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`gn-user-notifications:${sessionUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "user_notifications",
+          filter: `user_id=eq.${sessionUserId}`,
+        },
+        () => {
+          setMe((m) =>
+            m
+              ? {
+                  ...m,
+                  unreadNotificationCount:
+                    (m.unreadNotificationCount ?? 0) + 1,
+                }
+              : m,
+          );
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [sessionUserId]);
+
   useEffect(() => {
     const root = document.documentElement;
     setColorMode(root.classList.contains("dark") ? "dark" : "light");

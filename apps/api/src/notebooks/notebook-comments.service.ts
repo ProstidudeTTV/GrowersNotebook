@@ -10,6 +10,7 @@ import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { getDb } from '../db';
 import { notebookComments, notebooks, profiles } from '../db/schema';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ProfilesService } from '../profiles/profiles.service';
 
 const NOTEBOOK_COMMENT_IMAGE_MAX = 8;
@@ -26,6 +27,7 @@ export class NotebookCommentsService {
   constructor(
     private readonly profiles: ProfilesService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private normalizeImageUrls(urls: string[] | undefined): string[] {
@@ -98,21 +100,30 @@ export class NotebookCommentsService {
   ) {
     const db = getDb();
     const [nb] = await db
-      .select({ ownerId: notebooks.ownerId })
+      .select({
+        ownerId: notebooks.ownerId,
+        title: notebooks.title,
+      })
       .from(notebooks)
       .where(eq(notebooks.id, notebookId));
     if (!nb) throw new NotFoundException('Notebook not found');
     await this.assertNotebookReadable(nb.ownerId, authorId);
 
+    let parentAuthorId: string | null = null;
     if (dto.parentId) {
       const [parent] = await db
-        .select({ id: notebookComments.id, notebookId: notebookComments.notebookId })
+        .select({
+          id: notebookComments.id,
+          notebookId: notebookComments.notebookId,
+          authorId: notebookComments.authorId,
+        })
         .from(notebookComments)
         .where(eq(notebookComments.id, dto.parentId));
       if (!parent) throw new NotFoundException('Parent comment not found');
       if (parent.notebookId !== notebookId) {
         throw new BadRequestException('Parent is on a different notebook');
       }
+      parentAuthorId = parent.authorId;
     }
 
     const text = (dto.body ?? '').trim();
@@ -131,6 +142,35 @@ export class NotebookCommentsService {
         imageUrls,
       })
       .returning();
+
+    let notifyUserId: string | null = null;
+    let isReply = false;
+    if (dto.parentId && parentAuthorId) {
+      if (parentAuthorId !== authorId) {
+        notifyUserId = parentAuthorId;
+        isReply = true;
+      }
+    } else if (nb.ownerId !== authorId) {
+      notifyUserId = nb.ownerId;
+    }
+    if (notifyUserId) {
+      const nt = nb.title.trim();
+      const titleShort = nt.length > 70 ? `${nt.slice(0, 70)}…` : nt;
+      const preview =
+        text.length > 0
+          ? text.length > 120
+            ? `${text.slice(0, 120)}…`
+            : text
+          : imageUrls.length > 0
+            ? 'New comment with image'
+            : 'New comment';
+      const title = isReply
+        ? 'Reply on a notebook thread'
+        : 'New comment on your notebook';
+      const body = `“${titleShort}”: ${preview}`;
+      await this.notifications.createForUser(notifyUserId, title, body);
+    }
+
     return row;
   }
 

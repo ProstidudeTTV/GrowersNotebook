@@ -14,6 +14,16 @@ export class NotificationsService {
     return row;
   }
 
+  /** Fan-out the same notification to many users (e.g. community followers). */
+  async createForManyUsers(userIds: string[], title: string, body: string) {
+    const uniq = [...new Set(userIds)].filter(Boolean);
+    if (uniq.length === 0) return;
+    const db = getDb();
+    await db.insert(userNotifications).values(
+      uniq.map((userId) => ({ userId, title, body })),
+    );
+  }
+
   async listForUser(userId: string, skip: number, take: number) {
     const db = getDb();
     const [{ total }] = await db

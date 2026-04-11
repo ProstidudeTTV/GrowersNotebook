@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
+import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { getDb } from '../db';
 import {
   commentVotes,
@@ -10,6 +11,8 @@ import {
   posts,
 } from '../db/schema';
 import { NotebooksService } from '../notebooks/notebooks.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { ProfilesService } from '../profiles/profiles.service';
 
 async function setPostVoteRow(
   db: ReturnType<typeof getDb>,
@@ -79,17 +82,39 @@ async function setCommentVoteRow(
   }
 }
 
+function truncateNotif(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
 @Injectable()
 export class VotesService {
-  constructor(private readonly notebooksSvc: NotebooksService) {}
+  constructor(
+    private readonly notebooksSvc: NotebooksService,
+    private readonly notifications: NotificationsService,
+    private readonly profiles: ProfilesService,
+  ) {}
 
   async votePost(userId: string, postId: string, value: -1 | 1) {
     const db = getDb();
     const [post] = await db
-      .select({ id: posts.id })
+      .select({
+        id: posts.id,
+        authorId: posts.authorId,
+        title: posts.title,
+      })
       .from(posts)
       .where(eq(posts.id, postId));
     if (!post) throw new NotFoundException('Post not found');
+
+    let seedsBefore = 0;
+    let levelBefore = '';
+    if (post.authorId !== userId) {
+      const beforeMap = await this.profiles.getSeedsByUserIds([post.authorId]);
+      seedsBefore = beforeMap.get(post.authorId) ?? 0;
+      levelBefore = growerLevelFromSeeds(seedsBefore);
+    }
 
     const [existing] = await db
       .select({ value: postVotes.value })
@@ -110,6 +135,28 @@ export class VotesService {
     }
 
     await setPostVoteRow(db, userId, postId, value, prev !== null);
+
+    if (post.authorId !== userId) {
+      const isUpvote = incoming === 1;
+      if (isUpvote) {
+        await this.notifications.createForUser(
+          post.authorId,
+          'Upvote on your post',
+          `Someone upvoted “${truncateNotif(post.title, 100)}”.`,
+        );
+      }
+      const afterMap = await this.profiles.getSeedsByUserIds([post.authorId]);
+      const seedsAfter = afterMap.get(post.authorId) ?? 0;
+      const levelAfter = growerLevelFromSeeds(seedsAfter);
+      if (seedsAfter > seedsBefore && levelAfter !== levelBefore) {
+        await this.notifications.createForUser(
+          post.authorId,
+          'You leveled up!',
+          `You reached ${levelAfter}.`,
+        );
+      }
+    }
+
     return {
       ok: true as const,
       removed: false as const,
@@ -120,10 +167,23 @@ export class VotesService {
   async voteComment(userId: string, commentId: string, value: -1 | 1) {
     const db = getDb();
     const [c] = await db
-      .select({ id: comments.id, postId: comments.postId })
+      .select({
+        id: comments.id,
+        postId: comments.postId,
+        authorId: comments.authorId,
+        body: comments.body,
+      })
       .from(comments)
       .where(eq(comments.id, commentId));
     if (!c) throw new NotFoundException('Comment not found');
+
+    let seedsBefore = 0;
+    let levelBefore = '';
+    if (c.authorId !== userId) {
+      const beforeMap = await this.profiles.getSeedsByUserIds([c.authorId]);
+      seedsBefore = beforeMap.get(c.authorId) ?? 0;
+      levelBefore = growerLevelFromSeeds(seedsBefore);
+    }
 
     const [existing] = await db
       .select({ value: commentVotes.value })
@@ -161,6 +221,37 @@ export class VotesService {
       value,
       prev !== null,
     );
+
+    if (c.authorId !== userId) {
+      const isUpvote = incoming === 1;
+      if (isUpvote) {
+        const [postRow] = await db
+          .select({ title: posts.title })
+          .from(posts)
+          .where(eq(posts.id, c.postId));
+        const postTitle = postRow?.title ?? 'a post';
+        const preview = truncateNotif(
+          c.body?.trim() || '(comment)',
+          80,
+        );
+        await this.notifications.createForUser(
+          c.authorId,
+          'Upvote on your comment',
+          `On “${truncateNotif(postTitle, 60)}”: ${preview}`,
+        );
+      }
+      const afterMap = await this.profiles.getSeedsByUserIds([c.authorId]);
+      const seedsAfter = afterMap.get(c.authorId) ?? 0;
+      const levelAfter = growerLevelFromSeeds(seedsAfter);
+      if (seedsAfter > seedsBefore && levelAfter !== levelBefore) {
+        await this.notifications.createForUser(
+          c.authorId,
+          'You leveled up!',
+          `You reached ${levelAfter}.`,
+        );
+      }
+    }
+
     return {
       ok: true as const,
       removed: false as const,
@@ -181,7 +272,11 @@ export class VotesService {
   async voteNotebook(userId: string, notebookId: string, value: -1 | 1) {
     const db = getDb();
     const [nb] = await db
-      .select({ id: notebooks.id, ownerId: notebooks.ownerId })
+      .select({
+        id: notebooks.id,
+        ownerId: notebooks.ownerId,
+        title: notebooks.title,
+      })
       .from(notebooks)
       .where(eq(notebooks.id, notebookId));
     if (!nb) throw new NotFoundException('Notebook not found');
@@ -220,6 +315,15 @@ export class VotesService {
     }
 
     await setNotebookVoteRow(db, userId, notebookId, value, prev !== null);
+
+    if (nb.ownerId !== userId && incoming === 1) {
+      await this.notifications.createForUser(
+        nb.ownerId,
+        'Upvote on your notebook',
+        `Someone upvoted “${truncateNotif(nb.title, 100)}”.`,
+      );
+    }
+
     const m = await this.notebookVoteMetrics(notebookId, userId);
     return {
       ok: true as const,

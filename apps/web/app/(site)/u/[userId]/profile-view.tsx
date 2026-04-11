@@ -27,6 +27,7 @@ type PublicProfile = {
   seeds: number | null;
   growerLevel: string | null;
   viewerFollowing: boolean;
+  viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;
 };
 
@@ -93,6 +94,7 @@ export function ProfileView({
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
 
   useEffect(() => {
     setProfile(initialProfile);
@@ -158,6 +160,40 @@ export function ProfileView({
       setReportBusy(false);
     }
   }, [uid, reportDraft]);
+
+  const toggleBlock = useCallback(async () => {
+    if (!viewerId || isOwn) return;
+    setBlockBusy(true);
+    setReportNotice(null);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) throw new Error("Sign in to manage blocks.");
+      const blocked = profile.viewerHasBlocked === true;
+      if (blocked) {
+        await apiFetch(`/blocks/${uid}`, { method: "DELETE", token });
+        setProfile((p) => ({ ...p, viewerHasBlocked: false, viewerFollowing: false }));
+        setReportNotice({
+          tone: "success",
+          text: "Unblocked. You can follow or view their profile again.",
+        });
+      } else {
+        await apiFetch(`/blocks/${uid}`, { method: "POST", token });
+        setReportNotice({
+          tone: "success",
+          text: "Blocked. Their posts and messages are hidden from you.",
+        });
+        router.push("/");
+      }
+    } catch (e) {
+      setReportNotice({
+        tone: "error",
+        text: e instanceof Error ? e.message : "Could not update block.",
+      });
+    } finally {
+      setBlockBusy(false);
+    }
+  }, [viewerId, isOwn, uid, profile.viewerHasBlocked, router]);
 
   const posts = postsPayload?.items ?? [];
   const commentItems = commentsPayload?.items ?? [];
@@ -231,15 +267,26 @@ export function ProfileView({
                     Edit profile
                   </MenuRow>
                 ) : (
-                  <MenuRow
-                    danger
-                    onClick={() => {
-                      setReportNotice(null);
-                      setReportOpen(true);
-                    }}
-                  >
-                    Report user
-                  </MenuRow>
+                  <>
+                    <MenuRow
+                      danger
+                      onClick={() => {
+                        setReportNotice(null);
+                        void toggleBlock();
+                      }}
+                    >
+                      {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
+                    </MenuRow>
+                    <MenuRow
+                      danger
+                      onClick={() => {
+                        setReportNotice(null);
+                        setReportOpen(true);
+                      }}
+                    >
+                      Report user
+                    </MenuRow>
+                  </>
                 )}
               </CommentActionMenu>
             ) : null}
@@ -252,15 +299,38 @@ export function ProfileView({
           <div className="mt-4 flex flex-wrap items-center gap-3">
             {!isOwn ? (
               <>
-                <FollowUserButton
-                  userId={profile.id}
-                  following={profile.viewerFollowing}
-                  viewerId={viewerId}
-                  onFollowingChange={(v) =>
-                    setProfile((p) => ({ ...p, viewerFollowing: v }))
-                  }
-                />
-                {viewerId && profile.viewerFollowing ? (
+                {viewerId && profile.viewerHasBlocked !== true ? (
+                  <FollowUserButton
+                    userId={profile.id}
+                    following={profile.viewerFollowing}
+                    viewerId={viewerId}
+                    onFollowingChange={(v) =>
+                      setProfile((p) => ({ ...p, viewerFollowing: v }))
+                    }
+                  />
+                ) : null}
+                {viewerId && profile.viewerHasBlocked !== true ? (
+                  <button
+                    type="button"
+                    disabled={blockBusy}
+                    onClick={() => void toggleBlock()}
+                    className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                  >
+                    {blockBusy ? "…" : "Block"}
+                  </button>
+                ) : viewerId && profile.viewerHasBlocked ? (
+                  <button
+                    type="button"
+                    disabled={blockBusy}
+                    onClick={() => void toggleBlock()}
+                    className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                  >
+                    {blockBusy ? "…" : "Unblock"}
+                  </button>
+                ) : null}
+                {viewerId &&
+                profile.viewerFollowing &&
+                profile.viewerHasBlocked !== true ? (
                   <Link
                     href={`/messages?with=${encodeURIComponent(profile.id)}`}
                     className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"

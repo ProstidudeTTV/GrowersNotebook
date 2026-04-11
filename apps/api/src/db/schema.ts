@@ -324,6 +324,27 @@ export const userFollows = pgTable(
   ],
 );
 
+/** One-way block; feeds + DMs hide both directions for the pair. */
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    blockerId: uuid('blocker_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.blockerId, t.blockedId] }),
+    index('user_blocks_blocked_idx').on(t.blockedId),
+    check('user_blocks_no_self', sql`blocker_id <> blocked_id`),
+  ],
+);
+
 export const userNotifications = pgTable(
   'user_notifications',
   {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BlockedUsersSettings } from "./blocked-users-settings";
 import { ProfileSettingsForm } from "./profile-settings-form";
 
 export const metadata: Metadata = {
@@ -17,6 +18,14 @@ export default function ProfileSettingsPage() {
       </p>
       <div className="gn-card-subtle mt-8 p-6">
         <ProfileSettingsForm />
+      </div>
+      <div className="gn-card-subtle mt-8 p-6">
+        <h2 className="text-lg font-semibold text-[var(--gn-text)]">
+          Blocked users
+        </h2>
+        <div className="mt-4">
+          <BlockedUsersSettings />
+        </div>
       </div>
     </main>
   );

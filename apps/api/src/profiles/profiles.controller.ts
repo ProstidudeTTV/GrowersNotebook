@@ -137,11 +137,15 @@ export class ProfilesController {
 
   @Get('search')
   @UseGuards(OptionalAuthGuard)
-  search(@Query() query: SearchSiteQueryDto) {
+  search(
+    @Query() query: SearchSiteQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
     return this.profiles.searchForSite({
       q: query.q,
       page: query.page,
       pageSize: query.pageSize,
+      viewerId: user?.sub,
     });
   }
 

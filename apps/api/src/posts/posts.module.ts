@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BlocksModule } from '../blocks/blocks.module';
 import { CommentsModule } from '../comments/comments.module';
 import { FollowsModule } from '../follows/follows.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -12,6 +13,7 @@ import { PostsService } from './posts.service';
 @Module({
   imports: [
     forwardRef(() => AuthModule),
+    BlocksModule,
     forwardRef(() => CommentsModule),
     forwardRef(() => FollowsModule),
     forwardRef(() => ProfilesModule),

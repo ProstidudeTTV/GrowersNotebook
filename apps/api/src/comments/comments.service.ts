@@ -5,11 +5,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { asc, count, desc, eq, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  notInArray,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { viewerVoteFromRow } from '../common/normalize-viewer-vote';
 import { getDb } from '../db';
+import { BlocksService } from '../blocks/blocks.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import {
@@ -51,6 +61,7 @@ function commentViewerVoteSelect(viewerId: string | undefined) {
 @Injectable()
 export class CommentsService {
   constructor(
+    private readonly blocks: BlocksService,
     private readonly profiles: ProfilesService,
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
@@ -95,6 +106,10 @@ export class CommentsService {
       .where(eq(posts.id, dto.postId));
     if (!post) throw new NotFoundException('Post not found');
 
+    if (await this.blocks.hasBlockBetween(authorId, post.authorId)) {
+      throw new ForbiddenException('You cannot comment on this post.');
+    }
+
     let parentCommentAuthorId: string | null = null;
     if (dto.parentId) {
       const [parent] = await db
@@ -110,6 +125,11 @@ export class CommentsService {
         throw new BadRequestException('Parent is on a different post');
       }
       parentCommentAuthorId = parent.authorId;
+      if (
+        await this.blocks.hasBlockBetween(authorId, parentCommentAuthorId)
+      ) {
+        throw new ForbiddenException('You cannot reply to this user.');
+      }
     }
 
     const text = (dto.body ?? '').trim();
@@ -225,6 +245,16 @@ export class CommentsService {
 
   async listForPost(postId: string, viewerId?: string) {
     const db = getDb();
+    let commentWhere: SQL = eq(comments.postId, postId);
+    if (viewerId) {
+      const hidden = await this.blocks.getHiddenUserIdsForViewer(viewerId);
+      if (hidden.length > 0) {
+        commentWhere = and(
+          eq(comments.postId, postId),
+          notInArray(comments.authorId, hidden),
+        )!;
+      }
+    }
     const rows = await db
       .select({
         comment: comments,
@@ -240,7 +270,7 @@ export class CommentsService {
       })
       .from(comments)
       .innerJoin(profiles, eq(comments.authorId, profiles.id))
-      .where(eq(comments.postId, postId))
+      .where(commentWhere)
       .orderBy(asc(comments.createdAt));
 
     const authorIds = [...new Set(rows.map((r) => r.author.id))];

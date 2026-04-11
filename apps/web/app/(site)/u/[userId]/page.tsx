@@ -17,6 +17,7 @@ type PublicProfile = {
   seeds: number | null;
   growerLevel: string | null;
   viewerFollowing: boolean;
+  viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;
 };
 

@@ -6,6 +6,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { BlocksModule } from './blocks/blocks.module';
 import { CommentsModule } from './comments/comments.module';
 import { CommunitiesModule } from './communities/communities.module';
 import { FollowsModule } from './follows/follows.module';
@@ -33,6 +34,7 @@ const repoRoot = join(apiRoot, '..', '..');
       ],
     }),
     AuthModule,
+    BlocksModule,
     ProfilesModule,
     NotificationsModule,
     CommunitiesModule,

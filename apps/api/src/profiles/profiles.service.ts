@@ -13,6 +13,7 @@ import {
   inArray,
   isNull,
   lte,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm';
@@ -33,6 +34,7 @@ import {
   profileReports,
   profiles,
 } from '../db/schema';
+import { BlocksService } from '../blocks/blocks.service';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -40,6 +42,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class ProfilesService {
   constructor(
+    private readonly blocks: BlocksService,
     private readonly follows: FollowsService,
     private readonly notifications: NotificationsService,
     private readonly nameBlocklist: NameBlocklistService,
@@ -122,6 +125,13 @@ export class ProfilesService {
     if (!row) {
       return { exists: false, allowPosts: false, allowComments: false };
     }
+    if (
+      viewerId &&
+      viewerId !== profileId &&
+      (await this.blocks.hasBlockBetween(viewerId, profileId))
+    ) {
+      return { exists: false, allowPosts: false, allowComments: false };
+    }
     if (row.profilePublic === false && viewerId !== profileId) {
       return { exists: true, allowPosts: false, allowComments: false };
     }
@@ -140,6 +150,13 @@ export class ProfilesService {
     if (!row) {
       return { exists: false, allow: false };
     }
+    if (
+      viewerId &&
+      viewerId !== profileId &&
+      (await this.blocks.hasBlockBetween(viewerId, profileId))
+    ) {
+      return { exists: false, allow: false };
+    }
     if (viewerId === profileId) {
       return { exists: true, allow: true };
     }
@@ -153,6 +170,13 @@ export class ProfilesService {
   async getPublicProfile(profileId: string, viewerId?: string) {
     const row = await this.findById(profileId);
     if (!row) throw new NotFoundException();
+    if (
+      viewerId &&
+      viewerId !== profileId &&
+      (await this.blocks.hasBlockBetween(viewerId, profileId))
+    ) {
+      throw new NotFoundException();
+    }
 
     const seedsMap = await this.getSeedsByUserIds([profileId]);
     const seeds = seedsMap.get(profileId) ?? 0;
@@ -168,6 +192,11 @@ export class ProfilesService {
     const profileFeedHiddenFromViewer =
       row.profilePublic === false && viewerId !== profileId;
 
+    const viewerHasBlocked =
+      viewerId != null && viewerId !== profileId
+        ? await this.blocks.isDirectBlock(viewerId, profileId)
+        : false;
+
     return {
       id: row.id,
       displayName: row.displayName,
@@ -178,6 +207,7 @@ export class ProfilesService {
       seeds: statsPublic ? seeds : null,
       growerLevel: statsPublic ? growerLevelFromSeeds(seeds) : null,
       viewerFollowing,
+      viewerHasBlocked,
       ...(profileFeedHiddenFromViewer
         ? { profileFeedHiddenFromViewer: true as const }
         : {}),
@@ -322,7 +352,12 @@ export class ProfilesService {
   }
 
   /** Public directory search (display name + bio). Min 2 chars on q. */
-  async searchForSite(query: { q?: string; page: number; pageSize: number }) {
+  async searchForSite(query: {
+    q?: string;
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
     const raw = query.q?.trim() ?? '';
     const page = Math.max(1, query.page);
     const pageSize = Math.min(30, Math.max(1, query.pageSize));
@@ -348,11 +383,21 @@ export class ProfilesService {
       ilike(profiles.description, term),
     );
 
-    const whereClause = and(
-      eq(profiles.profilePublic, true),
-      activeAccount,
-      textMatch,
-    );
+    let blockedIds: string[] = [];
+    if (query.viewerId) {
+      blockedIds = await this.blocks.getHiddenUserIdsForViewer(query.viewerId);
+    }
+    const blockFilter =
+      blockedIds.length > 0 ? notInArray(profiles.id, blockedIds) : undefined;
+
+    const whereClause = blockFilter
+      ? and(
+          eq(profiles.profilePublic, true),
+          activeAccount,
+          textMatch,
+          blockFilter,
+        )
+      : and(eq(profiles.profilePublic, true), activeAccount, textMatch);
 
     const [{ total }] = await db
       .select({ total: count() })

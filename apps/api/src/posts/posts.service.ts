@@ -15,6 +15,7 @@ import {
   inArray,
   isNull,
   lte,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm';
@@ -42,6 +43,7 @@ import {
   profiles,
   type PostMediaItem,
 } from '../db/schema';
+import { BlocksService } from '../blocks/blocks.service';
 import { FollowsService } from '../follows/follows.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { CreatePostDto } from './dto/create-post.dto';
@@ -110,9 +112,19 @@ function viewerVoteSelect(viewerId: string | undefined) {
 @Injectable()
 export class PostsService {
   constructor(
+    private readonly blocks: BlocksService,
     private readonly follows: FollowsService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  private async authorNotBlockedClause(
+    viewerId: string | undefined,
+  ): Promise<ReturnType<typeof notInArray> | undefined> {
+    if (!viewerId) return undefined;
+    const hidden = await this.blocks.getHiddenUserIdsForViewer(viewerId);
+    if (hidden.length === 0) return undefined;
+    return notInArray(posts.authorId, hidden);
+  }
 
   /** Search post title, excerpt, and body (HTML). Min 2 chars. Excludes banned/suspended authors. */
   async searchForSite(query: {
@@ -147,7 +159,11 @@ export class PostsService {
       ilike(posts.bodyHtml, term),
     );
 
-    const whereClause = and(authorOk, textMatch);
+    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const whereClause =
+      blockAuthors != null
+        ? and(authorOk, textMatch, blockAuthors)
+        : and(authorOk, textMatch);
 
     const [{ total }] = await db
       .select({ total: count() })
@@ -225,10 +241,14 @@ export class PostsService {
     const weekWhere = gte(posts.createdAt, weekAgo);
     const offset = (query.page - 1) * query.pageSize;
 
+    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const hotWhere =
+      blockAuthors != null ? and(weekWhere, blockAuthors) : weekWhere;
+
     const [{ total }] = await db
       .select({ total: count() })
       .from(posts)
-      .where(weekWhere);
+      .where(hotWhere);
 
     const rows = await db
       .select({
@@ -252,7 +272,7 @@ export class PostsService {
       .from(posts)
       .innerJoin(profiles, eq(posts.authorId, profiles.id))
       .leftJoin(communities, eq(posts.communityId, communities.id))
-      .where(weekWhere)
+      .where(hotWhere)
       .orderBy(desc(scoreExpr), desc(posts.createdAt))
       .offset(offset)
       .limit(query.pageSize);
@@ -446,6 +466,13 @@ export class PostsService {
       .where(eq(posts.id, id));
     if (!row) throw new NotFoundException('Post not found');
 
+    if (viewerId) {
+      const hidden = await this.blocks.getHiddenUserIdsForViewer(viewerId);
+      if (hidden.includes(row.author.id)) {
+        throw new NotFoundException('Post not found');
+      }
+    }
+
     const seeds = Number(row.authorSeeds);
     const r = row as unknown as Record<string, unknown>;
     const authorFollowing = viewerId
@@ -484,10 +511,16 @@ export class PostsService {
     const db = getDb();
     const offset = (query.page - 1) * query.pageSize;
 
+    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const communityWhere =
+      blockAuthors != null
+        ? and(eq(posts.communityId, query.communityId), blockAuthors)
+        : eq(posts.communityId, query.communityId);
+
     const [{ total }] = await db
       .select({ total: count() })
       .from(posts)
-      .where(eq(posts.communityId, query.communityId));
+      .where(communityWhere);
 
     const pinThenExpr = sql`(case when ${communityPins.pinnedAt} is null then 1 else 0 end)`;
     const orderBy =
@@ -529,7 +562,7 @@ export class PostsService {
           eq(communityPins.communityId, query.communityId),
         ),
       )
-      .where(eq(posts.communityId, query.communityId))
+      .where(communityWhere)
       .orderBy(...orderBy)
       .offset(offset)
       .limit(query.pageSize);
@@ -612,13 +645,17 @@ export class PostsService {
       whereSql = inArray(posts.communityId, communityIds);
     }
 
+    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const followingWhere =
+      blockAuthors != null ? and(whereSql, blockAuthors)! : whereSql;
+
     const db = getDb();
     const offset = (query.page - 1) * query.pageSize;
 
     const [{ total }] = await db
       .select({ total: count() })
       .from(posts)
-      .where(whereSql);
+      .where(followingWhere);
 
     const orderBy =
       query.sort === 'top'
@@ -647,7 +684,7 @@ export class PostsService {
       .from(posts)
       .innerJoin(profiles, eq(posts.authorId, profiles.id))
       .leftJoin(communities, eq(posts.communityId, communities.id))
-      .where(whereSql)
+      .where(followingWhere)
       .orderBy(...orderBy)
       .offset(offset)
       .limit(query.pageSize);

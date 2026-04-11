@@ -22,6 +22,7 @@ import {
   dmThreads,
   profiles,
 } from '../db/schema';
+import { BlocksService } from '../blocks/blocks.service';
 import { FollowsService } from '../follows/follows.service';
 import { ProfilesService } from '../profiles/profiles.service';
 
@@ -48,6 +49,7 @@ function normalizeStoredMessageImages(
 @Injectable()
 export class DirectMessagesService {
   constructor(
+    private readonly blocks: BlocksService,
     private readonly follows: FollowsService,
     private readonly profiles: ProfilesService,
     private readonly config: ConfigService,
@@ -63,6 +65,11 @@ export class DirectMessagesService {
     }
     const peer = await this.profiles.findById(peerProfileId);
     if (!peer) throw new NotFoundException('User not found.');
+    if (await this.blocks.hasBlockBetween(userId, peerProfileId)) {
+      throw new ForbiddenException(
+        'Messaging is not available for this account.',
+      );
+    }
     const allowed = await this.follows.getFollowingUserIds(userId, [
       peerProfileId,
     ]);
@@ -185,7 +192,15 @@ export class DirectMessagesService {
       profRows.map((p) => [p.id, p.displayName ?? null]),
     );
 
-    const items = out.map((r) => {
+    const hidden = await this.blocks.getHiddenUserIdsForViewer(userId);
+    const hiddenSet = new Set(hidden);
+
+    const items = out
+      .filter((r) => {
+        const peerId = r.user_low === userId ? r.user_high : r.user_low;
+        return !hiddenSet.has(peerId);
+      })
+      .map((r) => {
       const peerId = r.user_low === userId ? r.user_high : r.user_low;
       const lastAt = r.last_created_at
         ? new Date(r.last_created_at)
@@ -245,6 +260,10 @@ export class DirectMessagesService {
     if (!t) throw new NotFoundException('Thread not found.');
     if (t.userLow !== userId && t.userHigh !== userId) {
       throw new ForbiddenException();
+    }
+    const peer = t.userLow === userId ? t.userHigh : t.userLow;
+    if (await this.blocks.hasBlockBetween(userId, peer)) {
+      throw new ForbiddenException('Messaging is not available.');
     }
   }
 

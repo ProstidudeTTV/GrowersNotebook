@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { AuthNav } from "@/components/auth-nav";
 import { MessagesNavLink } from "@/components/messages-nav-link";
+import { NotificationsNavLink } from "@/components/notifications-nav-link";
 import { SiteHeaderSearch } from "@/components/site-header-search";
 
 const brandClass =
@@ -46,6 +47,7 @@ function HeaderNavActions() {
   return (
     <>
       <MessagesNavLink />
+      <NotificationsNavLink />
       <DiscordNavLink />
       <AuthNav />
     </>

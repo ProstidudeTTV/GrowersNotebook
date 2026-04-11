@@ -13,6 +13,7 @@ import {
 import { apiFetch } from "@/lib/api-public";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
+import { setNotificationsUnreadCount } from "@/lib/notifications-unread-store";
 import { createClient } from "@/lib/supabase/client";
 
 type Me = {
@@ -182,6 +183,14 @@ export function AuthNav() {
       return;
     }
   }, [sessionUserId]);
+
+  useEffect(() => {
+    if (!email) {
+      setNotificationsUnreadCount(0);
+      return;
+    }
+    setNotificationsUnreadCount(me?.unreadNotificationCount ?? 0);
+  }, [email, me?.unreadNotificationCount]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -461,6 +470,14 @@ export function AuthNav() {
                   </button>
                 ))
               )}
+              <Link
+                href="/notifications"
+                role="menuitem"
+                className="block px-3 py-2 text-xs font-semibold text-[#ff4500] hover:bg-[var(--gn-surface-hover)]"
+                onClick={() => setMenuOpen(false)}
+              >
+                All notifications →
+              </Link>
             </div>
             <div className="px-2 py-1.5" role="group" aria-label="Theme">
               <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">

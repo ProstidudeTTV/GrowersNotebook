@@ -226,6 +226,10 @@ export function AppSidebar({
           <IconNotebookNav className="shrink-0 opacity-90" />
           Notebooks
         </Link>
+        <Link href="/" className={navItem} onClick={afterNav}>
+          <IconUsers className="shrink-0 opacity-90" />
+          Communities
+        </Link>
 
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 

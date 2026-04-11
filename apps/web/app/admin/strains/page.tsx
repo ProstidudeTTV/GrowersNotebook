@@ -1,9 +1,10 @@
 "use client";
 
-import { CreateButton, List, useTable } from "@refinedev/antd";
+import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
 import { Button, Table } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminStrainsPage() {
@@ -20,10 +21,12 @@ export default function AdminStrainsPage() {
       <Table
         {...tableProps}
         rowKey="id"
-        onRow={(record) => ({
-          onClick: () =>
-            router.push(`/admin/strains/edit/${(record as { id: string }).id}`),
-        })}
+        onRow={(record) =>
+          adminClickableRowTo(
+            router,
+            `/admin/strains/edit/${(record as { id: string }).id}`,
+          )
+        }
       >
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
@@ -41,9 +44,9 @@ export default function AdminStrainsPage() {
         <Table.Column<{ id: string; slug: string }>
           title="Actions"
           render={(_, record) => (
-            <span className="flex flex-wrap gap-2">
+            <span className="flex flex-wrap gap-2" onClick={stopAdminRowClick}>
               <Link href={`/admin/strains/edit/${record.id}`}>
-                <Button type="link" size="small" onClick={(e) => e.stopPropagation()}>
+                <Button type="link" size="small">
                   Edit
                 </Button>
               </Link>
@@ -52,17 +55,20 @@ export default function AdminStrainsPage() {
                 target="_blank"
                 rel="noreferrer"
                 className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
-                onClick={(e) => e.stopPropagation()}
               >
                 Public
               </Link>
               <Link
                 href={`/admin/strain-reviews?strainId=${record.id}`}
                 className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
-                onClick={(e) => e.stopPropagation()}
               >
                 Reviews
               </Link>
+              <DeleteButton
+                resource="strains"
+                recordItemId={record.id}
+                size="small"
+              />
             </span>
           )}
         />

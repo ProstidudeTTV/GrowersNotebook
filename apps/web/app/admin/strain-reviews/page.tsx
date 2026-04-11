@@ -1,11 +1,21 @@
 "use client";
 
 import { List } from "@refinedev/antd";
-import { App, Button, Input, Modal, Switch, Table, Typography } from "antd";
+import {
+  App,
+  Button,
+  Drawer,
+  Input,
+  Modal,
+  Switch,
+  Table,
+  Typography,
+} from "antd";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 
 type Row = {
   id: string;
@@ -34,6 +44,7 @@ export default function AdminStrainReviewsPage() {
   const [hiddenOnly, setHiddenOnly] = useState(false);
   const [hideModalId, setHideModalId] = useState<string | null>(null);
   const [hideReason, setHideReason] = useState("");
+  const [drawerRow, setDrawerRow] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,6 +85,7 @@ export default function AdminStrainReviewsPage() {
       message.success("Review hidden");
       setHideModalId(null);
       setHideReason("");
+      setDrawerRow(null);
       void load();
     } catch {
       message.error("Could not hide review");
@@ -84,6 +96,7 @@ export default function AdminStrainReviewsPage() {
     try {
       await adminAxios.post(`/strain-reviews/${id}/restore`, {});
       message.success("Review restored");
+      setDrawerRow(null);
       void load();
     } catch {
       message.error("Could not restore review");
@@ -119,6 +132,11 @@ export default function AdminStrainReviewsPage() {
           showSizeChanger: false,
           onChange: (p) => setPage(p),
         }}
+        onRow={(record) => ({
+          onClick: () => setDrawerRow(record),
+          className: "admin-table-row-clickable",
+          style: { cursor: "pointer" },
+        })}
         columns={[
           {
             title: "Strain",
@@ -129,6 +147,7 @@ export default function AdminStrainReviewsPage() {
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+                  onClick={stopAdminRowClick}
                 >
                   {r.strainName}
                 </Link>
@@ -147,6 +166,7 @@ export default function AdminStrainReviewsPage() {
                 target="_blank"
                 rel="noreferrer"
                 className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+                onClick={stopAdminRowClick}
               >
                 {v ?? r.authorId}
               </Link>
@@ -169,7 +189,7 @@ export default function AdminStrainReviewsPage() {
           {
             title: "Actions",
             render: (_: unknown, r) => (
-              <span className="flex flex-wrap gap-2">
+              <span className="flex flex-wrap gap-2" onClick={stopAdminRowClick}>
                 {r.hiddenAt ? (
                   <Button size="small" onClick={() => void restore(r.id)}>
                     Restore
@@ -184,6 +204,63 @@ export default function AdminStrainReviewsPage() {
           },
         ]}
       />
+      <Drawer
+        title="Strain review"
+        width={520}
+        open={drawerRow !== null}
+        onClose={() => setDrawerRow(null)}
+        destroyOnClose
+      >
+        {drawerRow ? (
+          <>
+            <Typography.Paragraph style={{ marginBottom: 4 }}>
+              <Link
+                href={`/strains/${encodeURIComponent(drawerRow.strainSlug)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+              >
+                {drawerRow.strainName}
+              </Link>
+              <Typography.Text type="secondary" className="ml-1 text-xs">
+                ({drawerRow.strainSlug})
+              </Typography.Text>
+            </Typography.Paragraph>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+              <Link
+                href={`/u/${drawerRow.authorId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+              >
+                {drawerRow.authorName ?? drawerRow.authorId}
+              </Link>
+              {" · "}
+              Rating {drawerRow.rating}
+              {" · "}
+              {new Date(drawerRow.createdAt).toLocaleString()}
+            </Typography.Paragraph>
+            {drawerRow.hiddenAt ? (
+              <Typography.Paragraph type="warning">
+                Hidden {new Date(drawerRow.hiddenAt).toLocaleString()}
+                {drawerRow.hiddenReason ? ` — ${drawerRow.hiddenReason}` : ""}
+              </Typography.Paragraph>
+            ) : null}
+            <Typography.Paragraph style={{ whiteSpace: "pre-wrap" }}>
+              {drawerRow.body?.trim() || "—"}
+            </Typography.Paragraph>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {drawerRow.hiddenAt ? (
+                <Button onClick={() => void restore(drawerRow.id)}>Restore</Button>
+              ) : (
+                <Button danger onClick={() => setHideModalId(drawerRow.id)}>
+                  Hide…
+                </Button>
+              )}
+            </div>
+          </>
+        ) : null}
+      </Drawer>
       <Modal
         title="Hide review"
         open={hideModalId !== null}

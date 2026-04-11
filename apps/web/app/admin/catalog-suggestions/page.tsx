@@ -3,6 +3,7 @@
 import { List } from "@refinedev/antd";
 import { App, Button, Input, Modal, Table, Typography } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -11,6 +12,7 @@ import {
   type SetStateAction,
 } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 
 type Row = {
   id: string;
@@ -31,6 +33,7 @@ function kindLink(kind: string, id: string) {
     <Link
       href={`/admin/catalog-suggestions/review/${id}`}
       className="font-medium text-[#1677ff] hover:underline"
+      onClick={stopAdminRowClick}
     >
       {kind}
     </Link>
@@ -42,6 +45,7 @@ function payloadCell(r: Row) {
     <Link
       href={`/admin/catalog-suggestions/review/${r.id}`}
       className="block max-w-[360px] text-[var(--gn-text)] no-underline hover:text-[#1677ff]"
+      onClick={stopAdminRowClick}
     >
       <Typography.Paragraph
         ellipsis={{ rows: 3 }}
@@ -54,6 +58,7 @@ function payloadCell(r: Row) {
 }
 
 export default function AdminCatalogSuggestionsPage() {
+  const router = useRouter();
   const { message } = App.useApp();
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -191,6 +196,12 @@ export default function AdminCatalogSuggestionsPage() {
           showSizeChanger: false,
           onChange: (p) => setPending((s) => ({ ...s, page: p })),
         }}
+        onRow={(r) =>
+          adminClickableRowTo(
+            router,
+            `/admin/catalog-suggestions/review/${r.id}`,
+          )
+        }
         columns={[
           {
             title: "Created",
@@ -214,7 +225,7 @@ export default function AdminCatalogSuggestionsPage() {
           {
             title: "Actions",
             render: (_: unknown, r: Row) => (
-              <span className="flex flex-wrap gap-2">
+              <span className="flex flex-wrap gap-2" onClick={stopAdminRowClick}>
                 <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
                   <Button size="small">Review</Button>
                 </Link>
@@ -251,6 +262,12 @@ export default function AdminCatalogSuggestionsPage() {
           showSizeChanger: false,
           onChange: (p) => setApproved((s) => ({ ...s, page: p })),
         }}
+        onRow={(r) =>
+          adminClickableRowTo(
+            router,
+            `/admin/catalog-suggestions/review/${r.id}`,
+          )
+        }
         columns={[
           {
             title: "Submitted",
@@ -288,9 +305,11 @@ export default function AdminCatalogSuggestionsPage() {
             title: "",
             width: 100,
             render: (_: unknown, r: Row) => (
-              <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
-                <Button size="small">View</Button>
-              </Link>
+              <span onClick={stopAdminRowClick}>
+                <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
+                  <Button size="small">View</Button>
+                </Link>
+              </span>
             ),
           },
         ]}
@@ -313,6 +332,12 @@ export default function AdminCatalogSuggestionsPage() {
           showSizeChanger: false,
           onChange: (p) => setRejected((s) => ({ ...s, page: p })),
         }}
+        onRow={(r) =>
+          adminClickableRowTo(
+            router,
+            `/admin/catalog-suggestions/review/${r.id}`,
+          )
+        }
         columns={[
           {
             title: "Submitted",
@@ -357,9 +382,11 @@ export default function AdminCatalogSuggestionsPage() {
             title: "",
             width: 100,
             render: (_: unknown, r: Row) => (
-              <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
-                <Button size="small">View</Button>
-              </Link>
+              <span onClick={stopAdminRowClick}>
+                <Link href={`/admin/catalog-suggestions/review/${r.id}`}>
+                  <Button size="small">View</Button>
+                </Link>
+              </span>
             ),
           },
         ]}

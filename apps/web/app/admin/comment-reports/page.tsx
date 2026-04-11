@@ -4,11 +4,14 @@ import { List, useTable } from "@refinedev/antd";
 import { useInvalidate } from "@refinedev/core";
 import { App, Button, Table } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminCommentReportsPage() {
+  const router = useRouter();
   const { message } = App.useApp();
   const invalidate = useInvalidate();
   const [busyCommentId, setBusyCommentId] = useState<string | null>(null);
@@ -44,7 +47,17 @@ export default function AdminCommentReportsPage() {
   return (
     <List title="Comment reports">
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        onRow={(record) => {
+          const r = record as { postId: string; commentId: string };
+          return adminClickableRowTo(
+            router,
+            `/p/${r.postId}#comment-${r.commentId}`,
+          );
+        }}
+      >
         <Table.Column
           dataIndex="createdAt"
           title="Reported"
@@ -60,6 +73,7 @@ export default function AdminCommentReportsPage() {
               href={`/p/${r.postId}`}
               target="_blank"
               rel="noreferrer"
+              onClick={stopAdminRowClick}
             >
               {title}
             </Link>
@@ -79,6 +93,7 @@ export default function AdminCommentReportsPage() {
               href={`/p/${r.postId}#comment-${r.commentId}`}
               target="_blank"
               rel="noreferrer"
+              onClick={stopAdminRowClick}
             >
               View thread
             </Link>
@@ -87,14 +102,16 @@ export default function AdminCommentReportsPage() {
         <Table.Column
           title="Moderation"
           render={(_: unknown, r: { commentId: string }) => (
-            <Button
-              danger
-              size="small"
-              loading={busyCommentId === r.commentId}
-              onClick={() => void removeComment(r.commentId)}
-            >
-              Delete comment
-            </Button>
+            <span onClick={stopAdminRowClick}>
+              <Button
+                danger
+                size="small"
+                loading={busyCommentId === r.commentId}
+                onClick={() => void removeComment(r.commentId)}
+              >
+                Delete comment
+              </Button>
+            </span>
           )}
         />
       </Table>

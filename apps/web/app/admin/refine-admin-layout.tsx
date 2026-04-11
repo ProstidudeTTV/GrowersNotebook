@@ -1,6 +1,7 @@
 "use client";
 
 import "@ant-design/v5-patch-for-react-19";
+import "./admin-surface.css";
 
 import {
   BarChartOutlined,
@@ -225,7 +226,9 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             <ThemedTitle collapsed={collapsed} text="Growers Admin" />
           )}
         >
-          {children}
+          <div className="admin-refine-surface px-4 py-5 sm:px-6 md:py-7">
+            {children}
+          </div>
         </ThemedLayout>
       </Refine>
       )}

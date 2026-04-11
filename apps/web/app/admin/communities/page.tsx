@@ -3,9 +3,12 @@
 import { CreateButton, List, useTable } from "@refinedev/antd";
 import { Button, Table } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminCommunitiesPage() {
+  const router = useRouter();
   const { tableProps, searchFormProps } = useTable({
     resource: "communities",
     syncWithLocation: true,
@@ -18,7 +21,16 @@ export default function AdminCommunitiesPage() {
       headerButtons={<CreateButton />}
     >
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        onRow={(record) =>
+          adminClickableRowTo(
+            router,
+            `/admin/communities/edit/${(record as { id: string }).id}`,
+          )
+        }
+      >
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
         <Table.Column
@@ -35,7 +47,10 @@ export default function AdminCommunitiesPage() {
         <Table.Column<{ id: string; name: string }>
           title="Actions"
           render={(_, record) => (
-            <span className="flex flex-wrap items-center gap-2">
+            <span
+              className="flex flex-wrap items-center gap-2"
+              onClick={stopAdminRowClick}
+            >
               <Link href={`/admin/communities/edit/${record.id}`}>
                 <Button type="link" size="small">
                   Edit

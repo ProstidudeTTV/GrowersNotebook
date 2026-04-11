@@ -3,9 +3,12 @@
 import { List, useTable } from "@refinedev/antd";
 import { Table } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminProfileReportsPage() {
+  const router = useRouter();
   const { tableProps, searchFormProps } = useTable({
     resource: "profile-reports",
     syncWithLocation: true,
@@ -15,7 +18,17 @@ export default function AdminProfileReportsPage() {
   return (
     <List title="Profile reports">
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        onRow={(record) => {
+          const r = record as { reportedUserId: string };
+          return adminClickableRowTo(
+            router,
+            `/admin/profiles/edit/${r.reportedUserId}`,
+          );
+        }}
+      >
         <Table.Column
           dataIndex="createdAt"
           title="Reported"
@@ -31,6 +44,7 @@ export default function AdminProfileReportsPage() {
               href={`/u/${r.reportedUserId}`}
               target="_blank"
               rel="noreferrer"
+              onClick={stopAdminRowClick}
             >
               {name?.trim() || "Grower"}
             </Link>
@@ -45,6 +59,7 @@ export default function AdminProfileReportsPage() {
               href={`/u/${r.reportedUserId}`}
               target="_blank"
               rel="noreferrer"
+              onClick={stopAdminRowClick}
             >
               Open profile
             </Link>

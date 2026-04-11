@@ -13,14 +13,16 @@ import {
   Typography,
 } from "antd";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
-import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
 
 const { Text } = Typography;
 
 function AdminPostsInner() {
+  const router = useRouter();
   const invalidate = useInvalidate();
   const searchParams = useSearchParams();
   const communityId = searchParams.get("communityId");
@@ -147,7 +149,13 @@ function AdminPostsInner() {
           <p className="mb-3 text-sm text-red-500">{pinError}</p>
         ) : null}
         <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-        <Table {...tableProps} rowKey="id">
+        <Table
+          {...tableProps}
+          rowKey="id"
+          onRow={(record) =>
+            adminClickableRowTo(router, `/p/${String((record as BaseRecord).id)}`)
+          }
+        >
           <Table.Column dataIndex="title" title="Title" />
           <Table.Column dataIndex="communitySlug" title="Community" />
           <Table.Column dataIndex="authorName" title="Author" />
@@ -170,28 +178,30 @@ function AdminPostsInner() {
           <Table.Column<BaseRecord>
             title="Actions"
             render={(_, record) => (
-              <Space>
-                <Link href={`/p/${record.id}`} target="_blank">
-                  View
-                </Link>
-                {record.communityId ? (
+              <span onClick={stopAdminRowClick}>
+                <Space>
+                  <Link href={`/p/${record.id}`} target="_blank">
+                    View
+                  </Link>
+                  {record.communityId ? (
+                    <Button
+                      size="small"
+                      loading={pinBusyId === String(record.id)}
+                      onClick={() => void togglePin(record)}
+                    >
+                      {record.pinnedAt ? "Unpin" : "Pin"}
+                    </Button>
+                  ) : null}
                   <Button
+                    danger
                     size="small"
-                    loading={pinBusyId === String(record.id)}
-                    onClick={() => void togglePin(record)}
+                    type="primary"
+                    onClick={() => openRemove(record)}
                   >
-                    {record.pinnedAt ? "Unpin" : "Pin"}
+                    Remove…
                   </Button>
-                ) : null}
-                <Button
-                  danger
-                  size="small"
-                  type="primary"
-                  onClick={() => openRemove(record)}
-                >
-                  Remove…
-                </Button>
-              </Space>
+                </Space>
+              </span>
             )}
           />
         </Table>

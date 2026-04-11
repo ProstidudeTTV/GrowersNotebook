@@ -1,11 +1,14 @@
 "use client";
 
-import { CreateButton, List, useTable } from "@refinedev/antd";
+import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
 import { Button, Table } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminBreedersPage() {
+  const router = useRouter();
   const { tableProps, searchFormProps } = useTable({
     resource: "breeders",
     syncWithLocation: true,
@@ -15,7 +18,16 @@ export default function AdminBreedersPage() {
   return (
     <List title="Breeders (catalog)" headerButtons={<CreateButton />}>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        onRow={(record) =>
+          adminClickableRowTo(
+            router,
+            `/admin/breeders/edit/${(record as { id: string }).id}`,
+          )
+        }
+      >
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
         <Table.Column
@@ -32,7 +44,7 @@ export default function AdminBreedersPage() {
         <Table.Column<{ id: string; slug: string }>
           title="Actions"
           render={(_, record) => (
-            <span className="flex flex-wrap gap-2">
+            <span className="flex flex-wrap gap-2" onClick={stopAdminRowClick}>
               <Link href={`/admin/breeders/edit/${record.id}`}>
                 <Button type="link" size="small">
                   Edit
@@ -52,6 +64,11 @@ export default function AdminBreedersPage() {
               >
                 Reviews
               </Link>
+              <DeleteButton
+                resource="breeders"
+                recordItemId={record.id}
+                size="small"
+              />
             </span>
           )}
         />

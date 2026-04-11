@@ -1,0 +1,19 @@
+/* Admin content: centered readable width + subtle table row affordance */
+.admin-refine-surface {
+  width: 100%;
+  max-width: min(1400px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.admin-table-row-clickable {
+  cursor: pointer;
+}
+
+.admin-table-row-clickable:hover > td {
+  background: rgba(0, 0, 0, 0.035) !important;
+}
+
+html.dark .admin-table-row-clickable:hover > td {
+  background: rgba(255, 255, 255, 0.06) !important;
+}

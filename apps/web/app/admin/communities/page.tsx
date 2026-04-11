@@ -1,6 +1,6 @@
 "use client";
 
-import { CreateButton, List, useTable } from "@refinedev/antd";
+import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
 import { Button, Table } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,6 +62,11 @@ export default function AdminCommunitiesPage() {
               >
                 Posts
               </Link>
+              <DeleteButton
+                resource="communities"
+                recordItemId={record.id}
+                size="small"
+              />
             </span>
           )}
         />

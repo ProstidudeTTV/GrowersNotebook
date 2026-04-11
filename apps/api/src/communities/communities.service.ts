@@ -186,4 +186,16 @@ export class CommunitiesService {
       );
     return { ok: true as const };
   }
+
+  /**
+   * Hard-delete a community. DB cascades remove community posts (and their
+   * comments, votes, etc.), follows, moderators, and pins.
+   */
+  async deleteById(id: string) {
+    const c = await this.findById(id);
+    if (!c) throw new NotFoundException('Community not found');
+    const db = getDb();
+    await db.delete(communities).where(eq(communities.id, id));
+    return { ok: true as const };
+  }
 }

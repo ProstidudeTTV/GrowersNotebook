@@ -144,6 +144,11 @@ export class AdminController {
     return this.communities.update(id, body);
   }
 
+  @Delete('communities/:id')
+  deleteCommunity(@Param('id', ParseUUIDPipe) id: string) {
+    return this.communities.deleteById(id);
+  }
+
   @Get('communities/:id/moderators')
   @Roles('admin')
   listCommunityModerators(@Param('id', ParseUUIDPipe) id: string) {

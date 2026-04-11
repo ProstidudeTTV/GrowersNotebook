@@ -48,6 +48,8 @@ function IconBell({ className }: { className?: string }) {
 }
 
 export function NotificationsNavLink() {
+  /** null: checking session; only render the control when true (signed in). */
+  const [showNav, setShowNav] = useState<boolean | null>(null);
   const unread = useSyncExternalStore(
     subscribeNotificationsUnread,
     getNotificationsUnreadSnapshot,
@@ -56,16 +58,43 @@ export function NotificationsNavLink() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NavNotification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [signedIn, setSignedIn] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = "gn-notifications-nav-menu";
+
+  useEffect(() => {
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      setShowNav(false);
+      return;
+    }
+    const sync = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authed = Boolean(session?.access_token);
+      setShowNav(authed);
+      if (!authed) {
+        setOpen(false);
+        setItems([]);
+        setNotificationsUnreadCount(0);
+      }
+    };
+    void sync();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void sync();
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const load = useCallback(async () => {
     let supabase: ReturnType<typeof createClient>;
     try {
       supabase = createClient();
     } catch {
-      setSignedIn(false);
       setItems([]);
       return;
     }
@@ -73,11 +102,9 @@ export function NotificationsNavLink() {
       data: { session },
     } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      setSignedIn(false);
       setItems([]);
       return;
     }
-    setSignedIn(true);
     setLoading(true);
     try {
       const res = await apiFetch<{
@@ -116,6 +143,8 @@ export function NotificationsNavLink() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  if (showNav !== true) return null;
 
   const markRead = async (nId: string) => {
     let supabase: ReturnType<typeof createClient>;
@@ -180,17 +209,6 @@ export function NotificationsNavLink() {
           {loading ? (
             <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
               Loading…
-            </p>
-          ) : !signedIn ? (
-            <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
-              <Link
-                href="/login"
-                className="font-medium text-[#ff4500] hover:underline"
-                onClick={() => setOpen(false)}
-              >
-                Sign in
-              </Link>{" "}
-              to see notifications.
             </p>
           ) : items.length === 0 ? (
             <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">

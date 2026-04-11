@@ -1,7 +1,17 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { NotificationsPanel } from "@/components/notifications-panel";
+import { createClient } from "@/lib/supabase/server";
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login?next=/notifications");
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight text-[#ff4500]">

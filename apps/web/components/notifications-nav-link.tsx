@@ -56,6 +56,7 @@ export function NotificationsNavLink() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NavNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [signedIn, setSignedIn] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = "gn-notifications-nav-menu";
 
@@ -64,6 +65,7 @@ export function NotificationsNavLink() {
     try {
       supabase = createClient();
     } catch {
+      setSignedIn(false);
       setItems([]);
       return;
     }
@@ -71,9 +73,11 @@ export function NotificationsNavLink() {
       data: { session },
     } = await supabase.auth.getSession();
     if (!session?.access_token) {
+      setSignedIn(false);
       setItems([]);
       return;
     }
+    setSignedIn(true);
     setLoading(true);
     try {
       const res = await apiFetch<{
@@ -176,6 +180,17 @@ export function NotificationsNavLink() {
           {loading ? (
             <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
               Loading…
+            </p>
+          ) : !signedIn ? (
+            <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">
+              <Link
+                href="/login"
+                className="font-medium text-[#ff4500] hover:underline"
+                onClick={() => setOpen(false)}
+              >
+                Sign in
+              </Link>{" "}
+              to see notifications.
             </p>
           ) : items.length === 0 ? (
             <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">

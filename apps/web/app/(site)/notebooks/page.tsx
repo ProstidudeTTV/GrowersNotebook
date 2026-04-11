@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-public";
+import { formatVoteScore } from "@/lib/grower-display";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
+
+type HotNotebookSpotlight = {
+  id: string;
+  title: string;
+  score: number;
+};
 
 type NotebookListItem = {
   id: string;
@@ -59,6 +66,12 @@ function formatListDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function truncateNotebookTitle(title: string, maxChars: number) {
+  const t = title.trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars - 1)}…`;
 }
 
 function statusPillClass(status: string): string {
@@ -125,27 +138,40 @@ export default async function NotebooksDirectoryPage({
   const q = sp.q ?? "";
   const grower = sp.grower ?? "";
   const breeder = sp.breeder ?? "";
-  let data: {
-    items: NotebookListItem[];
-    total: number;
-    page: number;
-    pageSize: number;
-  };
-  try {
-    const qs = buildListQuery({
-      page,
-      pageSize: 24,
-      status,
-      q,
-      grower,
-      breeder,
-    });
-    data = await apiFetch<typeof data>(`/notebooks?${qs}`, {
-      timeoutMs: 12_000,
-    });
-  } catch {
-    data = { items: [], total: 0, page: 1, pageSize: 24 };
-  }
+  const qs = buildListQuery({
+    page,
+    pageSize: 24,
+    status,
+    q,
+    grower,
+    breeder,
+  });
+  const listTimeout = 12_000;
+  const [listRes, hotByVotes, hotRecent] = await Promise.all([
+    apiFetch<{
+      items: NotebookListItem[];
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/notebooks?${qs}`, {
+      timeoutMs: listTimeout,
+    }).catch(() => null),
+    apiFetch<{ items: HotNotebookSpotlight[] }>(
+      "/notebooks?page=1&pageSize=3&sort=hot",
+      { timeoutMs: listTimeout },
+    ).catch(() => ({ items: [] as HotNotebookSpotlight[] })),
+    apiFetch<{ items: HotNotebookSpotlight[] }>(
+      "/notebooks?page=1&pageSize=3",
+      { timeoutMs: listTimeout },
+    ).catch(() => ({ items: [] as HotNotebookSpotlight[] })),
+  ]);
+
+  const data =
+    listRes ?? { items: [], total: 0, page: 1, pageSize: 24 };
+  const hotNotebooks =
+    hotByVotes.items.length > 0 ? hotByVotes.items : hotRecent.items;
+  const hotNotebooksSource: "votes" | "recent" =
+    hotByVotes.items.length > 0 ? "votes" : "recent";
 
   const filterBase = { status, q, grower, breeder };
 
@@ -153,6 +179,39 @@ export default async function NotebooksDirectoryPage({
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[min(22rem,36%)_1fr] lg:items-start lg:gap-10">
         <aside className="order-2 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:order-1 lg:border-t-0 lg:border-r lg:border-[var(--gn-border)] lg:pr-8 lg:pt-0">
+          <section className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+              Hot notebooks
+            </h2>
+            <p className="mt-1 text-xs leading-snug text-[var(--gn-text-muted)]">
+              {hotNotebooksSource === "votes"
+                ? "Top by community votes (then recently updated)."
+                : "Recently updated public diaries—vote ranking unavailable."}
+            </p>
+            {hotNotebooks.length > 0 ? (
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--gn-text)] marker:text-[var(--gn-text-muted)]">
+                {hotNotebooks.map((n) => (
+                  <li key={n.id} className="pl-1">
+                    <Link
+                      href={`/notebooks/${encodeURIComponent(n.id)}`}
+                      className="font-medium text-[#ff4500] hover:underline"
+                    >
+                      {truncateNotebookTitle(n.title, 48)}
+                    </Link>
+                    <span className="text-[var(--gn-text-muted)]">
+                      {" "}
+                      · {formatVoteScore(n.score)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-3 text-sm text-[var(--gn-text-muted)]">
+                No public notebooks yet.
+              </p>
+            )}
+          </section>
+
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
               What are notebooks?

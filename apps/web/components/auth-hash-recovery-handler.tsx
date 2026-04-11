@@ -29,7 +29,13 @@ export function AuthHashRecoveryHandler() {
     const pathAndQuery = `${window.location.pathname}${window.location.search}`;
     window.history.replaceState(null, "", pathAndQuery);
 
-    const supabase = createClient();
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      window.location.replace(`${origin}/login?error=auth`);
+      return;
+    }
     void supabase.auth
       .setSession({ access_token, refresh_token })
       .then(async ({ error }) => {

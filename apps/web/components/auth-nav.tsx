@@ -127,50 +127,60 @@ export function AuthNav() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      void applySession(session);
-    });
-    void supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        void applySession(session ?? null);
-      });
-    return () => subscription.unsubscribe();
+    let subscription: { unsubscribe: () => void } | undefined;
+    try {
+      const supabase = createClient();
+      ({
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        void applySession(session);
+      }));
+      void supabase.auth
+        .getSession()
+        .then(({ data: { session } }) => {
+          void applySession(session ?? null);
+        });
+    } catch {
+      setLoading(false);
+      return;
+    }
+    return () => subscription?.unsubscribe();
   }, [applySession]);
 
   /** Live unread badge + list freshness when the API inserts a notification row. */
   useEffect(() => {
     if (!sessionUserId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`gn-user-notifications:${sessionUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "user_notifications",
-          filter: `user_id=eq.${sessionUserId}`,
-        },
-        () => {
-          setMe((m) =>
-            m
-              ? {
-                  ...m,
-                  unreadNotificationCount:
-                    (m.unreadNotificationCount ?? 0) + 1,
-                }
-              : m,
-          );
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    try {
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`gn-user-notifications:${sessionUserId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "user_notifications",
+            filter: `user_id=eq.${sessionUserId}`,
+          },
+          () => {
+            setMe((m) =>
+              m
+                ? {
+                    ...m,
+                    unreadNotificationCount:
+                      (m.unreadNotificationCount ?? 0) + 1,
+                  }
+                : m,
+            );
+          },
+        )
+        .subscribe();
+      return () => {
+        void supabase.removeChannel(channel);
+      };
+    } catch {
+      return;
+    }
   }, [sessionUserId]);
 
   useEffect(() => {

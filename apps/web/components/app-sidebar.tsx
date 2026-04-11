@@ -43,8 +43,8 @@ function IconFlame({ className }: { className?: string }) {
   );
 }
 
-function truncateTitle(title: string, maxChars: number) {
-  const t = title.trim();
+function truncateTitle(title: string | null | undefined, maxChars: number) {
+  const t = String(title ?? "").trim();
   if (t.length <= maxChars) return t;
   return `${t.slice(0, maxChars - 1)}…`;
 }

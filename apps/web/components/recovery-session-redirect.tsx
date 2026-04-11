@@ -36,7 +36,12 @@ export function RecoverySessionRedirect() {
       return;
     }
 
-    const supabase = createClient();
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user?.email) return;
       if (session.user.email.toLowerCase() !== pending.email) return;

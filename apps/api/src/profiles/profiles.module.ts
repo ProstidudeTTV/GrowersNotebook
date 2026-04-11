@@ -13,7 +13,7 @@ import { ProfilesService } from './profiles.service';
 @Module({
   imports: [
     forwardRef(() => AuthModule),
-    BlocksModule,
+    forwardRef(() => BlocksModule),
     forwardRef(() => FollowsModule),
     forwardRef(() => PostsModule),
     forwardRef(() => CommentsModule),

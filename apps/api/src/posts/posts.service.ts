@@ -316,30 +316,6 @@ export class PostsService {
       })
       .returning();
 
-    if (row.communityId) {
-      const followerIds = await this.follows.listUserIdsFollowingCommunity(
-        row.communityId,
-      );
-      const targets = followerIds.filter((id) => id !== authorId);
-      if (targets.length > 0) {
-        const [comm] = await db
-          .select({ name: communities.name })
-          .from(communities)
-          .where(eq(communities.id, row.communityId));
-        const [authorProf] = await db
-          .select({ displayName: profiles.displayName })
-          .from(profiles)
-          .where(eq(profiles.id, authorId));
-        const who = authorProf?.displayName?.trim() || 'A grower';
-        const cname = comm?.name?.trim() || 'a community';
-        await this.notifications.createForManyUsers(
-          targets,
-          `New post in ${cname}`,
-          `${who}: ${row.title.trim()}`,
-        );
-      }
-    }
-
     return row;
   }
 

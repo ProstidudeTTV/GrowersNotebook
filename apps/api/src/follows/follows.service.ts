@@ -127,16 +127,6 @@ export class FollowsService {
     return rows.map((r) => r.id);
   }
 
-  /** User IDs that follow this community (for new-post notifications). */
-  async listUserIdsFollowingCommunity(communityId: string): Promise<string[]> {
-    const db = getDb();
-    const rows = await db
-      .select({ userId: communityFollows.userId })
-      .from(communityFollows)
-      .where(eq(communityFollows.communityId, communityId));
-    return rows.map((r) => r.userId);
-  }
-
   async getFollowingCommunityIds(
     userId: string,
     communityIds: string[],

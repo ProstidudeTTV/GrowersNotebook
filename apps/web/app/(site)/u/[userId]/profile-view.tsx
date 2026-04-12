@@ -270,6 +270,7 @@ export function ProfileView({
                   <>
                     <MenuRow
                       danger
+                      disabled={blockBusy}
                       onClick={() => {
                         setReportNotice(null);
                         void toggleBlock();

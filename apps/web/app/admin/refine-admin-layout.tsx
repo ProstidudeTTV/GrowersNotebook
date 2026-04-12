@@ -27,6 +27,7 @@ import { Refine } from "@refinedev/core";
 import dataProvider from "@refinedev/simple-rest";
 import routerProvider from "@refinedev/nextjs-router/app";
 import { App as AntdApp, ConfigProvider, Spin, theme } from "antd";
+import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { ADMIN_PROXY_PATH, adminAxios } from "@/lib/admin-axios";
 import { GrowersAdminSider } from "./growers-admin-sider";
@@ -248,12 +249,12 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
           Sider={GrowersAdminSider}
           Title={({ collapsed }) => (
             <div className="flex min-w-0 flex-col gap-0.5">
-              <a
+              <Link
                 href="/"
                 className="text-[0.7rem] font-semibold text-[#ff6b35] hover:underline dark:text-[#ff8f5a]"
               >
                 ← Back to site
-              </a>
+              </Link>
               <ThemedTitle collapsed={collapsed} text="Growers Admin" />
             </div>
           )}

@@ -51,11 +51,11 @@ export function NotebookCenteredModal({
           colorTextTertiary: "#9aa3b5",
           colorTextPlaceholder: "#7a8194",
           colorFillAlter: "rgba(255, 255, 255, 0.04)",
-          controlHeight: 32,
-          controlHeightLG: 36,
-          paddingSM: 8,
-          padding: 12,
-          paddingXS: 6,
+          controlHeight: 36,
+          controlHeightLG: 40,
+          paddingSM: 10,
+          padding: 14,
+          paddingXS: 8,
         }
       : {
           colorPrimary: "#c2410c",
@@ -68,30 +68,30 @@ export function NotebookCenteredModal({
           colorTextTertiary: "#6b7287",
           colorTextPlaceholder: "#9ca3af",
           colorFillAlter: "rgba(30, 41, 59, 0.03)",
-          controlHeight: 32,
-          controlHeightLG: 36,
-          paddingSM: 8,
-          padding: 12,
-          paddingXS: 6,
+          controlHeight: 36,
+          controlHeightLG: 40,
+          paddingSM: 10,
+          padding: 14,
+          paddingXS: 8,
         },
     components: {
       Form: {
-        itemMarginBottom: 26,
-        verticalLabelPadding: "0 0 10px",
+        itemMarginBottom: 28,
+        verticalLabelPadding: "0 0 12px",
       },
       Input: {
-        controlHeight: 32,
-        paddingBlock: 4,
-        paddingInline: 10,
+        controlHeight: 36,
+        paddingBlock: 8,
+        paddingInline: 14,
         activeShadow: isDark
           ? "0 0 0 2px rgba(255, 107, 53, 0.2)"
           : "0 0 0 2px rgba(194, 65, 12, 0.15)",
       },
       InputNumber: {
-        controlHeight: 32,
+        controlHeight: 36,
       },
       Select: {
-        controlHeight: 32,
+        controlHeight: 36,
         optionSelectedBg: isDark
           ? "rgba(255, 107, 53, 0.18)"
           : "rgba(194, 65, 12, 0.1)",

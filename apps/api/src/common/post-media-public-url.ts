@@ -12,6 +12,19 @@ export function isAllowedPostMediaPublicUrl(
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
+
+  const host = parsed.hostname.toLowerCase();
+  if (
+    host === 'media.giphy.com' ||
+    host === 'i.giphy.com' ||
+    host.endsWith('.giphy.com')
+  ) {
+    return /^\/media\/[a-z0-9]+/i.test(parsed.pathname);
+  }
+  if (host === 'media.tenor.com' || host === 'c.tenor.com') {
+    return true;
+  }
+
   const pathNeedle = '/storage/v1/object/public/post-media/';
   if (!parsed.pathname.startsWith(pathNeedle)) return false;
 

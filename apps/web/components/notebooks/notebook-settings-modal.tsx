@@ -151,6 +151,7 @@ export function NotebookSettingsModal({
         size="middle"
         className="px-5 py-5 sm:px-6 sm:py-6"
       >
+        <div className="mx-auto w-full max-w-3xl">
         <p className="mb-6 text-sm leading-relaxed text-[var(--gn-text-muted)]">
           {notebook.strain?.slug ? (
             <>
@@ -283,6 +284,7 @@ export function NotebookSettingsModal({
             </button>
           </div>
         ) : null}
+        </div>
       </Form>
     </NotebookCenteredModal>
   );

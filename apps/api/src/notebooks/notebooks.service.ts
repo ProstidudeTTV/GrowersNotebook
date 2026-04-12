@@ -26,6 +26,7 @@ import {
   breeders,
   notebookVotes,
   notebookWeekNutrients,
+  notebookWeekWaterings,
   notebookWeeks,
   notebooks,
   nutrientProducts,
@@ -180,6 +181,112 @@ export class NotebooksService {
     };
   }
 
+  private mergeWateringsForApi(
+    w: typeof notebookWeeks.$inferSelect,
+    child: {
+      id: string;
+      notes: string | null;
+      volumeLiters: string | null;
+      sortOrder: number;
+    }[],
+  ): {
+    id: string | null;
+    notes: string | null;
+    volumeLiters: string | null;
+    sortOrder: number;
+  }[] {
+    if (child.length > 0) {
+      return child.map((r) => ({
+        id: r.id,
+        notes: r.notes,
+        volumeLiters: r.volumeLiters,
+        sortOrder: r.sortOrder,
+      }));
+    }
+    if (w.waterNotes?.trim() || w.waterVolumeLiters != null) {
+      return [
+        {
+          id: null,
+          notes: w.waterNotes?.trim() || null,
+          volumeLiters:
+            w.waterVolumeLiters != null ? String(w.waterVolumeLiters) : null,
+          sortOrder: 0,
+        },
+      ];
+    }
+    return [];
+  }
+
+  private async loadWateringsForWeekIds(weekIds: string[]) {
+    if (weekIds.length === 0) {
+      return new Map<
+        string,
+        {
+          id: string;
+          notes: string | null;
+          volumeLiters: string | null;
+          sortOrder: number;
+        }[]
+      >();
+    }
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(notebookWeekWaterings)
+      .where(inArray(notebookWeekWaterings.weekId, weekIds))
+      .orderBy(
+        asc(notebookWeekWaterings.weekId),
+        asc(notebookWeekWaterings.sortOrder),
+      );
+    const m = new Map<
+      string,
+      {
+        id: string;
+        notes: string | null;
+        volumeLiters: string | null;
+        sortOrder: number;
+      }[]
+    >();
+    for (const r of rows) {
+      const list = m.get(r.weekId) ?? [];
+      list.push({
+        id: r.id,
+        notes: r.notes,
+        volumeLiters: r.volumeLiters != null ? String(r.volumeLiters) : null,
+        sortOrder: r.sortOrder,
+      });
+      m.set(r.weekId, list);
+    }
+    return m;
+  }
+
+  private async replaceWeekWaterings(
+    weekId: string,
+    lines: {
+      notes?: string | null;
+      volumeLiters?: string | null;
+      sortOrder?: number;
+    }[],
+  ) {
+    const db = getDb();
+    await db
+      .delete(notebookWeekWaterings)
+      .where(eq(notebookWeekWaterings.weekId, weekId));
+    let order = 0;
+    for (const line of lines) {
+      const notes = line.notes?.trim() || null;
+      const vol = this.normalizeWaterVolumeLiters(line.volumeLiters ?? null);
+      if (!notes && vol == null) continue;
+      await db.insert(notebookWeekWaterings).values({
+        weekId,
+        notes,
+        volumeLiters: vol,
+        sortOrder: line.sortOrder ?? order,
+      });
+      order += 1;
+    }
+  }
+
   private async assertNotebookGrowthTransition(
     notebookId: string,
     existing: typeof notebooks.$inferSelect,
@@ -269,6 +376,8 @@ export class NotebooksService {
     q?: string;
     grower?: string;
     breeder?: string;
+    /** Catalog strain slug — only notebooks with this linked strain (non-null strainId). */
+    strainSlug?: string;
     /** Default: by last update. `hot` = highest vote score, then recently updated. */
     sort?: 'updated' | 'hot';
   }) {
@@ -309,6 +418,12 @@ export class NotebooksService {
           isNotNull(breeders.id),
           or(ilike(breeders.name, pat), ilike(breeders.slug, pat))!,
         )!,
+      );
+    }
+    const strainSlug = opts.strainSlug?.trim();
+    if (strainSlug) {
+      filters.push(
+        and(isNotNull(notebooks.strainId), eq(strains.slug, strainSlug))!,
       );
     }
     const listWhere = and(...filters);
@@ -532,6 +647,8 @@ export class NotebooksService {
       nutrientsByWeek.set(n.weekId, list);
     }
 
+    const waterByWeek = await this.loadWateringsForWeekIds(weekIds);
+
     return {
       ...row.notebook,
       owner: row.owner,
@@ -552,6 +669,7 @@ export class NotebooksService {
           ? (w.imageUrls as string[])
           : [],
         nutrients: nutrientsByWeek.get(w.id) ?? [],
+        waterings: this.mergeWateringsForApi(w, waterByWeek.get(w.id) ?? []),
       })),
     };
   }
@@ -638,6 +756,8 @@ export class NotebooksService {
       nutrientsByWeek.set(n.weekId, list);
     }
 
+    const waterByWeek = await this.loadWateringsForWeekIds(weekIds);
+
     return {
       ...row.notebook,
       owner: row.owner,
@@ -658,6 +778,7 @@ export class NotebooksService {
           ? (w.imageUrls as string[])
           : [],
         nutrients: nutrientsByWeek.get(w.id) ?? [],
+        waterings: this.mergeWateringsForApi(w, waterByWeek.get(w.id) ?? []),
       })),
     };
   }
@@ -967,12 +1088,36 @@ export class NotebooksService {
       await this.replaceWeekNutrients(week!.id, nutrientLines);
     }
 
+    const waterLines =
+      dto.waterings?.map((l, i) => ({
+        notes: l.notes,
+        volumeLiters: l.volumeLiters,
+        sortOrder: l.sortOrder ?? i,
+      })) ?? [];
+    if (
+      waterLines.length === 0 &&
+      (dto.waterNotes?.trim() || dto.waterVolumeLiters)
+    ) {
+      waterLines.push({
+        notes: dto.waterNotes ?? null,
+        volumeLiters: dto.waterVolumeLiters ?? null,
+        sortOrder: 0,
+      });
+    }
+    if (waterLines.length > 0) {
+      await this.replaceWeekWaterings(week!.id, waterLines);
+    }
+
     await db
       .update(notebooks)
       .set({ updatedAt: new Date() })
       .where(eq(notebooks.id, notebookId));
 
-    return this.mapWeekRowForApi(week!);
+    const wmap = await this.loadWateringsForWeekIds([week!.id]);
+    return {
+      ...this.mapWeekRowForApi(week!),
+      waterings: this.mergeWateringsForApi(week!, wmap.get(week!.id) ?? []),
+    };
   }
 
   async updateWeek(
@@ -1012,6 +1157,10 @@ export class NotebooksService {
         dto.waterVolumeLiters,
       );
     }
+    if (dto.waterings !== undefined) {
+      patch.waterNotes = null;
+      patch.waterVolumeLiters = null;
+    }
     if (dto.lightCycle !== undefined) {
       patch.lightCycle = dto.lightCycle?.trim() || null;
     }
@@ -1039,6 +1188,17 @@ export class NotebooksService {
       await this.replaceWeekNutrients(weekId, dto.nutrients);
     }
 
+    if (dto.waterings !== undefined) {
+      await this.replaceWeekWaterings(
+        weekId,
+        dto.waterings.map((l, i) => ({
+          notes: l.notes,
+          volumeLiters: l.volumeLiters,
+          sortOrder: l.sortOrder ?? i,
+        })),
+      );
+    }
+
     await db
       .update(notebooks)
       .set({ updatedAt: new Date() })
@@ -1048,7 +1208,11 @@ export class NotebooksService {
       .select()
       .from(notebookWeeks)
       .where(eq(notebookWeeks.id, weekId));
-    return this.mapWeekRowForApi(updated!);
+    const wmap = await this.loadWateringsForWeekIds([weekId]);
+    return {
+      ...this.mapWeekRowForApi(updated!),
+      waterings: this.mergeWateringsForApi(updated!, wmap.get(weekId) ?? []),
+    };
   }
 
   async deleteWeek(notebookId: string, weekId: string, ownerId: string, isAdmin: boolean) {

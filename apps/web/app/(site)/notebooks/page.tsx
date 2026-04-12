@@ -32,6 +32,7 @@ function buildListQuery(opts: {
   q?: string;
   grower?: string;
   breeder?: string;
+  strainSlug?: string;
 }): string {
   const p = new URLSearchParams();
   p.set("page", String(opts.page));
@@ -46,6 +47,7 @@ function buildListQuery(opts: {
   if (opts.q?.trim()) p.set("q", opts.q.trim());
   if (opts.grower?.trim()) p.set("grower", opts.grower.trim());
   if (opts.breeder?.trim()) p.set("breeder", opts.breeder.trim());
+  if (opts.strainSlug?.trim()) p.set("strainSlug", opts.strainSlug.trim());
   return p.toString();
 }
 
@@ -111,6 +113,7 @@ export default async function NotebooksDirectoryPage({
     q?: string;
     grower?: string;
     breeder?: string;
+    strainSlug?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -125,6 +128,7 @@ export default async function NotebooksDirectoryPage({
   const q = sp.q ?? "";
   const grower = sp.grower ?? "";
   const breeder = sp.breeder ?? "";
+  const strainSlug = sp.strainSlug?.trim() ?? "";
   const qs = buildListQuery({
     page,
     pageSize: 24,
@@ -132,6 +136,7 @@ export default async function NotebooksDirectoryPage({
     q,
     grower,
     breeder,
+    strainSlug: strainSlug || undefined,
   });
   const listTimeout = 12_000;
   const [listRes, hotByVotes, hotRecent] = await Promise.all([
@@ -160,7 +165,13 @@ export default async function NotebooksDirectoryPage({
   const hotNotebooksSource: "votes" | "recent" =
     hotByVotes.items.length > 0 ? "votes" : "recent";
 
-  const filterBase = { status, q, grower, breeder };
+  const filterBase = {
+    status,
+    q,
+    grower,
+    breeder,
+    strainSlug: strainSlug || undefined,
+  };
 
   return (
     <main className="mx-auto max-w-[88rem] px-4 py-8">
@@ -250,6 +261,21 @@ export default async function NotebooksDirectoryPage({
             method="get"
             className="mt-8 flex flex-col gap-4 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4"
           >
+            {strainSlug ? (
+              <input type="hidden" name="strainSlug" value={strainSlug} />
+            ) : null}
+            {strainSlug ? (
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                Showing notebooks linked to catalog strain{" "}
+                <span className="font-mono text-[var(--gn-text)]">
+                  {strainSlug}
+                </span>
+                .{" "}
+                <Link href="/notebooks" className="text-[#ff4500] hover:underline">
+                  Clear strain filter
+                </Link>
+              </p>
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm sm:col-span-2">
                 <span className="font-medium text-[var(--gn-text)]">

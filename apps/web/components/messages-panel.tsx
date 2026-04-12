@@ -100,6 +100,14 @@ function messageImageUrls(
   return m.imageUrl ? [m.imageUrl] : [];
 }
 
+/** Stable compare for poll refresh without resetting scroll. */
+function messagesListFingerprint(items: MessageRow[]): string {
+  if (items.length === 0) return "0";
+  const first = items[0];
+  const last = items[items.length - 1];
+  return `${items.length}:${first.id}:${last.id}`;
+}
+
 function threadPreviewLine(
   m: ThreadSummary["lastMessage"],
 ): string | null {
@@ -176,7 +184,12 @@ export function MessagesPanel() {
   }, [fetchToken]);
 
   const loadMessagesPage = useCallback(
-    async (threadId: string, before?: string, appendOlder?: boolean) => {
+    async (
+      threadId: string,
+      before?: string,
+      appendOlder?: boolean,
+      opts?: { backgroundPoll?: boolean },
+    ) => {
       const token = await fetchToken();
       if (!token) return;
       const q = new URLSearchParams();
@@ -188,6 +201,16 @@ export function MessagesPanel() {
       );
       if (appendOlder && before) {
         setMessages((prev) => [...data.items, ...prev]);
+      } else if (opts?.backgroundPoll) {
+        setMessages((prev) => {
+          if (
+            messagesListFingerprint(prev) ===
+            messagesListFingerprint(data.items)
+          ) {
+            return prev;
+          }
+          return data.items;
+        });
       } else {
         setMessages(data.items);
         scrollStickBottom.current = true;
@@ -251,7 +274,9 @@ export function MessagesPanel() {
   useEffect(() => {
     if (status !== "ready" || !activeThreadId) return;
     const id = window.setInterval(() => {
-      void loadMessagesPage(activeThreadId);
+      void loadMessagesPage(activeThreadId, undefined, false, {
+        backgroundPoll: true,
+      });
     }, POLL_MS);
     return () => clearInterval(id);
   }, [status, activeThreadId, loadMessagesPage]);
@@ -260,7 +285,11 @@ export function MessagesPanel() {
     if (status !== "ready") return;
     const onFocus = () => {
       void loadThreads();
-      if (activeThreadId) void loadMessagesPage(activeThreadId);
+      if (activeThreadId) {
+        void loadMessagesPage(activeThreadId, undefined, false, {
+          backgroundPoll: true,
+        });
+      }
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);

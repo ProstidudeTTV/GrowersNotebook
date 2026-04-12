@@ -93,6 +93,16 @@ type PostDetail = {
 
 const COMMENT_ATTACH_MAX = 8;
 
+/** Quick-insert emoji for the comment box (Unicode). */
+const COMMENT_EMOJI_QUICK = [
+  "\u{1F44D}",
+  "\u{1F525}",
+  "\u{2764}\u{FE0F}",
+  "\u{1F389}",
+  "\u{1F604}",
+  "\u{1F331}",
+];
+
 type PendingCommentImage = {
   id: string;
   localBlobUrl?: string;
@@ -413,6 +423,12 @@ export function PostView({
   const [pendingCommentImages, setPendingCommentImages] = useState<
     PendingCommentImage[]
   >([]);
+  const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [gifQuery, setGifQuery] = useState("");
+  const [gifItems, setGifItems] = useState<
+    { url: string; preview: string; title: string }[]
+  >([]);
+  const [gifLoading, setGifLoading] = useState(false);
   const [commentLightbox, setCommentLightbox] = useState<{
     urls: string[];
     index: number;
@@ -890,6 +906,44 @@ export function PostView({
       if (prev.some((m) => m.url === url)) return prev;
       return [...prev, { url, type: kind }];
     });
+  }, []);
+
+  const searchCommentGifs = useCallback(async () => {
+    const q = gifQuery.trim();
+    if (q.length < 2) {
+      setGifItems([]);
+      return;
+    }
+    setGifLoading(true);
+    try {
+      const r = await fetch(
+        `/api/giphy-search?q=${encodeURIComponent(q)}`,
+        { cache: "no-store" },
+      );
+      const j = (await r.json()) as {
+        items?: { url: string; preview: string; title: string }[];
+      };
+      setGifItems(j.items ?? []);
+    } catch {
+      setGifItems([]);
+    } finally {
+      setGifLoading(false);
+    }
+  }, [gifQuery]);
+
+  const addGifToComment = useCallback((url: string) => {
+    setPendingCommentImages((prev) => {
+      if (prev.length >= COMMENT_ATTACH_MAX) return prev;
+      if (prev.some((x) => x.remoteUrl === url)) return prev;
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      return [...prev, { id, remoteUrl: url, uploading: false }];
+    });
+    setGifPickerOpen(false);
+    setGifQuery("");
+    setGifItems([]);
   }, []);
 
   const onCommentImageFiles = (e: ChangeEvent<HTMLInputElement>) => {
@@ -1421,6 +1475,85 @@ export function PostView({
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+              Emoji
+            </span>
+            {COMMENT_EMOJI_QUICK.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                disabled={!viewerId || busy}
+                className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+                title={emoji}
+                onClick={() => setText((t) => t + emoji)}
+              >
+                {emoji}
+              </button>
+            ))}
+ <button
+              type="button"
+              disabled={!viewerId || busy}
+              className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+              onClick={() => setGifPickerOpen((o) => !o)}
+            >
+              GIF
+            </button>
+          </div>
+          {gifPickerOpen && viewerId ? (
+            <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+              <div className="flex flex-wrap gap-2">
+                <input
+                  className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
+                  placeholder="Search Giphy…"
+                  value={gifQuery}
+                  onChange={(e) => setGifQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void searchCommentGifs();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
+                  onClick={() => void searchCommentGifs()}
+                >
+                  {gifLoading ? "…" : "Search"}
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
+                Powered by Giphy. Add a site{" "}
+                <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                  GIPHY_API_KEY
+                </code>{" "}
+                on the web service to enable search.
+              </p>
+              {gifItems.length > 0 ? (
+                <ul className="mt-3 grid max-h-48 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
+                  {gifItems.map((g) => (
+                    <li key={g.url}>
+                      <button
+                        type="button"
+                        className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
+                        title={g.title}
+                        onClick={() => addGifToComment(g.url)}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={g.preview}
+                          alt=""
+                          className="h-16 w-full object-cover sm:h-20"
+                          loading="lazy"
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             {busy ||
             pendingCommentImages.length >= COMMENT_ATTACH_MAX ||

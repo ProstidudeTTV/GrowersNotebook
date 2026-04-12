@@ -195,6 +195,7 @@ export function NotebookSetupWizard({
         size="middle"
         className="px-5 py-5 sm:px-6 sm:py-6"
       >
+        <div className="mx-auto w-full max-w-3xl">
         <div className="mb-5">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
@@ -410,6 +411,7 @@ export function NotebookSetupWizard({
               {saving ? "Saving…" : "Save notebook setup"}
             </button>
           )}
+        </div>
         </div>
       </Form>
     </NotebookCenteredModal>

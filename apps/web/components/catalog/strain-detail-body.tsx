@@ -20,6 +20,14 @@ export type StrainReviewMedia = {
   type: "image" | "video" | string;
 };
 
+type StrainGrowDiaryPreview = {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  owner: { id: string; displayName: string | null };
+};
+
 export type StrainDetailJson = {
   strain: {
     id: string;
@@ -119,6 +127,27 @@ export async function StrainDetailBody({
   }
 
   const s = data.strain;
+
+  let growDiariesItems: StrainGrowDiaryPreview[] = [];
+  let growDiariesTotal = 0;
+  try {
+    const nbQs = new URLSearchParams({
+      page: "1",
+      pageSize: "8",
+      strainSlug: s.slug,
+    });
+    const nbRes = await apiFetch<{
+      items: StrainGrowDiaryPreview[];
+      total: number;
+    }>(`/notebooks?${nbQs}`, {
+      token: token ?? undefined,
+      timeoutMs: 12_000,
+    });
+    growDiariesItems = nbRes.items;
+    growDiariesTotal = nbRes.total;
+  } catch {
+    /* optional block */
+  }
   const hiddenNote =
     data.viewerReview?.hidden === true
       ? "Your review was removed by moderators."
@@ -253,6 +282,57 @@ export async function StrainDetailBody({
 
       <section className="border-t border-[var(--gn-divide)] pt-8 lg:pt-10">
         <h2 className="text-lg font-semibold text-[var(--gn-text)]">
+          Grow diaries
+        </h2>
+        <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+          Public notebooks from growers who linked this catalog strain to their
+          diary.
+        </p>
+        {growDiariesTotal === 0 ? (
+          <p className="mt-4 text-sm text-[var(--gn-text-muted)]">
+            No public grow diaries for this strain yet.
+          </p>
+        ) : (
+          <>
+            <ul className="mt-5 space-y-3">
+              {growDiariesItems.map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={`/notebooks/${encodeURIComponent(n.id)}`}
+                    className="block rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-4 transition hover:border-[var(--gn-text-muted)]"
+                  >
+                    <p className="font-medium text-[var(--gn-text)]">
+                      {n.title}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                      <span className="text-[var(--gn-text)]">
+                        {n.owner.displayName?.trim() || "Grower"}
+                      </span>
+                      <span className="mx-1.5">·</span>
+                      Updated {formatStrainNotebookDate(n.updatedAt)}
+                      <span className="mx-1.5">·</span>
+                      <span className="capitalize">{n.status}</span>
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {growDiariesTotal > growDiariesItems.length ? (
+              <p className="mt-4">
+                <Link
+                  href={`/notebooks?strainSlug=${encodeURIComponent(s.slug)}`}
+                  className="text-sm font-semibold text-[#ff6a38] hover:underline"
+                >
+                  View all {growDiariesTotal} grow diaries
+                </Link>
+              </p>
+            ) : null}
+          </>
+        )}
+      </section>
+
+      <section className="border-t border-[var(--gn-divide)] pt-8 lg:pt-10">
+        <h2 className="text-lg font-semibold text-[var(--gn-text)]">
           Your review
         </h2>
         {hiddenNote ? (
@@ -343,4 +423,16 @@ export async function StrainDetailBody({
       </section>
     </div>,
   );
+}
+
+function formatStrainNotebookDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }

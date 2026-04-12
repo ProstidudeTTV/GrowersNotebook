@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
+import { formatNotifDate } from "@/lib/format-notif-date";
 import { createClient } from "@/lib/supabase/client";
 import {
   getNotificationsUnreadSnapshot,
@@ -181,6 +182,36 @@ export function NotificationsNavLink() {
     }
   };
 
+  const clearAll = async () => {
+    if (
+      !window.confirm(
+        "Delete all notifications? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      await apiFetch("/notifications/me", {
+        method: "DELETE",
+        token: session.access_token,
+      });
+      setItems([]);
+      setNotificationsUnreadCount(0);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <>
     <div className="relative" ref={rootRef}>
@@ -250,12 +281,25 @@ export function NotificationsNavLink() {
                         ? "Tap to read the full message from moderators."
                         : n.body}
                     </span>
+                    <span className="text-[0.65rem] text-[var(--gn-text-muted)]">
+                      {formatNotifDate(n.createdAt)}
+                    </span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          <div className="border-t border-[var(--gn-divide)] px-2 py-1.5">
+          <div className="flex flex-col gap-1 border-t border-[var(--gn-divide)] px-2 py-1.5">
+            {!loading && items.length > 0 ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="rounded-md px-2 py-1.5 text-center text-xs font-medium text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                onClick={() => void clearAll()}
+              >
+                Clear all
+              </button>
+            ) : null}
             <Link
               href="/notifications"
               role="menuitem"

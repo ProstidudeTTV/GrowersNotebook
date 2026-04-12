@@ -7,9 +7,11 @@ import {
   BarChartOutlined,
   BookOutlined,
   ExperimentOutlined,
+  FileTextOutlined,
   InboxOutlined,
   MedicineBoxOutlined,
   MessageOutlined,
+  SettingOutlined,
   ShopOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
@@ -89,10 +91,16 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ConfigProvider
+       <ConfigProvider
       theme={{
         ...RefineThemes.Blue,
         algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          ...RefineThemes.Blue.token,
+          colorPrimary: dark ? "#ff6b35" : "#c2410c",
+          borderRadiusLG: 12,
+          fontFamily: `var(--font-geist-sans), system-ui, sans-serif`,
+        },
       }}
     >
       {!restDataProvider ? (
@@ -105,6 +113,22 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         dataProvider={restDataProvider}
         notificationProvider={notificationProvider as NotificationProvider}
         resources={[
+          {
+            name: "site-settings",
+            list: "/admin/site-settings",
+            meta: {
+              label: "Site settings",
+              icon: <SettingOutlined />,
+            },
+          },
+          {
+            name: "audit-events",
+            list: "/admin/audit-log",
+            meta: {
+              label: "Audit log",
+              icon: <FileTextOutlined />,
+            },
+          },
           {
             name: "analytics",
             list: "/admin/analytics",
@@ -223,7 +247,15 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         <ThemedLayout
           Sider={GrowersAdminSider}
           Title={({ collapsed }) => (
-            <ThemedTitle collapsed={collapsed} text="Growers Admin" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <a
+                href="/"
+                className="text-[0.7rem] font-semibold text-[#ff6b35] hover:underline dark:text-[#ff8f5a]"
+              >
+                ← Back to site
+              </a>
+              <ThemedTitle collapsed={collapsed} text="Growers Admin" />
+            </div>
           )}
         >
           <div className="admin-refine-surface px-4 py-5 sm:px-6 md:py-7">

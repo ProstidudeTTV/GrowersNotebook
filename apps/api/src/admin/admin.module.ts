@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { AdminCatalogController } from '../catalog/admin-catalog.controller';
 import { CatalogModule } from '../catalog/catalog.module';
@@ -15,6 +16,7 @@ import { AdminController } from './admin.controller';
  */
 @Module({
   imports: [
+    AuditModule,
     AuthModule,
     PostsModule,
     CommunitiesModule,

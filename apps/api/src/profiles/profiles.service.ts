@@ -11,6 +11,7 @@ import {
   eq,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   lte,
   notInArray,
@@ -25,6 +26,7 @@ import {
   POST_VOTE_SEED_WEIGHT,
 } from '../common/seeds-score';
 import type { ProfileRole } from '../auth/roles.decorator';
+import { AuditService } from '../audit/audit.service';
 import { getDb } from '../db';
 import {
   commentVotes,
@@ -33,6 +35,7 @@ import {
   posts,
   profileReports,
   profiles,
+  userNotifications,
 } from '../db/schema';
 import { BlocksService } from '../blocks/blocks.service';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
@@ -46,6 +49,7 @@ export class ProfilesService {
     private readonly follows: FollowsService,
     private readonly notifications: NotificationsService,
     private readonly nameBlocklist: NameBlocklistService,
+    private readonly audit: AuditService,
   ) {}
 
   async findById(id: string) {
@@ -449,8 +453,15 @@ export class ProfilesService {
     const term = `%${raw.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`;
     const db = getDb();
 
-    const activeAccount = and(
+    const notBanned = or(
       isNull(profiles.bannedAt),
+      and(
+        isNotNull(profiles.banExpiresAt),
+        lte(profiles.banExpiresAt, sql`now()`),
+      )!,
+    )!;
+    const activeAccount = and(
+      notBanned,
       or(
         isNull(profiles.suspendedUntil),
         lte(profiles.suspendedUntil, new Date()),
@@ -521,6 +532,62 @@ export class ProfilesService {
     return { rows, total };
   }
 
+  async clearExpiredBan(profileId: string) {
+    const db = getDb();
+    await db
+      .update(profiles)
+      .set({ bannedAt: null, banExpiresAt: null })
+      .where(eq(profiles.id, profileId));
+  }
+
+  async moderationSummaryAdmin(subjectId: string) {
+    const profile = await this.findById(subjectId);
+    if (!profile) throw new NotFoundException();
+    const db = getDb();
+    const warnings = await db
+      .select()
+      .from(userNotifications)
+      .where(
+        and(
+          eq(userNotifications.userId, subjectId),
+          inArray(userNotifications.kind, [
+            'moderation_warning',
+            'report_update',
+          ]),
+        ),
+      )
+      .orderBy(desc(userNotifications.createdAt))
+      .limit(40);
+    const recentAudit =
+      await this.audit.listTimelineForProfile(subjectId, 20);
+    return {
+      profile: {
+        bannedAt: profile.bannedAt?.toISOString() ?? null,
+        banExpiresAt: profile.banExpiresAt?.toISOString() ?? null,
+        suspendedUntil: profile.suspendedUntil?.toISOString() ?? null,
+      },
+      warnings: warnings.map((w) => ({
+        id: w.id,
+        kind: w.kind,
+        title: w.title,
+        body: w.body,
+        createdAt: w.createdAt.toISOString(),
+        readAt: w.readAt?.toISOString() ?? null,
+      })),
+      recentAudit: recentAudit.map((r) => ({
+        id: r.id,
+        createdAt: r.createdAt.toISOString(),
+        action: r.action,
+        actorProfileId: r.actorProfileId,
+        actorRole: r.actorRole,
+        entityType: r.entityType,
+        entityId: r.entityId,
+        subjectProfileId: r.subjectProfileId,
+        metadata: r.metadata,
+      })),
+    };
+  }
+
   async updateAdmin(
     id: string,
     partial: Partial<{
@@ -529,6 +596,7 @@ export class ProfilesService {
       role: ProfileRole;
       avatarUrl: string | null;
       bannedAt: string | null;
+      banExpiresAt: string | null;
       suspendedUntil: string | null;
     }>,
   ) {
@@ -560,6 +628,15 @@ export class ProfilesService {
     if (partial.bannedAt !== undefined) {
       patch.bannedAt =
         partial.bannedAt === null ? null : new Date(partial.bannedAt);
+    }
+    if (partial.banExpiresAt !== undefined) {
+      patch.banExpiresAt =
+        partial.banExpiresAt === null
+          ? null
+          : new Date(partial.banExpiresAt);
+    }
+    if (partial.bannedAt !== undefined && partial.bannedAt === null) {
+      patch.banExpiresAt = null;
     }
     if (partial.suspendedUntil !== undefined) {
       patch.suspendedUntil =

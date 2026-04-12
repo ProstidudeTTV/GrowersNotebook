@@ -27,6 +27,8 @@ const MAX_NOTE_SLOTS = 3;
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
 
+type WaterLineUi = { notes: string; vol: string };
+
 type NoteSlot = { body: string; at?: string };
 
 function emptyNoteSlots(): NoteSlot[] {
@@ -153,13 +155,13 @@ function serializeNutrients(lines: NutLine[]) {
 }
 
 const fieldShell =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
 
-/** Single-line fields: shorter control height */
-const inputClass = `${fieldShell} py-1.5 min-h-[2.25rem]`;
+/** Single-line fields */
+const inputClass = `${fieldShell} py-2.5 min-h-[2.75rem]`;
 
 /** Multi-line notes */
-const textareaClass = `${fieldShell} py-2`;
+const textareaClass = `${fieldShell} py-3`;
 
 const labelClass = "block text-sm font-semibold text-[var(--gn-text)]";
 
@@ -197,8 +199,9 @@ export function NotebookWeekWizard({
   const [ph, setPh] = useState("");
   const [ec, setEc] = useState("");
   const [ppm, setPpm] = useState("");
-  const [waterNotes, setWaterNotes] = useState("");
-  const [waterVolumeInput, setWaterVolumeInput] = useState("");
+  const [waterLines, setWaterLines] = useState<WaterLineUi[]>([
+    { notes: "", vol: "" },
+  ]);
   const [nutrientLines, setNutrientLines] = useState<NutLine[]>([
     { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
   ]);
@@ -241,13 +244,33 @@ export function NotebookWeekWizard({
       setPh(w.ph ?? "");
       setEc(w.ec ?? "");
       setPpm(w.ppm ?? "");
-      setWaterNotes(w.waterNotes ?? "");
-      setWaterVolumeInput(
-        litersToDisplayVolume(
-          preferredVolumeUnit,
-          w.waterVolumeLiters ?? null,
-        ),
-      );
+      const wAny = w as {
+        waterings?: {
+          notes: string | null;
+          volumeLiters: string | null;
+        }[];
+      };
+      if (wAny.waterings && wAny.waterings.length > 0) {
+        setWaterLines(
+          wAny.waterings.map((x) => ({
+            notes: x.notes ?? "",
+            vol: litersToDisplayVolume(
+              preferredVolumeUnit,
+              x.volumeLiters ?? null,
+            ),
+          })),
+        );
+      } else {
+        setWaterLines([
+          {
+            notes: w.waterNotes ?? "",
+            vol: litersToDisplayVolume(
+              preferredVolumeUnit,
+              w.waterVolumeLiters ?? null,
+            ),
+          },
+        ]);
+      }
       setNutrientLines(linesFromWeek(w));
       const urls = (w.imageUrls ?? []).filter(Boolean);
       setImageUrls(urls.length ? urls : [""]);
@@ -261,8 +284,7 @@ export function NotebookWeekWizard({
       setPh("");
       setEc("");
       setPpm("");
-      setWaterNotes("");
-      setWaterVolumeInput("");
+      setWaterLines([{ notes: "", vol: "" }]);
       setNutrientLines([
         { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
       ]);
@@ -302,6 +324,17 @@ export function NotebookWeekWizard({
         dosageUnit: "ml/L",
       },
     ]);
+  }
+
+  function addWaterLine() {
+    setWaterLines((prev) => [...prev, { notes: "", vol: "" }]);
+  }
+
+  function removeWaterLine(i: number) {
+    setWaterLines((prev) => {
+      const next = prev.filter((_, j) => j !== i);
+      return next.length ? next : [{ notes: "", vol: "" }];
+    });
   }
 
   function removeNutrientLine(i: number) {
@@ -360,7 +393,16 @@ export function NotebookWeekWizard({
         noteSlots,
         mode === "edit" ? initialNoteSlotsRef.current : null,
       );
-      const shared = {
+      const wateringsPayload = waterLines
+        .map((l, i) => ({
+          notes: l.notes.trim() || null,
+          volumeLiters:
+            parseDisplayVolumeToLiters(preferredVolumeUnit, l.vol) ?? null,
+          sortOrder: i,
+        }))
+        .filter((l) => l.notes || l.volumeLiters);
+
+      const sharedBase = {
         noteSpots,
         tempC: parseDisplayTempToC(preferredTempUnit, tempInput),
         humidityPct: humidityPct.trim() || null,
@@ -368,12 +410,23 @@ export function NotebookWeekWizard({
         ec: ec.trim() || null,
         ppm: ppm.trim() || null,
         lightCycle: null,
-        waterNotes: waterNotes.trim() || null,
-        waterVolumeLiters:
-          parseDisplayVolumeToLiters(preferredVolumeUnit, waterVolumeInput) ??
-          null,
         imageUrls: urls,
       };
+
+      const shared =
+        mode === "edit"
+          ? { ...sharedBase, waterings: wateringsPayload }
+          : wateringsPayload.length > 0
+            ? { ...sharedBase, waterings: wateringsPayload }
+            : {
+                ...sharedBase,
+                waterNotes: waterLines[0]?.notes.trim() || null,
+                waterVolumeLiters:
+                  parseDisplayVolumeToLiters(
+                    preferredVolumeUnit,
+                    waterLines[0]?.vol ?? "",
+                  ) ?? null,
+              };
 
       if (mode === "edit" && existingWeek) {
         await apiFetch(`/notebooks/${notebookId}/weeks/${existingWeek.id}`, {
@@ -533,38 +586,76 @@ export function NotebookWeekWizard({
 
         {step === 3 ? (
           <div className="space-y-5">
-            <div>
-              <label className={labelClass} htmlFor="nw-water">
-                Watering & feed notes
-              </label>
-              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                Volume, frequency, runoff, or feed schedule for this week.
-              </p>
-              <textarea
-                id="nw-water"
-                rows={4}
-                value={waterNotes}
-                onChange={(e) => setWaterNotes(e.target.value)}
-                className={`${textareaClass} mt-2`}
-              />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className={labelClass}>Watering & feed</span>
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  Add one or more entries (volume, timing, runoff, feed batch,
+                  etc.).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addWaterLine}
+                className="text-xs font-medium text-emerald-500 hover:underline"
+              >
+                Add watering
+              </button>
             </div>
-            <div>
-              <label className={labelClass} htmlFor="nw-water-vol">
-                Total water / feed volume this week ({volumeSuffix(preferredVolumeUnit)})
-              </label>
-              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                Optional structured volume; notes above can still describe
-                timing and runoff.
-              </p>
-              <input
-                id="nw-water-vol"
-                className={`${inputClass} mt-2`}
-                value={waterVolumeInput}
-                onChange={(e) => setWaterVolumeInput(e.target.value)}
-                inputMode="decimal"
-                placeholder="e.g. 2.5"
-              />
-            </div>
+            <ul className="space-y-4">
+              {waterLines.map((line, i) => (
+                <li
+                  key={i}
+                  className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-4"
+                >
+                  <label className={labelClass} htmlFor={`nw-water-${i}`}>
+                    Notes
+                  </label>
+                  <textarea
+                    id={`nw-water-${i}`}
+                    rows={3}
+                    value={line.notes}
+                    onChange={(e) =>
+                      setWaterLines((prev) =>
+                        prev.map((l, j) =>
+                          j === i ? { ...l, notes: e.target.value } : l,
+                        ),
+                      )
+                    }
+                    className={`${textareaClass} mt-2`}
+                  />
+                  <label
+                    className={`${labelClass} mt-3 block`}
+                    htmlFor={`nw-water-vol-${i}`}
+                  >
+                    Volume ({volumeSuffix(preferredVolumeUnit)})
+                  </label>
+                  <input
+                    id={`nw-water-vol-${i}`}
+                    className={`${inputClass} mt-2`}
+                    value={line.vol}
+                    onChange={(e) =>
+                      setWaterLines((prev) =>
+                        prev.map((l, j) =>
+                          j === i ? { ...l, vol: e.target.value } : l,
+                        ),
+                      )
+                    }
+                    inputMode="decimal"
+                    placeholder="e.g. 2.5"
+                  />
+                  {waterLines.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeWaterLine(i)}
+                      className="mt-2 text-xs text-[var(--gn-text-muted)] hover:text-red-400"
+                    >
+                      Remove entry
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
             {mode === "create" ? (
               <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--gn-text)]">
                 <input
@@ -597,7 +688,7 @@ export function NotebookWeekWizard({
                   {nutrientLines.map((line, i) => (
                     <li
                       key={i}
-                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3"
+                      className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-4"
                     >
                       <div className="grid gap-2 sm:grid-cols-3">
                         <div className="sm:col-span-2">
@@ -793,16 +884,21 @@ export function NotebookWeekWizard({
               <span className="font-medium text-[var(--gn-text)]">
                 Water / feed:
               </span>{" "}
-              {[
-                waterVolumeInput.trim() &&
-                  `vol ${waterVolumeInput.trim()} ${volumeSuffix(preferredVolumeUnit)}`,
-                waterNotes.trim()
-                  ? waterNotes.trim().slice(0, 100) +
-                    (waterNotes.trim().length > 100 ? "…" : "")
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" · ") || "—"}
+              {(() => {
+                const parts = waterLines
+                  .map((l) => {
+                    const v = l.vol.trim();
+                    const n = l.notes.trim();
+                    const volBit =
+                      v &&
+                      `vol ${v} ${volumeSuffix(preferredVolumeUnit)}`;
+                    const noteBit =
+                      n.length > 80 ? `${n.slice(0, 80)}…` : n;
+                    return [volBit, noteBit].filter(Boolean).join(" — ");
+                  })
+                  .filter(Boolean);
+                return parts.length ? parts.join(" · ") : "—";
+              })()}
             </li>
             <li>
               <span className="font-medium text-[var(--gn-text)]">Photos:</span>{" "}

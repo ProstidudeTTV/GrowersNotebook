@@ -7,6 +7,7 @@ import {
   integer,
   jsonb,
   numeric,
+  smallint,
   pgEnum,
   pgTable,
   primaryKey,
@@ -86,6 +87,8 @@ export const profiles = pgTable('profiles', {
     .default(true),
   role: roleEnum('role').notNull().default('member'),
   bannedAt: timestamp('banned_at', { withTimezone: true }),
+  /** When set with bannedAt, ban lifts after this instant (temporary ban). Null = permanent ban. */
+  banExpiresAt: timestamp('ban_expires_at', { withTimezone: true }),
   suspendedUntil: timestamp('suspended_until', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
@@ -353,6 +356,37 @@ export const userBlocks = pgTable(
     primaryKey({ columns: [t.blockerId, t.blockedId] }),
     index('user_blocks_blocked_idx').on(t.blockedId),
     check('user_blocks_no_self', sql`blocker_id <> blocked_id`),
+  ],
+);
+
+export const auditEvents = pgTable(
+  'audit_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    actorProfileId: uuid('actor_profile_id').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    actorRole: text('actor_role'),
+    action: text('action').notNull(),
+    entityType: text('entity_type'),
+    entityId: text('entity_id'),
+    subjectProfileId: uuid('subject_profile_id').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    metadata: jsonb('metadata')
+      .notNull()
+      .$type<Record<string, unknown>>()
+      .default(sql`'{}'::jsonb`),
+    ip: text('ip'),
+  },
+  (t) => [
+    index('audit_events_created_idx').on(t.createdAt),
+    index('audit_events_actor_idx').on(t.actorProfileId),
+    index('audit_events_subject_idx').on(t.subjectProfileId),
+    index('audit_events_action_idx').on(t.action),
   ],
 );
 
@@ -858,6 +892,20 @@ export const notebookWeekNutrients = pgTable(
   ],
 );
 
+export const notebookWeekWaterings = pgTable(
+  'notebook_week_waterings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    weekId: uuid('week_id')
+      .notNull()
+      .references(() => notebookWeeks.id, { onDelete: 'cascade' }),
+    notes: text('notes'),
+    volumeLiters: numeric('volume_liters', { precision: 12, scale: 3 }),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [index('notebook_week_waterings_week_idx').on(t.weekId)],
+);
+
 export const notebookVotes = pgTable(
   'notebook_votes',
   {
@@ -902,3 +950,20 @@ export const notebookComments = pgTable(
     index('notebook_comments_parent_idx').on(t.parentId),
   ],
 );
+
+/** Single-row table (id must be 1); see migration CHECK. */
+export const siteConfig = pgTable('site_config', {
+  id: smallint('id').primaryKey().default(1),
+  motdText: text('motd_text'),
+  announcementTitle: text('announcement_title'),
+  announcementBody: text('announcement_body'),
+  announcementStyle: varchar('announcement_style', { length: 16 })
+    .notNull()
+    .default('info'),
+  announcementStartsAt: timestamp('announcement_starts_at', { withTimezone: true }),
+  announcementEndsAt: timestamp('announcement_ends_at', { withTimezone: true }),
+  announcementEnabled: boolean('announcement_enabled').notNull().default(false),
+  maintenanceEnabled: boolean('maintenance_enabled').notNull().default(false),
+  maintenanceMessage: text('maintenance_message'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

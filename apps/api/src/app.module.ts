@@ -15,6 +15,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { DirectMessagesModule } from './direct-messages/direct-messages.module';
 import { NotebooksModule } from './notebooks/notebooks.module';
+import { AuditModule } from './audit/audit.module';
+import { SiteModule } from './site/site.module';
 import { VotesModule } from './votes/votes.module';
 import { getApiPackageRoot } from './paths';
 
@@ -46,6 +48,8 @@ const repoRoot = join(apiRoot, '..', '..');
     CatalogModule,
     DirectMessagesModule,
     NotebooksModule,
+    SiteModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

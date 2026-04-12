@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
+import { formatNotifDate } from "@/lib/format-notif-date";
 import { createClient } from "@/lib/supabase/client";
 import { setNotificationsUnreadCount } from "@/lib/notifications-unread-store";
 
@@ -96,6 +97,62 @@ export function NotificationsPanel() {
     }
   };
 
+  const dismissOne = async (nId: string) => {
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      await apiFetch(`/notifications/me/${nId}`, {
+        method: "DELETE",
+        token: session.access_token,
+      });
+      setItems((prev) => {
+        const next = prev.filter((n) => n.id !== nId);
+        setNotificationsUnreadCount(next.filter((x) => !x.readAt).length);
+        return next;
+      });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const clearAll = async () => {
+    if (
+      !window.confirm(
+        "Delete all notifications? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    let supabase: ReturnType<typeof createClient>;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    try {
+      await apiFetch("/notifications/me", {
+        method: "DELETE",
+        token: session.access_token,
+      });
+      setItems([]);
+      setNotificationsUnreadCount(0);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const markAllRead = async () => {
     let supabase: ReturnType<typeof createClient>;
     try {
@@ -153,15 +210,26 @@ export function NotificationsPanel() {
             ? `${unread} unread`
             : "You’re all caught up."}
         </p>
-        {unread > 0 ? (
-          <button
-            type="button"
-            className="text-sm font-semibold text-[#ff4500] hover:underline"
-            onClick={() => void markAllRead()}
-          >
-            Mark all read
-          </button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {items.length > 0 ? (
+            <button
+              type="button"
+              className="text-sm font-semibold text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline"
+              onClick={() => void clearAll()}
+            >
+              Clear all
+            </button>
+          ) : null}
+          {unread > 0 ? (
+            <button
+              type="button"
+              className="text-sm font-semibold text-[#ff4500] hover:underline"
+              onClick={() => void markAllRead()}
+            >
+              Mark all read
+            </button>
+          ) : null}
+        </div>
       </div>
       {items.length === 0 ? (
         <p className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
@@ -170,10 +238,10 @@ export function NotificationsPanel() {
       ) : (
         <ul className="divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface)]">
           {items.map((n) => (
-            <li key={n.id}>
+            <li key={n.id} className="flex">
               <button
                 type="button"
-                className={`flex w-full flex-col gap-1 px-4 py-3 text-left transition hover:bg-[var(--gn-surface-hover)] ${
+                className={`flex min-w-0 flex-1 flex-col gap-1 px-4 py-3 text-left transition hover:bg-[var(--gn-surface-hover)] ${
                   !n.readAt
                     ? "bg-[color-mix(in_srgb,var(--gn-accent)_6%,transparent)]"
                     : ""
@@ -199,6 +267,14 @@ export function NotificationsPanel() {
                   {formatNotifDate(n.createdAt)}
                 </span>
               </button>
+              <button
+                type="button"
+                className="shrink-0 self-stretch border-l border-[var(--gn-divide)] px-3 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                aria-label={`Dismiss notification: ${n.title}`}
+                onClick={() => void dismissOne(n.id)}
+              >
+                Dismiss
+              </button>
             </li>
           ))}
         </ul>
@@ -212,18 +288,4 @@ export function NotificationsPanel() {
     />
     </>
   );
-}
-
-function formatNotifDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
 }

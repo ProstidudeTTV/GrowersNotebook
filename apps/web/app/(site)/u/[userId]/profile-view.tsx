@@ -309,25 +309,6 @@ export function ProfileView({
                     }
                   />
                 ) : null}
-                {viewerId && profile.viewerHasBlocked !== true ? (
-                  <button
-                    type="button"
-                    disabled={blockBusy}
-                    onClick={() => void toggleBlock()}
-                    className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                  >
-                    {blockBusy ? "…" : "Block"}
-                  </button>
-                ) : viewerId && profile.viewerHasBlocked ? (
-                  <button
-                    type="button"
-                    disabled={blockBusy}
-                    onClick={() => void toggleBlock()}
-                    className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                  >
-                    {blockBusy ? "…" : "Unblock"}
-                  </button>
-                ) : null}
                 {viewerId &&
                 profile.viewerFollowing &&
                 profile.viewerHasBlocked !== true ? (

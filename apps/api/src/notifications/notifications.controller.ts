@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -59,6 +60,22 @@ export class NotificationsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const row = await this.notifications.markRead(user.sub, id);
+    if (!row) throw new NotFoundException();
+    return row;
+  }
+
+  @Delete('me')
+  async deleteAll(@CurrentUser() user: JwtUser) {
+    await this.notifications.deleteAllForUser(user.sub);
+    return { ok: true as const };
+  }
+
+  @Delete('me/:id')
+  async deleteOne(
+    @CurrentUser() user: JwtUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const row = await this.notifications.deleteOne(user.sub, id);
     if (!row) throw new NotFoundException();
     return row;
   }

@@ -76,4 +76,36 @@ export class NotificationsService {
         ),
       );
   }
+
+  async deleteOne(userId: string, id: string) {
+    const db = getDb();
+    const [row] = await db
+      .select({ id: userNotifications.id })
+      .from(userNotifications)
+      .where(
+        and(
+          eq(userNotifications.id, id),
+          eq(userNotifications.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (!row) return null;
+    await db
+      .delete(userNotifications)
+      .where(
+        and(
+          eq(userNotifications.id, id),
+          eq(userNotifications.userId, userId),
+        ),
+      );
+    return { ok: true as const };
+  }
+
+  async deleteAllForUser(userId: string) {
+    const db = getDb();
+    await db
+      .delete(userNotifications)
+      .where(eq(userNotifications.userId, userId));
+    return { ok: true as const };
+  }
 }

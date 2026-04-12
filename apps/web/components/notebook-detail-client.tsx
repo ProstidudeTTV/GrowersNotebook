@@ -62,6 +62,12 @@ type Week = {
   ppm?: string | null;
   waterNotes?: string | null;
   waterVolumeLiters?: string | null;
+  waterings?: {
+    id: string | null;
+    notes: string | null;
+    volumeLiters: string | null;
+    sortOrder: number;
+  }[];
   lightCycle: string | null;
   imageUrls: string[];
   nutrients: WeekNut[];
@@ -862,47 +868,74 @@ export function NotebookDetailClient({
                 envItems.push({ key: "PPM", value: w.ppm });
               }
 
-              const feedLineItems: { key: string; value: ReactNode }[] = [];
-              if (
-                w.waterVolumeLiters != null &&
-                String(w.waterVolumeLiters).trim() !== ""
-              ) {
-                feedLineItems.push({
-                  key: "Volume",
-                  value: (
-                    <>
-                      {litersToDisplayVolume(
-                        preferredVolumeUnit,
-                        w.waterVolumeLiters,
-                      )}{" "}
-                      {volumeSuffix(preferredVolumeUnit)}
-                    </>
-                  ),
-                });
-              }
-
               const feedItems: {
                 label: string;
                 value: ReactNode;
                 wide?: boolean;
               }[] = [];
-              if (feedLineItems.length > 0) {
+              const waterRows =
+                w.waterings && w.waterings.length > 0
+                  ? w.waterings
+                  : w.waterVolumeLiters != null &&
+                      String(w.waterVolumeLiters).trim() !== ""
+                    ? [
+                        {
+                          notes: w.waterNotes ?? null,
+                          volumeLiters: w.waterVolumeLiters,
+                          sortOrder: 0,
+                        },
+                      ]
+                    : w.waterNotes != null && w.waterNotes !== ""
+                      ? [
+                          {
+                            notes: w.waterNotes,
+                            volumeLiters: null,
+                            sortOrder: 0,
+                          },
+                        ]
+                      : [];
+              waterRows.forEach((row, idx) => {
+                const label =
+                  waterRows.length > 1
+                    ? `Watering ${idx + 1}`
+                    : "Water / feed";
+                const bits: ReactNode[] = [];
+                if (
+                  row.volumeLiters != null &&
+                  String(row.volumeLiters).trim() !== ""
+                ) {
+                  bits.push(
+                    <span key="v">
+                      {litersToDisplayVolume(
+                        preferredVolumeUnit,
+                        row.volumeLiters,
+                      )}{" "}
+                      {volumeSuffix(preferredVolumeUnit)}
+                    </span>,
+                  );
+                }
+                if (row.notes != null && row.notes.trim() !== "") {
+                  bits.push(
+                    <span
+                      key="n"
+                      className="block whitespace-pre-wrap font-normal"
+                    >
+                      {row.notes}
+                    </span>,
+                  );
+                }
+                if (bits.length === 0) return;
                 feedItems.push({
-                  label: "Water / feed volume",
-                  value: feedLineItems[0].value,
-                });
-              }
-              if (w.waterNotes != null && w.waterNotes !== "") {
-                feedItems.push({
-                  label: "Water / feed notes",
-                  value: (
-                    <span className="whitespace-pre-wrap font-normal">
-                      {w.waterNotes}
-                    </span>
-                  ),
+                  label,
+                  value:
+                    bits.length === 1 ? (
+                      bits[0]
+                    ) : (
+                      <div className="space-y-1">{bits}</div>
+                    ),
                   wide: true,
                 });
-              }
+              });
 
               const showEnv = envItems.length > 0;
               const showFeed = feedItems.length > 0;

@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { WeekNutrientLineDto } from './week-nutrient-line.dto';
 import { WeekNoteSpotDto } from './week-note-spot.dto';
+import { WeekWateringLineDto } from './week-watering-line.dto';
 
 export class CreateNotebookWeekDto {
   @Type(() => Number)
@@ -86,6 +87,14 @@ export class CreateNotebookWeekDto {
   @ValidateNested({ each: true })
   @Type(() => WeekNutrientLineDto)
   nutrients?: WeekNutrientLineDto[];
+
+  /** Multiple watering / feed entries for the week (preferred over single waterNotes / volume). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(24)
+  @ValidateNested({ each: true })
+  @Type(() => WeekWateringLineDto)
+  waterings?: WeekWateringLineDto[];
 }
 
 export class UpdateNotebookWeekDto {
@@ -151,4 +160,11 @@ export class UpdateNotebookWeekDto {
   @ValidateNested({ each: true })
   @Type(() => WeekNutrientLineDto)
   nutrients?: WeekNutrientLineDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(24)
+  @ValidateNested({ each: true })
+  @Type(() => WeekWateringLineDto)
+  waterings?: WeekWateringLineDto[];
 }

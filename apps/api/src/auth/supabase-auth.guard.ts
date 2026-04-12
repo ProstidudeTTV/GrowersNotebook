@@ -43,8 +43,19 @@ export class SupabaseAuthGuard implements CanActivate {
       payload.email ?? null,
       preferredProfileDisplayName(payload),
     );
-    const row = await this.profiles.findById(payload.sub);
-    if (row?.bannedAt) {
+    let row = await this.profiles.findById(payload.sub);
+    if (
+      row?.bannedAt &&
+      row.banExpiresAt &&
+      row.banExpiresAt.getTime() <= Date.now()
+    ) {
+      await this.profiles.clearExpiredBan(payload.sub);
+      row = await this.profiles.findById(payload.sub);
+    }
+    if (
+      row?.bannedAt &&
+      (!row.banExpiresAt || row.banExpiresAt.getTime() > Date.now())
+    ) {
       throw new ForbiddenException('This account has been banned.');
     }
     if (row?.suspendedUntil && row.suspendedUntil.getTime() > Date.now()) {

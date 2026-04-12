@@ -23,11 +23,11 @@ function isHttpsImageUrl(s: string): boolean {
 }
 
 const fieldShell =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
 
-const inputClass = `${fieldShell} py-1.5 min-h-[2.25rem]`;
+const inputClass = `${fieldShell} py-2.5 min-h-[2.75rem]`;
 
-const textareaClass = `${fieldShell} py-2`;
+const textareaClass = `${fieldShell} py-3`;
 
 export function NotebookHarvestWizard({
   open,

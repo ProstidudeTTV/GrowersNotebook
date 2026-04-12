@@ -8,6 +8,7 @@ import {
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
 import { SiteHeader } from "@/components/site-header";
+import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
 
 function MenuIcon({ className }: { className?: string }) {
   return (
@@ -33,12 +34,16 @@ export function SiteChrome({
   initialFollowedCommunities,
   initialHotWeekPost,
   authed,
+  motdText,
+  announcement,
 }: {
   children: React.ReactNode;
   modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
   initialHotWeekPost: SidebarHotPost | null;
   authed: boolean;
+  motdText: string | null;
+  announcement: PublicSiteConfigPayload["announcement"];
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [followed, setFollowed] = useState<SidebarCommunity[]>(
@@ -49,9 +54,19 @@ export function SiteChrome({
     setFollowed(initialFollowedCommunities);
   }, [initialFollowedCommunities]);
 
+  const annStyle =
+    announcement?.style === "warning"
+      ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+      : "border-sky-500/35 bg-sky-500/10 text-sky-100";
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppVersionRefresh />
+      {motdText?.trim() ? (
+        <p className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-center text-xs text-[var(--gn-text-muted)]">
+          {motdText.trim()}
+        </p>
+      ) : null}
       <SiteHeader
         leading={
           <button
@@ -64,6 +79,22 @@ export function SiteChrome({
           </button>
         }
       />
+
+      {announcement ? (
+        <div
+          role="status"
+          className={`border-b px-4 py-3 text-sm ${annStyle}`}
+        >
+          {announcement.title?.trim() ? (
+            <p className="font-semibold">{announcement.title.trim()}</p>
+          ) : null}
+          {announcement.body?.trim() ? (
+            <p className="mt-1 whitespace-pre-wrap opacity-95">
+              {announcement.body.trim()}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="relative flex min-h-0 flex-1">
         {mobileOpen ? (

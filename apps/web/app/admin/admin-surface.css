@@ -6,6 +6,19 @@
   margin-right: auto;
 }
 
+/* Softer page backdrop aligned with main site neutrals */
+html.dark .admin-refine-surface {
+  min-height: calc(100vh - 4rem);
+}
+
+html:not(.dark) .admin-refine-surface {
+  background: linear-gradient(
+    180deg,
+    rgba(244, 246, 251, 0.5) 0%,
+    transparent 40%
+  );
+}
+
 .admin-table-row-clickable {
   cursor: pointer;
 }

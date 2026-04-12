@@ -5,6 +5,7 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
@@ -62,4 +63,29 @@ export class PatchSiteConfigDto {
   @IsString()
   @MaxLength(2000)
   maintenanceMessage?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @IsString()
+  @MaxLength(200)
+  seoDefaultTitle?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @IsString()
+  @MaxLength(500)
+  seoDefaultDescription?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @IsString()
+  @MaxLength(2000)
+  seoKeywords?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_protocol: true, protocols: ['https'] })
+  @MaxLength(2000)
+  ogImageUrl?: string | null;
 }

@@ -5,7 +5,11 @@ import { AuthHashRecoveryHandler } from "@/components/auth-hash-recovery-handler
 import { RecoverySessionRedirect } from "@/components/recovery-session-redirect";
 import { PlausibleAnalytics } from "@/components/plausible-analytics";
 import { SeoJsonLd } from "@/components/seo-json-ld";
-import { defaultSiteMetadata } from "@/lib/site-config";
+import { getPublicSiteConfigCached } from "@/lib/public-site-config-server";
+import {
+  defaultSiteMetadata,
+  mergeMetadataWithPublicConfig,
+} from "@/lib/site-config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,7 +22,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = defaultSiteMetadata();
+export async function generateMetadata(): Promise<Metadata> {
+  const cfg = await getPublicSiteConfigCached();
+  return mergeMetadataWithPublicConfig(defaultSiteMetadata(), cfg);
+}
 
 const themeInitScript = `
 (function(){

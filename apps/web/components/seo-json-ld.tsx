@@ -1,8 +1,12 @@
+import { getPublicSiteConfigCached } from "@/lib/public-site-config-server";
 import { SITE_NAME, SITE_TAGLINE, getSiteUrl } from "@/lib/site-config";
 
 /** Organization + WebSite structured data for rich results. */
-export function SeoJsonLd() {
+export async function SeoJsonLd() {
   const url = getSiteUrl();
+  const cfg = await getPublicSiteConfigCached();
+  const description =
+    cfg.seoDefaultDescription?.trim() || SITE_TAGLINE;
   const data = {
     "@context": "https://schema.org",
     "@graph": [
@@ -11,14 +15,14 @@ export function SeoJsonLd() {
         "@id": `${url}/#organization`,
         name: SITE_NAME,
         url,
-        description: SITE_TAGLINE,
+        description,
       },
       {
         "@type": "WebSite",
         "@id": `${url}/#website`,
         name: SITE_NAME,
         url,
-        description: SITE_TAGLINE,
+        description,
         publisher: { "@id": `${url}/#organization` },
         inLanguage: "en-US",
       },

@@ -204,6 +204,13 @@
       "when": 1777700000000,
       "tag": "0028_report_moderation_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1777800000000,
+      "tag": "0029_site_config_seo",
+      "breakpoints": true
     }
   ]
 }

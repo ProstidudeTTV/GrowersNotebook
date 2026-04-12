@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
 
 export const SITE_NAME = "Growers Notebook";
 
@@ -87,6 +88,63 @@ export function defaultSiteMetadata(): Metadata {
           google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
         }
       : undefined,
+  };
+}
+
+/** Apply admin-managed SEO fields from `site/public-config` over code defaults. */
+export function mergeMetadataWithPublicConfig(
+  base: Metadata,
+  cfg: PublicSiteConfigPayload,
+): Metadata {
+  const fallbackTitle =
+    typeof base.title === "object" && base.title !== null && "default" in base.title
+      ? String((base.title as { default: string }).default)
+      : `${SITE_NAME} — Cannabis home grower community`;
+  const fallbackTemplate =
+    typeof base.title === "object" && base.title !== null && "template" in base.title
+      ? String((base.title as { template: string }).template)
+      : `%s · ${SITE_NAME}`;
+  const titleDefault = cfg.seoDefaultTitle?.trim() || fallbackTitle;
+  const description =
+    cfg.seoDefaultDescription?.trim() ||
+    (typeof base.description === "string" ? base.description : SITE_TAGLINE);
+  const kwParsed = cfg.seoKeywords
+    ?.split(/[,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const keywords =
+    kwParsed && kwParsed.length > 0 ? kwParsed : base.keywords;
+  const ogUrl = cfg.ogImageUrl?.trim();
+  const hasOg = Boolean(ogUrl?.startsWith("https://"));
+
+  return {
+    ...base,
+    title: { default: titleDefault, template: fallbackTemplate },
+    description,
+    ...(keywords ? { keywords } : {}),
+    openGraph: {
+      ...base.openGraph,
+      title: titleDefault,
+      description,
+      ...(hasOg && ogUrl
+        ? {
+            images: [
+              {
+                url: ogUrl,
+                width: 1200,
+                height: 630,
+                alt: titleDefault,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      ...base.twitter,
+      title: titleDefault,
+      description,
+      ...(hasOg && ogUrl ? { images: [ogUrl] } : {}),
+    },
   };
 }
 

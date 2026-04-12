@@ -965,5 +965,9 @@ export const siteConfig = pgTable('site_config', {
   announcementEnabled: boolean('announcement_enabled').notNull().default(false),
   maintenanceEnabled: boolean('maintenance_enabled').notNull().default(false),
   maintenanceMessage: text('maintenance_message'),
+  seoDefaultTitle: varchar('seo_default_title', { length: 200 }),
+  seoDefaultDescription: varchar('seo_default_description', { length: 500 }),
+  seoKeywords: text('seo_keywords'),
+  ogImageUrl: text('og_image_url'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

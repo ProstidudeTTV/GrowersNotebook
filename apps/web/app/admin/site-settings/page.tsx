@@ -23,6 +23,10 @@ type StaffSiteConfig = {
   announcementEnabled: boolean;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  seoDefaultTitle: string | null;
+  seoDefaultDescription: string | null;
+  seoKeywords: string | null;
+  ogImageUrl: string | null;
   updatedAt: string;
 };
 
@@ -82,6 +86,10 @@ export default function AdminSiteSettingsPage() {
         announcementEnabled: row.announcementEnabled,
         maintenanceEnabled: row.maintenanceEnabled,
         maintenanceMessage: row.maintenanceMessage ?? "",
+        seoDefaultTitle: row.seoDefaultTitle ?? "",
+        seoDefaultDescription: row.seoDefaultDescription ?? "",
+        seoKeywords: row.seoKeywords ?? "",
+        ogImageUrl: row.ogImageUrl ?? "",
       });
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Failed to load settings.");
@@ -127,6 +135,12 @@ export default function AdminSiteSettingsPage() {
           maintenanceEnabled: Boolean(values.maintenanceEnabled),
           maintenanceMessage:
             String(values.maintenanceMessage ?? "").trim() || null,
+          seoDefaultTitle:
+            String(values.seoDefaultTitle ?? "").trim() || null,
+          seoDefaultDescription:
+            String(values.seoDefaultDescription ?? "").trim() || null,
+          seoKeywords: String(values.seoKeywords ?? "").trim() || null,
+          ogImageUrl: String(values.ogImageUrl ?? "").trim() || null,
         }),
       });
       await load();
@@ -161,7 +175,8 @@ export default function AdminSiteSettingsPage() {
       <p className="mt-1 text-[var(--gn-text-muted)]">
         MOTD and announcements appear on the public site. Maintenance hides the
         site for everyone except moderators and admins (login and auth pages
-        stay available).
+        stay available). SEO defaults apply to the public site when set; leave
+        blank to use built-in copy. Only admins can change these settings.
       </p>
 
       <Form
@@ -213,6 +228,54 @@ export default function AdminSiteSettingsPage() {
         </Form.Item>
         <Form.Item name="maintenanceMessage" label="Message">
           <Input.TextArea rows={3} maxLength={2000} />
+        </Form.Item>
+
+        <Typography.Title level={5} className="!mt-8">
+          SEO & social preview
+        </Typography.Title>
+        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
+          Default title and description for the home page and fallbacks. Keywords:
+          comma-separated. Open Graph image must be an{" "}
+          <code className="text-xs">https://</code> URL (e.g. 1200×630).
+        </p>
+        <Form.Item
+          name="seoDefaultTitle"
+          label="Default meta title"
+          rules={[{ max: 200, message: "Max 200 characters" }]}
+        >
+          <Input placeholder="Leave blank for built-in title" maxLength={200} />
+        </Form.Item>
+        <Form.Item
+          name="seoDefaultDescription"
+          label="Default meta description"
+          rules={[{ max: 500, message: "Max 500 characters" }]}
+        >
+          <Input.TextArea
+            rows={3}
+            placeholder="Leave blank for built-in description"
+            maxLength={500}
+          />
+        </Form.Item>
+        <Form.Item
+          name="seoKeywords"
+          label="Keywords (optional)"
+          rules={[{ max: 2000, message: "Max 2000 characters" }]}
+        >
+          <Input
+            placeholder="e.g. home grow, cannabis community, grow journal"
+            maxLength={2000}
+          />
+        </Form.Item>
+        <Form.Item
+          name="ogImageUrl"
+          label="Open Graph / Twitter image URL"
+          rules={[{ max: 2000, message: "Max 2000 characters" }]}
+          extra="HTTPS only. Invalid URLs are rejected when saving."
+        >
+          <Input
+            placeholder="https://…"
+            maxLength={2000}
+          />
         </Form.Item>
 
         <Form.Item className="!mt-8">

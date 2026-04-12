@@ -7,6 +7,10 @@ export type PublicSiteConfigPayload = {
   } | null;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  seoDefaultTitle: string | null;
+  seoDefaultDescription: string | null;
+  seoKeywords: string | null;
+  ogImageUrl: string | null;
 };
 
 export const emptyPublicSiteConfig: PublicSiteConfigPayload = {
@@ -14,4 +18,8 @@ export const emptyPublicSiteConfig: PublicSiteConfigPayload = {
   announcement: null,
   maintenanceEnabled: false,
   maintenanceMessage: null,
+  seoDefaultTitle: null,
+  seoDefaultDescription: null,
+  seoKeywords: null,
+  ogImageUrl: null,
 };

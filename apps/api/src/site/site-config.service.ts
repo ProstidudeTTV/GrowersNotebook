@@ -13,6 +13,11 @@ export type PublicSiteConfigPayload = {
   } | null;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  /** Empty in DB = use built-in defaults in Next.js. */
+  seoDefaultTitle: string | null;
+  seoDefaultDescription: string | null;
+  seoKeywords: string | null;
+  ogImageUrl: string | null;
 };
 
 @Injectable()
@@ -31,6 +36,10 @@ export class SiteConfigService {
         announcement: null,
         maintenanceEnabled: false,
         maintenanceMessage: null,
+        seoDefaultTitle: null,
+        seoDefaultDescription: null,
+        seoKeywords: null,
+        ogImageUrl: null,
       };
     }
     const now = new Date();
@@ -55,6 +64,10 @@ export class SiteConfigService {
       announcement,
       maintenanceEnabled: row.maintenanceEnabled,
       maintenanceMessage: row.maintenanceMessage?.trim() || null,
+      seoDefaultTitle: row.seoDefaultTitle?.trim() || null,
+      seoDefaultDescription: row.seoDefaultDescription?.trim() || null,
+      seoKeywords: row.seoKeywords?.trim() || null,
+      ogImageUrl: row.ogImageUrl?.trim() || null,
     };
   }
 
@@ -71,6 +84,10 @@ export class SiteConfigService {
       announcementEnabled: row.announcementEnabled,
       maintenanceEnabled: row.maintenanceEnabled,
       maintenanceMessage: row.maintenanceMessage,
+      seoDefaultTitle: row.seoDefaultTitle ?? null,
+      seoDefaultDescription: row.seoDefaultDescription ?? null,
+      seoKeywords: row.seoKeywords ?? null,
+      ogImageUrl: row.ogImageUrl ?? null,
       updatedAt: row.updatedAt.toISOString(),
     };
   }
@@ -109,6 +126,12 @@ export class SiteConfigService {
       patch.maintenanceEnabled = body.maintenanceEnabled;
     if (body.maintenanceMessage !== undefined)
       patch.maintenanceMessage = body.maintenanceMessage;
+    if (body.seoDefaultTitle !== undefined)
+      patch.seoDefaultTitle = body.seoDefaultTitle;
+    if (body.seoDefaultDescription !== undefined)
+      patch.seoDefaultDescription = body.seoDefaultDescription;
+    if (body.seoKeywords !== undefined) patch.seoKeywords = body.seoKeywords;
+    if (body.ogImageUrl !== undefined) patch.ogImageUrl = body.ogImageUrl;
 
     await db.update(siteConfig).set(patch).where(eq(siteConfig.id, 1));
     return this.getStaffPayload();

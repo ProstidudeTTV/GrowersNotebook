@@ -153,8 +153,8 @@ export function NotebookHarvestWizard({
       onClose={() => (!saving ? onClose() : undefined)}
       maxWidthClassName="max-w-[min(40rem,calc(100vw-1.5rem))]"
     >
-      <div className="px-5 py-3 sm:px-6 sm:py-4">
-        <div className="mb-3">
+      <div className="px-5 py-5 sm:px-6 sm:py-6">
+        <div className="mb-5">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -165,14 +165,14 @@ export function NotebookHarvestWizard({
               />
             ))}
           </div>
-          <p className="mt-3 text-xs font-medium text-[var(--gn-text-muted)]">
+          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
             Step {step} of {STEPS}: {stepTitle}
           </p>
         </div>
 
         {step === 1 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-[var(--gn-text-muted)]">
+          <div className="space-y-5">
+            <p className="text-sm leading-relaxed text-[var(--gn-text-muted)]">
               Log dry weight, quality, and plant count for readers and g/W
               stats. You can update this anytime while the notebook is in harvest.
             </p>

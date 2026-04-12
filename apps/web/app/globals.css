@@ -8,6 +8,7 @@
 
 /* ----- Light ----- */
 html:not(.dark) {
+  color-scheme: light;
   --gn-accent: #c2410c;
   --gn-page-top: #f4f6fb;
   --gn-page-mid: #eef1f8;
@@ -81,6 +82,7 @@ html:not(.dark) body {
 
 /* ----- Dark (default) ----- */
 html.dark {
+  color-scheme: dark;
   --gn-accent: #ff6b35;
   /* Lifted from near-black so the page reads as a gradient, not #000 voids */
   --gn-page-top: #1a1e2a;
@@ -243,6 +245,46 @@ html.dark body {
 
   html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar-thumb:hover {
     background: rgba(92, 101, 120, 0.52);
+  }
+
+  /**
+   * Ant Design Select (and similar) render dropdowns in a portal; match themed
+   * scrollbars for long option lists.
+   */
+  html.dark .ant-select-dropdown .rc-virtual-list-holder,
+  html.dark .ant-select-dropdown .rc-virtual-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(154, 163, 181, 0.45) rgba(22, 24, 32, 0.65);
+  }
+
+  html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar,
+  html.dark .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar-track,
+  html.dark .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgba(19, 21, 27, 0.72);
+  }
+
+  html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb,
+  html.dark .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(154, 163, 181, 0.4);
+  }
+
+  html:not(.dark) .ant-select-dropdown .rc-virtual-list-holder,
+  html:not(.dark) .ant-select-dropdown .rc-virtual-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(92, 101, 120, 0.42) rgba(240, 242, 247, 0.85);
+  }
+
+  html:not(.dark) .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb,
+  html:not(.dark) .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(92, 101, 120, 0.38);
   }
 
   /** One soft shell: lists, modals, grouped content */

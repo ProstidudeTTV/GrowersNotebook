@@ -76,8 +76,8 @@ export function NotebookCenteredModal({
         },
     components: {
       Form: {
-        itemMarginBottom: 22,
-        verticalLabelPadding: "0 0 8px",
+        itemMarginBottom: 26,
+        verticalLabelPadding: "0 0 10px",
       },
       Input: {
         controlHeight: 32,
@@ -123,13 +123,16 @@ export function NotebookCenteredModal({
           }
         >
           {title ? (
-            <div className="border-b border-[var(--gn-divide)] px-5 py-3 sm:px-6">
+            <div className="border-b border-[var(--gn-divide)] px-5 py-4 sm:px-6">
               <h2 className="text-base font-semibold text-[var(--gn-text)] sm:text-[1.05rem]">
                 {title}
               </h2>
             </div>
           ) : null}
-          <div className="gn-scrollbar-themed max-h-[min(calc(92dvh-4.25rem),840px)] overflow-y-auto overscroll-contain">
+          <div
+            className="gn-scrollbar-themed max-h-[min(calc(92dvh-4.25rem),840px)] overflow-y-auto overscroll-contain"
+            style={{ colorScheme: isDark ? "dark" : "light" }}
+          >
             {children}
           </div>
           {footer ? (

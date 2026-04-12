@@ -193,9 +193,9 @@ export function NotebookSetupWizard({
         form={form}
         layout="vertical"
         size="middle"
-        className="px-5 py-3 sm:px-6 sm:py-4"
+        className="px-5 py-5 sm:px-6 sm:py-6"
       >
-        <div className="mb-3">
+        <div className="mb-5">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -206,13 +206,13 @@ export function NotebookSetupWizard({
               />
             ))}
           </div>
-          <p className="mt-3 text-xs font-medium text-[var(--gn-text-muted)]">
+          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
             Step {step} of {STEPS}: {stepTitle}
           </p>
         </div>
 
         {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
-        <div className={step === 1 ? "space-y-3" : "hidden"} aria-hidden={step !== 1}>
+        <div className={step === 1 ? "space-y-5" : "hidden"} aria-hidden={step !== 1}>
             {notebook?.strain?.slug ? (
               <p className="text-sm text-[var(--gn-text-muted)]">
                 This notebook is linked to the catalog strain{" "}
@@ -265,8 +265,8 @@ export function NotebookSetupWizard({
             </Form.Item>
         </div>
 
-        <div className={step === 2 ? "space-y-1" : "hidden"} aria-hidden={step !== 2}>
-            <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+        <div className={step === 2 ? "" : "hidden"} aria-hidden={step !== 2}>
+            <p className="mb-5 text-sm leading-relaxed text-[var(--gn-text-muted)]">
               How you run this notebook helps others compare setups. You can
               change this anytime under Details on your notebook page.
             </p>
@@ -337,7 +337,7 @@ export function NotebookSetupWizard({
         </div>
 
         <div
-          className={step === 4 ? "space-y-3 text-sm" : "hidden"}
+          className={step === 4 ? "space-y-5 text-sm leading-relaxed" : "hidden"}
           aria-hidden={step !== 4}
         >
             <h3 className="font-semibold text-[var(--gn-text)]">

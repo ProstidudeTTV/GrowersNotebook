@@ -412,8 +412,8 @@ export function NotebookWeekWizard({
       title={title}
       onClose={() => (!saving ? onClose() : undefined)}
     >
-      <div className="px-5 py-3 sm:px-6 sm:py-4">
-        <div className="mb-3">
+      <div className="px-5 py-5 sm:px-6 sm:py-6">
+        <div className="mb-5">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
@@ -424,14 +424,14 @@ export function NotebookWeekWizard({
               />
             ))}
           </div>
-          <p className="mt-3 text-xs font-medium text-[var(--gn-text-muted)]">
+          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
             Step {step} of {STEPS}: {stepTitle}
           </p>
         </div>
 
         {step === 1 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-[var(--gn-text-muted)]">
+          <div className="space-y-5">
+            <p className="text-sm leading-relaxed text-[var(--gn-text-muted)]">
               Add up to three dated notes for this week—main log plus mid-week
               updates if something changes.
             </p>
@@ -481,8 +481,8 @@ export function NotebookWeekWizard({
         ) : null}
 
         {step === 2 ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <p className="sm:col-span-2 text-sm text-[var(--gn-text-muted)]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <p className="sm:col-span-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
               Room readings if you track them—all optional.
             </p>
             <div>
@@ -532,7 +532,7 @@ export function NotebookWeekWizard({
         ) : null}
 
         {step === 3 ? (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
               <label className={labelClass} htmlFor="nw-water">
                 Watering & feed notes
@@ -593,7 +593,7 @@ export function NotebookWeekWizard({
                     Add line
                   </button>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   {nutrientLines.map((line, i) => (
                     <li
                       key={i}

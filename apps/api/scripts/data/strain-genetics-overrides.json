@@ -1,0 +1,34 @@
+{
+  "white-widow": {
+    "genetics": "Brazilian sativa x South Indian indica",
+    "source": "Classic Green House attribution; individual seed lines may differ."
+  },
+  "blue-dream": {
+    "genetics": "Blueberry × Haze",
+    "source": "Widely reported; Santa Cruz medical-era selections vary by breeder."
+  },
+  "og-kush": {
+    "genetics": "Chemdawg × Lemon Thai × Hindu Kush (disputed)",
+    "source": "Multiple origin stories; treat as approximate."
+  },
+  "girl-scout-cookies": {
+    "genetics": "OG Kush × Durban Poison × Cherry Kush (forum cut lineage; varies)",
+    "source": "Cookie Fam / Bay Area selections; breeder packs differ."
+  },
+  "sour-diesel": {
+    "genetics": "Chemdawg × Northern Lights × Skunk phenotype (disputed)",
+    "source": "East Coast lore; exact parents debated."
+  },
+  "jack-herer": {
+    "genetics": "Haze hybrid × Northern Lights #5 × Shiva Skunk",
+    "source": "Sensi Seeds–style description; verify per seed bank."
+  },
+  "gelato": {
+    "genetics": "Sunset Sherbet × Thin Mint GSC",
+    "source": "Cookie Fam lineage commonly used for Gelato lines."
+  },
+  "zkittlez": {
+    "genetics": "Grape Ape × Grapefruit (inbred)",
+    "source": "Commonly cited for original Zkittlez; phenotypes vary."
+  }
+}

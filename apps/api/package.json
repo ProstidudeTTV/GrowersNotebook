@@ -23,7 +23,9 @@
     "db:migrate": "node scripts/run-migrate.cjs",
     "db:push": "drizzle-kit push",
     "db:seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
-    "db:import-strains": "ts-node -r tsconfig-paths/register scripts/import-strains-csv.ts"
+    "db:import-strains": "ts-node -r tsconfig-paths/register scripts/import-strains-csv.ts",
+    "db:dedupe-strains": "ts-node -r tsconfig-paths/register scripts/dedupe-strains-by-name.ts",
+    "db:apply-strain-genetics": "ts-node -r tsconfig-paths/register scripts/apply-strain-genetics-overrides.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

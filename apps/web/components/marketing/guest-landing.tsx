@@ -137,12 +137,15 @@ export function GuestLanding({
   loadError,
   apiBase,
   hostedDeploy = false,
+  heroBlurb = SITE_TAGLINE,
 }: {
   communities: GuestLandingCommunity[];
   loadError: string | null;
   apiBase: string;
   /** Show Render/production troubleshooting instead of local npm hints */
   hostedDeploy?: boolean;
+  /** Shown under the hero headline; defaults to code tagline, or pass admin meta description */
+  heroBlurb?: string;
 }) {
   const featured = communities.slice(0, 8);
 
@@ -173,7 +176,7 @@ export function GuestLanding({
               .
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--gn-text-muted)]">
-              {SITE_TAGLINE}
+              {heroBlurb}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link

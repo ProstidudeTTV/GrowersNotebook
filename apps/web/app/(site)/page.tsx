@@ -16,7 +16,10 @@ import {
   mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
 
-/** Home used to export static metadata, which overrode root `generateMetadata` and ignored admin SEO. */
+/**
+ * Home used to export static metadata, which overrode root `generateMetadata` and ignored admin SEO.
+ * Use `title.absolute` so the root layout’s `%s · Site` template is not appended to the home `<title>`.
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const cfg = await getPublicSiteConfigCached();
   const defaults = defaultSiteMetadata();
@@ -37,7 +40,16 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     alternates: { canonical: canonicalPath("/") },
   };
-  return mergeMetadataWithPublicConfig(base, cfg);
+  const merged = mergeMetadataWithPublicConfig(base, cfg);
+  const fromAdmin = cfg.seoDefaultTitle?.trim();
+  const fromMergedDefault =
+    typeof merged.title === "object" &&
+    merged.title !== null &&
+    "default" in merged.title
+      ? String((merged.title as { default: string }).default).trim()
+      : "";
+  const absoluteTitle = (fromAdmin || fromMergedDefault || "Cannabis home grower communities").trim();
+  return { ...merged, title: { absolute: absoluteTitle } };
 }
 
 type Community = {
@@ -91,6 +103,7 @@ function CommunityColumn({ items }: { items: Community[] }) {
 }
 
 export default async function Home() {
+  const publicCfg = await getPublicSiteConfigCached();
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
 
@@ -120,6 +133,9 @@ export default async function Home() {
         loadError={loadError}
         apiBase={apiBase}
         hostedDeploy={hostedProd}
+        heroBlurb={
+          publicCfg.seoDefaultDescription?.trim() || SITE_TAGLINE
+        }
       />
     );
   }

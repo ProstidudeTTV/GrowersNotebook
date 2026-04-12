@@ -253,7 +253,9 @@ export default function AdminSiteSettingsPage() {
           Leave a field empty and save to use the built-in value again (nothing
           stored in the database for that field). Inner pages usually set their
           own title in code; the home page and any page without a custom title
-          use the default below.
+          use the default below. The signed-out home hero subtitle uses the meta
+          description when set. Google search snippets can lag by days—use
+          Search Console → URL Inspection → Request indexing after changes.
         </p>
 
         <Card size="small" className="mb-6 bg-[var(--gn-admin-surface-2,#141414)] border-[var(--gn-border)]">
@@ -370,8 +372,9 @@ export default function AdminSiteSettingsPage() {
           extra={
             <span>
               Short summary shown under the title in search results and in many
-              link previews. Aim for one or two clear sentences. Leave empty to
-              use the built-in description in the card above.
+              link previews; also the paragraph under the big headline on the
+              signed-out home page. Aim for one or two clear sentences. Leave
+              empty to use the built-in description in the card above.
               <Space size="middle" className="mt-1 block">
                 <Typography.Link
                   className="text-sm"

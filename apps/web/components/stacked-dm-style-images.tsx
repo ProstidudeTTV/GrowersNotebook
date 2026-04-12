@@ -1,5 +1,7 @@
 "use client";
 
+import { isDmVideoUrl } from "@/lib/dm-media-url";
+
 /**
  * Vertical photo pile: same-size square tiles, mostly stacked along Y with a
  * tiny ±X stagger and light rotation (matches DMs in `messages-panel`).
@@ -31,6 +33,31 @@ function dmStackCardRotation(index: number, total: number): number {
   const depth = total - 1 - index;
   const sign = index % 2 === 0 ? -1 : 1;
   return sign * Math.min(4, 1.5 + depth * 0.65);
+}
+
+function MediaThumb({
+  url,
+  className,
+}: {
+  url: string;
+  className: string;
+}) {
+  if (isDmVideoUrl(url)) {
+    return (
+      <video
+        src={url}
+        muted
+        playsInline
+        preload="metadata"
+        className={className}
+        aria-label="Video clip"
+      />
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img src={url} alt="" className={className} />
+  );
 }
 
 export function StackedDmStyleImages({
@@ -80,10 +107,8 @@ export function StackedDmStyleImages({
           }
           onClick={() => onOpen(0)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imgs[0]}
-            alt=""
+          <MediaThumb
+            url={imgs[0]}
             className={
               compact
                 ? "max-h-20 w-auto max-w-full cursor-zoom-in rounded-[1rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
@@ -102,7 +127,7 @@ export function StackedDmStyleImages({
             minHeight: stackH,
           }}
           onClick={() => onOpen(imgs.length - 1)}
-          aria-label={`${imgs.length} photos — open viewer`}
+          aria-label={`${imgs.length} attachments — open viewer`}
         >
           {imgs.map((url, idx) => {
             const rot = dmStackCardRotation(idx, imgs.length);
@@ -125,12 +150,9 @@ export function StackedDmStyleImages({
                   transformOrigin: "50% 50%",
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt=""
+                <MediaThumb
+                  url={url}
                   className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-contain object-center"
-                  sizes={`${card}px`}
                 />
               </span>
             );

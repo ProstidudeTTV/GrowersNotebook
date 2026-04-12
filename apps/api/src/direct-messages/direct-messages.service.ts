@@ -55,7 +55,7 @@ export class DirectMessagesService {
     private readonly config: ConfigService,
   ) {}
 
-  private isAllowedDmImageUrl(url: string): boolean {
+  private isAllowedDmMediaUrl(url: string): boolean {
     return isAllowedPostMediaPublicUrl(this.config, url);
   }
 
@@ -380,11 +380,13 @@ export class DirectMessagesService {
       if (urls.length >= DM_MESSAGE_IMAGE_MAX) break;
     }
     if (!text && urls.length === 0) {
-      throw new BadRequestException('Message must include text or an image.');
+      throw new BadRequestException(
+        'Message must include text or a media attachment.',
+      );
     }
     for (const u of urls) {
-      if (!this.isAllowedDmImageUrl(u)) {
-        throw new BadRequestException('Invalid image URL.');
+      if (!this.isAllowedDmMediaUrl(u)) {
+        throw new BadRequestException('Invalid attachment URL.');
       }
     }
     const db = getDb();

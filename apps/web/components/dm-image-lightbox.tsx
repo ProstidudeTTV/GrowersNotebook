@@ -7,6 +7,7 @@ import {
   type SyntheticEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { isDmVideoUrl } from "@/lib/dm-media-url";
 
 function naturalAspectFrom(
   e: SyntheticEvent<HTMLImageElement>,
@@ -92,7 +93,7 @@ export function DmImageLightbox({
       <button
         type="button"
         className="absolute inset-0 bg-black/80"
-        aria-label="Close image viewer"
+        aria-label="Close viewer"
         onClick={onClose}
       />
       {hasNav ? (
@@ -100,7 +101,7 @@ export function DmImageLightbox({
           <button
             type="button"
             className="absolute left-2 top-1/2 z-[510] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:left-4"
-            aria-label="Previous image"
+            aria-label="Previous"
             onClick={(e) => {
               e.stopPropagation();
               goPrev();
@@ -111,7 +112,7 @@ export function DmImageLightbox({
           <button
             type="button"
             className="absolute right-2 top-1/2 z-[510] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] text-lg text-[var(--gn-text)] shadow-md transition hover:bg-[var(--gn-surface-hover)] sm:right-4"
-            aria-label="Next image"
+            aria-label="Next"
             onClick={(e) => {
               e.stopPropagation();
               goNext();
@@ -138,32 +139,50 @@ export function DmImageLightbox({
         className="relative z-[505] inline-block max-w-full rounded-xl bg-zinc-950/90 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.55)] ring-1 ring-white/12"
         role="dialog"
         aria-modal="true"
-        aria-label="Message images"
+        aria-label="Message attachments"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          key={src}
-          src={src}
-          alt={`Attachment ${i + 1} of ${safe.length}`}
-          className="block rounded-lg"
-          style={{
-            objectFit: "contain",
-            objectPosition: "center",
-            display: "block",
-            width: "auto",
-            height: "auto",
-            maxWidth: maxW,
-            maxHeight: maxH,
-            ...(aspectRatio ? { aspectRatio } : {}),
-          }}
-          onLoad={(e) => {
-            const ar = naturalAspectFrom(e);
-            if (ar !== undefined) setAspectRatio(ar);
-          }}
-          decoding="async"
-          fetchPriority="high"
-        />
+        {isDmVideoUrl(src) ? (
+          <video
+            key={src}
+            src={src}
+            controls
+            playsInline
+            aria-label={`Video ${i + 1} of ${safe.length}`}
+            className="block rounded-lg"
+            style={{
+              display: "block",
+              width: "auto",
+              height: "auto",
+              maxWidth: maxW,
+              maxHeight: maxH,
+            }}
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            key={src}
+            src={src}
+            alt={`Attachment ${i + 1} of ${safe.length}`}
+            className="block rounded-lg"
+            style={{
+              objectFit: "contain",
+              objectPosition: "center",
+              display: "block",
+              width: "auto",
+              height: "auto",
+              maxWidth: maxW,
+              maxHeight: maxH,
+              ...(aspectRatio ? { aspectRatio } : {}),
+            }}
+            onLoad={(e) => {
+              const ar = naturalAspectFrom(e);
+              if (ar !== undefined) setAspectRatio(ar);
+            }}
+            decoding="async"
+            fetchPriority="high"
+          />
+        )}
       </div>
     </div>
   );

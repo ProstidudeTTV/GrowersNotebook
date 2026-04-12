@@ -14,7 +14,16 @@ import {
   firstPostShareMatch,
 } from "@/lib/post-share";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
-import { uploadPostImage } from "@/lib/upload-post-media";
+import { COMMENT_EMOJI_QUICK } from "@/components/comment-discussion-composer";
+import { isDmVideoUrl } from "@/lib/dm-media-url";
+import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+import {
+  isProcessablePostImage,
+  isProcessablePostVideo,
+  uploadPostImage,
+  uploadPostVideo,
+} from "@/lib/upload-post-media";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -36,6 +45,8 @@ type PendingAttachment = {
   remoteUrl?: string;
   uploading: boolean;
   error?: string;
+  /** Set after upload or for pasted GIF URLs. */
+  kind?: "image" | "video";
 };
 
 function revokePendingLocal(a: PendingAttachment) {
@@ -108,16 +119,50 @@ function messagesListFingerprint(items: MessageRow[]): string {
   return `${items.length}:${first.id}:${last.id}`;
 }
 
+function dmAttachmentPileLabel(
+  urls: string[],
+  fromSelf: boolean,
+  peerDisplay: string,
+): string | null {
+  if (urls.length <= 1) return null;
+  const v = urls.filter(isDmVideoUrl).length;
+  const who = fromSelf ? "You" : peerDisplay;
+  if (v === urls.length) return `${who} sent ${urls.length} videos`;
+  if (v > 0) return `${who} sent ${urls.length} attachments`;
+  return `${who} sent ${urls.length} photos`;
+}
+
+function pendingAttachmentsHeadline(items: PendingAttachment[]): string {
+  const n = items.length;
+  if (n === 0) return "";
+  let v = 0;
+  for (const a of items) {
+    if (
+      a.kind === "video" ||
+      Boolean(a.remoteUrl && isDmVideoUrl(a.remoteUrl))
+    ) {
+      v += 1;
+    }
+  }
+  if (v === n) return n === 1 ? "1 video" : `${n} videos`;
+  if (v === 0) return n === 1 ? "1 photo" : `${n} photos`;
+  return `${n} attachments`;
+}
+
 function threadPreviewLine(
   m: ThreadSummary["lastMessage"],
 ): string | null {
   if (!m) return null;
   const t = m.body?.trim() ?? "";
   if (t) return t.length > 72 ? `${t.slice(0, 70)}…` : t;
-  const n = messageImageUrls(m).length;
+  const urls = messageImageUrls(m);
+  const n = urls.length;
+  if (n === 0) return null;
+  const v = urls.filter(isDmVideoUrl).length;
+  if (v === n) return n === 1 ? "Video" : `${n} videos`;
+  if (v > 0) return `${n} attachments`;
   if (n === 1) return "Photo";
-  if (n > 1) return `${n} photos`;
-  return null;
+  return `${n} photos`;
 }
 
 export function MessagesPanel() {
@@ -145,6 +190,14 @@ export function MessagesPanel() {
     null,
   );
   const dmAttachInputId = useId();
+  const [gifPickerOpen, setGifPickerOpen] = useState(false);
+  const [gifQuery, setGifQuery] = useState("");
+  const [gifItems, setGifItems] = useState<
+    { url: string; preview: string; title: string }[]
+  >([]);
+  const [gifLoading, setGifLoading] = useState(false);
+  const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
+  const gifFetchSeq = useRef(0);
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
   const sharePostPrefillDone = useRef<string | null>(null);
@@ -165,6 +218,57 @@ export function MessagesPanel() {
       if (found) revokePendingLocal(found);
       return prev.filter((x) => x.id !== id);
     });
+  }, []);
+
+  const runGifSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setGifItems([]);
+      setGifLoading(false);
+      return;
+    }
+    const seq = ++gifFetchSeq.current;
+    setGifLoading(true);
+    try {
+      const items = await fetchGiphySearchItems(trimmed);
+      if (seq === gifFetchSeq.current) setGifItems(items);
+    } catch {
+      if (seq === gifFetchSeq.current) setGifItems([]);
+    } finally {
+      if (seq === gifFetchSeq.current) setGifLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!gifPickerOpen) {
+      gifFetchSeq.current += 1;
+      setGifLoading(false);
+      return;
+    }
+    void runGifSearch(debouncedGifQuery);
+  }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
+
+  const addGifAttachment = useCallback((url: string) => {
+    setPendingAttachments((prev) => {
+      if (prev.length >= DM_ATTACH_MAX) return prev;
+      if (prev.some((x) => x.remoteUrl === url)) return prev;
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      return [
+        ...prev,
+        {
+          id,
+          remoteUrl: url,
+          uploading: false,
+          kind: "image" as const,
+        },
+      ];
+    });
+    setGifPickerOpen(false);
+    setGifQuery("");
+    setGifItems([]);
   }, []);
 
   const fetchToken = useCallback(async () => {
@@ -402,6 +506,9 @@ export function MessagesPanel() {
 
   const selectThread = async (threadId: string) => {
     setActionError(null);
+    setGifPickerOpen(false);
+    setGifQuery("");
+    setGifItems([]);
     if (threadId !== activeThreadId) {
       setPendingAttachments((prev) => {
         for (const a of prev) revokePendingLocal(a);
@@ -457,11 +564,11 @@ export function MessagesPanel() {
     if (!activeThreadId || (!text && remoteUrls.length === 0)) return;
     if (pendingAttachments.length > 0 && !allUploaded) {
       if (uploading) {
-        setActionError("Wait for photos to finish uploading.");
+        setActionError("Wait for uploads to finish.");
       } else if (hasError) {
-        setActionError("Remove photos that failed to upload, then try again.");
+        setActionError("Remove failed attachments, then try again.");
       } else {
-        setActionError("Photos are not ready to send yet.");
+        setActionError("Attachments are not ready to send yet.");
       }
       return;
     }
@@ -513,7 +620,7 @@ export function MessagesPanel() {
     }
   };
 
-  const onImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const onMediaFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
     const resetInput = () => {
@@ -527,7 +634,7 @@ export function MessagesPanel() {
       return;
     }
     if (!selfId) {
-      setActionError("Sign in to attach photos.");
+      setActionError("Sign in to attach media.");
       resetInput();
       return;
     }
@@ -538,7 +645,20 @@ export function MessagesPanel() {
       resetInput();
       return;
     }
-    const list = Array.from(files).slice(0, room);
+    const rawList = Array.from(files);
+    const valid = rawList.filter(
+      (file) => isProcessablePostImage(file) || isProcessablePostVideo(file),
+    );
+    if (valid.length < rawList.length) {
+      setActionError(
+        "Some files were skipped. Use JPEG, PNG, WebP, GIF or MP4, WebM, MOV.",
+      );
+    }
+    const list = valid.slice(0, room);
+    if (list.length === 0) {
+      resetInput();
+      return;
+    }
     resetInput();
     const newItems: PendingAttachment[] = list.map((file) => ({
       id:
@@ -547,6 +667,7 @@ export function MessagesPanel() {
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       localBlobUrl: URL.createObjectURL(file),
       uploading: true,
+      kind: isProcessablePostVideo(file) ? "video" : "image",
     }));
 
     setPendingAttachments((prev) => [...prev, ...newItems]);
@@ -554,8 +675,11 @@ export function MessagesPanel() {
     void Promise.all(
       list.map(async (file, i) => {
         const itemId = newItems[i]!.id;
+        const isVid = isProcessablePostVideo(file);
         try {
-          const r = await uploadPostImage(supabase, selfId, file);
+          const r = isVid
+            ? await uploadPostVideo(supabase, selfId, file)
+            : await uploadPostImage(supabase, selfId, file);
           setPendingAttachments((prev) => {
             const cur = prev.find((x) => x.id === itemId);
             if (!cur) return prev;
@@ -575,13 +699,14 @@ export function MessagesPanel() {
                     remoteUrl: r.publicUrl,
                     localBlobUrl: undefined,
                     error: undefined,
+                    kind: isVid ? ("video" as const) : ("image" as const),
                   }
                 : x,
             );
           });
         } catch (err) {
           const message =
-            err instanceof Error ? err.message : "Could not upload image.";
+            err instanceof Error ? err.message : "Could not upload file.";
           setPendingAttachments((prev) => {
             const cur = prev.find((x) => x.id === itemId);
             if (!cur) return prev;
@@ -826,13 +951,15 @@ export function MessagesPanel() {
                               <StackedDmStyleImages
                                 urls={imgs}
                                 stackKey={ln.id}
-                                pileLabel={
-                                  imgs.length > 1
-                                    ? selfId && ln.senderId === selfId
-                                      ? `You sent ${imgs.length} photos`
-                                      : `${displayNameFor(ln.senderId, selfId, activePeer)} sent ${imgs.length} photos`
-                                    : null
-                                }
+                                pileLabel={dmAttachmentPileLabel(
+                                  imgs,
+                                  Boolean(selfId && ln.senderId === selfId),
+                                  displayNameFor(
+                                    ln.senderId,
+                                    selfId,
+                                    activePeer,
+                                  ),
+                                )}
                                 onOpen={(index) =>
                                   setLightbox({ urls: imgs, index })
                                 }
@@ -851,18 +978,17 @@ export function MessagesPanel() {
             <input
               id={dmAttachInputId}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
               multiple
               className="sr-only"
               tabIndex={-1}
-              onChange={(e) => void onImageFileChange(e)}
+              onChange={(e) => void onMediaFileChange(e)}
             />
             {pendingAttachments.length > 0 ? (
               <div className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-xs text-[var(--gn-text-muted)]">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[var(--gn-text)]">
-                    {pendingAttachments.length} photo
-                    {pendingAttachments.length === 1 ? "" : "s"}{" "}
+                    {pendingAttachmentsHeadline(pendingAttachments)}{" "}
                     {pendingAttachments.some((a) => a.uploading)
                       ? "(uploading…)"
                       : pendingAttachments.every((a) => a.remoteUrl)
@@ -885,12 +1011,25 @@ export function MessagesPanel() {
                 <div className="flex flex-wrap gap-2">
                   {pendingAttachments.map((att, i) => {
                     const src = att.remoteUrl ?? att.localBlobUrl ?? "";
+                    const showVideo =
+                      Boolean(src) &&
+                      (att.kind === "video" ||
+                        isDmVideoUrl(att.remoteUrl ?? ""));
                     return (
                       <div
                         key={att.id}
                         className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
                       >
-                        {src ? (
+                        {showVideo ? (
+                          <video
+                            src={src}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="h-full w-full object-contain"
+                            aria-label="Video preview"
+                          />
+                        ) : src ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={src}
@@ -917,7 +1056,7 @@ export function MessagesPanel() {
                         <button
                           type="button"
                           className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-text)] text-sm font-light leading-none text-[var(--gn-surface)] shadow-md hover:bg-[var(--gn-text-muted)]"
-                          aria-label={`Remove photo ${i + 1}`}
+                          aria-label={`Remove attachment ${i + 1}`}
                           onClick={() => removePendingAttachment(att.id)}
                         >
                           ×
@@ -926,6 +1065,92 @@ export function MessagesPanel() {
                     );
                   })}
                 </div>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                Emoji
+              </span>
+              {COMMENT_EMOJI_QUICK.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  disabled={!activeThreadId}
+                  className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+                  title={emoji}
+                  onClick={() => setDraft((t) => t + emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={
+                  !selfId ||
+                  !activeThreadId ||
+                  pendingAttachments.length >= DM_ATTACH_MAX
+                }
+                className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+                onClick={() => setGifPickerOpen((o) => !o)}
+              >
+                GIF
+              </button>
+            </div>
+            {gifPickerOpen && selfId && activeThreadId ? (
+              <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
+                    placeholder="Search Giphy…"
+                    value={gifQuery}
+                    aria-busy={gifLoading}
+                    onChange={(e) => setGifQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void runGifSearch(gifQuery);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
+                    onClick={() => void runGifSearch(gifQuery)}
+                  >
+                    {gifLoading ? "…" : "Search now"}
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
+                  Powered by Giphy. Results update as you type (after a short
+                  pause).
+                </p>
+                {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
+                  <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
+                    Type at least 2 characters.
+                  </p>
+                ) : null}
+                {gifItems.length > 0 ? (
+                  <ul className="mt-3 grid max-h-48 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
+                    {gifItems.map((g) => (
+                      <li key={g.url}>
+                        <button
+                          type="button"
+                          className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff6a38]"
+                          title={g.title}
+                          onClick={() => addGifAttachment(g.url)}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={g.preview}
+                            alt=""
+                            className="h-16 w-full object-cover sm:h-20"
+                            loading="lazy"
+                          />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             ) : null}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
@@ -949,14 +1174,14 @@ export function MessagesPanel() {
                     className="inline-flex flex-1 cursor-not-allowed items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] opacity-50 sm:flex-initial"
                     aria-disabled
                   >
-                    Photo
+                    Media
                   </span>
                 ) : (
                   <label
                     htmlFor={dmAttachInputId}
                     className="inline-flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:flex-initial"
                   >
-                    Photo
+                    Media
                   </label>
                 )}
                 <button

@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from "react";
+import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { createClient } from "@/lib/supabase/client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { uploadPostImage } from "@/lib/upload-post-media";
@@ -35,16 +36,6 @@ export type PendingCommentImage = {
 
 export function revokePendingCommentImage(a: PendingCommentImage) {
   if (a.localBlobUrl) URL.revokeObjectURL(a.localBlobUrl);
-}
-
-async function fetchGiphyItems(q: string) {
-  const r = await fetch(`/api/giphy-search?q=${encodeURIComponent(q)}`, {
-    cache: "no-store",
-  });
-  const j = (await r.json()) as {
-    items?: { url: string; preview: string; title: string }[];
-  };
-  return j.items ?? [];
 }
 
 export function CommentDiscussionComposer({
@@ -103,7 +94,7 @@ export function CommentDiscussionComposer({
     const seq = ++gifFetchSeq.current;
     setGifLoading(true);
     try {
-      const items = await fetchGiphyItems(trimmed);
+      const items = await fetchGiphySearchItems(trimmed);
       if (seq === gifFetchSeq.current) setGifItems(items);
     } catch {
       if (seq === gifFetchSeq.current) setGifItems([]);

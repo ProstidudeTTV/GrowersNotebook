@@ -9,19 +9,18 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { CreateNameBlocklistBulkDto } from './dto/create-name-blocklist-bulk.dto';
 import { CreateNameBlocklistDto } from './dto/create-name-blocklist.dto';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { AuditService } from '../audit/audit.service';
+import type { JwtUser } from '../auth/jwt-user';
 import { Roles, type ProfileRole } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
-import type { JwtUser } from '../auth/jwt-user';
 import { CurrentUser } from '../common/current-user.decorator';
 import { CommentsService } from '../comments/comments.service';
 import { CommunitiesService } from '../communities/communities.service';
@@ -52,38 +51,6 @@ export class AdminController {
     private readonly nameBlocklist: NameBlocklistService,
     private readonly audit: AuditService,
   ) {}
-
-  private clientIp(req: Request): string | null {
-    const xff = req.headers['x-forwarded-for'];
-    if (typeof xff === 'string' && xff.length > 0) {
-      return xff.split(',')[0]?.trim() ?? null;
-    }
-    return req.socket.remoteAddress ?? null;
-  }
-
-  private async staffAudit(
-    actor: JwtUser,
-    req: Request,
-    row: {
-      action: string;
-      entityType?: string | null;
-      entityId?: string | null;
-      subjectProfileId?: string | null;
-      metadata?: Record<string, unknown>;
-    },
-  ) {
-    const prof = await this.profiles.findById(actor.sub);
-    await this.audit.append({
-      actorProfileId: actor.sub,
-      actorRole: prof?.role ?? null,
-      action: row.action,
-      entityType: row.entityType ?? null,
-      entityId: row.entityId ?? null,
-      subjectProfileId: row.subjectProfileId ?? null,
-      metadata: row.metadata ?? {},
-      ip: this.clientIp(req),
-    });
-  }
 
   @Get('audit-events')
   async listAuditEvents(
@@ -155,42 +122,19 @@ export class AdminController {
   }
 
   @Delete('posts/:id')
-  async deletePost(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    const row = await this.posts.deleteAdmin(id);
-    await this.staffAudit(user, req, {
-      action: 'post.admin_delete',
-      entityType: 'post',
-      entityId: id,
-      metadata: {},
-    });
-    return row;
+  async deletePost(@Param('id', ParseUUIDPipe) id: string) {
+    return this.posts.deleteAdmin(id);
   }
 
   @Post('posts/:id/remove')
   async removePost(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminRemovePostDto,
   ) {
-    const row = await this.posts.removePostAdmin(id, {
+    return this.posts.removePostAdmin(id, {
       notifyAuthor: body.notifyAuthor,
       reason: body.reason,
     });
-    await this.staffAudit(user, req, {
-      action: 'post.admin_remove',
-      entityType: 'post',
-      entityId: id,
-      metadata: {
-        notifyAuthor: body.notifyAuthor,
-        reason: body.reason,
-      },
-    });
-    return row;
   }
 
   @Post('posts/:id/pin')
@@ -296,8 +240,6 @@ export class AdminController {
 
   @Patch('profiles/:id')
   async patchProfile(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body()
     body: Partial<{
@@ -310,15 +252,7 @@ export class AdminController {
       suspendedUntil: string | null;
     }>,
   ) {
-    const row = await this.profiles.updateAdmin(id, body);
-    await this.staffAudit(user, req, {
-      action: 'profile.admin_patch',
-      entityType: 'profile',
-      entityId: id,
-      subjectProfileId: id,
-      metadata: { body },
-    });
-    return row;
+    return this.profiles.updateAdmin(id, body);
   }
 
   @Get('disallowed-names')
@@ -362,42 +296,21 @@ export class AdminController {
 
   @Patch('comment-reports/:id/dismiss')
   async dismissCommentReport(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminDismissReportDto,
   ) {
-    const row = await this.comments.dismissCommentReport(id, {
+    return this.comments.dismissCommentReport(id, {
       reporterNote: body.reporterNote,
       notifyReported: body.notifyReported === true,
       reportedWarning: body.reportedWarning,
     });
-    await this.staffAudit(user, req, {
-      action: 'comment_report.dismiss',
-      entityType: 'comment_report',
-      entityId: id,
-      metadata: {
-        notifyReported: body.notifyReported === true,
-        reportedWarning: body.reportedWarning,
-      },
-    });
-    return row;
   }
 
   @Delete('comments/:commentId')
   async deleteCommentAdmin(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
     @Param('commentId', ParseUUIDPipe) commentId: string,
   ) {
-    const row = await this.comments.deleteCommentAdmin(commentId);
-    await this.staffAudit(user, req, {
-      action: 'comment.admin_delete',
-      entityType: 'comment',
-      entityId: commentId,
-      metadata: {},
-    });
-    return row;
+    return this.comments.deleteCommentAdmin(commentId);
   }
 
   @Get('profile-reports')
@@ -415,25 +328,13 @@ export class AdminController {
 
   @Patch('profile-reports/:id/dismiss')
   async dismissProfileReport(
-    @CurrentUser() user: JwtUser,
-    @Req() req: Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminDismissReportDto,
   ) {
-    const row = await this.profiles.dismissProfileReport(id, {
+    return this.profiles.dismissProfileReport(id, {
       reporterNote: body.reporterNote,
       notifyReported: body.notifyReported === true,
       reportedWarning: body.reportedWarning,
     });
-    await this.staffAudit(user, req, {
-      action: 'profile_report.dismiss',
-      entityType: 'profile_report',
-      entityId: id,
-      metadata: {
-        notifyReported: body.notifyReported === true,
-        reportedWarning: body.reportedWarning,
-      },
-    });
-    return row;
   }
 }

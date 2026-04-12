@@ -4,7 +4,7 @@ import { getDb } from '../db';
 import { auditEvents } from '../db/schema';
 
 export type AuditAppendInput = {
-  actorProfileId: string;
+  actorProfileId: string | null;
   actorRole: string | null;
   action: string;
   entityType?: string | null;
@@ -19,7 +19,7 @@ export class AuditService {
   async append(opts: AuditAppendInput) {
     const db = getDb();
     await db.insert(auditEvents).values({
-      actorProfileId: opts.actorProfileId,
+      actorProfileId: opts.actorProfileId ?? null,
       actorRole: opts.actorRole,
       action: opts.action,
       entityType: opts.entityType ?? null,

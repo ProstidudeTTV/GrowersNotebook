@@ -2,12 +2,16 @@
 
 import { List, useTable } from "@refinedev/antd";
 import { useInvalidate } from "@refinedev/core";
-import { App, Button, Table } from "antd";
+import { App, Button, Table, Typography } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
+import {
+  AdminDismissReportModal,
+  type AdminDismissReportPayload,
+} from "../admin-dismiss-report-modal";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminCommentReportsPage() {
@@ -15,6 +19,8 @@ export default function AdminCommentReportsPage() {
   const { message } = App.useApp();
   const invalidate = useInvalidate();
   const [busyCommentId, setBusyCommentId] = useState<string | null>(null);
+  const [dismissReportId, setDismissReportId] = useState<string | null>(null);
+  const [dismissLoading, setDismissLoading] = useState(false);
   const { tableProps, searchFormProps } = useTable({
     resource: "comment-reports",
     syncWithLocation: true,
@@ -41,6 +47,27 @@ export default function AdminCommentReportsPage() {
       message.error("Could not remove comment");
     } finally {
       setBusyCommentId(null);
+    }
+  };
+
+  const submitDismiss = async (payload: AdminDismissReportPayload) => {
+    if (!dismissReportId) return;
+    setDismissLoading(true);
+    try {
+      await adminAxios.patch(
+        `comment-reports/${dismissReportId}/dismiss`,
+        payload,
+      );
+      message.success("Report resolved; reporter notified.");
+      setDismissReportId(null);
+      await invalidate({
+        resource: "comment-reports",
+        invalidates: ["list"],
+      });
+    } catch {
+      message.error("Could not resolve report");
+    } finally {
+      setDismissLoading(false);
     }
   };
 
@@ -84,6 +111,22 @@ export default function AdminCommentReportsPage() {
           title="Comment preview"
           ellipsis
         />
+        <Table.Column
+          title="Full comment"
+          width={280}
+          render={(_: unknown, r: { commentBody?: string }) => {
+            const t = r.commentBody?.trim() || "";
+            if (!t) return "—";
+            return (
+              <Typography.Paragraph
+                className="mb-0 max-h-32 overflow-y-auto text-xs"
+                copyable={{ text: t }}
+              >
+                {t}
+              </Typography.Paragraph>
+            );
+          }}
+        />
         <Table.Column dataIndex="reason" title="Reason" ellipsis />
         <Table.Column
           title="Context"
@@ -101,8 +144,17 @@ export default function AdminCommentReportsPage() {
         />
         <Table.Column
           title="Moderation"
-          render={(_: unknown, r: { commentId: string }) => (
-            <span onClick={stopAdminRowClick}>
+          render={(_: unknown, r: { commentId: string; id: string }) => (
+            <span
+              className="flex flex-wrap gap-2"
+              onClick={stopAdminRowClick}
+            >
+              <Button
+                size="small"
+                onClick={() => setDismissReportId(r.id)}
+              >
+                No action / mark safe
+              </Button>
               <Button
                 danger
                 size="small"
@@ -115,6 +167,13 @@ export default function AdminCommentReportsPage() {
           )}
         />
       </Table>
+      <AdminDismissReportModal
+        open={dismissReportId !== null}
+        title="Resolve comment report (no violation)"
+        confirmLoading={dismissLoading}
+        onCancel={() => setDismissReportId(null)}
+        onFinish={(v) => void submitDismiss(v)}
+      />
     </List>
   );
 }

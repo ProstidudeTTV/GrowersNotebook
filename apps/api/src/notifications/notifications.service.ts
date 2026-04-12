@@ -5,11 +5,16 @@ import { userNotifications } from '../db/schema';
 
 @Injectable()
 export class NotificationsService {
-  async createForUser(userId: string, title: string, body: string) {
+  async createForUser(
+    userId: string,
+    title: string,
+    body: string,
+    kind: string = 'general',
+  ) {
     const db = getDb();
     const [row] = await db
       .insert(userNotifications)
-      .values({ userId, title, body })
+      .values({ userId, title, body, kind })
       .returning();
     return row;
   }

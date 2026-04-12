@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
@@ -28,6 +29,7 @@ type NavNotification = {
   id: string;
   title: string;
   body: string;
+  kind?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -100,6 +102,10 @@ export function AuthNav() {
   );
   const [notifications, setNotifications] = useState<NavNotification[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [warningModal, setWarningModal] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
   const profileFetchSeq = useRef(0);
 
   const applySession = useCallback(async (session: Session | null) => {
@@ -339,6 +345,7 @@ export function AuthNav() {
   if (email) {
     const menuId = "auth-nav-user-menu";
     return (
+      <>
       <div className="relative" ref={rootRef}>
         <button
           type="button"
@@ -458,6 +465,11 @@ export function AuthNav() {
                       !n.readAt ? "bg-[color-mix(in_srgb,var(--gn-accent)_8%,transparent)]" : ""
                     }`}
                     onClick={() => {
+                      if (n.kind === "moderation_warning") {
+                        setWarningModal({ title: n.title, body: n.body });
+                        if (!n.readAt) void markNotificationRead(n.id);
+                        return;
+                      }
                       if (!n.readAt) void markNotificationRead(n.id);
                     }}
                   >
@@ -465,7 +477,9 @@ export function AuthNav() {
                       {n.title}
                     </span>
                     <span className="line-clamp-3 text-xs text-[var(--gn-text-muted)]">
-                      {n.body}
+                      {n.kind === "moderation_warning"
+                        ? "Tap to read the full message from moderators."
+                        : n.body}
                     </span>
                   </button>
                 ))
@@ -529,6 +543,13 @@ export function AuthNav() {
           </div>
         ) : null}
       </div>
+      <ModerationWarningModal
+        open={warningModal !== null}
+        title={warningModal?.title ?? ""}
+        body={warningModal?.body ?? ""}
+        onClose={() => setWarningModal(null)}
+      />
+      </>
     );
   }
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { setNotificationsUnreadCount } from "@/lib/notifications-unread-store";
@@ -10,6 +11,7 @@ type NotificationItem = {
   id: string;
   title: string;
   body: string;
+  kind?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -18,6 +20,10 @@ export function NotificationsPanel() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [warningModal, setWarningModal] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     let supabase: ReturnType<typeof createClient>;
@@ -139,6 +145,7 @@ export function NotificationsPanel() {
   const unread = items.filter((n) => !n.readAt).length;
 
   return (
+    <>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-[var(--gn-text-muted)]">
@@ -172,6 +179,11 @@ export function NotificationsPanel() {
                     : ""
                 }`}
                 onClick={() => {
+                  if (n.kind === "moderation_warning") {
+                    setWarningModal({ title: n.title, body: n.body });
+                    if (!n.readAt) void markRead(n.id);
+                    return;
+                  }
                   if (!n.readAt) void markRead(n.id);
                 }}
               >
@@ -179,7 +191,9 @@ export function NotificationsPanel() {
                   {n.title}
                 </span>
                 <span className="text-sm leading-snug text-[var(--gn-text-muted)]">
-                  {n.body}
+                  {n.kind === "moderation_warning"
+                    ? "Tap to read the full message from moderators."
+                    : n.body}
                 </span>
                 <span className="text-[0.65rem] text-[var(--gn-text-muted)]">
                   {formatNotifDate(n.createdAt)}
@@ -190,6 +204,13 @@ export function NotificationsPanel() {
         </ul>
       )}
     </div>
+    <ModerationWarningModal
+      open={warningModal !== null}
+      title={warningModal?.title ?? ""}
+      body={warningModal?.body ?? ""}
+      onClose={() => setWarningModal(null)}
+    />
+    </>
   );
 }
 

@@ -430,7 +430,10 @@ export class CommentsService {
 
   async listReportsPaged(skip: number, take: number) {
     const db = getDb();
-    const [{ total }] = await db.select({ total: count() }).from(commentReports);
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(commentReports)
+      .where(eq(commentReports.status, 'open'));
     const rows = await db
       .select({
         id: commentReports.id,
@@ -447,6 +450,7 @@ export class CommentsService {
       .innerJoin(comments, eq(comments.id, commentReports.commentId))
       .innerJoin(posts, eq(posts.id, commentReports.postId))
       .innerJoin(profiles, eq(profiles.id, commentReports.reporterId))
+      .where(eq(commentReports.status, 'open'))
       .orderBy(desc(commentReports.createdAt))
       .limit(take)
       .offset(skip);
@@ -460,6 +464,7 @@ export class CommentsService {
         postTitle: r.postTitle,
         reporterId: r.reporterId,
         reporterName: r.reporterName,
+        commentBody: r.commentBody,
         commentPreview:
           r.commentBody.length > 120
             ? `${r.commentBody.slice(0, 120)}…`
@@ -467,5 +472,66 @@ export class CommentsService {
       })),
       total: Number(total),
     };
+  }
+
+  /** Mark report as reviewed with no moderation action; notifies reporter (and optionally warned user). */
+  async dismissCommentReport(
+    reportId: string,
+    dto: {
+      reporterNote?: string;
+      notifyReported: boolean;
+      reportedWarning?: string;
+    },
+  ) {
+    if (dto.notifyReported === true && !dto.reportedWarning?.trim()) {
+      throw new BadRequestException(
+        'A warning message is required when notifying the reported user.',
+      );
+    }
+    const db = getDb();
+    const [report] = await db
+      .select()
+      .from(commentReports)
+      .where(eq(commentReports.id, reportId));
+    if (!report) throw new NotFoundException();
+    if (report.status !== 'open') {
+      throw new BadRequestException('This report is already resolved.');
+    }
+    const [commentRow] = await db
+      .select({ authorId: comments.authorId })
+      .from(comments)
+      .where(eq(comments.id, report.commentId));
+    if (!commentRow) throw new NotFoundException('Comment not found.');
+    const note = dto.reporterNote?.trim() ?? '';
+    const reporterBody =
+      note.length > 0
+        ? note
+        : 'Moderators reviewed your report and closed it with no action taken against the reported content.';
+    await db
+      .update(commentReports)
+      .set({
+        status: 'dismissed',
+        resolvedAt: new Date(),
+        reporterMessage: note.length > 0 ? note : null,
+        notifyReported: dto.notifyReported === true,
+        reportedWarning:
+          dto.notifyReported === true ? dto.reportedWarning!.trim() : null,
+      })
+      .where(eq(commentReports.id, reportId));
+    await this.notifications.createForUser(
+      report.reporterId,
+      'Your report was reviewed',
+      reporterBody,
+      'report_update',
+    );
+    if (dto.notifyReported === true && dto.reportedWarning?.trim()) {
+      await this.notifications.createForUser(
+        commentRow.authorId,
+        'Moderation reminder',
+        dto.reportedWarning.trim(),
+        'moderation_warning',
+      );
+    }
+    return { ok: true as const };
   }
 }

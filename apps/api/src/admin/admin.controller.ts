@@ -26,6 +26,7 @@ import { CommunitiesService } from '../communities/communities.service';
 import { CommunityPinsService } from '../posts/community-pins.service';
 import { PostsService } from '../posts/posts.service';
 import { ProfilesService } from '../profiles/profiles.service';
+import { AdminDismissReportDto } from './dto/admin-dismiss-report.dto';
 import { AdminRemovePostDto } from './dto/admin-remove-post.dto';
 import { CreateCommunityDto } from '../communities/dto/create-community.dto';
 import { UpdateCommunityAdminDto } from '../communities/dto/update-community-admin.dto';
@@ -247,6 +248,18 @@ export class AdminController {
     return rows;
   }
 
+  @Patch('comment-reports/:id/dismiss')
+  dismissCommentReport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminDismissReportDto,
+  ) {
+    return this.comments.dismissCommentReport(id, {
+      reporterNote: body.reporterNote,
+      notifyReported: body.notifyReported === true,
+      reportedWarning: body.reportedWarning,
+    });
+  }
+
   @Delete('comments/:commentId')
   deleteCommentAdmin(
     @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -265,5 +278,17 @@ export class AdminController {
       await this.profiles.listProfileReportsPaged(skip, take);
     res.setHeader('X-Total-Count', String(total));
     return rows;
+  }
+
+  @Patch('profile-reports/:id/dismiss')
+  dismissProfileReport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminDismissReportDto,
+  ) {
+    return this.profiles.dismissProfileReport(id, {
+      reporterNote: body.reporterNote,
+      notifyReported: body.notifyReported === true,
+      reportedWarning: body.reportedWarning,
+    });
   }
 }

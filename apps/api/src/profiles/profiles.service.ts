@@ -280,7 +280,10 @@ export class ProfilesService {
     const db = getDb();
     const reportedProfile = alias(profiles, 'reported_profile');
     const reporterProfile = alias(profiles, 'reporter_profile');
-    const [{ total }] = await db.select({ total: count() }).from(profileReports);
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(profileReports)
+      .where(eq(profileReports.status, 'open'));
     const rows = await db
       .select({
         id: profileReports.id,
@@ -288,6 +291,8 @@ export class ProfilesService {
         reason: profileReports.reason,
         reportedUserId: profileReports.reportedUserId,
         reportedName: reportedProfile.displayName,
+        reportedDescription: reportedProfile.description,
+        reportedProfilePublic: reportedProfile.profilePublic,
         reporterId: profileReports.reporterId,
         reporterName: reporterProfile.displayName,
       })
@@ -300,10 +305,84 @@ export class ProfilesService {
         reporterProfile,
         eq(reporterProfile.id, profileReports.reporterId),
       )
+      .where(eq(profileReports.status, 'open'))
       .orderBy(desc(profileReports.createdAt))
       .limit(take)
       .offset(skip);
-    return { rows, total: Number(total) };
+    return {
+      rows: rows.map((r) => {
+        const desc = r.reportedDescription?.trim() ?? '';
+        return {
+          id: r.id,
+          createdAt: r.createdAt,
+          reason: r.reason,
+          reportedUserId: r.reportedUserId,
+          reportedName: r.reportedName,
+          reporterId: r.reporterId,
+          reporterName: r.reporterName,
+          reportedProfilePublic: r.reportedProfilePublic,
+          reportedDescriptionPreview:
+            desc.length > 200 ? `${desc.slice(0, 200)}…` : desc || null,
+          reportedDescriptionFull: desc.length > 0 ? desc : null,
+        };
+      }),
+      total: Number(total),
+    };
+  }
+
+  async dismissProfileReport(
+    reportId: string,
+    dto: {
+      reporterNote?: string;
+      notifyReported: boolean;
+      reportedWarning?: string;
+    },
+  ) {
+    if (dto.notifyReported === true && !dto.reportedWarning?.trim()) {
+      throw new BadRequestException(
+        'A warning message is required when notifying the reported user.',
+      );
+    }
+    const db = getDb();
+    const [report] = await db
+      .select()
+      .from(profileReports)
+      .where(eq(profileReports.id, reportId));
+    if (!report) throw new NotFoundException();
+    if (report.status !== 'open') {
+      throw new BadRequestException('This report is already resolved.');
+    }
+    const note = dto.reporterNote?.trim() ?? '';
+    const reporterBody =
+      note.length > 0
+        ? note
+        : 'Moderators reviewed your profile report and closed it with no action taken against the reported account.';
+    await db
+      .update(profileReports)
+      .set({
+        status: 'dismissed',
+        resolvedAt: new Date(),
+        reporterMessage: note.length > 0 ? note : null,
+        notifyReported: dto.notifyReported === true,
+        reportedWarning:
+          dto.notifyReported === true ? dto.reportedWarning!.trim() : null,
+      })
+      .where(eq(profileReports.id, reportId));
+    await this.notifications.createForUser(
+      report.reporterId,
+      'Your report was reviewed',
+      reporterBody,
+      'report_update',
+    );
+    if (dto.notifyReported === true && dto.reportedWarning?.trim()) {
+      await this.notifications.createForUser(
+        report.reportedUserId,
+        'Moderation reminder',
+        dto.reportedWarning.trim(),
+        'moderation_warning',
+      );
+    }
+    return { ok: true as const };
   }
 
   /** Net seeds: votes on authored posts + votes on authored comments. */

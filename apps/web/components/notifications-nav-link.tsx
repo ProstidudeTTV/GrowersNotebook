@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -23,6 +24,7 @@ type NavNotification = {
   id: string;
   title: string;
   body: string;
+  kind?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -58,6 +60,10 @@ export function NotificationsNavLink() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NavNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [warningModal, setWarningModal] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = "gn-notifications-nav-menu";
 
@@ -176,6 +182,7 @@ export function NotificationsNavLink() {
   };
 
   return (
+    <>
     <div className="relative" ref={rootRef}>
       <button
         type="button"
@@ -227,6 +234,11 @@ export function NotificationsNavLink() {
                         : ""
                     }`}
                     onClick={() => {
+                      if (n.kind === "moderation_warning") {
+                        setWarningModal({ title: n.title, body: n.body });
+                        if (!n.readAt) void markRead(n.id);
+                        return;
+                      }
                       if (!n.readAt) void markRead(n.id);
                     }}
                   >
@@ -234,7 +246,9 @@ export function NotificationsNavLink() {
                       {n.title}
                     </span>
                     <span className="line-clamp-2 text-xs text-[var(--gn-text-muted)]">
-                      {n.body}
+                      {n.kind === "moderation_warning"
+                        ? "Tap to read the full message from moderators."
+                        : n.body}
                     </span>
                   </button>
                 </li>
@@ -254,5 +268,12 @@ export function NotificationsNavLink() {
         </div>
       ) : null}
     </div>
+    <ModerationWarningModal
+      open={warningModal !== null}
+      title={warningModal?.title ?? ""}
+      body={warningModal?.body ?? ""}
+      onClose={() => setWarningModal(null)}
+    />
+    </>
   );
 }

@@ -242,6 +242,12 @@ export const commentReports = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     reason: text('reason'),
+    /** open | dismissed | removed */
+    status: text('status').notNull().default('open'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    reporterMessage: text('reporter_message'),
+    notifyReported: boolean('notify_reported').notNull().default(false),
+    reportedWarning: text('reported_warning'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -287,6 +293,11 @@ export const profileReports = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     reason: text('reason'),
+    status: text('status').notNull().default('open'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    reporterMessage: text('reporter_message'),
+    notifyReported: boolean('notify_reported').notNull().default(false),
+    reportedWarning: text('reported_warning'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -354,6 +365,8 @@ export const userNotifications = pgTable(
       .references(() => profiles.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     body: text('body').notNull(),
+    /** general | report_update | moderation_warning */
+    kind: text('kind').notNull().default('general'),
     readAt: timestamp('read_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

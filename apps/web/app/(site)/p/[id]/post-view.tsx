@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
 } from "react";
 import {
   CommentActionMenu,
@@ -40,7 +38,9 @@ import {
 } from "@/lib/vote-ui";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
-import { uploadPostImage } from "@/lib/upload-post-media";
+import {
+  CommentDiscussionComposer,
+} from "@/components/comment-discussion-composer";
 import type { PostMediaItem } from "@/lib/feed-post";
 import { displayPostBodyHtml } from "@/lib/youtube-embed";
 
@@ -90,30 +90,6 @@ type PostDetail = {
   community?: { slug: string; name: string } | null;
   author: Author;
 };
-
-const COMMENT_ATTACH_MAX = 8;
-
-/** Quick-insert emoji for the comment box (Unicode). */
-const COMMENT_EMOJI_QUICK = [
-  "\u{1F44D}",
-  "\u{1F525}",
-  "\u{2764}\u{FE0F}",
-  "\u{1F389}",
-  "\u{1F604}",
-  "\u{1F331}",
-];
-
-type PendingCommentImage = {
-  id: string;
-  localBlobUrl?: string;
-  remoteUrl?: string;
-  uploading: boolean;
-  error?: string;
-};
-
-function revokePendingCommentImage(a: PendingCommentImage) {
-  if (a.localBlobUrl) URL.revokeObjectURL(a.localBlobUrl);
-}
 
 type CommentRow = {
   id: string;
@@ -419,23 +395,10 @@ export function PostView({
   const [commentsLoadHadError, setCommentsLoadHadError] = useState(
     initialCommentsFetchFailed,
   );
-  const [text, setText] = useState("");
-  const [pendingCommentImages, setPendingCommentImages] = useState<
-    PendingCommentImage[]
-  >([]);
-  const [gifPickerOpen, setGifPickerOpen] = useState(false);
-  const [gifQuery, setGifQuery] = useState("");
-  const [gifItems, setGifItems] = useState<
-    { url: string; preview: string; title: string }[]
-  >([]);
-  const [gifLoading, setGifLoading] = useState(false);
   const [commentLightbox, setCommentLightbox] = useState<{
     urls: string[];
     index: number;
   } | null>(null);
-  const commentPhotoInputId = useId();
-  const pendingCommentImagesRef = useRef(pendingCommentImages);
-  pendingCommentImagesRef.current = pendingCommentImages;
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -476,14 +439,6 @@ export function PostView({
       setViewerId(session?.user?.id ?? null);
     });
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      for (const a of pendingCommentImagesRef.current) {
-        revokePendingCommentImage(a);
-      }
-    };
   }, []);
 
   const refreshPost = useCallback(async () => {
@@ -908,179 +863,39 @@ export function PostView({
     });
   }, []);
 
-  const searchCommentGifs = useCallback(async () => {
-    const q = gifQuery.trim();
-    if (q.length < 2) {
-      setGifItems([]);
-      return;
-    }
-    setGifLoading(true);
-    try {
-      const r = await fetch(
-        `/api/giphy-search?q=${encodeURIComponent(q)}`,
-        { cache: "no-store" },
-      );
-      const j = (await r.json()) as {
-        items?: { url: string; preview: string; title: string }[];
-      };
-      setGifItems(j.items ?? []);
-    } catch {
-      setGifItems([]);
-    } finally {
-      setGifLoading(false);
-    }
-  }, [gifQuery]);
-
-  const addGifToComment = useCallback((url: string) => {
-    setPendingCommentImages((prev) => {
-      if (prev.length >= COMMENT_ATTACH_MAX) return prev;
-      if (prev.some((x) => x.remoteUrl === url)) return prev;
-      const id =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      return [...prev, { id, remoteUrl: url, uploading: false }];
-    });
-    setGifPickerOpen(false);
-    setGifQuery("");
-    setGifItems([]);
-  }, []);
-
-  const onCommentImageFiles = (e: ChangeEvent<HTMLInputElement>) => {
-    const input = e.target;
-    const files = input.files;
-    if (!files?.length) {
-      requestAnimationFrame(() => {
-        input.value = "";
-      });
-      return;
-    }
-    const snapshot = Array.from(files);
-    requestAnimationFrame(() => {
-      input.value = "";
-    });
-    const supabase = createClient();
-    void (async () => {
-      const uid =
-        viewerId ??
-        (await supabase.auth.getUser()).data.user?.id ??
-        null;
-      if (!uid) {
-        setError("Sign in to attach photos.");
-        return;
-      }
-      setError(null);
-      const room = COMMENT_ATTACH_MAX - pendingCommentImages.length;
-      if (room <= 0) return;
-      const list = snapshot.slice(0, room);
-      const newItems: PendingCommentImage[] = list.map((file) => ({
-        id:
-          typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        localBlobUrl: URL.createObjectURL(file),
-        uploading: true,
-      }));
-      setPendingCommentImages((prev) => [...prev, ...newItems]);
-      await Promise.all(
-        list.map(async (file, i) => {
-          const itemId = newItems[i]!.id;
-          try {
-            const r = await uploadPostImage(supabase, uid, file);
-            setPendingCommentImages((prev) => {
-              const cur = prev.find((x) => x.id === itemId);
-              if (!cur) return prev;
-              if (!r.ok) {
-                return prev.map((x) =>
-                  x.id === itemId
-                    ? { ...x, uploading: false, error: r.message }
-                    : x,
-                );
-              }
-              revokePendingCommentImage(cur);
-              return prev.map((x) =>
-                x.id === itemId
-                  ? {
-                      ...x,
-                      uploading: false,
-                      remoteUrl: r.publicUrl,
-                      localBlobUrl: undefined,
-                      error: undefined,
-                    }
-                  : x,
-              );
-            });
-          } catch (err) {
-            const message =
-              err instanceof Error ? err.message : "Could not upload image.";
-            setPendingCommentImages((prev) => {
-              const cur = prev.find((x) => x.id === itemId);
-              if (!cur) return prev;
-              return prev.map((x) =>
-                x.id === itemId
-                  ? { ...x, uploading: false, error: message }
-                  : x,
-              );
-            });
-          }
-        }),
-      );
-    })();
-  };
-
-  const submitComment = async () => {
+  const submitCommentFromComposer = async (payload: {
+    body: string;
+    imageUrls: string[];
+  }) => {
     setError(null);
-    const trimmed = text.trim();
-    const remoteUrls = pendingCommentImages
-      .map((a) => a.remoteUrl)
-      .filter(Boolean) as string[];
-    const uploading = pendingCommentImages.some((a) => a.uploading);
-    const hasErr = pendingCommentImages.some((a) => a.error);
-    const attachmentsReady =
-      pendingCommentImages.length === 0 ||
-      (remoteUrls.length === pendingCommentImages.length &&
-        !uploading &&
-        !hasErr);
-    if (!trimmed && remoteUrls.length === 0) return;
-    if (pendingCommentImages.length > 0 && !attachmentsReady) {
-      if (uploading) setError("Wait for photos to finish uploading.");
-      else if (hasErr) {
-        setError("Remove photos that failed to upload, then try again.");
-      } else setError("Photos are not ready to send yet.");
-      return;
-    }
     setBusy(true);
     try {
       const supabase = createClient();
       const token = await getAccessTokenForApi(supabase);
       if (!token) {
         setError("Sign in to comment.");
-        return;
+        throw new Error("Sign in to comment.");
       }
-      const payload: {
+      const body: {
         body: string;
         parentId: string | null;
         imageUrls?: string[];
       } = {
-        body: trimmed,
+        body: payload.body,
         parentId: replyTo,
       };
-      if (remoteUrls.length > 0) payload.imageUrls = remoteUrls;
+      if (payload.imageUrls.length > 0) body.imageUrls = payload.imageUrls;
       await apiFetch(`/posts/${post.id}/comments`, {
         method: "POST",
         token,
-        body: JSON.stringify(payload),
-      });
-      setText("");
-      setPendingCommentImages((prev) => {
-        for (const a of prev) revokePendingCommentImage(a);
-        return [];
+        body: JSON.stringify(body),
       });
       setReplyTo(null);
       await refreshComments(token);
       await refreshPost();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Comment failed");
+      throw e;
     } finally {
       setBusy(false);
     }
@@ -1459,214 +1274,28 @@ export function PostView({
           </div>
         ) : null}
         <div className="mt-3 space-y-2">
-          <input
-            id={commentPhotoInputId}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            className="sr-only"
-            tabIndex={-1}
-            onChange={onCommentImageFiles}
-          />
-          <textarea
-            className="gn-input min-h-[5.5rem] w-full p-3 text-sm sm:min-h-[6rem]"
-            rows={4}
+          <CommentDiscussionComposer
+            viewerId={viewerId}
+            disabled={busy}
             placeholder="Join the discussion…"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
-              Emoji
-            </span>
-            {COMMENT_EMOJI_QUICK.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                disabled={!viewerId || busy}
-                className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-                title={emoji}
-                onClick={() => setText((t) => t + emoji)}
-              >
-                {emoji}
-              </button>
-            ))}
- <button
-              type="button"
-              disabled={!viewerId || busy}
-              className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-              onClick={() => setGifPickerOpen((o) => !o)}
-            >
-              GIF
-            </button>
-          </div>
-          {gifPickerOpen && viewerId ? (
-            <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
-              <div className="flex flex-wrap gap-2">
-                <input
-                  className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
-                  placeholder="Search Giphy…"
-                  value={gifQuery}
-                  onChange={(e) => setGifQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void searchCommentGifs();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
-                  onClick={() => void searchCommentGifs()}
-                >
-                  {gifLoading ? "…" : "Search"}
-                </button>
-              </div>
-              <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-                Powered by Giphy. Add a site{" "}
-                <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                  GIPHY_API_KEY
-                </code>{" "}
-                on the web service to enable search.
-              </p>
-              {gifItems.length > 0 ? (
-                <ul className="mt-3 grid max-h-48 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
-                  {gifItems.map((g) => (
-                    <li key={g.url}>
-                      <button
-                        type="button"
-                        className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
-                        title={g.title}
-                        onClick={() => addGifToComment(g.url)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={g.preview}
-                          alt=""
-                          className="h-16 w-full object-cover sm:h-20"
-                          loading="lazy"
-                        />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2">
-            {busy ||
-            pendingCommentImages.length >= COMMENT_ATTACH_MAX ||
-            !viewerId ? (
-              <span
-                className="inline-flex rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] opacity-50"
-                aria-disabled
-              >
-                Add photos ({pendingCommentImages.length}/{COMMENT_ATTACH_MAX})
-              </span>
-            ) : (
-              <label
-                htmlFor={commentPhotoInputId}
-                className="inline-flex cursor-pointer touch-manipulation select-none rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
-              >
-                Add photos ({pendingCommentImages.length}/{COMMENT_ATTACH_MAX})
-              </label>
-            )}
-            {pendingCommentImages.length > 0 ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  setPendingCommentImages((prev) => {
-                    for (const a of prev) revokePendingCommentImage(a);
-                    return [];
-                  })
-                }
-                className="text-xs font-semibold text-[#ff4500] hover:underline disabled:opacity-50"
-              >
-                Clear photos
-              </button>
-            ) : null}
-          </div>
-          {pendingCommentImages.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {pendingCommentImages.map((att) => {
-                const src = att.remoteUrl ?? att.localBlobUrl ?? "";
-                return (
-                  <div
-                    key={att.id}
-                    className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
+            submitLabel="Comment"
+            onSubmit={submitCommentFromComposer}
+            onSubmitError={(msg) => setError(msg)}
+            replyBanner={
+              replyTo ? (
+                <div className="text-xs text-[var(--gn-text-muted)]">
+                  Replying to a thread.{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-[#ff4500] underline"
+                    onClick={() => setReplyTo(null)}
                   >
-                    {src ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={src}
-                        alt=""
-                        className="h-full w-full object-contain"
-                      />
-                    ) : null}
-                    {att.uploading ? (
-                      <div
-                        className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
-                        aria-hidden
-                      >
-                        …
-                      </div>
-                    ) : null}
-                    {att.error ? (
-                      <div
-                        className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-[9px] font-medium leading-tight text-white"
-                        title={att.error}
-                      >
-                        Failed
-                      </div>
-                    ) : null}
-                    {!att.uploading && !att.error ? (
-                      <button
-                        type="button"
-                        aria-label="Remove photo"
-                        className="absolute right-0.5 top-0.5 rounded bg-black/55 px-1 text-[10px] text-white hover:bg-black/75"
-                        onClick={() => {
-                          setPendingCommentImages((prev) => {
-                            const found = prev.find((x) => x.id === att.id);
-                            if (found) revokePendingCommentImage(found);
-                            return prev.filter((x) => x.id !== att.id);
-                          });
-                        }}
-                      >
-                        ×
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {replyTo ? (
-            <div className="text-xs text-[var(--gn-text-muted)]">
-              Replying to a thread.{" "}
-              <button
-                type="button"
-                className="font-medium text-[#ff4500] underline"
-                onClick={() => setReplyTo(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void submitComment()}
-            disabled={
-              busy ||
-              (!text.trim() &&
-                !pendingCommentImages.some((a) => a.remoteUrl)) ||
-              pendingCommentImages.some((a) => a.uploading || a.error)
+                    Cancel
+                  </button>
+                </div>
+              ) : null
             }
-            className="w-full rounded-full bg-[#ff4500] px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:bg-[#ff5414] hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50 sm:w-auto"
-          >
-            Comment
-          </button>
+          />
         </div>
         <div className="mt-5 sm:mt-6">
           <CommentTree

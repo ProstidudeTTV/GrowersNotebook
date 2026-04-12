@@ -41,7 +41,7 @@ export function NotebookCenteredModal({
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: isDark
       ? {
-          colorPrimary: "#ff6b35",
+          colorPrimary: "#34d399",
           colorBgContainer: "#191c24",
           colorBgElevated: "#1e222b",
           colorBorder: "rgba(230, 235, 255, 0.11)",
@@ -58,7 +58,7 @@ export function NotebookCenteredModal({
           paddingXS: 8,
         }
       : {
-          colorPrimary: "#c2410c",
+          colorPrimary: "#059669",
           colorBgContainer: "#ffffff",
           colorBgElevated: "#f5f7fb",
           colorBorder: "rgba(30, 41, 59, 0.11)",
@@ -84,8 +84,8 @@ export function NotebookCenteredModal({
         paddingBlock: 8,
         paddingInline: 14,
         activeShadow: isDark
-          ? "0 0 0 2px rgba(255, 107, 53, 0.2)"
-          : "0 0 0 2px rgba(194, 65, 12, 0.15)",
+          ? "0 0 0 2px rgba(52, 211, 153, 0.25)"
+          : "0 0 0 2px rgba(5, 150, 105, 0.2)",
       },
       InputNumber: {
         controlHeight: 36,
@@ -93,8 +93,8 @@ export function NotebookCenteredModal({
       Select: {
         controlHeight: 36,
         optionSelectedBg: isDark
-          ? "rgba(255, 107, 53, 0.18)"
-          : "rgba(194, 65, 12, 0.1)",
+          ? "rgba(52, 211, 153, 0.2)"
+          : "rgba(5, 150, 105, 0.12)",
       },
     },
   };

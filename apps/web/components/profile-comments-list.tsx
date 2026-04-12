@@ -8,8 +8,11 @@ import { UserProfileLink } from "@/components/user-profile-link";
 
 export type ProfileCommentRow = {
   id: string;
-  postId: string;
-  postTitle: string;
+  kind?: "post" | "notebook";
+  postId?: string;
+  postTitle?: string;
+  notebookId?: string;
+  notebookTitle?: string;
   community: { slug: string; name: string } | null;
   body: string;
   imageUrls?: string[];
@@ -79,12 +82,21 @@ export function ProfileCommentsList({
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--gn-text-muted)]">
                 <span className="font-medium text-[var(--gn-text)]">
                   on{" "}
-                  <Link
-                    href={`/p/${c.postId}#comment-${c.id}`}
-                    className="text-[#ff4500] hover:underline"
-                  >
-                    {c.postTitle}
-                  </Link>
+                  {c.notebookId ? (
+                    <Link
+                      href={`/notebooks/${encodeURIComponent(c.notebookId)}#comments`}
+                      className="text-[#ff4500] hover:underline"
+                    >
+                      {c.notebookTitle?.trim() || "Grow diary"}
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/p/${c.postId}#comment-${c.id}`}
+                      className="text-[#ff4500] hover:underline"
+                    >
+                      {c.postTitle}
+                    </Link>
+                  )}
                 </span>
                 {c.community ? (
                   <>

@@ -11,6 +11,7 @@ import {
   count,
   desc,
   eq,
+  inArray,
   notInArray,
   sql,
   type SQL,
@@ -27,6 +28,7 @@ import {
   commentVotes,
   comments,
   communities,
+  notebookComments,
   posts,
   profiles,
 } from '../db/schema';
@@ -188,56 +190,167 @@ export class CommentsService {
   }) {
     const db = getDb();
     const offset = (query.page - 1) * query.pageSize;
-    const authorWhere = eq(comments.authorId, query.authorId);
 
-    const [{ total }] = await db
-      .select({ total: count() })
+    const [{ postCt }] = await db
+      .select({ postCt: count() })
       .from(comments)
-      .where(authorWhere);
+      .where(eq(comments.authorId, query.authorId));
+    const [{ nbCt }] = await db
+      .select({ nbCt: count() })
+      .from(notebookComments)
+      .where(eq(notebookComments.authorId, query.authorId));
+    const total = Number(postCt) + Number(nbCt);
 
-    const rows = await db
-      .select({
-        comment: comments,
-        postId: posts.id,
-        postTitle: posts.title,
-        communitySlug: communities.slug,
-        communityName: communities.name,
-        upvotes: commentUpVotesExpr.as('upvotes'),
-        downvotes: commentDownVotesExpr.as('downvotes'),
-        score: commentScoreExpr.as('score'),
-        viewerVote: commentViewerVoteSelect(query.viewerId),
-      })
-      .from(comments)
-      .innerJoin(posts, eq(comments.postId, posts.id))
-      .leftJoin(communities, eq(posts.communityId, communities.id))
-      .where(authorWhere)
-      .orderBy(desc(comments.createdAt))
-      .offset(offset)
-      .limit(query.pageSize);
+    const unifiedRows = await db.execute(sql`
+      SELECT
+        u.id,
+        u.src,
+        u.created_at AS "createdAt",
+        u.body,
+        u.image_urls AS "imageUrls",
+        u.ref_id AS "refId",
+        u.ref_title AS "refTitle",
+        u.comm_slug AS "commSlug",
+        u.comm_name AS "commName",
+        u.parent_id AS "parentId"
+      FROM (
+        SELECT
+          c.id,
+          'post'::text AS src,
+          c.created_at,
+          c.body,
+          c.image_urls,
+          c.post_id AS ref_id,
+          p.title AS ref_title,
+          cm.slug AS comm_slug,
+          cm.name AS comm_name,
+          c.parent_id
+        FROM comments c
+        INNER JOIN posts p ON p.id = c.post_id
+        LEFT JOIN communities cm ON cm.id = p.community_id
+        WHERE c.author_id = ${query.authorId}::uuid
+        UNION ALL
+        SELECT
+          nc.id,
+          'notebook'::text,
+          nc.created_at,
+          nc.body,
+          nc.image_urls,
+          nc.notebook_id,
+          nb.title,
+          NULL::text,
+          NULL::text,
+          nc.parent_id
+        FROM notebook_comments nc
+        INNER JOIN notebooks nb ON nb.id = nc.notebook_id
+        WHERE nc.author_id = ${query.authorId}::uuid
+      ) u
+      ORDER BY u.created_at DESC
+      LIMIT ${query.pageSize} OFFSET ${offset}
+    `);
+
+    type Unified = {
+      id: string;
+      src: string;
+      createdAt: unknown;
+      body: string;
+      imageUrls: unknown;
+      refId: string;
+      refTitle: string;
+      commSlug: string | null;
+      commName: string | null;
+      parentId: string | null;
+    };
+
+    const rawList = [...(unifiedRows as unknown as Iterable<Unified>)];
+    const postIds = rawList
+      .filter((r) => r.src === 'post')
+      .map((r) => r.id);
+
+    const metricsById = new Map<
+      string,
+      {
+        upvotes: number;
+        downvotes: number;
+        score: number;
+        viewerVote: number | null;
+      }
+    >();
+    if (postIds.length > 0) {
+      const voteRows = await db
+        .select({
+          id: comments.id,
+          upvotes: commentUpVotesExpr.as('upvotes'),
+          downvotes: commentDownVotesExpr.as('downvotes'),
+          score: commentScoreExpr.as('score'),
+          viewerVote: commentViewerVoteSelect(query.viewerId),
+        })
+        .from(comments)
+        .where(inArray(comments.id, postIds));
+      for (const vr of voteRows) {
+        const raw = vr as unknown as Record<string, unknown>;
+        metricsById.set(vr.id, {
+          upvotes: Number(vr.upvotes),
+          downvotes: Number(vr.downvotes),
+          score: Number(vr.score),
+          viewerVote: viewerVoteFromRow(raw),
+        });
+      }
+    }
+
+    const createdIso = (v: unknown) =>
+      v instanceof Date ? v.toISOString() : String(v);
 
     return {
-      items: rows.map((r) => {
-        const raw = r as unknown as Record<string, unknown>;
-        const community =
-          r.communitySlug != null
-            ? { slug: r.communitySlug, name: r.communityName ?? '' }
-            : null;
+      items: rawList.map((r) => {
+        if (r.src === 'post') {
+          const met = metricsById.get(r.id) ?? {
+            upvotes: 0,
+            downvotes: 0,
+            score: 0,
+            viewerVote: null as number | null,
+          };
+          const community =
+            r.commSlug != null
+              ? { slug: r.commSlug, name: r.commName ?? '' }
+              : null;
+          return {
+            kind: 'post' as const,
+            id: r.id,
+            postId: r.refId,
+            postTitle: r.refTitle,
+            notebookId: undefined as string | undefined,
+            notebookTitle: undefined as string | undefined,
+            community,
+            body: r.body,
+            imageUrls: parseStoredCommentImages(r.imageUrls),
+            createdAt: createdIso(r.createdAt),
+            parentId: r.parentId,
+            upvotes: met.upvotes,
+            downvotes: met.downvotes,
+            score: met.score,
+            viewerVote: met.viewerVote,
+          };
+        }
         return {
-          id: r.comment.id,
-          postId: r.postId,
-          postTitle: r.postTitle,
-          community,
-          body: r.comment.body,
-          imageUrls: parseStoredCommentImages(r.comment.imageUrls),
-          createdAt: r.comment.createdAt,
-          parentId: r.comment.parentId,
-          upvotes: Number(r.upvotes),
-          downvotes: Number(r.downvotes),
-          score: Number(r.score),
-          viewerVote: viewerVoteFromRow(raw),
+          kind: 'notebook' as const,
+          id: r.id,
+          postId: undefined as string | undefined,
+          postTitle: undefined as string | undefined,
+          notebookId: r.refId,
+          notebookTitle: r.refTitle,
+          community: null as { slug: string; name: string } | null,
+          body: r.body,
+          imageUrls: parseStoredCommentImages(r.imageUrls),
+          createdAt: createdIso(r.createdAt),
+          parentId: r.parentId,
+          upvotes: 0,
+          downvotes: 0,
+          score: 0,
+          viewerVote: null as number | null,
         };
       }),
-      total: Number(total),
+      total,
       page: query.page,
       pageSize: query.pageSize,
     };

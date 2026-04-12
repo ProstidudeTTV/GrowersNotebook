@@ -557,30 +557,6 @@ export function NotebookWeekWizard({
                 onChange={(e) => setHumidityPct(e.target.value)}
               />
             </div>
-            <div>
-              <label className={labelClass}>pH</label>
-              <input
-                className={`${inputClass} mt-1`}
-                value={ph}
-                onChange={(e) => setPh(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>EC</label>
-              <input
-                className={`${inputClass} mt-1`}
-                value={ec}
-                onChange={(e) => setEc(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>PPM / TDS</label>
-              <input
-                className={`${inputClass} mt-1`}
-                value={ppm}
-                onChange={(e) => setPpm(e.target.value)}
-              />
-            </div>
           </div>
         ) : null}
 
@@ -656,6 +632,38 @@ export function NotebookWeekWizard({
                 </li>
               ))}
             </ul>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <p className="sm:col-span-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+                Solution or runoff readings (optional)—not room air stats.
+              </p>
+              <div>
+                <label className={labelClass}>pH</label>
+                <input
+                  className={`${inputClass} mt-1`}
+                  value={ph}
+                  onChange={(e) => setPh(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>EC</label>
+                <input
+                  className={`${inputClass} mt-1`}
+                  value={ec}
+                  onChange={(e) => setEc(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+              <div>
+                <label className={labelClass}>PPM / TDS</label>
+                <input
+                  className={`${inputClass} mt-1`}
+                  value={ppm}
+                  onChange={(e) => setPpm(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+            </div>
             {mode === "create" ? (
               <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--gn-text)]">
                 <input

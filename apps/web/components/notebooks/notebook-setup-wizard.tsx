@@ -374,7 +374,7 @@ export function NotebookSetupWizard({
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
 
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-4">
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] px-1 pb-5 pt-5 sm:px-2 sm:pb-6">
           <button
             type="button"
             disabled={step <= 1 || saving}

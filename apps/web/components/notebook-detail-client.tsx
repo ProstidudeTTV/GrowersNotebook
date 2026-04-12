@@ -36,8 +36,13 @@ import { NotebookSetupWizard } from "@/components/notebooks/notebook-setup-wizar
 import { NotebookWeekSidebar } from "@/components/notebooks/notebook-week-sidebar";
 import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
 import { WeekNotesExpandable } from "@/components/notebooks/week-notes-expandable";
+import { CommentDiscussionComposer } from "@/components/comment-discussion-composer";
+import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
+import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
+import { UserProfileLink } from "@/components/user-profile-link";
 import type { PostMediaItem } from "@/lib/feed-post";
+import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 
 type WeekNut = {
   customLabel: string | null;
@@ -324,8 +329,13 @@ export function NotebookDetailClient({
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [voteBusy, setVoteBusy] = useState(false);
   const [comments, setComments] = useState<NbComment[]>([]);
-  const [commentBody, setCommentBody] = useState("");
-  const [commentBusy, setCommentBusy] = useState(false);
+  const [commentLightbox, setCommentLightbox] = useState<{
+    urls: string[];
+    index: number;
+  } | null>(null);
+  const [commentComposerError, setCommentComposerError] = useState<
+    string | null
+  >(null);
 
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
   /** Avoid re-opening the setup modal on every render while `?setup=1` is still in the URL. */
@@ -491,30 +501,29 @@ export function NotebookDetailClient({
     }
   };
 
-  const submitComment = async () => {
-    const text = commentBody.trim();
-    if (!text) return;
+  const submitNotebookComment = async (payload: {
+    body: string;
+    imageUrls: string[];
+  }) => {
     if (!viewerId) {
       router.push("/login");
-      return;
+      throw new Error("Sign in.");
     }
-    setCommentBusy(true);
-    try {
-      const supabase = createClient();
-      const token = await getAccessTokenForApi(supabase);
-      if (!token) throw new Error("Sign in.");
-      await apiFetch(`/notebooks/${nb.id}/comments`, {
-        method: "POST",
-        token,
-        body: JSON.stringify({ body: text }),
-      });
-      setCommentBody("");
-      await reloadComments();
-    } catch {
-      /* ignore */
-    } finally {
-      setCommentBusy(false);
-    }
+    const supabase = createClient();
+    const token = await getAccessTokenForApi(supabase);
+    if (!token) throw new Error("Sign in.");
+    const body: { body: string; imageUrls?: string[] } = {
+      body: payload.body,
+    };
+    if (payload.imageUrls.length > 0) body.imageUrls = payload.imageUrls;
+    await apiFetch(`/notebooks/${nb.id}/comments`, {
+      method: "POST",
+      token,
+      body: JSON.stringify(body),
+    });
+    await reloadComments();
+    router.push(`/u/${encodeURIComponent(viewerId)}?tab=comments`);
+    router.refresh();
   };
 
   const isOwner = viewerId === nb.ownerId;
@@ -1094,51 +1103,96 @@ export function NotebookDetailClient({
         )}
       </section>
 
-      <section className="mt-6 pt-2">
+      <section id="comments" className="mt-6 scroll-mt-24 pt-2 sm:scroll-mt-28">
+        {commentLightbox ? (
+          <DmImageLightbox
+            urls={commentLightbox.urls}
+            initialIndex={commentLightbox.index}
+            onClose={() => setCommentLightbox(null)}
+          />
+        ) : null}
         <SectionHeading>Comments</SectionHeading>
         <ul className="mt-4 space-y-4">
-          {comments.map((c) => (
-            <li
-              key={c.id}
-              className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-2"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="text-xs text-[var(--gn-text-muted)]">
-                  {c.author.displayName?.trim() || "Member"} ·{" "}
-                  {new Date(c.createdAt).toLocaleString()}
-                </p>
-                {viewerId && viewerId === c.author.id ? (
-                  <button
-                    type="button"
-                    disabled={commentDeletingId === c.id}
-                    onClick={() => void deleteOwnComment(c.id)}
-                    className="shrink-0 text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
-                  >
-                    {commentDeletingId === c.id ? "Removing…" : "Delete"}
-                  </button>
+          {comments.map((c) => {
+            const imgs = c.imageUrls?.filter(Boolean) ?? [];
+            const tier =
+              c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
+            return (
+              <li
+                key={c.id}
+                className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-2"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="text-xs text-[var(--gn-text-muted)]">
+                    <UserProfileLink
+                      userId={c.author.id}
+                      className="font-medium text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
+                    >
+                      {c.author.displayName?.trim() || "Member"}
+                    </UserProfileLink>
+                    <span> · </span>
+                    <span title="Grower tier">{tier}</span>
+                    <span> · </span>
+                    <span title="Net seeds from posts and comments">
+                      {formatSeeds(c.author.seeds)} seeds
+                    </span>
+                    <span> · </span>
+                    {new Date(c.createdAt).toLocaleString()}
+                  </div>
+                  {viewerId && viewerId === c.author.id ? (
+                    <button
+                      type="button"
+                      disabled={commentDeletingId === c.id}
+                      onClick={() => void deleteOwnComment(c.id)}
+                      className="shrink-0 text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+                    >
+                      {commentDeletingId === c.id ? "Removing…" : "Delete"}
+                    </button>
+                  ) : null}
+                </div>
+                {c.body.trim() ? (
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+                    {c.body}
+                  </p>
                 ) : null}
-              </div>
-              <p className="mt-1 text-sm text-[var(--gn-text)]">{c.body}</p>
-            </li>
-          ))}
+                {imgs.length > 0 ? (
+                  <div
+                    className={`overflow-visible ${c.body.trim() ? "mt-2.5" : "mt-1"}`}
+                  >
+                    <StackedDmStyleImages
+                      urls={imgs}
+                      stackKey={c.id}
+                      pileLabel={
+                        imgs.length > 1 ? `${imgs.length} photos` : null
+                      }
+                      onOpen={(index) =>
+                        setCommentLightbox({ urls: imgs, index })
+                      }
+                    />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
         <div className="mt-4">
-          <textarea
-            value={commentBody}
-            onChange={(e) => setCommentBody(e.target.value)}
-            rows={3}
-            className="gn-input w-full resize-y text-sm"
-            placeholder={viewerId ? "Add a comment" : "Sign in to comment"}
-            disabled={!viewerId || commentBusy}
+          {commentComposerError ? (
+            <p className="mb-2 text-sm text-red-600 dark:text-red-400">
+              {commentComposerError}
+            </p>
+          ) : null}
+          <CommentDiscussionComposer
+            viewerId={viewerId}
+            placeholder={
+              viewerId ? "Join the discussion…" : "Sign in to comment"
+            }
+            submitLabel="Comment"
+            onSubmit={async (p) => {
+              setCommentComposerError(null);
+              await submitNotebookComment(p);
+            }}
+            onSubmitError={(msg) => setCommentComposerError(msg)}
           />
-          <button
-            type="button"
-            disabled={!viewerId || commentBusy || !commentBody.trim()}
-            onClick={() => void submitComment()}
-            className="mt-2 inline-flex rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {commentBusy ? "Posting…" : "Comment"}
-          </button>
         </div>
       </section>
 

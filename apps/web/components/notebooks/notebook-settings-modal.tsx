@@ -149,9 +149,9 @@ export function NotebookSettingsModal({
         form={form}
         layout="vertical"
         size="middle"
-        className="px-5 py-3 sm:px-6 sm:py-4"
+        className="px-5 py-5 sm:px-6 sm:py-6"
       >
-        <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+        <p className="mb-6 text-sm leading-relaxed text-[var(--gn-text-muted)]">
           {notebook.strain?.slug ? (
             <>
               Catalog strain:{" "}
@@ -246,7 +246,7 @@ export function NotebookSettingsModal({
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-        <div className="mt-5 flex justify-end gap-2 border-t border-[var(--gn-divide)] pt-4">
+        <div className="mt-8 flex justify-end gap-2 border-t border-[var(--gn-divide)] pt-6">
           <button
             type="button"
             disabled={saving || deleting}
@@ -266,7 +266,7 @@ export function NotebookSettingsModal({
         </div>
 
         {onDeleted ? (
-          <div className="mt-6 border-t border-[var(--gn-divide)] px-5 pb-5 pt-4 sm:px-6">
+          <div className="mt-8 border-t border-[var(--gn-divide)] pb-5 pt-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-red-400/90">
               Danger zone
             </p>

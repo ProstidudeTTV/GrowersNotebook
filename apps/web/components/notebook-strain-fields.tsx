@@ -68,11 +68,11 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
       <Form.Item name="strainId" hidden>
         <Input />
       </Form.Item>
-      <div className="relative mb-4 block">
+      <div className="relative mb-6 block">
         <span className="text-sm font-medium text-[var(--gn-text)]">
           Strain (catalog search)
         </span>
-        <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
+        <p className="mt-1 text-xs leading-relaxed text-[var(--gn-text-muted)]">
           <Link href="/strains" className="text-[#ff4500] hover:underline">
             Open Strains directory
           </Link>{" "}
@@ -84,7 +84,7 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
             clearStrainId();
             setQ(e.target.value);
           }}
-          className="gn-input mt-1 w-full"
+          className="gn-input mt-2 w-full"
           placeholder="Search catalog by name…"
           autoComplete="off"
         />
@@ -94,7 +94,7 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
           </p>
         ) : null}
         {suggestions.length > 0 ? (
-          <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-lg">
+          <ul className="gn-scrollbar-themed absolute z-10 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-lg">
             {suggestions.map((s) => (
               <li key={s.id}>
                 <button

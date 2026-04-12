@@ -186,6 +186,65 @@ html.dark body {
     }
   }
 
+  /**
+   * Themed scrollbars for modals and nested panels (avoids default light/white
+   * tracks on Windows/WebKit in dark mode).
+   */
+  .gn-scrollbar-themed {
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+  }
+
+  html.dark .gn-scrollbar-themed {
+    scrollbar-color: rgba(154, 163, 181, 0.45) rgba(22, 24, 32, 0.65);
+  }
+
+  html:not(.dark) .gn-scrollbar-themed {
+    scrollbar-color: rgba(92, 101, 120, 0.42) rgba(240, 242, 247, 0.85);
+  }
+
+  html.dark .gn-scrollbar-themed::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  html.dark .gn-scrollbar-themed::-webkit-scrollbar-track {
+    margin-block: 4px;
+    border-radius: 999px;
+    background: rgba(19, 21, 27, 0.72);
+  }
+
+  html.dark .gn-scrollbar-themed::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    border: 2px solid rgba(19, 21, 27, 0.72);
+    background: rgba(154, 163, 181, 0.4);
+  }
+
+  html.dark .gn-scrollbar-themed::-webkit-scrollbar-thumb:hover {
+    background: rgba(174, 181, 196, 0.55);
+  }
+
+  html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar-track {
+    margin-block: 4px;
+    border-radius: 999px;
+    background: rgba(226, 231, 240, 0.85);
+  }
+
+  html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    border: 2px solid rgba(226, 231, 240, 0.85);
+    background: rgba(92, 101, 120, 0.38);
+  }
+
+  html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar-thumb:hover {
+    background: rgba(92, 101, 120, 0.52);
+  }
+
   /** One soft shell: lists, modals, grouped content */
   .gn-panel {
     border-radius: var(--gn-radius-lg);

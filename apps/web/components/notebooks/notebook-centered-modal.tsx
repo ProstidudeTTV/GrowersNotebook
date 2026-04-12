@@ -76,8 +76,8 @@ export function NotebookCenteredModal({
         },
     components: {
       Form: {
-        itemMarginBottom: 12,
-        verticalLabelPadding: "0 0 2px",
+        itemMarginBottom: 22,
+        verticalLabelPadding: "0 0 8px",
       },
       Input: {
         controlHeight: 32,
@@ -129,7 +129,7 @@ export function NotebookCenteredModal({
               </h2>
             </div>
           ) : null}
-          <div className="max-h-[min(calc(92dvh-4.25rem),840px)] overflow-y-auto overscroll-contain">
+          <div className="gn-scrollbar-themed max-h-[min(calc(92dvh-4.25rem),840px)] overflow-y-auto overscroll-contain">
             {children}
           </div>
           {footer ? (

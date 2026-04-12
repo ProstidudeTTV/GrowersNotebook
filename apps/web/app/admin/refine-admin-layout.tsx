@@ -99,9 +99,18 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      {!restDataProvider || staffLoading || !role ? (
+      {!restDataProvider || staffLoading ? (
         <div style={{ padding: "4rem", textAlign: "center" }}>
           <Spin size="large" />
+        </div>
+      ) : !role ? (
+        <div
+          style={{ padding: "4rem", textAlign: "center", maxWidth: 420, margin: "0 auto" }}
+        >
+          <p style={{ marginBottom: 16 }}>
+            Could not load your staff role from the API. Try refreshing the page.
+          </p>
+          <Link href="/">Back to site</Link>
         </div>
       ) : (
       <Refine

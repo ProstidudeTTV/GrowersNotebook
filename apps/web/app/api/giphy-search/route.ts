@@ -99,11 +99,15 @@ export async function GET(req: NextRequest) {
     return Response.json({ items: [] as GiphyItem[] });
   }
 
-  const queries = fuzzyQueries(q);
-  const perQueryLimit = 10;
-  const chunks = await Promise.all(
-    queries.map((sub) => searchOnce(key, sub, perQueryLimit)),
+  const qTrim = q.trim();
+  const queries = fuzzyQueries(qTrim);
+  /** One large primary request so short queries still return many GIFs; extras diversify. */
+  const primaryQuery = queries[0] ?? qTrim;
+  const primaryChunk = await searchOnce(key, primaryQuery, 50);
+  const altQueries = queries.filter((sub) => sub !== primaryQuery).slice(0, 5);
+  const altChunks = await Promise.all(
+    altQueries.map((sub) => searchOnce(key, sub, 16)),
   );
-  const items = mergeFuzzyResults(chunks, 40);
+  const items = mergeFuzzyResults([primaryChunk, ...altChunks], 56);
   return Response.json({ items });
 }

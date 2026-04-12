@@ -332,26 +332,32 @@ export function CommentDiscussionComposer({
             </p>
           ) : null}
           {gifItems.length > 0 ? (
-            <ul className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 grid max-h-[min(50vh,420px)] grid-cols-4 gap-2 overflow-y-auto overscroll-contain rounded-lg py-0.5 pr-1 sm:grid-cols-6">
-              {gifItems.map((g) => (
-                <li key={g.url}>
-                  <button
-                    type="button"
-                    className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
-                    title={g.title}
-                    onClick={() => addGifToComment(g.url)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={g.preview}
-                      alt=""
-                      className="h-16 w-full object-cover sm:h-20"
-                      loading="lazy"
-                    />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div
+              className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-[min(52vh,440px)] overflow-y-scroll overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
+              role="region"
+              aria-label="Giphy search results"
+            >
+              <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {gifItems.map((g) => (
+                  <li key={g.url}>
+                    <button
+                      type="button"
+                      className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
+                      title={g.title}
+                      onClick={() => addGifToComment(g.url)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={g.preview}
+                        alt=""
+                        className="h-16 w-full object-cover sm:h-20"
+                        loading="lazy"
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </div>
       ) : null}

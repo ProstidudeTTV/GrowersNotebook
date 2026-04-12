@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { uploadPostImage } from "@/lib/upload-post-media";
 
 export const COMMENT_DISCUSSION_ATTACH_MAX = 8;
@@ -81,6 +82,8 @@ export function CommentDiscussionComposer({
   const commentPhotoInputId = useId();
   const pendingRef = useRef(pendingCommentImages);
   pendingRef.current = pendingCommentImages;
+  const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
+  const gifFetchSeq = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -90,21 +93,33 @@ export function CommentDiscussionComposer({
     };
   }, []);
 
-  const searchCommentGifs = useCallback(async () => {
-    const q = gifQuery.trim();
-    if (q.length < 2) {
+  const runGifSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
       setGifItems([]);
+      setGifLoading(false);
       return;
     }
+    const seq = ++gifFetchSeq.current;
     setGifLoading(true);
     try {
-      setGifItems(await fetchGiphyItems(q));
+      const items = await fetchGiphyItems(trimmed);
+      if (seq === gifFetchSeq.current) setGifItems(items);
     } catch {
-      setGifItems([]);
+      if (seq === gifFetchSeq.current) setGifItems([]);
     } finally {
-      setGifLoading(false);
+      if (seq === gifFetchSeq.current) setGifLoading(false);
     }
-  }, [gifQuery]);
+  }, []);
+
+  useEffect(() => {
+    if (!gifPickerOpen) {
+      gifFetchSeq.current += 1;
+      setGifLoading(false);
+      return;
+    }
+    void runGifSearch(debouncedGifQuery);
+  }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
 
   const addGifToComment = useCallback((url: string) => {
     setPendingCommentImages((prev) => {
@@ -300,25 +315,31 @@ export function CommentDiscussionComposer({
               className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
               placeholder="Search Giphy…"
               value={gifQuery}
+              aria-busy={gifLoading}
               onChange={(e) => setGifQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  void searchCommentGifs();
+                  void runGifSearch(gifQuery);
                 }
               }}
             />
             <button
               type="button"
               className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
-              onClick={() => void searchCommentGifs()}
+              onClick={() => void runGifSearch(gifQuery)}
             >
-              {gifLoading ? "…" : "Search"}
+              {gifLoading ? "…" : "Search now"}
             </button>
           </div>
           <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-            Powered by Giphy.
+            Powered by Giphy. Results update as you type (after a short pause).
           </p>
+          {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
+            <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
+              Type at least 2 characters.
+            </p>
+          ) : null}
           {gifItems.length > 0 ? (
             <ul className="mt-3 grid max-h-48 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
               {gifItems.map((g) => (

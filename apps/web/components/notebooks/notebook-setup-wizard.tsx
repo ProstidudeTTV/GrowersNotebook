@@ -43,10 +43,12 @@ export function NotebookSetupWizard({
   onCompleted,
 }: {
   open: boolean;
-  notebook: NotebookDetailPayload;
+  /** When null, wizard creates the notebook on final save (no row until then). */
+  notebook: NotebookDetailPayload | null;
   onClose: () => void;
-  onCompleted: () => void;
+  onCompleted: (createdNotebookId?: string) => void | Promise<void>;
 }) {
+  const isCreate = notebook === null;
   const [step, setStep] = useState(1);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -57,6 +59,23 @@ export function NotebookSetupWizard({
     if (!open) return;
     setStep(1);
     setError(null);
+    if (!notebook) {
+      form.setFieldsValue({
+        title: "",
+        customStrainLabel: "",
+        preferredTempUnit: "C",
+        preferredVolumeUnit: "L",
+        roomType: undefined,
+        wateringType: undefined,
+        startType: undefined,
+        plantCount: undefined,
+        totalLightWatts: "",
+        vegLightCycle: "",
+        flowerLightCycle: "",
+        setupNotes: "",
+      });
+      return;
+    }
     form.setFieldsValue({
       title: notebook.title,
       customStrainLabel: notebook.customStrainLabel ?? "",
@@ -81,6 +100,7 @@ export function NotebookSetupWizard({
   }, [step, titleWatch]);
 
   async function patchBody(extra: Record<string, unknown>) {
+    if (!notebook) throw new Error("Missing notebook.");
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
     if (!token) throw new Error("Sign in to save your notebook.");
@@ -103,7 +123,7 @@ export function NotebookSetupWizard({
         setSaving(false);
         return;
       }
-      await patchBody({
+      const payload = {
         title,
         customStrainLabel: v.customStrainLabel?.trim() || null,
         preferredTempUnit: normalizeTempUnit(v.preferredTempUnit),
@@ -117,8 +137,25 @@ export function NotebookSetupWizard({
         flowerLightCycle: v.flowerLightCycle?.trim() || null,
         setupNotes: v.setupNotes?.trim() || null,
         setupWizardCompletedAt: new Date().toISOString(),
-      });
-      onCompleted();
+      };
+      if (isCreate) {
+        const supabase = createClient();
+        const token = await getAccessTokenForApi(supabase);
+        if (!token) throw new Error("Sign in to save your notebook.");
+        const row = await apiFetch<{ id: string }>("/notebooks", {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            ...payload,
+            strainId: null,
+            status: "active",
+          }),
+        });
+        await onCompleted(row.id);
+      } else {
+        await patchBody(payload);
+        await onCompleted();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save notebook");
     } finally {
@@ -127,13 +164,14 @@ export function NotebookSetupWizard({
   }
 
   async function skipSetup() {
+    if (!notebook) return;
     setError(null);
     setSaving(true);
     try {
       await patchBody({
         setupWizardCompletedAt: new Date().toISOString(),
       });
-      onCompleted();
+      await onCompleted();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update notebook");
     } finally {
@@ -175,7 +213,7 @@ export function NotebookSetupWizard({
 
         {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
         <div className={step === 1 ? "space-y-3" : "hidden"} aria-hidden={step !== 1}>
-            {notebook.strain?.slug ? (
+            {notebook?.strain?.slug ? (
               <p className="text-sm text-[var(--gn-text-muted)]">
                 This notebook is linked to the catalog strain{" "}
                 <Link
@@ -317,14 +355,20 @@ export function NotebookSetupWizard({
               </Link>{" "}
               catalog. Weekly entries use <strong>Add week</strong>.
             </p>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void skipSetup()}
-              className="text-xs font-medium text-[var(--gn-text-muted)] underline decoration-dotted hover:text-[var(--gn-text)]"
-            >
-              Skip and finish later (only dismisses this guide)
-            </button>
+            {notebook ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void skipSetup()}
+                className="text-xs font-medium text-[var(--gn-text-muted)] underline decoration-dotted hover:text-[var(--gn-text)]"
+              >
+                Skip and finish later (only dismisses this guide)
+              </button>
+            ) : (
+              <p className="text-xs text-[var(--gn-text-muted)]">
+                Close this window to cancel—no diary is created until you save.
+              </p>
+            )}
         </div>
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}

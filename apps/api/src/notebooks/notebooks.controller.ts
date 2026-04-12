@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -102,6 +103,11 @@ export class NotebooksController {
     @CurrentUser() user: JwtUser,
     @Body() body: CreateNotebookDto,
   ) {
+    if (!body.setupWizardCompletedAt) {
+      throw new BadRequestException(
+        'Finish notebook setup in the app before creating a diary.',
+      );
+    }
     return this.notebooks.create(user.sub, body);
   }
 

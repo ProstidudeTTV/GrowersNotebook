@@ -692,16 +692,46 @@ export class NotebooksService {
       throw new BadRequestException('Title is required.');
     }
 
-    const [row] = await db
-      .insert(notebooks)
-      .values({
-        ownerId,
-        title,
-        strainId: dto.strainId ?? null,
-        customStrainLabel: dto.customStrainLabel?.trim() || null,
-        status: dto.status ?? 'active',
-      })
-      .returning();
+    const insert: typeof notebooks.$inferInsert = {
+      ownerId,
+      title,
+      strainId: dto.strainId ?? null,
+      customStrainLabel: dto.customStrainLabel?.trim() || null,
+      status: dto.status ?? 'active',
+    };
+
+    if (dto.setupWizardCompletedAt !== undefined && dto.setupWizardCompletedAt !== null) {
+      insert.setupWizardCompletedAt = dto.setupWizardCompletedAt;
+    }
+    if (dto.plantCount !== undefined) insert.plantCount = dto.plantCount;
+    if (dto.totalLightWatts !== undefined) {
+      insert.totalLightWatts =
+        dto.totalLightWatts == null || dto.totalLightWatts === ''
+          ? null
+          : dto.totalLightWatts;
+    }
+    if (dto.roomType !== undefined) insert.roomType = dto.roomType ?? null;
+    if (dto.wateringType !== undefined) {
+      insert.wateringType = dto.wateringType ?? null;
+    }
+    if (dto.startType !== undefined) insert.startType = dto.startType ?? null;
+    if (dto.setupNotes !== undefined) {
+      insert.setupNotes = dto.setupNotes?.trim() || null;
+    }
+    if (dto.preferredTempUnit !== undefined) {
+      insert.preferredTempUnit = dto.preferredTempUnit;
+    }
+    if (dto.preferredVolumeUnit !== undefined) {
+      insert.preferredVolumeUnit = dto.preferredVolumeUnit;
+    }
+    if (dto.vegLightCycle !== undefined) {
+      insert.vegLightCycle = dto.vegLightCycle?.trim() || null;
+    }
+    if (dto.flowerLightCycle !== undefined) {
+      insert.flowerLightCycle = dto.flowerLightCycle?.trim() || null;
+    }
+
+    const [row] = await db.insert(notebooks).values(insert).returning();
 
     await this.createWeek(row.id, ownerId, {
       weekIndex: 1,

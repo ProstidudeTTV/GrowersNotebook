@@ -41,6 +41,56 @@ export class CreateNotebookDto {
   @IsOptional()
   @IsIn([...STATUSES])
   status?: (typeof STATUSES)[number];
+
+  /** Required for `POST /notebooks` (members); optional for admin create. */
+  @IsOptional()
+  @Type(() => Date)
+  setupWizardCompletedAt?: Date | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  plantCount?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  totalLightWatts?: string | null;
+
+  @IsOptional()
+  @IsIn([...ROOM_TYPES])
+  roomType?: (typeof ROOM_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsIn([...WATERING_TYPES])
+  wateringType?: (typeof WATERING_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsIn([...START_TYPES])
+  startType?: (typeof START_TYPES)[number] | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  setupNotes?: string | null;
+
+  @IsOptional()
+  @IsIn([...NOTEBOOK_TEMP_UNITS])
+  preferredTempUnit?: (typeof NOTEBOOK_TEMP_UNITS)[number];
+
+  @IsOptional()
+  @IsIn([...NOTEBOOK_VOLUME_UNITS])
+  preferredVolumeUnit?: (typeof NOTEBOOK_VOLUME_UNITS)[number];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  vegLightCycle?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  flowerLightCycle?: string | null;
 }
 
 /** Admin creates a notebook for any user (requires `ownerId`). */

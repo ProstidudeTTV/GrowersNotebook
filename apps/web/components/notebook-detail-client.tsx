@@ -1045,7 +1045,7 @@ export function NotebookDetailClient({
                   setSetupWizardOpen(false);
                   clearSetupQuery();
                 }}
-                onCompleted={async () => {
+                onCompleted={async (_createdId?: string) => {
                   setSetupWizardOpen(false);
                   await reloadNotebook();
                   router.refresh();

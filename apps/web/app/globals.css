@@ -230,6 +230,20 @@ html.dark body {
     background: rgba(174, 181, 196, 0.55);
   }
 
+  /** GIF search grids: dark track + accent-tinted thumb (Firefox + WebKit). */
+  html.dark .gn-scrollbar-themed.gn-scrollbar-giphy {
+    scrollbar-color: rgba(255, 106, 56, 0.42) rgba(19, 21, 27, 0.85);
+  }
+
+  html.dark .gn-scrollbar-themed.gn-scrollbar-giphy::-webkit-scrollbar-thumb {
+    background: rgba(255, 106, 56, 0.32);
+    border-color: rgba(19, 21, 27, 0.72);
+  }
+
+  html.dark .gn-scrollbar-themed.gn-scrollbar-giphy::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 122, 76, 0.5);
+  }
+
   html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar {
     width: 10px;
     height: 10px;

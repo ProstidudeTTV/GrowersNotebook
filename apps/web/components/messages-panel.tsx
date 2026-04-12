@@ -1130,7 +1130,7 @@ export function MessagesPanel() {
                   </p>
                 ) : null}
                 {gifItems.length > 0 ? (
-                  <ul className="mt-3 grid max-h-48 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
+                  <ul className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 grid max-h-[min(50vh,420px)] grid-cols-4 gap-2 overflow-y-auto overscroll-contain rounded-lg py-0.5 pr-1 sm:grid-cols-6">
                     {gifItems.map((g) => (
                       <li key={g.url}>
                         <button

@@ -100,10 +100,10 @@ export async function GET(req: NextRequest) {
   }
 
   const queries = fuzzyQueries(q);
-  const perQueryLimit = 8;
+  const perQueryLimit = 10;
   const chunks = await Promise.all(
     queries.map((sub) => searchOnce(key, sub, perQueryLimit)),
   );
-  const items = mergeFuzzyResults(chunks, 24);
+  const items = mergeFuzzyResults(chunks, 40);
   return Response.json({ items });
 }

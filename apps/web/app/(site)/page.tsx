@@ -7,22 +7,38 @@ import { getPublicApiUrl } from "@/lib/public-api-url";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { createClient } from "@/lib/supabase/server";
 import { isLikelyHostedRenderDeploy } from "@/lib/deploy-context";
+import { getPublicSiteConfigCached } from "@/lib/public-site-config-server";
 import {
   SITE_NAME,
   SITE_TAGLINE,
   canonicalPath,
+  defaultSiteMetadata,
+  mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
 
-export const metadata: Metadata = {
-  title: "Cannabis home grower communities",
-  description: SITE_TAGLINE,
-  openGraph: {
-    title: `Cannabis home grower communities · ${SITE_NAME}`,
+/** Home used to export static metadata, which overrode root `generateMetadata` and ignored admin SEO. */
+export async function generateMetadata(): Promise<Metadata> {
+  const cfg = await getPublicSiteConfigCached();
+  const defaults = defaultSiteMetadata();
+  const base: Metadata = {
+    ...defaults,
+    title: "Cannabis home grower communities",
     description: SITE_TAGLINE,
-    url: canonicalPath("/"),
-  },
-  alternates: { canonical: canonicalPath("/") },
-};
+    openGraph: {
+      ...defaults.openGraph,
+      title: `Cannabis home grower communities · ${SITE_NAME}`,
+      description: SITE_TAGLINE,
+      url: canonicalPath("/"),
+    },
+    twitter: {
+      ...defaults.twitter,
+      title: `Cannabis home grower communities · ${SITE_NAME}`,
+      description: SITE_TAGLINE,
+    },
+    alternates: { canonical: canonicalPath("/") },
+  };
+  return mergeMetadataWithPublicConfig(base, cfg);
+}
 
 type Community = {
   id: string;

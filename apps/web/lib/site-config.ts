@@ -110,11 +110,17 @@ export function mergeMetadataWithPublicConfig(
   cfg: PublicSiteConfigPayload,
 ): Metadata {
   const fallbackTitle =
-    typeof base.title === "object" && base.title !== null && "default" in base.title
-      ? String((base.title as { default: string }).default)
-      : `${SITE_NAME} — Cannabis home grower community`;
+    typeof base.title === "string"
+      ? base.title
+      : typeof base.title === "object" &&
+          base.title !== null &&
+          "default" in base.title
+        ? String((base.title as { default: string }).default)
+        : `${SITE_NAME} — Cannabis home grower community`;
   const fallbackTemplate =
-    typeof base.title === "object" && base.title !== null && "template" in base.title
+    typeof base.title === "object" &&
+    base.title !== null &&
+    "template" in base.title
       ? String((base.title as { template: string }).template)
       : `%s · ${SITE_NAME}`;
   const titleDefault = cfg.seoDefaultTitle?.trim() || fallbackTitle;

@@ -46,14 +46,18 @@ export function NotebookSettingsModal({
   notebook,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   open: boolean;
   notebook: NotebookDetailPayload;
   onClose: () => void;
   onSaved: () => void;
+  /** Called after the notebook is deleted from the API (navigate away). */
+  onDeleted?: () => void;
 }) {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -108,6 +112,30 @@ export function NotebookSettingsModal({
       setError(e instanceof Error ? e.message : "Could not save");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deleteNotebook() {
+    if (
+      !window.confirm(
+        `Delete “${notebook.title.trim()}”? All weeks and comments on this diary will be removed. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setDeleting(true);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) throw new Error("Sign in to delete.");
+      await apiFetch(`/notebooks/${notebook.id}`, { method: "DELETE", token });
+      onClose();
+      onDeleted?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete diary");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -221,7 +249,7 @@ export function NotebookSettingsModal({
         <div className="mt-5 flex justify-end gap-2 border-t border-[var(--gn-divide)] pt-4">
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || deleting}
             onClick={onClose}
             className="rounded-lg border border-[var(--gn-divide)] px-4 py-1.5 text-sm text-[var(--gn-text)]"
           >
@@ -229,13 +257,32 @@ export function NotebookSettingsModal({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || deleting}
             onClick={() => void save()}
             className="rounded-full bg-emerald-500 px-5 py-1.5 text-sm font-semibold text-neutral-950 hover:bg-emerald-400 disabled:opacity-45"
           >
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
+
+        {onDeleted ? (
+          <div className="mt-6 border-t border-[var(--gn-divide)] px-5 pb-5 pt-4 sm:px-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-red-400/90">
+              Danger zone
+            </p>
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              Permanently delete this grow diary and all of its weekly entries.
+            </p>
+            <button
+              type="button"
+              disabled={saving || deleting}
+              onClick={() => void deleteNotebook()}
+              className="mt-3 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300 hover:bg-red-500/20 disabled:opacity-45"
+            >
+              {deleting ? "Deleting…" : "Delete diary"}
+            </button>
+          </div>
+        ) : null}
       </Form>
     </NotebookCenteredModal>
   );

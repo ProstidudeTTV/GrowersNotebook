@@ -420,6 +420,38 @@ export class DirectMessagesService {
     };
   }
 
+  async deleteMessage(threadId: string, messageId: string, userId: string) {
+    await this.ensureParticipant(threadId, userId);
+    const db = getDb();
+    const [row] = await db
+      .select({
+        id: dmMessages.id,
+        senderId: dmMessages.senderId,
+        threadId: dmMessages.threadId,
+      })
+      .from(dmMessages)
+      .where(eq(dmMessages.id, messageId))
+      .limit(1);
+    if (!row || row.threadId !== threadId) {
+      throw new NotFoundException('Message not found.');
+    }
+    if (row.senderId !== userId) {
+      throw new ForbiddenException('You can only delete your own messages.');
+    }
+    await db.delete(dmMessages).where(eq(dmMessages.id, messageId));
+    const [last] = await db
+      .select({ createdAt: dmMessages.createdAt })
+      .from(dmMessages)
+      .where(eq(dmMessages.threadId, threadId))
+      .orderBy(desc(dmMessages.createdAt), desc(dmMessages.id))
+      .limit(1);
+    await db
+      .update(dmThreads)
+      .set({ lastMessageAt: last?.createdAt ?? null })
+      .where(eq(dmThreads.id, threadId));
+    return { ok: true as const };
+  }
+
   async markRead(threadId: string, userId: string) {
     await this.ensureParticipant(threadId, userId);
     const db = getDb();

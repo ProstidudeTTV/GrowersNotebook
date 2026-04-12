@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
+import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import {
   CatalogOverallStarRow,
   CatalogOptionalSubStarRow,
@@ -80,6 +81,7 @@ export function CatalogReviewForm({
     initialUrls.length ? initialUrls : [""],
   );
   const [saving, setSaving] = useState(false);
+  const [removingReview, setRemovingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = initialRating != null;
@@ -161,8 +163,46 @@ export function CatalogReviewForm({
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save review");
-    } finally {
+       } finally {
       setSaving(false);
+    }
+  }
+
+  async function removeReview() {
+    if (!isEditing) return;
+    setError(null);
+    if (
+      !window.confirm(
+        "Remove your review from this page? You can write a new one later.",
+      )
+    ) {
+      return;
+    }
+    setRemovingReview(true);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) {
+        setError("Session expired — sign in again.");
+        return;
+      }
+      const path =
+        entity === "strain"
+          ? `/strains/${encodeURIComponent(slug)}/reviews`
+          : `/breeders/${encodeURIComponent(slug)}/reviews`;
+      await apiFetch(path, { method: "DELETE", token });
+      setStep(1);
+      setOverall(null);
+      setSubs(catalogSubRatingsFromApi(null));
+      setBody("");
+      setImageUrls([""]);
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not remove review",
+      );
+    } finally {
+      setRemovingReview(false);
     }
   }
 
@@ -366,6 +406,19 @@ export function CatalogReviewForm({
         ) : null}
 
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
+
+        {isEditing ? (
+          <div className="mt-6 border-t border-[var(--gn-divide)] pt-4">
+            <button
+              type="button"
+              disabled={saving || removingReview}
+              onClick={() => void removeReview()}
+              className="text-sm font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+            >
+              {removingReview ? "Removing…" : "Remove my review"}
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex items-center justify-between gap-3">
           <button

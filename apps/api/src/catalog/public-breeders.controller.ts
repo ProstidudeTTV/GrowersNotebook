@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Put,
@@ -80,5 +81,11 @@ export class PublicBreedersController {
       body.body ?? '',
       body.subRatings,
     );
+  }
+
+  @Delete(':slug/reviews')
+  @UseGuards(SupabaseAuthGuard)
+  deleteReview(@Param('slug') slug: string, @CurrentUser() user: JwtUser) {
+    return this.breeders.deleteOwnReview(slug, user.sub);
   }
 }

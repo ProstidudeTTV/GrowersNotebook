@@ -345,6 +345,27 @@ export class StrainsService {
     };
   }
 
+  async deleteOwnReview(slug: string, userId: string) {
+    const db = getDb();
+    const [s] = await db.select().from(strains).where(eq(strains.slug, slug));
+    if (!s) throw new NotFoundException('Strain not found');
+    if (!s.published) throw new NotFoundException('Strain not found');
+
+    const [existing] = await db
+      .select()
+      .from(strainReviews)
+      .where(
+        and(
+          eq(strainReviews.strainId, s.id),
+          eq(strainReviews.authorId, userId),
+        ),
+      );
+    if (!existing) throw new NotFoundException('Review not found');
+    await db.delete(strainReviews).where(eq(strainReviews.id, existing.id));
+    await refreshStrainAggregates(db, s.id);
+    return { ok: true as const };
+  }
+
   async findById(id: string) {
     const db = getDb();
     const [row] = await db.select().from(strains).where(eq(strains.id, id));

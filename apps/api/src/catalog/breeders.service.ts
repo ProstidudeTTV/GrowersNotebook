@@ -348,6 +348,30 @@ export class BreedersService {
     };
   }
 
+  async deleteOwnReview(slug: string, userId: string) {
+    const db = getDb();
+    const [b] = await db
+      .select()
+      .from(breeders)
+      .where(eq(breeders.slug, slug));
+    if (!b) throw new NotFoundException('Breeder not found');
+    if (!b.published) throw new NotFoundException('Breeder not found');
+
+    const [existing] = await db
+      .select()
+      .from(breederReviews)
+      .where(
+        and(
+          eq(breederReviews.breederId, b.id),
+          eq(breederReviews.authorId, userId),
+        ),
+      );
+    if (!existing) throw new NotFoundException('Review not found');
+    await db.delete(breederReviews).where(eq(breederReviews.id, existing.id));
+    await refreshBreederAggregates(db, b.id);
+    return { ok: true as const };
+  }
+
   async findById(id: string) {
     const db = getDb();
     const [row] = await db.select().from(breeders).where(eq(breeders.id, id));

@@ -331,6 +331,8 @@ export function NotebookDetailClient({
   const [weekEditTarget, setWeekEditTarget] = useState<WeekRow | null>(null);
   const [harvestWizardOpen, setHarvestWizardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [commentDeletingId, setCommentDeletingId] = useState<string | null>(null);
+  const [weekDeletingId, setWeekDeletingId] = useState<string | null>(null);
 
   const reloadNotebook = useCallback(async () => {
     try {
@@ -431,6 +433,55 @@ export function NotebookDetailClient({
       setNb(initial);
     } finally {
       setVoteBusy(false);
+    }
+  };
+
+  const deleteOwnComment = async (commentId: string) => {
+    if (!viewerId) {
+      router.push("/login");
+      return;
+    }
+    if (!window.confirm("Remove your comment?")) return;
+    setCommentDeletingId(commentId);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) throw new Error("Sign in.");
+      await apiFetch(`/notebooks/${nb.id}/comments/${commentId}`, {
+        method: "DELETE",
+        token,
+      });
+      await reloadComments();
+    } catch {
+      /* ignore */
+    } finally {
+      setCommentDeletingId(null);
+    }
+  };
+
+  const deleteWeekEntry = async (w: WeekRow) => {
+    if (!viewerId) return;
+    if (
+      !window.confirm(
+        `Delete week ${w.weekIndex}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setWeekDeletingId(w.id);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) throw new Error("Sign in.");
+      await apiFetch(`/notebooks/${nb.id}/weeks/${w.id}`, {
+        method: "DELETE",
+        token,
+      });
+      await reloadNotebook();
+    } catch {
+      /* ignore */
+    } finally {
+      setWeekDeletingId(null);
     }
   };
 
@@ -896,17 +947,27 @@ export function NotebookDetailClient({
                     </p>
                   </div>
                   {isOwner ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setWeekWizardMode("edit");
-                        setWeekEditTarget(w);
-                        setWeekWizardOpen(true);
-                      }}
-                      className="shrink-0 text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
-                    >
-                      Edit week
-                    </button>
+                    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWeekWizardMode("edit");
+                          setWeekEditTarget(w);
+                          setWeekWizardOpen(true);
+                        }}
+                        className="text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
+                      >
+                        Edit week
+                      </button>
+                      <button
+                        type="button"
+                        disabled={weekDeletingId === w.id}
+                        onClick={() => void deleteWeekEntry(w)}
+                        className="text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+                      >
+                        {weekDeletingId === w.id ? "Deleting…" : "Delete week"}
+                      </button>
+                    </div>
                   ) : null}
                 </div>
 
@@ -1008,10 +1069,22 @@ export function NotebookDetailClient({
               key={c.id}
               className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-2"
             >
-              <p className="text-xs text-[var(--gn-text-muted)]">
-                {c.author.displayName?.trim() || "Member"} ·{" "}
-                {new Date(c.createdAt).toLocaleString()}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className="text-xs text-[var(--gn-text-muted)]">
+                  {c.author.displayName?.trim() || "Member"} ·{" "}
+                  {new Date(c.createdAt).toLocaleString()}
+                </p>
+                {viewerId && viewerId === c.author.id ? (
+                  <button
+                    type="button"
+                    disabled={commentDeletingId === c.id}
+                    onClick={() => void deleteOwnComment(c.id)}
+                    className="shrink-0 text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+                  >
+                    {commentDeletingId === c.id ? "Removing…" : "Delete"}
+                  </button>
+                ) : null}
+              </div>
               <p className="mt-1 text-sm text-[var(--gn-text)]">{c.body}</p>
             </li>
           ))}
@@ -1084,6 +1157,7 @@ export function NotebookDetailClient({
                   setSettingsOpen(false);
                   void reloadNotebook();
                 }}
+                onDeleted={() => router.push("/notebooks")}
               />
             </>
           ) : null}

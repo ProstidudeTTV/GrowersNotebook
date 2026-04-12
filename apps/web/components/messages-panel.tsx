@@ -133,6 +133,9 @@ export function MessagesPanel() {
     index: number;
   } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [messageDeletingId, setMessageDeletingId] = useState<string | null>(
+    null,
+  );
   const dmAttachInputId = useId();
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
@@ -458,6 +461,29 @@ export function MessagesPanel() {
     }
   };
 
+  const removeOwnMessage = async (messageId: string) => {
+    if (!activeThreadId) return;
+    if (!window.confirm("Remove this message from the chat?")) return;
+    setActionError(null);
+    setMessageDeletingId(messageId);
+    try {
+      const token = await fetchToken();
+      if (!token) throw new Error("Not signed in.");
+      await apiFetch(
+        `/direct-messages/threads/${activeThreadId}/messages/${messageId}`,
+        { method: "DELETE", token },
+      );
+      await loadMessagesPage(activeThreadId);
+      await loadThreads();
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : "Could not delete message.",
+      );
+    } finally {
+      setMessageDeletingId(null);
+    }
+  };
+
   const onImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
@@ -720,21 +746,35 @@ export function MessagesPanel() {
                         className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${imgs.length > 1 ? "overflow-visible" : ""}`}
                       >
                         <div className="flex min-w-0 flex-col overflow-visible">
-                          <div className="text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
+                          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
+                            <span>
+                              {selfId && ln.senderId === selfId ? (
+                                "You"
+                              ) : (
+                                <Link
+                                  href={`/u/${ln.senderId}`}
+                                  className="hover:text-[#ff6a38] hover:underline"
+                                >
+                                  {displayNameFor(
+                                    ln.senderId,
+                                    selfId,
+                                    activePeer,
+                                  )}
+                                </Link>
+                              )}
+                            </span>
                             {selfId && ln.senderId === selfId ? (
-                              "You"
-                            ) : (
-                              <Link
-                                href={`/u/${ln.senderId}`}
-                                className="hover:text-[#ff6a38] hover:underline"
+                              <button
+                                type="button"
+                                disabled={messageDeletingId === ln.id}
+                                onClick={() => void removeOwnMessage(ln.id)}
+                                className="text-[11px] font-normal text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
                               >
-                                {displayNameFor(
-                                  ln.senderId,
-                                  selfId,
-                                  activePeer,
-                                )}
-                              </Link>
-                            )}
+                                {messageDeletingId === ln.id
+                                  ? "Removing…"
+                                  : "Delete"}
+                              </button>
+                            ) : null}
                           </div>
                           {hasText ? (
                             <p className="mt-1.5 whitespace-pre-wrap break-words text-[var(--gn-text)]">

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -51,6 +52,15 @@ export class DirectMessagesController {
       imageUrl: body.imageUrl?.trim() || undefined,
       imageUrls: body.imageUrls,
     });
+  }
+
+  @Delete('threads/:threadId/messages/:messageId')
+  deleteMessage(
+    @Param('threadId', ParseUUIDPipe) threadId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.dm.deleteMessage(threadId, messageId, user.sub);
   }
 
   @Post('threads/:threadId/read')

@@ -2,16 +2,19 @@
 
 import {
   Button,
+  Card,
   Checkbox,
   Form,
   Input,
   Radio,
+  Space,
   Spin,
   Typography,
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
+import { BUILTIN_SEO_REFERENCE } from "@/lib/site-config";
 
 type StaffSiteConfig = {
   motdText: string | null;
@@ -173,10 +176,8 @@ export default function AdminSiteSettingsPage() {
     <div className="max-w-3xl">
       <Typography.Title level={3}>Site banners & maintenance</Typography.Title>
       <p className="mt-1 text-[var(--gn-text-muted)]">
-        MOTD and announcements appear on the public site. Maintenance hides the
-        site for everyone except moderators and admins (login and auth pages
-        stay available). SEO defaults apply to the public site when set; leave
-        blank to use built-in copy. Only admins can change these settings.
+        These controls affect the public site. Only admins can open this page;
+        the API also rejects non-admins.
       </p>
 
       <Form
@@ -191,13 +192,22 @@ export default function AdminSiteSettingsPage() {
         }}
       >
         <Typography.Title level={5}>Message of the day</Typography.Title>
-        <Form.Item name="motdText" label="MOTD (short line)">
+        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
+          A short line shown in the public site chrome (header area). Use for
+          seasonal notes or links; leave empty to hide it.
+        </p>
+        <Form.Item name="motdText" label="MOTD text">
           <Input placeholder="Optional header strip…" maxLength={500} />
         </Form.Item>
 
         <Typography.Title level={5} className="!mt-8">
           Announcement
         </Typography.Title>
+        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
+          A highlighted banner on the public site with title and body. Start/end
+          times are optional; when disabled or outside the window, it does not
+          show.
+        </p>
         <Form.Item name="announcementEnabled" valuePropName="checked">
           <Checkbox>Enable announcement (respects start/end window)</Checkbox>
         </Form.Item>
@@ -223,6 +233,11 @@ export default function AdminSiteSettingsPage() {
         <Typography.Title level={5} className="!mt-8">
           Maintenance
         </Typography.Title>
+        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
+          When enabled, visitors see a maintenance screen instead of the main
+          app. Moderators and admins still get the normal site; login and auth
+          routes stay available so staff can sign in.
+        </p>
         <Form.Item name="maintenanceEnabled" valuePropName="checked">
           <Checkbox>Maintenance mode (public site)</Checkbox>
         </Form.Item>
@@ -234,48 +249,210 @@ export default function AdminSiteSettingsPage() {
           SEO & social preview
         </Typography.Title>
         <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          Default title and description for the home page and fallbacks. Keywords:
-          comma-separated. Open Graph image must be an{" "}
-          <code className="text-xs">https://</code> URL (e.g. 1200×630).
+          These fields override the app&apos;s built-in SEO text when saved.
+          Leave a field empty and save to use the built-in value again (nothing
+          stored in the database for that field). Inner pages usually set their
+          own title in code; the home page and any page without a custom title
+          use the default below.
         </p>
+
+        <Card size="small" className="mb-6 bg-[var(--gn-admin-surface-2,#141414)] border-[var(--gn-border)]">
+          <Typography.Text strong className="block mb-2">
+            Built-in defaults (from app code)
+          </Typography.Text>
+          <p className="text-[var(--gn-text-muted)] text-sm mb-3">
+            Shown for reference. Use &quot;Fill with built-in&quot; on a field to
+            copy text here into the form so you can tweak it, or leave overrides
+            empty to keep using these without duplicating them in the database.
+          </p>
+          <dl className="text-sm space-y-3 m-0">
+            <div>
+              <dt className="text-[var(--gn-text-muted)] font-medium">
+                Home / fallback{" "}
+                <code className="text-xs">&lt;title&gt;</code>
+              </dt>
+              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
+                {BUILTIN_SEO_REFERENCE.homeTitle}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--gn-text-muted)] font-medium">
+                Typical inner page title pattern
+              </dt>
+              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
+                {BUILTIN_SEO_REFERENCE.innerTitleExample}
+              </dd>
+              <dd className="mt-1 m-0 text-[var(--gn-text-muted)] text-xs">
+                The part before &quot;·&quot; is set per page; the suffix is
+                fixed in code.
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--gn-text-muted)] font-medium">
+                Meta description (search snippets & previews)
+              </dt>
+              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
+                {BUILTIN_SEO_REFERENCE.metaDescription}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--gn-text-muted)] font-medium">
+                Meta keywords (comma-separated, from code)
+              </dt>
+              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
+                {BUILTIN_SEO_REFERENCE.keywordsCommaSeparated}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--gn-text-muted)] font-medium">
+                Open Graph / Twitter image
+              </dt>
+              <dd className="mt-1 m-0 text-[var(--gn-text-muted)]">
+                No default image in code. Set a URL below so shares show a chosen
+                image (~1200×630, <code className="text-xs">https://</code>{" "}
+                only).
+              </dd>
+            </div>
+          </dl>
+          <Button
+            type="default"
+            size="small"
+            className="mt-4"
+            onClick={() =>
+              form.setFieldsValue({
+                seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
+                seoDefaultDescription: BUILTIN_SEO_REFERENCE.metaDescription,
+                seoKeywords: BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
+              })
+            }
+          >
+            Fill title, description & keywords from built-in
+          </Button>
+        </Card>
+
         <Form.Item
           name="seoDefaultTitle"
-          label="Default meta title"
+          label="Override: default meta title (home & fallback)"
           rules={[{ max: 200, message: "Max 200 characters" }]}
+          extra={
+            <span>
+              The HTML <code className="text-xs">&lt;title&gt;</code> for the
+              home page and for any route that does not set its own title. This
+              is the browser tab label and the main clickable headline in Google.
+              Leave empty to use the built-in home title above.
+              <Space size="middle" className="mt-1 block">
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() =>
+                    form.setFieldsValue({
+                      seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
+                    })
+                  }
+                >
+                  Fill with built-in
+                </Typography.Link>
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() => form.setFieldsValue({ seoDefaultTitle: "" })}
+                >
+                  Clear override
+                </Typography.Link>
+              </Space>
+            </span>
+          }
         >
-          <Input placeholder="Leave blank for built-in title" maxLength={200} />
+          <Input maxLength={200} />
         </Form.Item>
         <Form.Item
           name="seoDefaultDescription"
-          label="Default meta description"
+          label="Override: meta description"
           rules={[{ max: 500, message: "Max 500 characters" }]}
+          extra={
+            <span>
+              Short summary shown under the title in search results and in many
+              link previews. Aim for one or two clear sentences. Leave empty to
+              use the built-in description in the card above.
+              <Space size="middle" className="mt-1 block">
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() =>
+                    form.setFieldsValue({
+                      seoDefaultDescription:
+                        BUILTIN_SEO_REFERENCE.metaDescription,
+                    })
+                  }
+                >
+                  Fill with built-in
+                </Typography.Link>
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() =>
+                    form.setFieldsValue({ seoDefaultDescription: "" })
+                  }
+                >
+                  Clear override
+                </Typography.Link>
+              </Space>
+            </span>
+          }
         >
-          <Input.TextArea
-            rows={3}
-            placeholder="Leave blank for built-in description"
-            maxLength={500}
-          />
+          <Input.TextArea rows={4} maxLength={500} />
         </Form.Item>
         <Form.Item
           name="seoKeywords"
-          label="Keywords (optional)"
+          label="Override: meta keywords"
           rules={[{ max: 2000, message: "Max 2000 characters" }]}
+          extra={
+            <span>
+              Comma-separated phrases output in the{" "}
+              <code className="text-xs">keywords</code> meta tag. Many search
+              engines ignore it; it is optional. Leave empty to use the built-in
+              keyword list above.
+              <Space size="middle" className="mt-1 block">
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() =>
+                    form.setFieldsValue({
+                      seoKeywords:
+                        BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
+                    })
+                  }
+                >
+                  Fill with built-in
+                </Typography.Link>
+                <Typography.Link
+                  className="text-sm"
+                  onClick={() => form.setFieldsValue({ seoKeywords: "" })}
+                >
+                  Clear override
+                </Typography.Link>
+              </Space>
+            </span>
+          }
         >
-          <Input
-            placeholder="e.g. home grow, cannabis community, grow journal"
-            maxLength={2000}
-          />
+          <Input maxLength={2000} />
         </Form.Item>
         <Form.Item
           name="ogImageUrl"
-          label="Open Graph / Twitter image URL"
+          label="Open Graph / Twitter share image URL"
           rules={[{ max: 2000, message: "Max 2000 characters" }]}
-          extra="HTTPS only. Invalid URLs are rejected when saving."
+          extra={
+            <span>
+              Image used when someone shares a link to the site (Discord, X,
+              iMessage, etc.). Must be a full <code className="text-xs">https://</code>{" "}
+              URL. Suggested size about 1200×630. There is no built-in image; if
+              this is empty, platforms may pick another image from the page or
+              show none. Invalid URLs are rejected when saving.
+              <Typography.Link
+                className="text-sm mt-1 block"
+                onClick={() => form.setFieldsValue({ ogImageUrl: "" })}
+              >
+                Clear URL
+              </Typography.Link>
+            </span>
+          }
         >
-          <Input
-            placeholder="https://…"
-            maxLength={2000}
-          />
+          <Input placeholder="https://…" maxLength={2000} />
         </Form.Item>
 
         <Form.Item className="!mt-8">

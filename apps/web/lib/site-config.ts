@@ -27,6 +27,19 @@ export const SEO_KEYWORDS = [
 ] as const;
 
 /**
+ * Hard-coded SEO fallbacks when database overrides are empty (admin can compare
+ * and optionally copy into saved settings).
+ */
+export const BUILTIN_SEO_REFERENCE = {
+  /** `<title>` for the home page and fallback when a route does not set a title. */
+  homeTitle: `${SITE_NAME} — Cannabis home grower community`,
+  /** Pattern for most inner pages: first segment comes from the page, suffix from code. */
+  innerTitleExample: `Example page · ${SITE_NAME}`,
+  metaDescription: SITE_TAGLINE,
+  keywordsCommaSeparated: [...SEO_KEYWORDS].join(", "),
+} as const;
+
+/**
  * Canonical site origin (no trailing slash). Used for metadataBase, sitemap, JSON-LD.
  */
 export function getSiteUrl(): string {

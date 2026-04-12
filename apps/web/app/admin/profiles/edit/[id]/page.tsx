@@ -9,6 +9,7 @@ import {
   Input,
   Select,
   Switch,
+  Tag,
   Typography,
 } from "antd";
 
@@ -16,6 +17,7 @@ const { TextArea } = Input;
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { adminAxios } from "@/lib/admin-axios";
+import { useAdminStaff } from "../../../admin-staff-context";
 
 type ModerationSummary = {
   profile: {
@@ -162,9 +164,26 @@ function toDatetimeLocalValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function roleLabelTag(role: string) {
+  if (role === "admin")
+    return (
+      <Tag color="magenta" className="font-medium">
+        Admin
+      </Tag>
+    );
+  if (role === "moderator")
+    return (
+      <Tag color="geekblue" className="font-medium">
+        Moderator
+      </Tag>
+    );
+  return <Tag>Member</Tag>;
+}
+
 export default function AdminProfileEditPage() {
   const params = useParams();
   const id = params.id as string;
+  const { isAdmin } = useAdminStaff();
   const invalidate = useInvalidate();
   const { message } = AntdApp.useApp();
   const { form, formProps, saveButtonProps, onFinish, query } = useForm({
@@ -173,6 +192,7 @@ export default function AdminProfileEditPage() {
   });
 
   const record = query?.data?.data;
+  const targetIsAdmin = (record as { role?: string } | undefined)?.role === "admin";
 
   useEffect(() => {
     if (!record) return;
@@ -231,10 +251,14 @@ export default function AdminProfileEditPage() {
               : v.banExpiresLocal && String(v.banExpiresLocal).trim()
                 ? new Date(String(v.banExpiresLocal)).toISOString()
                 : null;
+          const roleValue =
+            isAdmin && v.role
+              ? v.role
+              : ((record as { role?: string })?.role ?? v.role);
           await onFinish({
             displayName: v.displayName,
             description: v.description?.trim() ? v.description.trim() : null,
-            role: v.role,
+            role: roleValue,
             bannedAt: v.moderationBanned
               ? new Date().toISOString()
               : null,
@@ -248,6 +272,11 @@ export default function AdminProfileEditPage() {
       >
         <Typography.Paragraph type="secondary">
           User ID: <code>{id}</code>
+          {record && (record as { role?: string }).role ? (
+            <span className="ml-2 inline-flex items-center gap-2 align-middle">
+              {roleLabelTag(String((record as { role: string }).role))}
+            </span>
+          ) : null}
         </Typography.Paragraph>
 
         <Form.Item label="Display name" name="displayName">
@@ -260,9 +289,20 @@ export default function AdminProfileEditPage() {
         >
           <TextArea rows={3} maxLength={2000} showCount allowClear />
         </Form.Item>
-        <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-          <Select options={ROLE_OPTIONS} />
-        </Form.Item>
+        {isAdmin ? (
+          <Form.Item label="Role" name="role" rules={[{ required: true }]}>
+            <Select options={ROLE_OPTIONS} />
+          </Form.Item>
+        ) : (
+          <Form.Item label="Role">
+            <Typography.Text type="secondary">
+              Only administrators can change roles.{" "}
+              {record
+                ? roleLabelTag(String((record as { role: string }).role))
+                : null}
+            </Typography.Text>
+          </Form.Item>
+        )}
 
         <Typography.Title level={5}>Profile picture</Typography.Title>
         <Button onClick={() => void clearAvatar()} className="mb-4">
@@ -275,7 +315,7 @@ export default function AdminProfileEditPage() {
           name="moderationBanned"
           valuePropName="checked"
         >
-          <Switch />
+          <Switch disabled={!isAdmin && targetIsAdmin} />
         </Form.Item>
         <Typography.Paragraph type="secondary" className="-mt-2 mb-4">
           Banned users cannot use the API. Turn off to lift a ban. Optional ban
@@ -296,7 +336,10 @@ export default function AdminProfileEditPage() {
                 name="banExpiresLocal"
                 extra="Empty = permanent ban. Set a date/time to auto-lift the ban after that moment."
               >
-                <Input type="datetime-local" />
+                <Input
+                  type="datetime-local"
+                  disabled={!isAdmin && targetIsAdmin}
+                />
               </Form.Item>
             ) : null
           }
@@ -307,8 +350,16 @@ export default function AdminProfileEditPage() {
           name="suspendedLocal"
           extra="Leave empty to clear suspension. User cannot use the API until this time (local)."
         >
-          <Input type="datetime-local" />
+          <Input
+            type="datetime-local"
+            disabled={!isAdmin && targetIsAdmin}
+          />
         </Form.Item>
+        {!isAdmin && targetIsAdmin ? (
+          <Typography.Paragraph type="secondary">
+            Moderators cannot ban or suspend administrator accounts.
+          </Typography.Paragraph>
+        ) : null}
         <Form.Item>
           <Button type="primary" htmlType="submit" {...saveButtonProps}>
             Save changes

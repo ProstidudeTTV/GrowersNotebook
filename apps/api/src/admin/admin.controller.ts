@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -40,7 +41,7 @@ function range(skip: string | undefined, take: string | undefined) {
 
 @Controller('admin')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles('admin', 'moderator')
+@Roles('admin')
 export class AdminController {
   constructor(
     private readonly posts: PostsService,
@@ -215,6 +216,7 @@ export class AdminController {
   }
 
   @Get('profiles')
+  @Roles('admin', 'moderator')
   async listProfiles(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
@@ -227,11 +229,13 @@ export class AdminController {
   }
 
   @Get('profiles/:id/moderation-summary')
+  @Roles('admin', 'moderator')
   moderationSummary(@Param('id', ParseUUIDPipe) id: string) {
     return this.profiles.moderationSummaryAdmin(id);
   }
 
   @Get('profiles/:id')
+  @Roles('admin', 'moderator')
   async getProfile(@Param('id', ParseUUIDPipe) id: string) {
     const row = await this.profiles.findById(id);
     if (!row) throw new NotFoundException();
@@ -239,7 +243,9 @@ export class AdminController {
   }
 
   @Patch('profiles/:id')
+  @Roles('admin', 'moderator')
   async patchProfile(
+    @CurrentUser() user: JwtUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body()
     body: Partial<{
@@ -252,7 +258,9 @@ export class AdminController {
       suspendedUntil: string | null;
     }>,
   ) {
-    return this.profiles.updateAdmin(id, body);
+    const actor = await this.profiles.findById(user.sub);
+    if (!actor) throw new ForbiddenException();
+    return this.profiles.updateAdmin(id, body, { actorRole: actor.role });
   }
 
   @Get('disallowed-names')
@@ -283,6 +291,7 @@ export class AdminController {
   }
 
   @Get('comment-reports')
+  @Roles('admin', 'moderator')
   async listCommentReports(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
@@ -295,6 +304,7 @@ export class AdminController {
   }
 
   @Patch('comment-reports/:id/dismiss')
+  @Roles('admin', 'moderator')
   async dismissCommentReport(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminDismissReportDto,
@@ -307,6 +317,7 @@ export class AdminController {
   }
 
   @Delete('comments/:commentId')
+  @Roles('admin', 'moderator')
   async deleteCommentAdmin(
     @Param('commentId', ParseUUIDPipe) commentId: string,
   ) {
@@ -314,6 +325,7 @@ export class AdminController {
   }
 
   @Get('profile-reports')
+  @Roles('admin', 'moderator')
   async listProfileReports(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
@@ -327,6 +339,7 @@ export class AdminController {
   }
 
   @Patch('profile-reports/:id/dismiss')
+  @Roles('admin', 'moderator')
   async dismissProfileReport(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminDismissReportDto,

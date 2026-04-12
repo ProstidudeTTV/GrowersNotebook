@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -28,6 +29,7 @@ import { CatalogReviewModerationService } from './catalog-review-moderation.serv
 import { CatalogSuggestionsService } from './catalog-suggestions.service';
 import { ModerateSuggestionDto } from './dto/moderate-suggestion.dto';
 import { StrainCsvImportService } from './strain-csv-import.service';
+import { ProfilesService } from '../profiles/profiles.service';
 import { StrainsService } from './strains.service';
 
 function range(skip: string | undefined, take: string | undefined) {
@@ -46,6 +48,7 @@ export class AdminCatalogController {
     private readonly suggestions: CatalogSuggestionsService,
     private readonly reviewMod: CatalogReviewModerationService,
     private readonly strainCsvImport: StrainCsvImportService,
+    private readonly profiles: ProfilesService,
   ) {}
 
   @Get('strains')
@@ -61,6 +64,7 @@ export class AdminCatalogController {
   }
 
   @Post('strains')
+  @Roles('admin')
   createStrain(
     @Body()
     body: {
@@ -84,8 +88,9 @@ export class AdminCatalogController {
   }
 
   @Patch('strains/:id')
-  patchStrain(
+  async patchStrain(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtUser,
     @Body()
     body: Partial<{
       slug: string;
@@ -97,10 +102,24 @@ export class AdminCatalogController {
       published: boolean;
     }>,
   ) {
+    const actor = await this.profiles.findById(user.sub);
+    if (actor?.role === 'moderator') {
+      const keys = Object.keys(body ?? {}).filter(
+        (k) => (body as Record<string, unknown>)[k] !== undefined,
+      );
+      const ok =
+        keys.length > 0 && keys.every((k) => k === 'published');
+      if (!ok) {
+        throw new ForbiddenException(
+          'Moderators may only change the published flag on strains.',
+        );
+      }
+    }
     return this.strains.updateAdmin(id, body);
   }
 
   @Delete('strains/:id')
+  @Roles('admin')
   deleteStrain(@Param('id', ParseUUIDPipe) id: string) {
     return this.strains.deleteAdmin(id);
   }
@@ -118,6 +137,7 @@ export class AdminCatalogController {
   }
 
   @Post('breeders')
+  @Roles('admin')
   createBreeder(
     @Body()
     body: {
@@ -140,6 +160,7 @@ export class AdminCatalogController {
   }
 
   @Patch('breeders/:id')
+  @Roles('admin')
   patchBreeder(
     @Param('id', ParseUUIDPipe) id: string,
     @Body()
@@ -156,6 +177,7 @@ export class AdminCatalogController {
   }
 
   @Delete('breeders/:id')
+  @Roles('admin')
   deleteBreeder(@Param('id', ParseUUIDPipe) id: string) {
     return this.breeders.deleteAdmin(id);
   }
@@ -263,6 +285,7 @@ export class AdminCatalogController {
   }
 
   @Post('catalog/import-strains-csv')
+  @Roles('admin')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),

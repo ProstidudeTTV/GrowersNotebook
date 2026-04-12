@@ -3,6 +3,22 @@
 import { EditButton, List, useTable } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
 import { Space, Table, Tag } from "antd";
+
+function roleTag(role: string) {
+  if (role === "admin")
+    return (
+      <Tag color="magenta" className="font-medium">
+        Admin
+      </Tag>
+    );
+  if (role === "moderator")
+    return (
+      <Tag color="geekblue" className="font-medium">
+        Moderator
+      </Tag>
+    );
+  return <Tag>Member</Tag>;
+}
 import { useRouter } from "next/navigation";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
@@ -33,7 +49,7 @@ export default function AdminProfilesPage() {
         <Table.Column
           dataIndex="role"
           title="Role"
-          render={(role: string) => <Tag>{role}</Tag>}
+          render={(r: string) => roleTag(r)}
         />
         <Table.Column
           dataIndex="createdAt"

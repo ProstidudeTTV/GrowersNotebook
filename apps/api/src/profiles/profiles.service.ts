@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -599,7 +600,29 @@ export class ProfilesService {
       banExpiresAt: string | null;
       suspendedUntil: string | null;
     }>,
+    opts?: { actorRole: ProfileRole },
   ) {
+    const existing = await this.findById(id);
+    if (!existing) throw new NotFoundException();
+    const actorRole = opts?.actorRole ?? 'admin';
+
+    if (actorRole === 'moderator') {
+      if (partial.role !== undefined && partial.role !== existing.role) {
+        throw new ForbiddenException('Moderators cannot change user roles.');
+      }
+      if (existing.role === 'admin') {
+        const touchesModeration =
+          partial.bannedAt !== undefined ||
+          partial.banExpiresAt !== undefined ||
+          partial.suspendedUntil !== undefined;
+        if (touchesModeration) {
+          throw new ForbiddenException(
+            'Moderators cannot ban or suspend administrators.',
+          );
+        }
+      }
+    }
+
     const db = getDb();
     const patch: Partial<typeof profiles.$inferInsert> = {};
     if (partial.displayName !== undefined) {
@@ -619,7 +642,7 @@ export class ProfilesService {
         patch.description = v ? v.slice(0, 2000) : null;
       }
     }
-    if (partial.role !== undefined) {
+    if (partial.role !== undefined && actorRole !== 'moderator') {
       patch.role = partial.role;
     }
     if (partial.avatarUrl !== undefined) {

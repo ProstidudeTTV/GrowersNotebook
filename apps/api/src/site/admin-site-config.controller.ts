@@ -7,7 +7,7 @@ import { SiteConfigService } from './site-config.service';
 
 @Controller('admin/site-config')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles('admin', 'moderator')
+@Roles('admin')
 export class AdminSiteConfigController {
   constructor(private readonly siteConfig: SiteConfigService) {}
 

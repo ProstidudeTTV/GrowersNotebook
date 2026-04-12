@@ -35,7 +35,7 @@ function range(skip: string | undefined, take: string | undefined) {
 
 @Controller('admin')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles('admin', 'moderator')
+@Roles('admin')
 export class AdminNotebooksController {
   constructor(private readonly notebooks: NotebooksService) {}
 

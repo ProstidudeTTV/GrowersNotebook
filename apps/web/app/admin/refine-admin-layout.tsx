@@ -3,18 +3,6 @@
 import "@ant-design/v5-patch-for-react-19";
 import "./admin-surface.css";
 
-import {
-  BarChartOutlined,
-  BookOutlined,
-  ExperimentOutlined,
-  FileTextOutlined,
-  InboxOutlined,
-  MedicineBoxOutlined,
-  MessageOutlined,
-  SettingOutlined,
-  ShopOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import {
   RefineThemes,
@@ -30,6 +18,8 @@ import { App as AntdApp, ConfigProvider, Spin, theme } from "antd";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { ADMIN_PROXY_PATH, adminAxios } from "@/lib/admin-axios";
+import { refineResourcesForStaffRole } from "./admin-refine-resources";
+import { AdminStaffProvider, useAdminStaff } from "./admin-staff-context";
 import { GrowersAdminSider } from "./growers-admin-sider";
 
 function useSiteDarkMode() {
@@ -86,9 +76,14 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
   const notificationProvider = useNotificationProvider();
   const dark = useSiteDarkMode();
   const adminApiBase = useBrowserAdminApiBase();
+  const { role, loading: staffLoading } = useAdminStaff();
   const restDataProvider = useMemo(
     () => (adminApiBase ? dataProvider(adminApiBase, adminAxios) : null),
     [adminApiBase],
+  );
+  const resources = useMemo(
+    () => (role ? refineResourcesForStaffRole(role) : []),
+    [role],
   );
 
   return (
@@ -104,7 +99,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      {!restDataProvider ? (
+      {!restDataProvider || staffLoading || !role ? (
         <div style={{ padding: "4rem", textAlign: "center" }}>
           <Spin size="large" />
         </div>
@@ -113,136 +108,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         routerProvider={routerProvider}
         dataProvider={restDataProvider}
         notificationProvider={notificationProvider as NotificationProvider}
-        resources={[
-          {
-            name: "site-settings",
-            list: "/admin/site-settings",
-            meta: {
-              label: "Site settings",
-              icon: <SettingOutlined />,
-            },
-          },
-          {
-            name: "audit-events",
-            list: "/admin/audit-log",
-            meta: {
-              label: "Audit log",
-              icon: <FileTextOutlined />,
-            },
-          },
-          {
-            name: "analytics",
-            list: "/admin/analytics",
-            meta: { label: "Site analytics", icon: <BarChartOutlined /> },
-          },
-          {
-            name: "posts",
-            list: "/admin/posts",
-            meta: { label: "Posts" },
-          },
-          {
-            name: "notebooks",
-            list: "/admin/notebooks",
-            create: "/admin/notebooks/create",
-            edit: "/admin/notebooks/edit/:id",
-            meta: { label: "Notebooks", icon: <BookOutlined /> },
-          },
-          {
-            name: "nutrient-products",
-            list: "/admin/nutrient-products",
-            create: "/admin/nutrient-products/create",
-            edit: "/admin/nutrient-products/edit/:id",
-            meta: { label: "Nutrient products", icon: <MedicineBoxOutlined /> },
-          },
-          {
-            name: "communities",
-            list: "/admin/communities",
-            create: "/admin/communities/create",
-            edit: "/admin/communities/edit/:id",
-            meta: { label: "Communities" },
-          },
-          {
-            name: "profiles",
-            list: "/admin/profiles",
-            edit: "/admin/profiles/edit/:id",
-            meta: { label: "Profiles" },
-          },
-          {
-            name: "comment-reports",
-            list: "/admin/comment-reports",
-            meta: { label: "Comment reports" },
-          },
-          {
-            name: "profile-reports",
-            list: "/admin/profile-reports",
-            meta: { label: "Profile reports" },
-          },
-          {
-            name: "disallowed-names",
-            list: "/admin/disallowed-names",
-            create: "/admin/disallowed-names/create",
-            meta: { label: "Blocked names" },
-          },
-          {
-            name: "strains",
-            list: "/admin/strains",
-            create: "/admin/strains/create",
-            edit: "/admin/strains/edit/:id",
-            meta: {
-              label: "Strains",
-              parent: "catalog",
-              icon: <ExperimentOutlined />,
-            },
-          },
-          {
-            name: "breeders",
-            list: "/admin/breeders",
-            create: "/admin/breeders/create",
-            edit: "/admin/breeders/edit/:id",
-            meta: {
-              label: "Breeders",
-              parent: "catalog",
-              icon: <ShopOutlined />,
-            },
-          },
-          {
-            name: "catalog-import",
-            list: "/admin/catalog-import",
-            meta: {
-              label: "Catalog CSV import",
-              parent: "catalog",
-              icon: <UploadOutlined />,
-            },
-          },
-          {
-            name: "catalog-suggestions",
-            list: "/admin/catalog-suggestions",
-            show: "/admin/catalog-suggestions/review/:id",
-            meta: {
-              label: "Catalog suggestions inbox",
-              parent: "catalog-inbox",
-              icon: <InboxOutlined />,
-            },
-          },
-          {
-            name: "strain-reviews",
-            list: "/admin/strain-reviews",
-            meta: {
-              label: "Strain reviews",
-              parent: "catalog-moderation",
-              icon: <MessageOutlined />,
-            },
-          },
-          {
-            name: "breeder-reviews",
-            list: "/admin/breeder-reviews",
-            meta: {
-              label: "Breeder reviews",
-              parent: "catalog-moderation",
-              icon: <MessageOutlined />,
-            },
-          },
-        ]}
+        resources={resources}
         options={{ syncWithLocation: true }}
       >
         <ThemedLayout
@@ -277,7 +143,9 @@ export function RefineAdminLayout({
   return (
     <AntdRegistry>
       <AntdApp>
-        <RefineAdminShell>{children}</RefineAdminShell>
+        <AdminStaffProvider>
+          <RefineAdminShell>{children}</RefineAdminShell>
+        </AdminStaffProvider>
       </AntdApp>
     </AntdRegistry>
   );

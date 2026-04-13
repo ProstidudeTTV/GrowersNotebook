@@ -14,8 +14,8 @@ export function StrainsListSearchField({
 }: {
   value: string;
   onChange: (v: string) => void;
-  /** Apply `q` to the URL (and reload the list). */
-  onEnterCommit?: () => void;
+  /** Apply this text as `q` in the URL (use input value so Enter always wins over stale state). */
+  onEnterCommit?: (committed: string) => void;
 }) {
   return (
     <div className="relative min-w-0 flex-1 basis-[14rem]">
@@ -28,7 +28,7 @@ export function StrainsListSearchField({
       <input
         id={INPUT_ID}
         type="search"
-        name="q"
+        name="strainCatalogQ"
         autoComplete="off"
         enterKeyHint="search"
         placeholder="Type a name, press Enter to search…"
@@ -37,7 +37,10 @@ export function StrainsListSearchField({
         onKeyDown={(e) => {
           if (e.key !== "Enter") return;
           e.preventDefault();
-          onEnterCommit?.();
+          e.stopPropagation();
+          const committed = e.currentTarget.value.trim();
+          onChange(committed);
+          onEnterCommit?.(committed);
         }}
         className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
       />

@@ -174,8 +174,13 @@ function BreederFilterCombobox({
 
 export function StrainsCatalogToolbar({
   breederLabelResolved,
+  totalPages,
+  currentPage,
 }: {
   breederLabelResolved: string | null;
+  /** From server list response; drives page dropdown. */
+  totalPages: number;
+  currentPage: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -251,6 +256,20 @@ export function StrainsCatalogToolbar({
     [pathname, router],
   );
 
+  const navigateToPage = useCallback(
+    (nextPage: number) => {
+      const s = inputsRef.current;
+      const p = buildStrainsQueryFromInputs(s);
+      const safe = Math.max(1, Math.min(nextPage, Math.max(1, totalPages)));
+      p.set("page", String(safe));
+      p.delete("detail");
+      p.delete("reviewsPage");
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : `${pathname}`);
+    },
+    [pathname, router, totalPages],
+  );
+
   return (
     <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
@@ -260,8 +279,33 @@ export function StrainsCatalogToolbar({
         <StrainsListSearchField
           value={q}
           onChange={setQ}
-          onEnterCommit={() => navigateWith({ q })}
+          onEnterCommit={(committed) => navigateWith({ q: committed })}
         />
+        {totalPages > 1 ? (
+          <div className="shrink-0">
+            <label
+              htmlFor="strain-catalog-page"
+              className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+            >
+              Page
+            </label>
+            <select
+              id="strain-catalog-page"
+              value={String(Math.min(currentPage, totalPages))}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) navigateToPage(n);
+              }}
+              className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+            >
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n} / {totalPages}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div className="shrink-0">
           <label htmlFor="strain-sort" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
             Sort
@@ -390,8 +434,8 @@ export function StrainsCatalogToolbar({
         </button>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Strain name updates the list when you press Enter. Live suggestions stay
-        on the header search (growers & posts).{" "}
+        Strain name applies when you press Enter (same row as Page). Header search
+        is for growers & posts only.{" "}
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
           Reset all filters
         </Link>

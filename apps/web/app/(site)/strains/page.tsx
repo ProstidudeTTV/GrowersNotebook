@@ -203,7 +203,11 @@ export default async function StrainsPage({
           </p>
         </div>
 
-        <StrainsCatalogToolbar breederLabelResolved={filterBreederName} />
+        <StrainsCatalogToolbar
+          breederLabelResolved={filterBreederName}
+          totalPages={totalPages}
+          currentPage={page}
+        />
       </div>
 
       {autoflowerOnly ? (

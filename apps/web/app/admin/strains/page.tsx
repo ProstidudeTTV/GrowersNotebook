@@ -1,11 +1,11 @@
 "use client";
 
 import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
-import { Button, Table } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
+import { Button, Form, Input, Table } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
-import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 export default function AdminStrainsPage() {
   const router = useRouter();
@@ -13,11 +13,41 @@ export default function AdminStrainsPage() {
     resource: "strains",
     syncWithLocation: true,
     pagination: { pageSize: 20 },
+    filters: {
+      initial: [
+        {
+          field: "q",
+          operator: "contains",
+          value: "",
+        },
+      ],
+    },
   });
 
   return (
     <List title="Strains (catalog)" headerButtons={<CreateButton />}>
-      <RefineHiddenSearchForm searchFormProps={searchFormProps} />
+      <Form
+        {...searchFormProps}
+        layout="inline"
+        className="mb-4 flex flex-wrap items-end gap-3"
+      >
+        <Form.Item
+          label="Search"
+          name="q"
+          className="mb-0 min-w-[min(100%,18rem)] flex-1"
+        >
+          <Input
+            allowClear
+            placeholder="Strain name or slug"
+            prefix={<SearchOutlined className="text-zinc-400" />}
+          />
+        </Form.Item>
+        <Form.Item className="mb-0">
+          <Button type="primary" htmlType="submit">
+            Search
+          </Button>
+        </Form.Item>
+      </Form>
       <Table
         {...tableProps}
         rowKey="id"

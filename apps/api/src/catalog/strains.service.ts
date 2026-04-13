@@ -427,12 +427,29 @@ export class StrainsService {
     return row ?? null;
   }
 
-  async listPaged(skip: number, take: number) {
+  async listPaged(
+    skip: number,
+    take: number,
+    opts?: { q?: string },
+  ) {
     const db = getDb();
-    const [{ total }] = await db.select({ total: count() }).from(strains);
+    const raw = opts?.q?.trim();
+    const whereClause = raw
+      ? or(
+          ilike(strains.name, `%${raw.replace(/%/g, '\\%')}%`),
+          ilike(strains.slug, `%${raw.replace(/%/g, '\\%')}%`),
+        )
+      : undefined;
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(strains)
+      .where(whereClause);
+
     const rows = await db
       .select()
       .from(strains)
+      .where(whereClause)
       .orderBy(asc(strains.name))
       .limit(take)
       .offset(skip);

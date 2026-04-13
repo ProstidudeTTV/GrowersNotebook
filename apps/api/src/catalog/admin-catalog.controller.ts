@@ -55,10 +55,13 @@ export class AdminCatalogController {
   async listStrains(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
+    @Query('q') q: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { skip, take } = range(_start, _end);
-    const { rows, total } = await this.strains.listPaged(skip, take);
+    const { rows, total } = await this.strains.listPaged(skip, take, {
+      q: q?.trim() || undefined,
+    });
     res.setHeader('X-Total-Count', String(total));
     return rows;
   }

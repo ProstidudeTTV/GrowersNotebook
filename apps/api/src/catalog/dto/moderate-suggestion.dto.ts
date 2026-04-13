@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class ModerateSuggestionDto {
   @IsEnum(['approve', 'reject'] as const)
@@ -7,4 +7,12 @@ export class ModerateSuggestionDto {
   @IsOptional()
   @IsString()
   rejectReason?: string | null;
+
+  /**
+   * When approving, optional staff-edited payload (replaces stored suggestion
+   * payload for the approval transaction only).
+   */
+  @IsOptional()
+  @IsObject()
+  payload?: Record<string, unknown>;
 }

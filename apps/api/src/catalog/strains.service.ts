@@ -464,6 +464,10 @@ export class StrainsService {
     effects?: string[];
     effectsNotes?: string | null;
     published?: boolean;
+    chemotype?: string | null;
+    genetics?: string | null;
+    isAutoflower?: boolean;
+    reportedEffectPcts?: Record<string, number>;
   }) {
     await this.nameBlocklist.assertAllowed(values.name);
     const db = getDb();
@@ -478,6 +482,10 @@ export class StrainsService {
           effects: values.effects ?? [],
           effectsNotes: values.effectsNotes ?? null,
           published: values.published ?? true,
+          chemotype: values.chemotype ?? null,
+          genetics: values.genetics ?? null,
+          isAutoflower: values.isAutoflower ?? false,
+          reportedEffectPcts: values.reportedEffectPcts ?? {},
         })
         .returning();
       return row;

@@ -439,17 +439,35 @@ export class BreedersService {
       website: string | null;
       country: string | null;
       published: boolean;
+      /** Staff override; normally maintained by review aggregates. */
+      reviewCount: number;
+      /** Stored as numeric; pass string or number. */
+      avgRating: string | null;
     }>,
   ) {
     if (body.name) await this.nameBlocklist.assertAllowed(body.name);
     const db = getDb();
+    const { reviewCount, avgRating, ...rest } = body;
+    const clean = Object.fromEntries(
+      Object.entries(rest).filter(([, v]) => v !== undefined),
+    ) as Record<string, unknown>;
+    const set: Record<string, unknown> = {
+      ...clean,
+      updatedAt: new Date(),
+    };
+    if (reviewCount !== undefined) {
+      set.reviewCount = Math.max(0, Math.floor(Number(reviewCount)));
+    }
+    if (avgRating !== undefined) {
+      set.avgRating =
+        avgRating === null || avgRating === ''
+          ? null
+          : String(avgRating);
+    }
     try {
       const [row] = await db
         .update(breeders)
-        .set({
-          ...body,
-          updatedAt: new Date(),
-        })
+        .set(set as Record<string, never>)
         .where(eq(breeders.id, id))
         .returning();
       if (!row) throw new NotFoundException();

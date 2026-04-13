@@ -174,6 +174,8 @@ export class AdminCatalogController {
       website: string | null;
       country: string | null;
       published: boolean;
+      reviewCount: number;
+      avgRating: string | null;
     }>,
   ) {
     return this.breeders.updateAdmin(id, body);
@@ -212,7 +214,7 @@ export class AdminCatalogController {
     @Body() body: ModerateSuggestionDto,
   ) {
     if (body.action === 'approve') {
-      return this.suggestions.approve(id, user.sub);
+      return this.suggestions.approve(id, user.sub, body.payload);
     }
     return this.suggestions.reject(id, user.sub, body.rejectReason);
   }

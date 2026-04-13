@@ -1,10 +1,18 @@
 "use client";
 
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { Button, Descriptions, Input, Modal, Tag, Typography } from "antd";
+import {
+  Button,
+  Descriptions,
+  Input,
+  Modal,
+  Tag,
+  Typography,
+} from "antd";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CatalogSuggestionPayloadEditor } from "@/components/admin/catalog-suggestion-payload-editor";
 import { adminAxios } from "@/lib/admin-axios";
 
 type Row = {
@@ -19,6 +27,8 @@ type Row = {
   rejectReason?: string | null;
 };
 
+const EDIT_KINDS = ["edit_strain", "edit_breeder"];
+
 export default function AdminCatalogSuggestionReviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -29,6 +39,10 @@ export default function AdminCatalogSuggestionReviewPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Staff-edited payload for new_strain / new_breeder */
+  const [draft, setDraft] = useState<Record<string, unknown>>({});
+  /** Raw JSON for edit_strain / edit_breeder */
+  const [editJson, setEditJson] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,20 +67,53 @@ export default function AdminCatalogSuggestionReviewPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!row) return;
+    if (EDIT_KINDS.includes(row.kind)) {
+      setEditJson(JSON.stringify(row.payload, null, 2));
+    } else {
+      const p = { ...row.payload } as Record<string, unknown>;
+      if (
+        p.reportedEffectPcts &&
+        typeof p.reportedEffectPcts === "object" &&
+        p.reportedEffectPctsJson == null
+      ) {
+        p.reportedEffectPctsJson = JSON.stringify(p.reportedEffectPcts);
+      }
+      setDraft(p);
+    }
+  }, [row]);
+
+  function buildApprovePayload(): Record<string, unknown> {
+    if (!row) throw new Error("No row");
+    if (EDIT_KINDS.includes(row.kind)) {
+      const parsed = JSON.parse(editJson) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Invalid JSON payload");
+      }
+      return parsed as Record<string, unknown>;
+    }
+    return { ...draft };
+  }
+
   async function approve() {
     if (!row || row.status !== "pending") return;
     setBusy(true);
+    setError(null);
     try {
+      const payload = buildApprovePayload();
       await adminAxios.patch(`/catalog-suggestions/${row.id}`, {
         action: "approve",
+        payload,
       });
       router.push("/admin/catalog-suggestions");
     } catch (e: unknown) {
+      const ax = e as { response?: { data?: { message?: string } }; message?: string };
       const msg =
-        e instanceof Error
-          ? e.message
-          : "Approve failed — check payload or duplicates.";
-      setError(msg);
+        ax.response?.data?.message ||
+        ax.message ||
+        "Approve failed — check payload or duplicates.";
+      setError(String(msg));
     } finally {
       setBusy(false);
     }
@@ -111,6 +158,7 @@ export default function AdminCatalogSuggestionReviewPage() {
   if (!row) return null;
 
   const pending = row.status === "pending";
+  const showStructured = row.kind === "new_strain" || row.kind === "new_breeder";
 
   return (
     <div className="max-w-3xl space-y-6 p-6">
@@ -167,17 +215,48 @@ export default function AdminCatalogSuggestionReviewPage() {
         ) : null}
       </Descriptions>
 
-      <div>
-        <Typography.Title level={5}>Payload</Typography.Title>
-        <pre className="max-h-[min(60dvh,28rem)] overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-xs leading-relaxed text-[var(--gn-text)]">
-          {JSON.stringify(row.payload, null, 2)}
-        </pre>
-      </div>
+      {pending ? (
+        <>
+          <Typography.Title level={5} style={{ marginBottom: 8 }}>
+            {showStructured
+              ? "Edit proposal (saved only when you approve)"
+              : "Edit payload JSON"}
+          </Typography.Title>
+          {showStructured ? (
+            <CatalogSuggestionPayloadEditor
+              kind={row.kind}
+              draft={draft}
+              onChange={setDraft}
+            />
+          ) : (
+            <div className="space-y-2">
+              <Typography.Text type="secondary" className="text-xs">
+                Keys depend on kind (e.g. <code>target_slug</code> plus fields to
+                change for edit suggestions).
+              </Typography.Text>
+              <Input.TextArea
+                rows={20}
+                className="font-mono text-xs"
+                value={editJson}
+                onChange={(e) => setEditJson(e.target.value)}
+                spellCheck={false}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div>
+          <Typography.Title level={5}>Payload (read-only)</Typography.Title>
+          <pre className="max-h-[min(60dvh,28rem)] overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-xs leading-relaxed text-[var(--gn-text)]">
+            {JSON.stringify(row.payload, null, 2)}
+          </pre>
+        </div>
+      )}
 
       {pending ? (
         <div className="flex flex-wrap gap-3">
           <Button type="primary" loading={busy} onClick={() => void approve()}>
-            Approve
+            Approve with edited payload
           </Button>
           <Button danger loading={busy} onClick={() => setRejectOpen(true)}>
             Reject

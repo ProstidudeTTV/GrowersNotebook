@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
-import { buildNewStrainSuggestionPayload } from "@/lib/new-strain-suggestion-payload";
+import {
+  buildNewBreederSuggestionPayload,
+  buildNewStrainSuggestionPayload,
+} from "@/lib/new-strain-suggestion-payload";
 
 type Kind =
   | "new_strain"
@@ -28,8 +31,15 @@ export function CatalogSuggestClient() {
   const [effectsRaw, setEffectsRaw] = useState("");
   const [effectsNotes, setEffectsNotes] = useState("");
   const [published, setPublished] = useState(true);
+  const [breederPublished, setBreederPublished] = useState(true);
   const [website, setWebsite] = useState("");
   const [country, setCountry] = useState("");
+  const [chemotype, setChemotype] = useState<
+    "" | "indica" | "sativa" | "hybrid"
+  >("");
+  const [genetics, setGenetics] = useState("");
+  const [isAutoflower, setIsAutoflower] = useState(false);
+  const [reportedEffectPctsJson, setReportedEffectPctsJson] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +62,30 @@ export function CatalogSuggestClient() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const jsonTrim = reportedEffectPctsJson.trim();
+      if (jsonTrim) {
+        try {
+          const parsed = JSON.parse(jsonTrim) as unknown;
+          if (
+            parsed === null ||
+            typeof parsed !== "object" ||
+            Array.isArray(parsed)
+          ) {
+            setError(
+              "Reported effect % must be a JSON object, e.g. {\"relaxed\":45,\"happy\":30}.",
+            );
+            setSaving(false);
+            return;
+          }
+        } catch {
+          setError(
+            "Invalid JSON in reported effect %. Use a single object like {\"relaxed\":45,\"happy\":30} or leave it blank.",
+          );
+          setSaving(false);
+          return;
+        }
+      }
+
       let payload: Record<string, unknown> = {};
       switch (kind) {
         case "new_strain":
@@ -63,19 +97,26 @@ export function CatalogSuggestClient() {
             effects,
             effectsNotes,
             published,
+            chemotype,
+            genetics,
+            isAutoflower,
+            reportedEffectPctsJson,
           });
           break;
         case "new_breeder":
-          payload = {
-            slug: slug.trim(),
-            name: name.trim(),
-            description: description.trim() || undefined,
-            website: website.trim() || undefined,
-            country: country.trim() || undefined,
-          };
+          payload = buildNewBreederSuggestionPayload({
+            slug,
+            name,
+            description,
+            website,
+            country,
+            published: breederPublished,
+          });
           break;
         case "edit_strain": {
-          const patch: Record<string, unknown> = { target_slug: targetSlug.trim() };
+          const patch: Record<string, unknown> = {
+            target_slug: targetSlug.trim(),
+          };
           if (slug.trim()) patch.slug = slug.trim();
           if (name.trim()) patch.name = name.trim();
           if (description.trim()) patch.description = description.trim();
@@ -86,7 +127,9 @@ export function CatalogSuggestClient() {
           break;
         }
         case "edit_breeder": {
-          const patch: Record<string, unknown> = { target_slug: targetSlug.trim() };
+          const patch: Record<string, unknown> = {
+            target_slug: targetSlug.trim(),
+          };
           if (slug.trim()) patch.slug = slug.trim();
           if (name.trim()) patch.name = name.trim();
           if (description.trim()) patch.description = description.trim();
@@ -133,6 +176,7 @@ export function CatalogSuggestClient() {
   const showEffects = kind === "new_strain" || kind === "edit_strain";
   const showWebsiteCountry = kind === "new_breeder" || kind === "edit_breeder";
   const showSlugName = kind !== "edit_strain" && kind !== "edit_breeder";
+  const showStrainExtras = kind === "new_strain";
 
   return (
     <form
@@ -158,14 +202,14 @@ export function CatalogSuggestClient() {
       {showTarget ? (
         <div>
           <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-            URL slug of existing entry (e.g. blue-dream)
+            URL slug of existing entry
           </label>
           <input
             value={targetSlug}
             onChange={(e) => setTargetSlug(e.target.value)}
             required
             className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
-            placeholder="existing-slug"
+            placeholder="e.g. blue-dream"
           />
           <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
             Only fill in fields you want changed; leave others blank.
@@ -185,8 +229,14 @@ export function CatalogSuggestClient() {
                 onChange={(e) => setSlug(e.target.value)}
                 required={!showTarget}
                 className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
-                placeholder="my-entry-slug"
+                placeholder="e.g. sour-diesel (lowercase, hyphens)"
               />
+              {!showTarget ? (
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  Used in the strain or breeder URL; letters, numbers, hyphens
+                  only.
+                </p>
+              ) : null}
             </div>
           )}
           <div>
@@ -198,6 +248,7 @@ export function CatalogSuggestClient() {
               onChange={(e) => setName(e.target.value)}
               required={!showTarget}
               className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="e.g. Sour Diesel"
             />
           </div>
         </>
@@ -212,6 +263,11 @@ export function CatalogSuggestClient() {
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+          placeholder={
+            kind === "new_breeder"
+              ? "e.g. Mephisto focuses on autoflowers; short paragraph for the directory."
+              : "Flavor, effects, grow notes — same style as other catalog entries."
+          }
         />
       </div>
 
@@ -224,8 +280,11 @@ export function CatalogSuggestClient() {
             value={breederSlug}
             onChange={(e) => setBreederSlug(e.target.value)}
             className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
-            placeholder="breeder-slug-from-directory"
+            placeholder="e.g. mephisto-genetics — must match a breeder in /breeders"
           />
+          <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+            Find the breeder on the site and copy the last part of their URL.
+          </p>
         </div>
       ) : null}
 
@@ -233,15 +292,15 @@ export function CatalogSuggestClient() {
         <>
           <div>
             <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-              Effects / tags (comma or newline; stored as{" "}
-              <code className="text-[0.7rem]">effects[]</code> like catalog
-              strains)
+              Effects / tags (comma or newline →{" "}
+              <code className="text-[0.7rem]">effects[]</code>)
             </label>
             <textarea
               value={effectsRaw}
               onChange={(e) => setEffectsRaw(e.target.value)}
               rows={2}
               className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="e.g. Relaxed, Happy, Euphoric  or  one per line"
             />
           </div>
           <div>
@@ -253,9 +312,77 @@ export function CatalogSuggestClient() {
               value={effectsNotes}
               onChange={(e) => setEffectsNotes(e.target.value)}
               className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="e.g. Often reported: calming body high; citrus aroma."
             />
           </div>
         </>
+      ) : null}
+
+      {showStrainExtras ? (
+        <div className="space-y-4 rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3">
+          <p className="text-xs font-medium text-[var(--gn-text-muted)]">
+            Optional details (helps staff publish a complete entry)
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
+              Chemotype
+            </label>
+            <select
+              value={chemotype}
+              onChange={(e) =>
+                setChemotype(e.target.value as typeof chemotype)
+              }
+              className="mt-1 w-full max-w-xs rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+            >
+              <option value="">— not sure / leave blank —</option>
+              <option value="indica">Indica</option>
+              <option value="sativa">Sativa</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+          <div className="flex items-start gap-2">
+            <input
+              id="strain-af"
+              type="checkbox"
+              checked={isAutoflower}
+              onChange={(e) => setIsAutoflower(e.target.checked)}
+              className="mt-0.5"
+            />
+            <label htmlFor="strain-af" className="text-sm text-[var(--gn-text)]">
+              <span className="font-medium">Autoflower</span>
+              <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+                Check if this is an autoflowering variety (ruderalis-based).
+              </span>
+            </label>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
+              Genetics (lineage)
+            </label>
+            <input
+              value={genetics}
+              onChange={(e) => setGenetics(e.target.value)}
+              className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="e.g. Chemdawg × Super Skunk"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
+              Reported effect percentages (JSON, optional)
+            </label>
+            <textarea
+              value={reportedEffectPctsJson}
+              onChange={(e) => setReportedEffectPctsJson(e.target.value)}
+              rows={3}
+              className="mt-1 w-full font-mono text-xs rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-[var(--gn-text)]"
+              placeholder={`Example:\n{"relaxed": 45, "happy": 30, "euphoric": 25}`}
+            />
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              Rough user-reported mix of effects (keys are lowercase effect
+              names; values are 0–100). Omit if you do not have this.
+            </p>
+          </div>
+        </div>
       ) : null}
 
       {kind === "new_strain" ? (
@@ -270,9 +397,27 @@ export function CatalogSuggestClient() {
           <label htmlFor="strain-published" className="text-sm text-[var(--gn-text)]">
             <span className="font-medium">Published</span>
             <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
-              Matches catalog <code className="text-[0.7rem]">published</code>.
-              Leave on so the entry goes live after staff approve (uncheck for
-              draft-only).
+              When checked, the strain can go live in the catalog after staff
+              approve. Uncheck to suggest a draft-only entry.
+            </span>
+          </label>
+        </div>
+      ) : null}
+
+      {kind === "new_breeder" ? (
+        <div className="flex items-start gap-2 rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3">
+          <input
+            id="breeder-published"
+            type="checkbox"
+            checked={breederPublished}
+            onChange={(e) => setBreederPublished(e.target.checked)}
+            className="mt-0.5"
+          />
+          <label htmlFor="breeder-published" className="text-sm text-[var(--gn-text)]">
+            <span className="font-medium">Published</span>
+            <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+              When checked, the breeder listing can appear after approval.
+              Uncheck if you want it held as unpublished until staff decide.
             </span>
           </label>
         </div>
@@ -288,6 +433,7 @@ export function CatalogSuggestClient() {
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="https://example.com"
             />
           </div>
           <div>
@@ -298,6 +444,7 @@ export function CatalogSuggestClient() {
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
+              placeholder="e.g. Spain, California, Netherlands"
             />
           </div>
         </>

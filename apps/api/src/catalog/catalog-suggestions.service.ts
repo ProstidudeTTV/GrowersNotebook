@@ -77,7 +77,11 @@ export class CatalogSuggestionsService {
     return row ?? null;
   }
 
-  async approve(id: string, moderatorId: string) {
+  async approve(
+    id: string,
+    moderatorId: string,
+    payloadOverride?: Record<string, unknown>,
+  ) {
     const db = getDb();
     const row = await this.findById(id);
     if (!row) throw new NotFoundException();
@@ -85,9 +89,17 @@ export class CatalogSuggestionsService {
       throw new BadRequestException('Suggestion is not pending');
     }
 
+    const basePayload = row.payload as Record<string, unknown>;
+    const effectivePayload =
+      payloadOverride &&
+      typeof payloadOverride === 'object' &&
+      !Array.isArray(payloadOverride)
+        ? payloadOverride
+        : basePayload;
+
     switch (row.kind) {
       case 'new_breeder': {
-        const p = row.payload as Record<string, unknown>;
+        const p = effectivePayload;
         const slug = String(p.slug ?? '').trim();
         const name = String(p.name ?? '').trim();
         if (!slug || !name) throw new BadRequestException('Invalid payload');
@@ -102,7 +114,7 @@ export class CatalogSuggestionsService {
         break;
       }
       case 'new_strain': {
-        const p = row.payload as Record<string, unknown>;
+        const p = effectivePayload;
         const slug = String(p.slug ?? '').trim();
         const name = String(p.name ?? '').trim();
         if (!slug || !name) throw new BadRequestException('Invalid payload');
@@ -138,6 +150,33 @@ export class CatalogSuggestionsService {
             : String(p.effectsNotes);
         const published = p.published === false ? false : true;
 
+        const chemotypeRaw = p.chemotype != null ? String(p.chemotype).trim().toLowerCase() : '';
+        const chemotype =
+          chemotypeRaw === 'indica' ||
+          chemotypeRaw === 'sativa' ||
+          chemotypeRaw === 'hybrid'
+            ? chemotypeRaw
+            : undefined;
+        const genetics =
+          p.genetics === undefined || p.genetics === null
+            ? undefined
+            : String(p.genetics).trim() || null;
+        const isAutoflower =
+          p.isAutoflower === true || p.isAutoflower === 'true';
+        let reportedEffectPcts: Record<string, number> | undefined;
+        if (p.reportedEffectPcts != null && typeof p.reportedEffectPcts === 'object') {
+          reportedEffectPcts = p.reportedEffectPcts as Record<string, number>;
+        } else if (typeof p.reportedEffectPctsJson === 'string') {
+          try {
+            const parsed = JSON.parse(p.reportedEffectPctsJson) as unknown;
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              reportedEffectPcts = parsed as Record<string, number>;
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+
         await this.strains.createAdmin({
           slug,
           name,
@@ -146,11 +185,15 @@ export class CatalogSuggestionsService {
           effects,
           effectsNotes,
           published,
+          chemotype,
+          genetics: genetics ?? undefined,
+          isAutoflower,
+          reportedEffectPcts,
         });
         break;
       }
       case 'edit_breeder': {
-        const p = row.payload as Record<string, unknown>;
+        const p = effectivePayload;
         const targetSlug = String(p.target_slug ?? p.targetSlug ?? '').trim();
         if (!targetSlug) throw new BadRequestException('target_slug required');
         const b = await this.breeders.findBySlug(targetSlug);
@@ -169,7 +212,7 @@ export class CatalogSuggestionsService {
         break;
       }
       case 'edit_strain': {
-        const p = row.payload as Record<string, unknown>;
+        const p = effectivePayload;
         const targetSlug = String(p.target_slug ?? p.targetSlug ?? '').trim();
         if (!targetSlug) throw new BadRequestException('target_slug required');
         const s = await this.strains.findBySlug(targetSlug);

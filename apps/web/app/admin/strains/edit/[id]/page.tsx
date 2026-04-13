@@ -4,6 +4,7 @@ import { Edit, useForm } from "@refinedev/antd";
 import { useInvalidate, useList } from "@refinedev/core";
 import { App as AntdApp, Button, Form, Input, Select, Switch, Typography } from "antd";
 import Link from "next/link";
+import { useMemo } from "react";
 import { adminAxios } from "@/lib/admin-axios";
 import { useAdminStaff } from "../../../admin-staff-context";
 
@@ -27,6 +28,12 @@ export default function AdminStrainEditPage() {
     value: String((b as { id: string }).id),
     label: String((b as { name?: string }).name ?? (b as { id: string }).id),
   }));
+
+  const breederIdWatch = Form.useWatch("breederId", form);
+  const breederAdminHref = useMemo(() => {
+    if (!breederIdWatch || String(breederIdWatch).trim() === "") return null;
+    return `/admin/breeders/edit/${encodeURIComponent(String(breederIdWatch))}`;
+  }, [breederIdWatch]);
 
   const slug = (query?.data?.data as { slug?: string } | undefined)?.slug;
   const strainId = String((query?.data?.data as { id?: string } | undefined)?.id ?? "");
@@ -93,7 +100,20 @@ export default function AdminStrainEditPage() {
             <Form.Item label="Description" name="description">
               <Input.TextArea rows={6} maxLength={8000} showCount />
             </Form.Item>
-            <Form.Item label="Breeder" name="breederId">
+            <Form.Item
+              label="Breeder"
+              name="breederId"
+              extra={
+                isAdmin && breederAdminHref ? (
+                  <Link
+                    href={breederAdminHref}
+                    className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+                  >
+                    Open this breeder in admin
+                  </Link>
+                ) : null
+              }
+            >
               <Select
                 allowClear
                 placeholder="None"

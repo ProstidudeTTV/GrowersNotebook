@@ -28,7 +28,10 @@ const drawerButtonStyles: CSSProperties = {
 type MenuTreeItem = {
   key: string;
   name: string;
+  /** Raw list path from resource definition */
   list?: string;
+  /** Resolved path from Refine `useMenu` (prefer this when set) */
+  route?: string;
   label?: ReactNode;
   meta?: {
     label?: ReactNode;
@@ -68,11 +71,16 @@ export function GrowersAdminSider({
             children: buildItems(item.children),
           };
         }
-        const route = item.list ?? "";
+        const href = item.route ?? item.list ?? "";
         return {
           key: item.key,
           icon,
-          label: <Link to={route}>{labelBase}</Link>,
+          label:
+            href.length > 0 ? (
+              <Link to={href}>{labelBase}</Link>
+            ) : (
+              labelBase
+            ),
         };
       }),
     [Link],

@@ -239,7 +239,7 @@ export function NotificationsNavLink() {
             />
           ) : null}
         </span>
-        Notifications
+        <span className="hidden sm:inline">Notifications</span>
       </button>
       {open ? (
         <div

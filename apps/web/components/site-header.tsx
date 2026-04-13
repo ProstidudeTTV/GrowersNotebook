@@ -36,9 +36,10 @@ function DiscordNavLink() {
       target="_blank"
       rel="noopener noreferrer"
       className={discordNavLinkClass}
+      aria-label="Discord (opens in new tab)"
     >
       <IconDiscord className="h-[1.125rem] w-[1.125rem] shrink-0" />
-      Discord
+      <span className="hidden sm:inline">Discord</span>
     </a>
   );
 }
@@ -91,17 +92,22 @@ export function SiteHeader({ leading }: { leading?: ReactNode }) {
       </div>
 
       {/* Mobile: title row + full-width search */}
-      <div className="flex flex-col lg:hidden">
-        <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+      <div className="flex flex-col overflow-x-hidden lg:hidden">
+        <div className="flex min-h-14 min-w-0 items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
             {leading ? (
               <div className="flex shrink-0 items-center">{leading}</div>
             ) : null}
-            <Link href="/" className={`min-w-0 truncate ${brandClass}`}>
-              Growers Notebook
+            {/* flex-1 + min-w-0 so the brand can shrink; nav stays icon-first on narrow widths */}
+            <Link
+              href="/"
+              className={`min-w-0 flex-1 truncate ${brandClass}`}
+            >
+              <span className="sm:hidden">GN</span>
+              <span className="hidden sm:inline">Growers Notebook</span>
             </Link>
           </div>
-          <nav className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+          <nav className="flex shrink-0 items-center gap-1.5 text-sm sm:gap-3">
             <HeaderNavActions />
           </nav>
         </div>

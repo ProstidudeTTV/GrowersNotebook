@@ -356,6 +356,7 @@ export function AuthNav() {
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           aria-controls={menuId}
+          aria-label={`Account menu for ${username}`}
           onClick={() => setMenuOpen((o) => !o)}
         >
           <span className="relative inline-flex shrink-0">
@@ -367,7 +368,7 @@ export function AuthNav() {
               />
             ) : null}
           </span>
-          <span className="flex min-w-0 flex-col leading-tight">
+          <span className="hidden min-w-0 flex-col leading-tight sm:flex">
             <span className="truncate text-sm font-medium text-[var(--gn-text)]">
               {username}
             </span>

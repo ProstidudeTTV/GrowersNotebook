@@ -37,7 +37,11 @@ export function MessagesNavLink() {
   );
 
   return (
-    <Link href="/messages" className={linkClass}>
+    <Link
+      href="/messages"
+      className={linkClass}
+      aria-label={anyUnread ? "Messages (unread)" : "Messages"}
+    >
       <span className="relative inline-flex shrink-0">
         <IconMessage className="h-[1.125rem] w-[1.125rem]" />
         {anyUnread ? (
@@ -47,7 +51,7 @@ export function MessagesNavLink() {
           />
         ) : null}
       </span>
-      Messages
+      <span className="hidden sm:inline">Messages</span>
     </Link>
   );
 }

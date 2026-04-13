@@ -9,6 +9,7 @@ import {
 import { AppVersionRefresh } from "@/components/app-version-refresh";
 import { MailingListPrompt } from "@/components/mailing-list-prompt";
 import { SiteHeader } from "@/components/site-header";
+import { clientApiJson } from "@/lib/client-api";
 import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
 
 function MenuIcon({ className }: { className?: string }) {
@@ -64,13 +65,11 @@ export function SiteChrome({
 
   /** Refresh banner from API so admin-published announcements show without a full redeploy. */
   useEffect(() => {
-    const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
-    if (!raw) return;
-    const api = raw.replace(/\/+$/, "");
     let cancelled = false;
-    fetch(`${api}/site/public-config`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { announcement?: PublicSiteConfigPayload["announcement"] }) => {
+    void clientApiJson<{ announcement?: PublicSiteConfigPayload["announcement"] }>(
+      "/site/public-config",
+    )
+      .then((j) => {
         if (cancelled || !j) return;
         setAnn(j.announcement ?? null);
       })

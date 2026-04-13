@@ -1,8 +1,8 @@
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsIn,
-  IsISO8601,
   IsOptional,
   IsString,
   IsUrl,
@@ -41,18 +41,23 @@ export class PatchSiteConfigDto {
   @IsOptional()
   @Transform(({ value }) => emptyToNull(value))
   @ValidateIf((_, v) => v != null)
-  @IsISO8601()
+  @IsDateString()
   announcementStartsAt?: string | null;
 
   @IsOptional()
   @Transform(({ value }) => emptyToNull(value))
   @ValidateIf((_, v) => v != null)
-  @IsISO8601()
+  @IsDateString()
   announcementEndsAt?: string | null;
 
   @IsOptional()
   @IsBoolean()
   announcementEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  /** When turning maintenance on, defaults to true if omitted. Set false to skip bulk email. */
+  notifyUsersOnMaintenance?: boolean;
 
   @IsOptional()
   @IsBoolean()

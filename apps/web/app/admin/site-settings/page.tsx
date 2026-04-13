@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  Alert,
   Button,
   Card,
   Checkbox,
   Form,
   Input,
+  message,
   Radio,
   Space,
   Spin,
@@ -31,6 +33,7 @@ type StaffSiteConfig = {
   seoKeywords: string | null;
   ogImageUrl: string | null;
   updatedAt: string;
+  maintenanceEmailConfigured: boolean;
 };
 
 function isoToDatetimeLocal(iso: string | null): string {
@@ -53,6 +56,11 @@ export default function AdminSiteSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** Snapshot from last successful load (for maintenance email transition checks). */
+  const [loadedSite, setLoadedSite] = useState<{
+    maintenanceEnabled: boolean;
+    maintenanceEmailConfigured: boolean;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -78,6 +86,10 @@ export default function AdminSiteSettingsPage() {
         token: session.access_token,
         timeoutMs: 20_000,
       });
+      setLoadedSite({
+        maintenanceEnabled: row.maintenanceEnabled,
+        maintenanceEmailConfigured: row.maintenanceEmailConfigured ?? false,
+      });
       form.setFieldsValue({
         motdText: row.motdText ?? "",
         announcementTitle: row.announcementTitle ?? "",
@@ -89,6 +101,7 @@ export default function AdminSiteSettingsPage() {
         announcementEnabled: row.announcementEnabled,
         maintenanceEnabled: row.maintenanceEnabled,
         maintenanceMessage: row.maintenanceMessage ?? "",
+        notifyUsersOnMaintenance: true,
         seoDefaultTitle: row.seoDefaultTitle ?? "",
         seoDefaultDescription: row.seoDefaultDescription ?? "",
         seoKeywords: row.seoKeywords ?? "",
@@ -120,6 +133,33 @@ export default function AdminSiteSettingsPage() {
     const starts = datetimeLocalToIso(String(values.announcementStartsAt ?? ""));
     const ends = datetimeLocalToIso(String(values.announcementEndsAt ?? ""));
 
+    if (values.announcementEnabled) {
+      const t = String(values.announcementTitle ?? "").trim();
+      const b = String(values.announcementBody ?? "").trim();
+      if (!t && !b) {
+        void message.error(
+          "Add an announcement title or body, or turn off the announcement.",
+        );
+        return;
+      }
+    }
+
+    const turningMaintenanceOn =
+      Boolean(values.maintenanceEnabled) &&
+      loadedSite !== null &&
+      !loadedSite.maintenanceEnabled;
+
+    if (
+      turningMaintenanceOn &&
+      values.notifyUsersOnMaintenance &&
+      loadedSite &&
+      !loadedSite.maintenanceEmailConfigured
+    ) {
+      void message.warning(
+        "Maintenance email is not configured on the API (set RESEND_API_KEY, RESEND_FROM_EMAIL, SUPABASE_SERVICE_ROLE_KEY). Users will not be emailed.",
+      );
+    }
+
     setSaving(true);
     try {
       await apiFetch<StaffSiteConfig>("/admin/site-config", {
@@ -131,11 +171,12 @@ export default function AdminSiteSettingsPage() {
             String(values.announcementTitle ?? "").trim() || null,
           announcementBody:
             String(values.announcementBody ?? "").trim() || null,
-          announcementStyle: values.announcementStyle,
+          announcementStyle: values.announcementStyle ?? "info",
           announcementStartsAt: starts,
           announcementEndsAt: ends,
           announcementEnabled: Boolean(values.announcementEnabled),
           maintenanceEnabled: Boolean(values.maintenanceEnabled),
+          notifyUsersOnMaintenance: Boolean(values.notifyUsersOnMaintenance),
           maintenanceMessage:
             String(values.maintenanceMessage ?? "").trim() || null,
           seoDefaultTitle:
@@ -189,12 +230,13 @@ export default function AdminSiteSettingsPage() {
           announcementStyle: "info",
           announcementEnabled: false,
           maintenanceEnabled: false,
+          notifyUsersOnMaintenance: true,
         }}
       >
         <Typography.Title level={5}>Message of the day</Typography.Title>
         <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          A short line shown in the public site chrome (header area). Use for
-          seasonal notes or links; leave empty to hide it.
+          A short line shown just below the site header on the public app. Use
+          for seasonal notes or links; leave empty to hide it.
         </p>
         <Form.Item name="motdText" label="MOTD text">
           <Input placeholder="Optional header strip…" maxLength={500} />
@@ -204,9 +246,10 @@ export default function AdminSiteSettingsPage() {
           Announcement
         </Typography.Title>
         <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          A highlighted banner on the public site with title and body. Start/end
-          times are optional; when disabled or outside the window, it does not
-          show.
+          A highlighted banner below the MOTD (if any) with title and body.
+          Start/end use your browser&apos;s local timezone. Leave both times
+          empty to show whenever enabled. You must enter at least a title or
+          body when the announcement is on.
         </p>
         <Form.Item name="announcementEnabled" valuePropName="checked">
           <Checkbox>Enable announcement (respects start/end window)</Checkbox>
@@ -238,8 +281,24 @@ export default function AdminSiteSettingsPage() {
           app. Moderators and admins still get the normal site; login and auth
           routes stay available so staff can sign in.
         </p>
+        {loadedSite && !loadedSite.maintenanceEmailConfigured ? (
+          <Alert
+            type="info"
+            showIcon
+            className="mb-4"
+            message="Bulk maintenance email is not configured"
+            description="Set RESEND_API_KEY, RESEND_FROM_EMAIL, and SUPABASE_SERVICE_ROLE_KEY on the API service so all registered users can be notified when you turn maintenance on."
+          />
+        ) : null}
         <Form.Item name="maintenanceEnabled" valuePropName="checked">
           <Checkbox>Maintenance mode (public site)</Checkbox>
+        </Form.Item>
+        <Form.Item
+          name="notifyUsersOnMaintenance"
+          valuePropName="checked"
+          extra="Sends one email per Supabase auth user when you save with maintenance turning on (was off, now on). Requires API env vars above."
+        >
+          <Checkbox>Email all registered users when enabling maintenance</Checkbox>
         </Form.Item>
         <Form.Item name="maintenanceMessage" label="Message">
           <Input.TextArea rows={3} maxLength={2000} />

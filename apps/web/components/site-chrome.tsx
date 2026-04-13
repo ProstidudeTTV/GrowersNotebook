@@ -59,14 +59,22 @@ export function SiteChrome({
       ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
       : "border-sky-500/35 bg-sky-500/10 text-sky-100";
 
+  /** Mobile drawer `--gn-mobile-drawer-top` assumes header only; extend when MOTD / banner sit under header. */
+  const mobileTopExtraRem =
+    (motdText?.trim() ? 2 : 0) + (announcement ? 3.5 : 0);
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div
+      className="flex min-h-screen flex-col"
+      style={
+        mobileTopExtraRem > 0
+          ? {
+              ["--gn-mobile-drawer-top" as string]: `calc(${7.75 + mobileTopExtraRem}rem + env(safe-area-inset-top, 0px))`,
+            }
+          : undefined
+      }
+    >
       <AppVersionRefresh />
-      {motdText?.trim() ? (
-        <p className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-center text-xs text-[var(--gn-text-muted)]">
-          {motdText.trim()}
-        </p>
-      ) : null}
       <SiteHeader
         leading={
           <button
@@ -79,6 +87,12 @@ export function SiteChrome({
           </button>
         }
       />
+
+      {motdText?.trim() ? (
+        <p className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-center text-xs text-[var(--gn-text-muted)]">
+          {motdText.trim()}
+        </p>
+      ) : null}
 
       {announcement ? (
         <div

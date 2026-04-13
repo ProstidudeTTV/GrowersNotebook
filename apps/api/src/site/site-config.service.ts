@@ -1,8 +1,14 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { siteConfig } from '../db/schema';
 import type { PatchSiteConfigDto } from './dto/patch-site-config.dto';
+import type { SendMaintenanceEmailDto } from './dto/send-maintenance-email.dto';
 import { MaintenanceNotifyService } from './maintenance-notify.service';
 
 function instantMs(v: unknown): number | null {
@@ -109,12 +115,14 @@ export class SiteConfigService {
       announcementEnabled: row.announcementEnabled,
       maintenanceEnabled: row.maintenanceEnabled,
       maintenanceMessage: row.maintenanceMessage,
+      maintenanceEmailSubject: row.maintenanceEmailSubject ?? null,
+      maintenanceEmailBody: row.maintenanceEmailBody ?? null,
       seoDefaultTitle: row.seoDefaultTitle ?? null,
       seoDefaultDescription: row.seoDefaultDescription ?? null,
       seoKeywords: row.seoKeywords ?? null,
       ogImageUrl: row.ogImageUrl ?? null,
       updatedAt: row.updatedAt.toISOString(),
-      maintenanceEmailConfigured: this.maintenanceNotify.isEmailConfigured(),
+      maintenanceEmailConfigured: this.maintenanceNotify.canSendBulkEmail(),
       emailOutreachFailureAt:
         row.emailOutreachFailureAt?.toISOString() ?? null,
     };
@@ -162,6 +170,10 @@ export class SiteConfigService {
       patch.maintenanceEnabled = body.maintenanceEnabled;
     if (body.maintenanceMessage !== undefined)
       patch.maintenanceMessage = body.maintenanceMessage;
+    if (body.maintenanceEmailSubject !== undefined)
+      patch.maintenanceEmailSubject = body.maintenanceEmailSubject;
+    if (body.maintenanceEmailBody !== undefined)
+      patch.maintenanceEmailBody = body.maintenanceEmailBody;
     if (body.seoDefaultTitle !== undefined)
       patch.seoDefaultTitle = body.seoDefaultTitle;
     if (body.seoDefaultDescription !== undefined)
@@ -175,17 +187,48 @@ export class SiteConfigService {
     await db.update(siteConfig).set(patch).where(eq(siteConfig.id, 1));
 
     if (enablingMaintenance && shouldNotifyUsers) {
-      void this.maintenanceNotify
-        .notifyAllUsers(messageForEmail ?? null)
-        .catch((e) =>
+      const updated = await this.getRow();
+      if (updated) {
+        const email = this.maintenanceNotify.composeMaintenanceEmail({
+          maintenanceMessage: messageForEmail ?? null,
+          maintenanceEmailSubject: updated.maintenanceEmailSubject ?? null,
+          maintenanceEmailBody: updated.maintenanceEmailBody ?? null,
+        });
+        void this.maintenanceNotify.sendToAllAuthUsers(email).catch((e) =>
           this.logger.error(
             `Maintenance email blast failed: ${
               e instanceof Error ? e.message : String(e)
             }`,
           ),
         );
+      }
     }
 
     return this.getStaffPayload();
+  }
+
+  /** Admin-only: send bulk maintenance email using saved config and optional body overrides. */
+  async sendMaintenanceEmail(dto: SendMaintenanceEmailDto) {
+    if (!this.maintenanceNotify.canSendBulkEmail()) {
+      throw new BadRequestException(
+        'Bulk email requires SMTP (SMTP_HOST, SMTP_FROM) and Supabase admin (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) on the API.',
+      );
+    }
+    const row = await this.getRow();
+    if (!row) throw new NotFoundException('site_config row missing');
+
+    const merged = {
+      maintenanceMessage:
+        dto.maintenanceMessage !== undefined
+          ? dto.maintenanceMessage
+          : row.maintenanceMessage,
+      maintenanceEmailSubject:
+        dto.emailSubject !== undefined ? dto.emailSubject : row.maintenanceEmailSubject,
+      maintenanceEmailBody:
+        dto.emailBody !== undefined ? dto.emailBody : row.maintenanceEmailBody,
+    };
+    const email = this.maintenanceNotify.composeMaintenanceEmail(merged);
+    await this.maintenanceNotify.sendToAllAuthUsers(email);
+    return { ok: true as const };
   }
 }

@@ -5,6 +5,8 @@ import { SmtpMailService } from '../email/smtp-mail.service';
 import { getDb } from '../db';
 import { siteConfig } from '../db/schema';
 
+const DEFAULT_MAINTENANCE_SUBJECT = 'Growers Notebook — maintenance notice';
+
 /** Optional bulk email when maintenance mode is turned on (SMTP + Supabase Admin API). */
 @Injectable()
 export class MaintenanceNotifyService {
@@ -20,10 +22,49 @@ export class MaintenanceNotifyService {
     return this.smtp.isConfigured();
   }
 
+  /** SMTP + Supabase admin API required to list users and send. */
+  canSendBulkEmail(): boolean {
+    const supabaseUrl = this.config.get<string>('SUPABASE_URL')?.trim();
+    const serviceRoleKey = this.config
+      .get<string>('SUPABASE_SERVICE_ROLE_KEY')
+      ?.trim();
+    return (
+      this.smtp.isConfigured() && !!supabaseUrl && !!serviceRoleKey
+    );
+  }
+
   private siteOrigin(): string {
     const raw = this.config.get<string>('WEB_ORIGIN')?.trim();
     const first = raw?.split(',')[0]?.trim();
     return first || 'https://growersnotebook.com';
+  }
+
+  /**
+   * Build subject + plain text for bulk maintenance email from stored fields.
+   * Custom body replaces the default intro; site URL is always appended on its own line.
+   */
+  composeMaintenanceEmail(parts: {
+    maintenanceMessage: string | null;
+    maintenanceEmailSubject: string | null;
+    maintenanceEmailBody: string | null;
+  }): { subject: string; text: string } {
+    const site = this.siteOrigin();
+    const subject =
+      parts.maintenanceEmailSubject?.trim() || DEFAULT_MAINTENANCE_SUBJECT;
+    const customBody = parts.maintenanceEmailBody?.trim();
+    if (customBody) {
+      return {
+        subject,
+        text: `${customBody}\n\n${site}`,
+      };
+    }
+    const msg = parts.maintenanceMessage?.trim();
+    const text = [
+      'Growers Notebook is going into maintenance mode. You may see a maintenance page when visiting the site until we are done.',
+      msg ? `\n\n${msg}` : '',
+      `\n\n${site}`,
+    ].join('');
+    return { subject, text };
   }
 
   private async *eachAuthUserEmail(
@@ -72,9 +113,9 @@ export class MaintenanceNotifyService {
   }
 
   /**
-   * Send one email per auth user. Fire-and-forget from site patch; errors are logged only.
+   * Send one email per auth user. Used when enabling maintenance (fire-and-forget) and from admin "Send" (awaited).
    */
-  async notifyAllUsers(maintenanceMessage: string | null): Promise<void> {
+  async sendToAllAuthUsers(email: { subject: string; text: string }): Promise<void> {
     const supabaseUrl = this.config.get<string>('SUPABASE_URL')?.trim();
     const serviceRoleKey = this.config
       .get<string>('SUPABASE_SERVICE_ROLE_KEY')
@@ -83,6 +124,7 @@ export class MaintenanceNotifyService {
       this.logger.warn(
         'Maintenance email skipped: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY',
       );
+      await this.setEmailOutreachFailure(true);
       return;
     }
     if (!this.smtp.isConfigured()) {
@@ -93,15 +135,7 @@ export class MaintenanceNotifyService {
       return;
     }
 
-    const site = this.siteOrigin();
-    const msg = maintenanceMessage?.trim();
-    const text = [
-      'Growers Notebook is going into maintenance mode. You may see a maintenance page when visiting the site until we are done.',
-      msg ? `\n\n${msg}` : '',
-      `\n\n${site}`,
-    ].join('');
-
-    const subject = 'Growers Notebook — maintenance notice';
+    const { subject, text } = email;
 
     const seen = new Set<string>();
     let sent = 0;

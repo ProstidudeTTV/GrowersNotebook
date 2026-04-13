@@ -986,6 +986,9 @@ export const siteConfig = pgTable('site_config', {
   announcementEnabled: boolean('announcement_enabled').notNull().default(false),
   maintenanceEnabled: boolean('maintenance_enabled').notNull().default(false),
   maintenanceMessage: text('maintenance_message'),
+  /** Shown on bulk email; optional — falls back to a default template using maintenance_message. */
+  maintenanceEmailSubject: varchar('maintenance_email_subject', { length: 300 }),
+  maintenanceEmailBody: text('maintenance_email_body'),
   seoDefaultTitle: varchar('seo_default_title', { length: 200 }),
   seoDefaultDescription: varchar('seo_default_description', { length: 500 }),
   seoKeywords: text('seo_keywords'),

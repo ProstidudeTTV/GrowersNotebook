@@ -72,6 +72,18 @@ export class PatchSiteConfigDto {
   @IsOptional()
   @Transform(({ value }) => emptyToNull(value))
   @IsString()
+  @MaxLength(300)
+  maintenanceEmailSubject?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @IsString()
+  @MaxLength(8000)
+  maintenanceEmailBody?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyToNull(value))
+  @IsString()
   @MaxLength(200)
   seoDefaultTitle?: string | null;
 

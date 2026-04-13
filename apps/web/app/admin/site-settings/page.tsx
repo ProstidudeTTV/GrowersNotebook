@@ -7,6 +7,7 @@ import {
   Checkbox,
   Form,
   Input,
+  Modal,
   message,
   Radio,
   Space,
@@ -28,6 +29,8 @@ type StaffSiteConfig = {
   announcementEnabled: boolean;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  maintenanceEmailSubject: string | null;
+  maintenanceEmailBody: string | null;
   seoDefaultTitle: string | null;
   seoDefaultDescription: string | null;
   seoKeywords: string | null;
@@ -56,6 +59,7 @@ export default function AdminSiteSettingsPage() {
   const [form] = Form.useForm<Record<string, unknown>>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingBulk, setSendingBulk] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** Snapshot from last successful load (for maintenance email transition checks). */
   const [loadedSite, setLoadedSite] = useState<{
@@ -104,6 +108,8 @@ export default function AdminSiteSettingsPage() {
         announcementEnabled: row.announcementEnabled,
         maintenanceEnabled: row.maintenanceEnabled,
         maintenanceMessage: row.maintenanceMessage ?? "",
+        maintenanceEmailSubject: row.maintenanceEmailSubject ?? "",
+        maintenanceEmailBody: row.maintenanceEmailBody ?? "",
         notifyUsersOnMaintenance: true,
         clearEmailOutreachFailure: false,
         seoDefaultTitle: row.seoDefaultTitle ?? "",
@@ -148,22 +154,6 @@ export default function AdminSiteSettingsPage() {
       }
     }
 
-    const turningMaintenanceOn =
-      Boolean(values.maintenanceEnabled) &&
-      loadedSite !== null &&
-      !loadedSite.maintenanceEnabled;
-
-    if (
-      turningMaintenanceOn &&
-      values.notifyUsersOnMaintenance &&
-      loadedSite &&
-      !loadedSite.maintenanceEmailConfigured
-    ) {
-      void message.warning(
-        "Maintenance email is not configured on the API (set SMTP_HOST, SMTP_FROM, and SUPABASE_SERVICE_ROLE_KEY). Users will not be emailed.",
-      );
-    }
-
     setSaving(true);
     try {
       await apiFetch<StaffSiteConfig>("/admin/site-config", {
@@ -183,6 +173,10 @@ export default function AdminSiteSettingsPage() {
           notifyUsersOnMaintenance: Boolean(values.notifyUsersOnMaintenance),
           maintenanceMessage:
             String(values.maintenanceMessage ?? "").trim() || null,
+          maintenanceEmailSubject:
+            String(values.maintenanceEmailSubject ?? "").trim() || null,
+          maintenanceEmailBody:
+            String(values.maintenanceEmailBody ?? "").trim() || null,
           seoDefaultTitle:
             String(values.seoDefaultTitle ?? "").trim() || null,
           seoDefaultDescription:
@@ -196,6 +190,58 @@ export default function AdminSiteSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const sendBulkMaintenanceEmail = () => {
+    if (!loadedSite?.maintenanceEmailConfigured) return;
+    Modal.confirm({
+      title: "Send maintenance email to all registered users?",
+      content:
+        "This sends one plain-text email per Supabase auth account using the subject and body fields below (including text not yet saved — click Send to use current form values).",
+      okText: "Send",
+      cancelText: "Cancel",
+      onOk: async () => {
+        let supabase: ReturnType<typeof createClient>;
+        try {
+          supabase = createClient();
+        } catch {
+          return;
+        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const v = form.getFieldsValue() as Record<string, unknown>;
+        setSendingBulk(true);
+        try {
+          await apiFetch<{ ok: boolean }>(
+            "/admin/site-config/send-maintenance-email",
+            {
+              method: "POST",
+              token: session.access_token,
+              timeoutMs: 600_000,
+              body: JSON.stringify({
+                emailSubject:
+                  String(v.maintenanceEmailSubject ?? "").trim() || null,
+                emailBody:
+                  String(v.maintenanceEmailBody ?? "").trim() || null,
+                maintenanceMessage:
+                  String(v.maintenanceMessage ?? "").trim() || null,
+              }),
+            },
+          );
+          void message.success(
+            "Bulk maintenance email finished (check API logs if needed).",
+          );
+        } catch (e) {
+          void message.error(
+            e instanceof Error ? e.message : "Bulk email failed.",
+          );
+        } finally {
+          setSendingBulk(false);
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -287,15 +333,6 @@ export default function AdminSiteSettingsPage() {
           app. Moderators and admins still get the normal site; login and auth
           routes stay available so staff can sign in.
         </p>
-        {loadedSite && !loadedSite.maintenanceEmailConfigured ? (
-          <Alert
-            type="info"
-            showIcon
-            className="mb-4"
-            message="Bulk maintenance email is not configured"
-            description="Set SMTP_HOST, SMTP_FROM, optional SMTP_USER/SMTP_PASS, and SUPABASE_SERVICE_ROLE_KEY on the API service so all registered users can be notified when you turn maintenance on. Credentials stay on the server only."
-          />
-        ) : null}
         {loadedSite?.emailOutreachFailureAt ? (
           <Alert
             type="warning"
@@ -311,12 +348,55 @@ export default function AdminSiteSettingsPage() {
         <Form.Item
           name="notifyUsersOnMaintenance"
           valuePropName="checked"
-          extra="Sends one email per Supabase auth user when you save with maintenance turning on (was off, now on). Requires SMTP + service role on the API."
+          extra="When you save with maintenance turning on (was off, now on), sends one email per user using the bulk email subject and body below (or their defaults)."
         >
           <Checkbox>Email all registered users when enabling maintenance</Checkbox>
         </Form.Item>
-        <Form.Item name="maintenanceMessage" label="Message">
+        <Form.Item
+          name="maintenanceMessage"
+          label="Public maintenance page message"
+          extra="Shown on the maintenance screen for visitors. Also included in the default email template when the bulk email body below is left empty."
+        >
           <Input.TextArea rows={3} maxLength={2000} />
+        </Form.Item>
+        <Typography.Text strong className="block !mt-6">
+          Bulk email (maintenance notice)
+        </Typography.Text>
+        <p className="mb-4 mt-1 text-sm text-[var(--gn-text-muted)]">
+          Optional subject and full message body for emails to all registered
+          users. Leave the body empty to use the default notice plus the public
+          message above. The site URL is always appended to the email. Use
+          &quot;Send email…&quot; to send without turning maintenance mode on.
+        </p>
+        <Form.Item
+          name="maintenanceEmailSubject"
+          label="Email subject"
+          extra="Leave empty to use the default subject."
+        >
+          <Input
+            maxLength={300}
+            placeholder="Growers Notebook — maintenance notice"
+          />
+        </Form.Item>
+        <Form.Item name="maintenanceEmailBody" label="Email body">
+          <Input.TextArea rows={6} maxLength={8000} />
+        </Form.Item>
+        <Form.Item>
+          <Space wrap>
+            <Button
+              type="default"
+              disabled={!loadedSite?.maintenanceEmailConfigured}
+              loading={sendingBulk}
+              onClick={() => sendBulkMaintenanceEmail()}
+            >
+              Send email to all users now
+            </Button>
+            {!loadedSite?.maintenanceEmailConfigured ? (
+              <Typography.Text type="secondary" className="text-sm">
+                Bulk email needs SMTP and Supabase admin keys on the API.
+              </Typography.Text>
+            ) : null}
+          </Space>
         </Form.Item>
         <Form.Item
           name="clearEmailOutreachFailure"

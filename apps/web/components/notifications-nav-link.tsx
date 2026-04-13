@@ -246,7 +246,7 @@ export function NotificationsNavLink() {
           id={menuId}
           role="menu"
           aria-label="Recent notifications"
-          className="gn-menu absolute right-0 top-full z-50 mt-1 w-[min(100vw-1.5rem,22rem)] max-w-[22rem] py-1 shadow-[var(--gn-shadow-lg)]"
+          className="gn-menu absolute right-0 top-full z-[200] mt-1 w-[min(100vw-1.5rem,22rem)] max-w-[22rem] py-1 shadow-[var(--gn-shadow-lg)]"
         >
           {loading ? (
             <p className="px-3 py-2 text-xs text-[var(--gn-text-muted)]">

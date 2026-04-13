@@ -400,7 +400,7 @@ export function AuthNav() {
             id={menuId}
             role="menu"
             aria-labelledby="auth-nav-user-trigger"
-            className="gn-menu absolute right-0 top-full z-50 mt-1 min-w-[11rem] py-1"
+            className="gn-menu absolute right-0 top-full z-[200] mt-1 min-w-[11rem] py-1"
           >
             <div
               className="border-b border-[var(--gn-divide)] px-3 py-2"

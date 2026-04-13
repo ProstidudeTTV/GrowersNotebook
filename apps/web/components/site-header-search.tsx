@@ -170,7 +170,7 @@ export function SiteHeaderSearch() {
         <div
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(420px,70vh)] overflow-auto rounded-xl border border-[var(--gn-border)] bg-[var(--gn-menu-bg)] py-2 shadow-[var(--gn-shadow-lg)] backdrop-blur-md"
+          className="absolute left-0 right-0 top-full z-[150] mt-1 max-h-[min(420px,70vh)] overflow-auto rounded-xl border border-[var(--gn-border)] bg-[var(--gn-menu-bg)] py-2 shadow-[var(--gn-shadow-lg)] backdrop-blur-md"
         >
           {loading && !hasHits ? (
             <p className="px-3 py-2 text-sm text-[var(--gn-text-muted)]">

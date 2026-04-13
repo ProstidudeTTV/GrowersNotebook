@@ -135,7 +135,7 @@ export function SiteChrome({
         </div>
       ) : null}
 
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative z-0 flex min-h-0 flex-1">
         {mobileOpen ? (
           <button
             type="button"

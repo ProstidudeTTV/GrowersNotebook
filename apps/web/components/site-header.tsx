@@ -66,7 +66,7 @@ function SearchFallback() {
 
 export function SiteHeader({ leading }: { leading?: ReactNode }) {
   return (
-    <header className="gn-header sticky top-0 z-50">
+    <header className="gn-header sticky top-0 z-[100]">
       {/* Desktop: brand | search (centered) | messages / discord / auth */}
       <div className="hidden w-full flex-col lg:flex">
         <div className="flex min-h-14 w-full min-w-0">
@@ -91,8 +91,8 @@ export function SiteHeader({ leading }: { leading?: ReactNode }) {
         </div>
       </div>
 
-      {/* Mobile: title row + full-width search */}
-      <div className="flex flex-col overflow-x-hidden lg:hidden">
+      {/* Mobile: title row + full-width search — no overflow-x-hidden on this wrapper (clips dropdowns vertically per CSS overflow rules). */}
+      <div className="flex flex-col lg:hidden">
         <div className="flex min-h-14 min-w-0 items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
             {leading ? (
@@ -111,7 +111,7 @@ export function SiteHeader({ leading }: { leading?: ReactNode }) {
             <HeaderNavActions />
           </nav>
         </div>
-        <div className="border-t border-[var(--gn-divide)] px-4 pb-3">
+        <div className="border-t border-[var(--gn-divide)] px-4 pb-3 pt-3 sm:px-4">
           <Suspense fallback={<SearchFallback />}>
             <SiteHeaderSearch />
           </Suspense>

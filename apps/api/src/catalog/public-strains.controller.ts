@@ -29,6 +29,7 @@ export class PublicStrainsController {
     @Query('minRating') minRatingRaw?: string,
     @Query('minReviews') minReviewsRaw?: string,
     @Query('chemotype') chemotypeRaw?: string,
+    @Query('autoflower') autoflowerRaw?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
@@ -37,12 +38,16 @@ export class PublicStrainsController {
     const c = chemotypeRaw?.trim().toLowerCase();
     const chemotype =
       c === 'indica' || c === 'sativa' || c === 'hybrid' ? c : undefined;
+    const af = autoflowerRaw?.trim().toLowerCase();
+    const autoflower =
+      af === '1' || af === 'true' || af === 'yes' ? true : undefined;
     return this.strains.listPublic({
       q,
       sort: sort === 'rating' ? 'rating' : 'name',
       breederId,
       breederSlug,
       chemotype,
+      autoflower,
       minRating:
         Number.isFinite(minRating) && minRating >= 1 && minRating <= 5
           ? minRating

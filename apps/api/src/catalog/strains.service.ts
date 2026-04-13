@@ -34,6 +34,10 @@ import {
   isPublicExcludedBreederSlug,
   PUBLIC_EXCLUDED_BREEDER_SLUGS,
 } from './catalog-promo-exclusions';
+import {
+  publicEffectsNotesForStrain,
+  resolveReportedEffectPctsForPublic,
+} from './strain-catalog-enrichment';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 
 const MAX_STRAIN_REVIEW_MEDIA = 8;
@@ -68,6 +72,8 @@ export type ListStrainsQuery = {
   minRating?: number;
   /** Minimum review count (>= 1). */
   minReviews?: number;
+  /** When true, only strains flagged as autoflowering. */
+  autoflower?: boolean;
   page?: number;
   pageSize?: number;
   publishedOnly?: boolean;
@@ -164,6 +170,9 @@ export class StrainsService {
           )!,
         );
       }
+    }
+    if (query.autoflower === true) {
+      conditions.push(eq(strains.isAutoflower, true));
     }
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -502,6 +511,7 @@ export class StrainsService {
   }
 
   toPublicStrain(row: typeof strains.$inferSelect) {
+    const reportedEffectPcts = resolveReportedEffectPctsForPublic(row);
     return {
       id: row.id,
       slug: row.slug,
@@ -509,7 +519,9 @@ export class StrainsService {
       description: row.description,
       breederId: row.breederId,
       effects: (row.effects ?? []) as string[],
-      effectsNotes: row.effectsNotes,
+      effectsNotes: publicEffectsNotesForStrain(row),
+      reportedEffectPcts,
+      isAutoflower: row.isAutoflower,
       chemotype: row.chemotype,
       genetics: row.genetics,
       published: row.published,

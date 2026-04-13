@@ -16,6 +16,7 @@ function buildStrainsQueryFromInputs(s: {
   minRating: string;
   minReviews: string;
   chemotype: string;
+  autoflower: string;
 }): URLSearchParams {
   const p = new URLSearchParams();
   if (s.q.trim()) p.set("q", s.q.trim());
@@ -27,6 +28,7 @@ function buildStrainsQueryFromInputs(s: {
   if (mrev && Number(mrev) >= 1) p.set("minReviews", mrev);
   const ct = s.chemotype.trim().toLowerCase();
   if (ct === "indica" || ct === "sativa" || ct === "hybrid") p.set("chemotype", ct);
+  if (s.autoflower === "1") p.set("autoflower", "1");
   return p;
 }
 
@@ -197,6 +199,11 @@ export function StrainsCatalogToolbar({
     if (c === "indica" || c === "sativa" || c === "hybrid") return c;
     return "";
   });
+  const [autoflower, setAutoflower] = useState(() =>
+    sp.get("autoflower") === "1" || sp.get("autoflower") === "true"
+      ? "1"
+      : "",
+  );
 
   useEffect(() => {
     setQ(sp.get("q") ?? "");
@@ -209,12 +216,25 @@ export function StrainsCatalogToolbar({
     setChemotype(
       c === "indica" || c === "sativa" || c === "hybrid" ? c : "",
     );
+    setAutoflower(
+      sp.get("autoflower") === "1" || sp.get("autoflower") === "true"
+        ? "1"
+        : "",
+    );
     const name = breederLabelResolved?.trim() ?? "";
     if (bSlug) setBreederLabel(name);
     else setBreederLabel("");
   }, [spKey, sp, breederLabelResolved]);
 
-  const inputs = { q, sort, breederSlug, minRating, minReviews, chemotype };
+  const inputs = {
+    q,
+    sort,
+    breederSlug,
+    minRating,
+    minReviews,
+    chemotype,
+    autoflower,
+  };
   const inputsRef = useRef(inputs);
   inputsRef.current = inputs;
 
@@ -281,6 +301,27 @@ export function StrainsCatalogToolbar({
             <option value="indica">Indica</option>
             <option value="sativa">Sativa</option>
             <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+        <div className="shrink-0">
+          <label
+            htmlFor="strain-autoflower"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+          >
+            Autoflower
+          </label>
+          <select
+            id="strain-autoflower"
+            value={autoflower}
+            onChange={(e) => {
+              const v = e.target.value;
+              setAutoflower(v);
+              navigateWith({ autoflower: v });
+            }}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="1">Autoflowers only</option>
           </select>
         </div>
         <BreederFilterCombobox

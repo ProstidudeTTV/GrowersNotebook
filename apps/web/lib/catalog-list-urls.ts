@@ -8,6 +8,8 @@ export type StrainsListQuery = {
   minReviews?: string;
   /** indica | sativa | hybrid */
   chemotype?: string;
+  /** "1" = autoflowers only */
+  autoflower?: string;
 };
 
 /** Query params for /breeders list (no detail / reviewsPage). */
@@ -33,6 +35,7 @@ function appendStrainsParams(u: URLSearchParams, list: StrainsListQuery) {
   if (ct === "indica" || ct === "sativa" || ct === "hybrid") {
     u.set("chemotype", ct);
   }
+  if (list.autoflower === "1") u.set("autoflower", "1");
 }
 
 export function strainsListPath(list: StrainsListQuery): string {

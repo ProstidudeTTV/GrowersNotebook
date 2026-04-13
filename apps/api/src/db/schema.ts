@@ -537,6 +537,13 @@ export const strains = pgTable(
     chemotype: text('chemotype'),
     /** Short lineage / cross sentence when known */
     genetics: text('genetics'),
+    /** Leafly-style survey percentages keyed by effect id (relaxed, happy, …). */
+    reportedEffectPcts: jsonb('reported_effect_pcts')
+      .notNull()
+      .$type<Record<string, number>>()
+      .default(sql`'{}'::jsonb`),
+    /** True when catalog text or import fields indicate autoflow / ruderalis. */
+    isAutoflower: boolean('is_autoflower').notNull().default(false),
     published: boolean('published').notNull().default(true),
     reviewCount: integer('review_count').notNull().default(0),
     avgRating: numeric('avg_rating', { precision: 4, scale: 2 }),
@@ -552,6 +559,7 @@ export const strains = pgTable(
     index('strains_breeder_idx').on(t.breederId),
     index('strains_slug_idx').on(t.slug),
     index('strains_chemotype_idx').on(t.chemotype),
+    index('strains_autoflower_published_idx').on(t.isAutoflower),
   ],
 );
 

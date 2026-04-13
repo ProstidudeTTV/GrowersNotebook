@@ -11,6 +11,11 @@ import type { DbClient } from '../db';
 import { getDb } from '../db';
 import { breeders, strains } from '../db/schema';
 import { isNonStrainPromoCatalogRow } from './catalog-promo-exclusions';
+import {
+  detectAutoflowerFromRowAndDescription,
+  inferBreederNameFromProse,
+  leaflyReportedEffectPctsFromRow,
+} from './strain-catalog-enrichment';
 
 function normalizeHeaderKey(k: string): string {
   return k
@@ -147,35 +152,6 @@ function buildDescription(row: Record<string, string>): string {
   return truncate(descCol || overview || 'Strain reference entry.', 8000);
 }
 
-const LEAFLY_EFFECT_PCT_KEYS = [
-  ['relaxed', 'Relaxed'],
-  ['happy', 'Happy'],
-  ['euphoric', 'Euphoric'],
-  ['uplifted', 'Uplifted'],
-  ['creative', 'Creative'],
-  ['focused', 'Focused'],
-  ['energetic', 'Energetic'],
-  ['talkative', 'Talkative'],
-  ['hungry', 'Hungry'],
-  ['sleepy', 'Sleepy'],
-] as const;
-
-function appendLeaflyEffectProfileLine(
-  row: Record<string, string>,
-  lines: string[],
-): void {
-  const parts: string[] = [];
-  for (const [key, label] of LEAFLY_EFFECT_PCT_KEYS) {
-    const t = row[key]?.trim();
-    if (t && !/^n\/a|null|\[null\]$/i.test(t)) {
-      parts.push(`${label} ${t}`);
-    }
-  }
-  if (parts.length > 0) {
-    lines.push(`Reported effects (Leafly-style): ${parts.join(', ')}`);
-  }
-}
-
 function buildEffectsNotes(row: Record<string, string>): string | null {
   const lines: string[] = [];
   const add = (label: string, v: string | undefined) => {
@@ -191,7 +167,6 @@ function buildEffectsNotes(row: Record<string, string>): string | null {
   add('Terpenes', row.terpenes);
   add('Dominant terpene', row.most_common_terpene);
   add('Image URL', row.img_url);
-  appendLeaflyEffectProfileLine(row, lines);
   add('Strength', row.strength);
   add('Environment', row.environment);
   add('Climate', row.climate);
@@ -304,7 +279,10 @@ export async function importStrainCsvRecords(
   const breederCanonical = new Map<string, string>();
   for (const row of normalized) {
     if (isNonStrainPromoCatalogRow(row)) continue;
-    const name = (row.breeder || '').trim();
+    const csvBreeder = (row.breeder || '').trim();
+    const desc = buildDescription(row);
+    const inferred = csvBreeder ? null : inferBreederNameFromProse(desc);
+    const name = csvBreeder || inferred || '';
     if (!name) continue;
     const bslug = slugify(name);
     if (!breederCanonical.has(bslug)) breederCanonical.set(bslug, name);
@@ -348,7 +326,10 @@ export async function importStrainCsvRecords(
       rowsSkippedNoStrainName += 1;
       continue;
     }
-    const breederName = (row.breeder || '').trim();
+    const desc = buildDescription(row);
+    const csvBreeder = (row.breeder || '').trim();
+    const inferredBreeder = csvBreeder ? null : inferBreederNameFromProse(desc);
+    const breederName = csvBreeder || inferredBreeder || '';
     const bslug = breederName ? slugify(breederName) : null;
     const dedupeKey = `${slugify(strainName)}|${bslug ?? ''}`;
     if (seenPair.has(dedupeKey)) {
@@ -364,7 +345,8 @@ export async function importStrainCsvRecords(
       22,
     );
     const effectsNotes = buildEffectsNotes(row);
-    const desc = buildDescription(row);
+    const reportedEffectPcts = leaflyReportedEffectPctsFromRow(row);
+    const isAutoflower = detectAutoflowerFromRowAndDescription(row, desc);
     strainValues.push({
       slug: strainSlug,
       name: truncate(strainName, 200),
@@ -372,6 +354,8 @@ export async function importStrainCsvRecords(
       breederId,
       effects,
       effectsNotes: effectsNotes ?? null,
+      reportedEffectPcts,
+      isAutoflower,
       chemotype: normalizeChemotypeFromRow(row),
       genetics: extractGeneticsFromDescription(desc),
       published: true,

@@ -4,6 +4,7 @@ import { StrainDetailBody } from "@/components/catalog/strain-detail-body";
 import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
 import { StrainsBreederFilterLink } from "@/components/catalog/strains-breeder-filter-link";
 import { StarDisplay } from "@/components/catalog/star-display";
+import { StrainAutoflowerBadge } from "@/components/catalog/strain-autoflower-badge";
 import { StrainChemotypeBadge } from "@/components/catalog/strain-chemotype-badge";
 import { StrainsCatalogToolbar } from "@/components/catalog/strains-catalog-toolbar";
 import { apiFetch } from "@/lib/api-public";
@@ -33,6 +34,7 @@ type ListJson = {
     reviewCount: number;
     chemotype: string | null;
     genetics: string | null;
+    isAutoflower: boolean;
   }>;
   total: number;
   page: number;
@@ -50,6 +52,7 @@ export default async function StrainsPage({
     minRating?: string;
     minReviews?: string;
     chemotype?: string;
+    autoflower?: string;
     detail?: string;
     reviewsPage?: string;
   }>;
@@ -66,6 +69,7 @@ export default async function StrainsPage({
     chemotypeRaw === "hybrid"
       ? chemotypeRaw
       : "";
+  const autoflowerOnly = sp.autoflower === "1" || sp.autoflower === "true";
   const sort = sp.sort === "rating" ? "rating" : "name";
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
@@ -87,6 +91,7 @@ export default async function StrainsPage({
     qs.set("minReviews", minReviewsRaw);
   }
   if (chemotype) qs.set("chemotype", chemotype);
+  if (autoflowerOnly) qs.set("autoflower", "1");
 
   let data: ListJson = {
     items: [],
@@ -114,6 +119,7 @@ export default async function StrainsPage({
       p.set("minReviews", minReviewsRaw);
     }
     if (chemotype) p.set("chemotype", chemotype);
+    if (autoflowerOnly) p.set("autoflower", "1");
     p.set("page", String(nextPage));
     return `/strains?${p.toString()}`;
   };
@@ -145,7 +151,25 @@ export default async function StrainsPage({
     minReviews:
       minReviewsRaw && minReviewsN >= 1 ? minReviewsRaw : undefined,
     chemotype: chemotype || undefined,
+    autoflower: autoflowerOnly ? "1" : undefined,
   };
+
+  const clearAutoflowerFilterHref = (() => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (sort !== "name") p.set("sort", sort);
+    if (breederSlug) p.set("breederSlug", breederSlug);
+    if (minRatingRaw && minRatingN >= 1 && minRatingN <= 5) {
+      p.set("minRating", minRatingRaw);
+    }
+    if (minReviewsRaw && minReviewsN >= 1) {
+      p.set("minReviews", minReviewsRaw);
+    }
+    if (chemotype) p.set("chemotype", chemotype);
+    if (page > 1) p.set("page", String(page));
+    const s = p.toString();
+    return s ? `/strains?${s}` : "/strains";
+  })();
 
   /** Breeder drawer dismiss: replace here (no `detail`) so filter is preserved. */
   const strainsReturnHrefForBreederModal = (() => {
@@ -160,6 +184,7 @@ export default async function StrainsPage({
       p.set("minReviews", minReviewsRaw);
     }
     if (chemotype) p.set("chemotype", chemotype);
+    if (autoflowerOnly) p.set("autoflower", "1");
     if (page > 1) p.set("page", String(page));
     const s = p.toString();
     return s ? `/strains?${s}` : "/strains";
@@ -180,6 +205,18 @@ export default async function StrainsPage({
 
         <StrainsCatalogToolbar breederLabelResolved={filterBreederName} />
       </div>
+
+      {autoflowerOnly ? (
+        <p className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-3 py-2 text-sm text-[var(--gn-text)]">
+          Showing autoflowering strains only.{" "}
+          <Link
+            href={clearAutoflowerFilterHref}
+            className="text-[#ff6a38] hover:underline"
+          >
+            Clear filter
+          </Link>
+        </p>
+      ) : null}
 
       {breederSlug ? (
         <p className="mt-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-3 py-2 text-sm text-[var(--gn-text)]">
@@ -222,7 +259,10 @@ export default async function StrainsPage({
                     {s.name}
                   </h2>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <StrainChemotypeBadge chemotype={s.chemotype} size="sm" />
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <StrainChemotypeBadge chemotype={s.chemotype} size="sm" />
+                      {s.isAutoflower ? <StrainAutoflowerBadge size="sm" /> : null}
+                    </div>
                     <StarDisplay
                       avg={s.avgRating}
                       count={s.reviewCount}

@@ -6,8 +6,10 @@ import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
 import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
 import { StarDisplay } from "@/components/catalog/star-display";
+import { StrainAutoflowerBadge } from "@/components/catalog/strain-autoflower-badge";
 import { StrainChemotypeBadge } from "@/components/catalog/strain-chemotype-badge";
 import { StrainEffectsNotesPanel } from "@/components/catalog/strain-effects-notes-panel";
+import { StrainReportedEffectsPanel } from "@/components/catalog/strain-reported-effects-panel";
 import { apiFetch } from "@/lib/api-public";
 import type { StrainsListQuery } from "@/lib/catalog-list-urls";
 import {
@@ -38,6 +40,8 @@ export type StrainDetailJson = {
     description: string | null;
     effects: string[];
     effectsNotes: string | null;
+    reportedEffectPcts: Record<string, number> | null;
+    isAutoflower: boolean;
     chemotype: string | null;
     genetics: string | null;
     avgRating: string | null;
@@ -202,10 +206,18 @@ export async function StrainDetailBody({
     geneticsLineFromDescription(s.description) ||
     null;
 
+  const reportedPcts =
+    s.reportedEffectPcts &&
+    typeof s.reportedEffectPcts === "object" &&
+    Object.keys(s.reportedEffectPcts).length > 0
+      ? s.reportedEffectPcts
+      : null;
+
   const hasAside =
     Boolean(s.effects?.length) ||
     Boolean(s.effectsNotes?.trim()) ||
-    Boolean(geneticsLine);
+    Boolean(geneticsLine) ||
+    Boolean(reportedPcts);
 
   return shell(
     <div className="flex flex-col gap-8 lg:gap-10">
@@ -219,6 +231,9 @@ export async function StrainDetailBody({
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-[var(--gn-text)]">{s.name}</h1>
           <StrainChemotypeBadge chemotype={s.chemotype} />
+          {s.isAutoflower ? (
+            <StrainAutoflowerBadge size="md" />
+          ) : null}
         </div>
         <StarDisplay avg={s.avgRating} count={s.reviewCount} />
         {s.breeder && breederHref ? (
@@ -286,6 +301,9 @@ export async function StrainDetailBody({
                   {geneticsLine}
                 </p>
               </div>
+            ) : null}
+            {reportedPcts ? (
+              <StrainReportedEffectsPanel pcts={reportedPcts} />
             ) : null}
             {s.effectsNotes?.trim() ? (
               <StrainEffectsNotesPanel text={s.effectsNotes} />

@@ -1,14 +1,21 @@
 /**
- * Imports strains + breeders from the cannabis-strains CSV (filtered columns only).
+ * Imports strains + breeders from CSV.
  *
- * Place the CSV at scripts/data/cannabis-strains-final.csv or pass a path:
+ * Supported shapes:
+ * - Growers Notebook export: requires `strain_name` (see cannabis-strains-final.csv).
+ * - CannaBot / Leafly-style: `Strain` or `name` column; Effects→tags, Medical→tags, etc.
+ *
+ * Default path: scripts/data/cannabis-strains-final.csv. Pass another path:
  *   pnpm db:import-strains
- *   pnpm db:import-strains -- /path/to/file.csv
+ *   pnpm db:import-strains -- /path/to/leafly_strain_data.csv
+ *
+ * Full catalog replace: run scripts/wipe-strains-catalog.sql first, then import.
+ * Sample Leafly headers: scripts/data/leafly-strain-sample.csv (format test only).
  *
  * Admin alternative: upload the same CSV under Admin → Catalog CSV import.
  *
  * Requires DATABASE_URL in apps/api/.env. Re-running skips rows whose slugs
- * already exist (onConflictDoNothing). To replace data, truncate strains/breeders first.
+ * already exist (onConflictDoNothing).
  */
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';

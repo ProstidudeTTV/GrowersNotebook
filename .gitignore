@@ -16,3 +16,4 @@ supabase/.temp
 # Strain CSV: ignore ad-hoc dumps except the bundled canonical file
 apps/api/scripts/data/*.csv
 !apps/api/scripts/data/cannabis-strains-final.csv
+!apps/api/scripts/data/leafly-strain-sample.csv

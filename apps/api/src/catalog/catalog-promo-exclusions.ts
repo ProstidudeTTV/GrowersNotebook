@@ -25,7 +25,7 @@ export function isNonStrainPromoCatalogRow(row: Record<string, string>): boolean
     .replace(/\s+/g, ' ');
   if (breeder === 'free seed offer') return true;
 
-  const strain = (row.strain_name || '').trim();
+  const strain = (row.strain_name || row.strain || row.name || '').trim();
   if (!strain) return false;
   if (/^\d+\s+free\s+seeds?\b/i.test(strain)) return true;
   if (/\bfree\s+seeds?\s*[-–—]\s*£/i.test(strain)) return true;

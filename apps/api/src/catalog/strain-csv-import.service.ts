@@ -33,6 +33,58 @@ export function normalizeCsvRecords(
   });
 }
 
+/**
+ * Maps CannaBot / Leafly-style CSV columns (e.g. Strain, Effects, Medical) onto the
+ * field names expected by {@link importStrainCsvRecords}. Safe to run on already-GN-shaped rows.
+ */
+export function mapLeaflyAliasesToGnColumns(
+  row: Record<string, string>,
+): Record<string, string> {
+  const out = { ...row };
+  const strainName = (
+    out.strain_name ||
+    out.strain ||
+    out.name ||
+    ''
+  ).trim();
+  if (strainName) out.strain_name = strainName;
+
+  if (!(out.effect || '').trim() && (out.effects || '').trim()) {
+    out.effect = out.effects;
+  }
+  if (!(out.medical_strains || '').trim() && (out.medical || '').trim()) {
+    out.medical_strains = out.medical;
+  }
+  if (!(out.medical_strains || '').trim() && (out.medical_uses || '').trim()) {
+    out.medical_strains = out.medical_uses;
+  }
+  if (!(out.flavor || '').trim() && (out.flavors || '').trim()) {
+    out.flavor = out.flavors;
+  }
+  if (!(out.thc || '').trim() && (out.thc_level || '').trim()) {
+    out.thc = out.thc_level;
+  }
+  if (!(out.thc || '').trim() && (out.thc_high || '').trim()) {
+    out.thc = out.thc_high;
+  }
+  if (!(out.cbd || '').trim() && (out.cbd_high || '').trim()) {
+    out.cbd = out.cbd_high;
+  }
+  const typ = (out.type || '').trim();
+  if (typ) {
+    if (!(out.strain_type_summary || '').trim()) out.strain_type_summary = typ;
+    if (!(out.indica_sativa || '').trim()) out.indica_sativa = typ;
+  }
+  return out;
+}
+
+/** Normalized headers + Leafly/CannaBot column aliases. Use before catalog import. */
+export function normalizeStrainCatalogRows(
+  records: Record<string, string>[],
+): Record<string, string>[] {
+  return normalizeCsvRecords(records).map(mapLeaflyAliasesToGnColumns);
+}
+
 export type StrainCsvImportResult = {
   rowsParsed: number;
   rowsSkippedNoStrainName: number;
@@ -95,6 +147,35 @@ function buildDescription(row: Record<string, string>): string {
   return truncate(descCol || overview || 'Strain reference entry.', 8000);
 }
 
+const LEAFLY_EFFECT_PCT_KEYS = [
+  ['relaxed', 'Relaxed'],
+  ['happy', 'Happy'],
+  ['euphoric', 'Euphoric'],
+  ['uplifted', 'Uplifted'],
+  ['creative', 'Creative'],
+  ['focused', 'Focused'],
+  ['energetic', 'Energetic'],
+  ['talkative', 'Talkative'],
+  ['hungry', 'Hungry'],
+  ['sleepy', 'Sleepy'],
+] as const;
+
+function appendLeaflyEffectProfileLine(
+  row: Record<string, string>,
+  lines: string[],
+): void {
+  const parts: string[] = [];
+  for (const [key, label] of LEAFLY_EFFECT_PCT_KEYS) {
+    const t = row[key]?.trim();
+    if (t && !/^n\/a|null|\[null\]$/i.test(t)) {
+      parts.push(`${label} ${t}`);
+    }
+  }
+  if (parts.length > 0) {
+    lines.push(`Reported effects (Leafly-style): ${parts.join(', ')}`);
+  }
+}
+
 function buildEffectsNotes(row: Record<string, string>): string | null {
   const lines: string[] = [];
   const add = (label: string, v: string | undefined) => {
@@ -106,6 +187,11 @@ function buildEffectsNotes(row: Record<string, string>): string | null {
   if ((row.type_ratio || '').trim()) add('Ratio', row.type_ratio);
   if ((row.thc || '').trim() || (row.cbd || '').trim())
     lines.push(`THC / CBD: ${row.thc ?? '—'} / ${row.cbd ?? '—'}`);
+  add('Rating', row.rating);
+  add('Terpenes', row.terpenes);
+  add('Dominant terpene', row.most_common_terpene);
+  add('Image URL', row.img_url);
+  appendLeaflyEffectProfileLine(row, lines);
   add('Strength', row.strength);
   add('Environment', row.environment);
   add('Climate', row.climate);
@@ -168,7 +254,7 @@ export async function importStrainCsvRecords(
   db: DbClient,
   records: Record<string, string>[],
 ): Promise<StrainCsvImportResult> {
-  const normalized = normalizeCsvRecords(records);
+  const normalized = normalizeStrainCatalogRows(records);
   let rowsSkippedNoStrainName = 0;
   let rowsSkippedNonStrainPromo = 0;
   let rowsSkippedDuplicateStrainBreeder = 0;
@@ -317,13 +403,19 @@ export class StrainCsvImportService {
         strainsInserted: 0,
       };
     }
-    const [firstNorm] = normalizeCsvRecords(records.slice(0, 1));
-    if (!firstNorm || !Object.keys(firstNorm).includes('strain_name')) {
+    const headerKeys = new Set(
+      Object.keys(records[0]!).map((k) => normalizeHeaderKey(k)),
+    );
+    const hasStrainHeader =
+      headerKeys.has('strain_name') ||
+      headerKeys.has('strain') ||
+      headerKeys.has('name');
+    if (!hasStrainHeader) {
       const sample = Object.keys(records[0]!)
         .slice(0, 15)
         .join(', ');
       throw new BadRequestException(
-        `CSV must include a strain_name column. Raw headers (first 15): ${sample}`,
+        `CSV must include a strain column (strain_name, or Leafly Strain / name). Raw headers (first 15): ${sample}`,
       );
     }
     try {

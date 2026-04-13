@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
-import { UserProfileLink } from "@/components/user-profile-link";
-
 export type ProfileCommentRow = {
   id: string;
   kind?: "post" | "notebook";
@@ -61,13 +59,27 @@ export function ProfileCommentsList({
         {items.map((c) => {
           const imgs = c.imageUrls?.filter(Boolean) ?? [];
           const preview = excerpt(c.body);
+          const threadHref = c.notebookId
+            ? `/notebooks/${encodeURIComponent(c.notebookId)}#comments`
+            : `/p/${encodeURIComponent(c.postId ?? "")}#comment-${encodeURIComponent(c.id)}`;
           return (
-            <li key={c.id} className="gn-list-row p-4">
+            <li key={c.id} className="gn-list-row p-0">
+              <Link
+                href={threadHref}
+                className="block p-4 text-left transition hover:bg-[color-mix(in_srgb,var(--gn-surface-hover)_55%,transparent)]"
+              >
               {preview ? (
                 <p className="text-sm text-[var(--gn-text)]">{preview}</p>
               ) : null}
               {imgs.length > 0 ? (
-                <div className="mt-2">
+                <div
+                  className="mt-2"
+                  role="presentation"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
                   <StackedDmStyleImages
                     urls={imgs}
                     stackKey={c.id}
@@ -83,40 +95,28 @@ export function ProfileCommentsList({
                 <span className="font-medium text-[var(--gn-text)]">
                   on{" "}
                   {c.notebookId ? (
-                    <Link
-                      href={`/notebooks/${encodeURIComponent(c.notebookId)}#comments`}
-                      className="text-[#ff4500] hover:underline"
-                    >
+                    <span className="text-[#ff4500] underline-offset-2 hover:underline">
                       {c.notebookTitle?.trim() || "Grow diary"}
-                    </Link>
+                    </span>
                   ) : (
-                    <Link
-                      href={`/p/${c.postId}#comment-${c.id}`}
-                      className="text-[#ff4500] hover:underline"
-                    >
+                    <span className="text-[#ff4500] underline-offset-2 hover:underline">
                       {c.postTitle}
-                    </Link>
+                    </span>
                   )}
                 </span>
                 {c.community ? (
                   <>
                     <span aria-hidden>·</span>
-                    <Link
-                      href={`/community/${c.community.slug}`}
-                      className="font-semibold text-[#ff4500] hover:underline"
-                    >
+                    <span className="font-semibold text-[var(--gn-text-muted)]">
                       {c.community.name.trim() || c.community.slug}
-                    </Link>
+                    </span>
                   </>
                 ) : (
                   <>
                     <span aria-hidden>·</span>
-                    <UserProfileLink
-                      userId={profileUserId}
-                      className="font-semibold text-[#ff4500] hover:underline"
-                    >
+                    <span className="font-semibold text-[var(--gn-text-muted)]">
                       {profileLabel}
-                    </UserProfileLink>
+                    </span>
                   </>
                 )}
                 <span aria-hidden>·</span>
@@ -124,6 +124,7 @@ export function ProfileCommentsList({
                 <span aria-hidden>·</span>
                 <span>{c.score} pts</span>
               </div>
+              </Link>
             </li>
           );
         })}

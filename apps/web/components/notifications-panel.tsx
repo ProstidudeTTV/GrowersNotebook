@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { formatNotifDate } from "@/lib/format-notif-date";
+import { openNotificationFromUserGesture } from "@/lib/notification-open";
 import { createClient } from "@/lib/supabase/client";
 import { setNotificationsUnreadCount } from "@/lib/notifications-unread-store";
 
@@ -13,11 +15,13 @@ type NotificationItem = {
   title: string;
   body: string;
   kind?: string | null;
+  actionUrl?: string | null;
   readAt: string | null;
   createdAt: string;
 };
 
 export function NotificationsPanel() {
+  const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -246,14 +250,16 @@ export function NotificationsPanel() {
                     ? "bg-[color-mix(in_srgb,var(--gn-accent)_6%,transparent)]"
                     : ""
                 }`}
-                onClick={() => {
-                  if (n.kind === "moderation_warning") {
-                    setWarningModal({ title: n.title, body: n.body });
-                    if (!n.readAt) void markRead(n.id);
-                    return;
-                  }
-                  if (!n.readAt) void markRead(n.id);
-                }}
+                onClick={() =>
+                  openNotificationFromUserGesture({
+                    n,
+                    title: n.title,
+                    body: n.body,
+                    markRead,
+                    setModerationModal: setWarningModal,
+                    router,
+                  })
+                }
               >
                 <span className="font-medium text-[var(--gn-text)]">
                   {n.title}

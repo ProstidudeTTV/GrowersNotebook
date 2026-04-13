@@ -3,18 +3,26 @@ import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { getDb } from '../db';
 import { userNotifications } from '../db/schema';
 
+export type CreateUserNotificationOptions = {
+  kind?: string;
+  /** Site-relative URL (e.g. /p/uuid#comment-id). Omit for modal-only (moderation_warning). */
+  actionUrl?: string | null;
+};
+
 @Injectable()
 export class NotificationsService {
   async createForUser(
     userId: string,
     title: string,
     body: string,
-    kind: string = 'general',
+    options?: CreateUserNotificationOptions,
   ) {
+    const kind = options?.kind ?? 'general';
+    const actionUrl = options?.actionUrl ?? null;
     const db = getDb();
     const [row] = await db
       .insert(userNotifications)
-      .values({ userId, title, body, kind })
+      .values({ userId, title, body, kind, actionUrl })
       .returning();
     return row;
   }

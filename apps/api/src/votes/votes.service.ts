@@ -143,6 +143,7 @@ export class VotesService {
           post.authorId,
           'Upvote on your post',
           `Someone upvoted “${truncateNotif(post.title, 100)}”.`,
+          { actionUrl: `/p/${postId}` },
         );
       }
       const afterMap = await this.profiles.getSeedsByUserIds([post.authorId]);
@@ -153,6 +154,7 @@ export class VotesService {
           post.authorId,
           'You leveled up!',
           `You reached ${levelAfter}.`,
+          { actionUrl: `/u/${post.authorId}` },
         );
       }
     }
@@ -238,6 +240,7 @@ export class VotesService {
           c.authorId,
           'Upvote on your comment',
           `On “${truncateNotif(postTitle, 60)}”: ${preview}`,
+          { actionUrl: `/p/${c.postId}#comment-${commentId}` },
         );
       }
       const afterMap = await this.profiles.getSeedsByUserIds([c.authorId]);
@@ -248,6 +251,7 @@ export class VotesService {
           c.authorId,
           'You leveled up!',
           `You reached ${levelAfter}.`,
+          { actionUrl: `/u/${c.authorId}` },
         );
       }
     }
@@ -321,6 +325,7 @@ export class VotesService {
         nb.ownerId,
         'Upvote on your notebook',
         `Someone upvoted “${truncateNotif(nb.title, 100)}”.`,
+        { actionUrl: `/notebooks/${notebookId}#comments` },
       );
     }
 

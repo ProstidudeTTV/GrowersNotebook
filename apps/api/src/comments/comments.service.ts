@@ -176,7 +176,9 @@ export class CommentsService {
       const body = isReply
         ? `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`
         : `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`;
-      await this.notifications.createForUser(notifyUserId, title, body);
+      await this.notifications.createForUser(notifyUserId, title, body, {
+        actionUrl: `/p/${post.id}#comment-${row.id}`,
+      });
     }
 
     return row;
@@ -635,14 +637,17 @@ export class CommentsService {
       report.reporterId,
       'Your report was reviewed',
       reporterBody,
-      'report_update',
+      {
+        kind: 'report_update',
+        actionUrl: `/p/${report.postId}`,
+      },
     );
     if (dto.notifyReported === true && dto.reportedWarning?.trim()) {
       await this.notifications.createForUser(
         commentRow.authorId,
         'Moderation reminder',
         dto.reportedWarning.trim(),
-        'moderation_warning',
+        { kind: 'moderation_warning' },
       );
     }
     return { ok: true as const };

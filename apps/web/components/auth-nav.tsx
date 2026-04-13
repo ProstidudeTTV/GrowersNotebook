@@ -14,6 +14,7 @@ import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 import { clearPasswordRecoveryPending } from "@/lib/auth-recovery-client";
+import { openNotificationFromUserGesture } from "@/lib/notification-open";
 import { setNotificationsUnreadCount } from "@/lib/notifications-unread-store";
 import { createClient } from "@/lib/supabase/client";
 
@@ -30,6 +31,7 @@ type NavNotification = {
   title: string;
   body: string;
   kind?: string | null;
+  actionUrl?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -464,14 +466,17 @@ export function AuthNav() {
                     className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-[var(--gn-surface-hover)] ${
                       !n.readAt ? "bg-[color-mix(in_srgb,var(--gn-accent)_8%,transparent)]" : ""
                     }`}
-                    onClick={() => {
-                      if (n.kind === "moderation_warning") {
-                        setWarningModal({ title: n.title, body: n.body });
-                        if (!n.readAt) void markNotificationRead(n.id);
-                        return;
-                      }
-                      if (!n.readAt) void markNotificationRead(n.id);
-                    }}
+                    onClick={() =>
+                      openNotificationFromUserGesture({
+                        n,
+                        title: n.title,
+                        body: n.body,
+                        markRead: markNotificationRead,
+                        setModerationModal: setWarningModal,
+                        router,
+                        onNavigate: () => setMenuOpen(false),
+                      })
+                    }
                   >
                     <span className="font-medium text-[var(--gn-text)]">
                       {n.title}

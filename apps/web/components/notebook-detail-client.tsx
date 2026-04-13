@@ -522,7 +522,6 @@ export function NotebookDetailClient({
       body: JSON.stringify(body),
     });
     await reloadComments();
-    router.push(`/u/${encodeURIComponent(viewerId)}?tab=comments`);
     router.refresh();
   };
 

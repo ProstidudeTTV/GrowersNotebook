@@ -168,7 +168,9 @@ export class NotebookCommentsService {
         ? 'Reply on a notebook thread'
         : 'New comment on your notebook';
       const body = `“${titleShort}”: ${preview}`;
-      await this.notifications.createForUser(notifyUserId, title, body);
+      await this.notifications.createForUser(notifyUserId, title, body, {
+        actionUrl: `/notebooks/${notebookId}#comments`,
+      });
     }
 
     return row;

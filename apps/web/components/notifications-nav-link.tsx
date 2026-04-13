@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -11,6 +12,7 @@ import {
 import { ModerationWarningModal } from "@/components/moderation-warning-modal";
 import { apiFetch } from "@/lib/api-public";
 import { formatNotifDate } from "@/lib/format-notif-date";
+import { openNotificationFromUserGesture } from "@/lib/notification-open";
 import { createClient } from "@/lib/supabase/client";
 import {
   getNotificationsUnreadSnapshot,
@@ -26,6 +28,7 @@ type NavNotification = {
   title: string;
   body: string;
   kind?: string | null;
+  actionUrl?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -51,6 +54,7 @@ function IconBell({ className }: { className?: string }) {
 }
 
 export function NotificationsNavLink() {
+  const router = useRouter();
   /** null: checking session; only render the control when true (signed in). */
   const [showNav, setShowNav] = useState<boolean | null>(null);
   const unread = useSyncExternalStore(
@@ -264,14 +268,17 @@ export function NotificationsNavLink() {
                         ? "bg-[color-mix(in_srgb,var(--gn-accent)_8%,transparent)]"
                         : ""
                     }`}
-                    onClick={() => {
-                      if (n.kind === "moderation_warning") {
-                        setWarningModal({ title: n.title, body: n.body });
-                        if (!n.readAt) void markRead(n.id);
-                        return;
-                      }
-                      if (!n.readAt) void markRead(n.id);
-                    }}
+                    onClick={() =>
+                      openNotificationFromUserGesture({
+                        n,
+                        title: n.title,
+                        body: n.body,
+                        markRead,
+                        setModerationModal: setWarningModal,
+                        router,
+                        onNavigate: () => setOpen(false),
+                      })
+                    }
                   >
                     <span className="font-medium text-[var(--gn-text)]">
                       {n.title}

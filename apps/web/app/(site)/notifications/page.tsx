@@ -18,8 +18,9 @@ export default async function NotificationsPage() {
         Notifications
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Replies, votes, notebook activity, and other updates. Click an unread
-        item to mark it read.
+        Replies, votes, notebook activity, and other updates. Tap a row to open
+        the post or diary when a link is available; moderation messages open in
+        a dialog instead.
       </p>
       <div className="mt-6">
         <Suspense

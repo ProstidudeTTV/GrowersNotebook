@@ -377,14 +377,17 @@ export class ProfilesService {
       report.reporterId,
       'Your report was reviewed',
       reporterBody,
-      'report_update',
+      {
+        kind: 'report_update',
+        actionUrl: `/u/${report.reportedUserId}`,
+      },
     );
     if (dto.notifyReported === true && dto.reportedWarning?.trim()) {
       await this.notifications.createForUser(
         report.reportedUserId,
         'Moderation reminder',
         dto.reportedWarning.trim(),
-        'moderation_warning',
+        { kind: 'moderation_warning' },
       );
     }
     return { ok: true as const };

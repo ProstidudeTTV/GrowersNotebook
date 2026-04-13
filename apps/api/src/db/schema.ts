@@ -401,6 +401,8 @@ export const userNotifications = pgTable(
     body: text('body').notNull(),
     /** general | report_update | moderation_warning */
     kind: text('kind').notNull().default('general'),
+    /** In-app path to open when the user taps the notification (e.g. /p/{uuid}#comment-…). */
+    actionUrl: text('action_url'),
     readAt: timestamp('read_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

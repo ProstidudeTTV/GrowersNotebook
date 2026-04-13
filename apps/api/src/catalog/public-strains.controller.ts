@@ -28,16 +28,21 @@ export class PublicStrainsController {
     @Query('breederSlug') breederSlug?: string,
     @Query('minRating') minRatingRaw?: string,
     @Query('minReviews') minReviewsRaw?: string,
+    @Query('chemotype') chemotypeRaw?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
     const minRating = minRatingRaw != null ? Number(minRatingRaw) : NaN;
     const minReviews = minReviewsRaw != null ? Number(minReviewsRaw) : NaN;
+    const c = chemotypeRaw?.trim().toLowerCase();
+    const chemotype =
+      c === 'indica' || c === 'sativa' || c === 'hybrid' ? c : undefined;
     return this.strains.listPublic({
       q,
       sort: sort === 'rating' ? 'rating' : 'name',
       breederId,
       breederSlug,
+      chemotype,
       minRating:
         Number.isFinite(minRating) && minRating >= 1 && minRating <= 5
           ? minRating

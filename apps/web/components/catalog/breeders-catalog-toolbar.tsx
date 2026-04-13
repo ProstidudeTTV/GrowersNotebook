@@ -4,11 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BreedersListSearchField } from "@/components/catalog/breeders-list-search-field";
-import {
-  breederPreviewPath,
-  type BreedersListQuery,
-} from "@/lib/catalog-list-urls";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 function buildBreedersQueryFromInputs(s: {
   q: string;
@@ -26,30 +21,6 @@ function buildBreedersQueryFromInputs(s: {
   const mrev = s.minReviews.trim();
   if (mrev && Number(mrev) >= 1) p.set("minReviews", mrev);
   return p;
-}
-
-function toBreederPreviewList(s: {
-  q: string;
-  sort: string;
-  country: string;
-  minRating: string;
-  minReviews: string;
-}): BreedersListQuery {
-  return {
-    q: s.q.trim() || undefined,
-    sort: s.sort === "rating" ? "rating" : undefined,
-    country: s.country.trim() || undefined,
-    minRating:
-      s.minRating.trim() &&
-      Number(s.minRating) >= 1 &&
-      Number(s.minRating) <= 5
-        ? s.minRating.trim()
-        : undefined,
-    minReviews:
-      s.minReviews.trim() && Number(s.minReviews) >= 1
-        ? s.minReviews.trim()
-        : undefined,
-  };
 }
 
 export function BreedersCatalogToolbar() {
@@ -91,49 +62,6 @@ export function BreedersCatalogToolbar() {
     [pathname, router],
   );
 
-  const debouncedQ = useDebouncedValue(q, 420);
-  const debouncedCountry = useDebouncedValue(country, 400);
-
-  useEffect(() => {
-    const urlQ = sp.get("q") ?? "";
-    if (debouncedQ.trim() === urlQ.trim()) return;
-    const p = buildBreedersQueryFromInputs({
-      ...inputsRef.current,
-      q: debouncedQ,
-    });
-    p.set("page", "1");
-    p.delete("detail");
-    p.delete("reviewsPage");
-    router.replace(`${pathname}?${p.toString()}`);
-  }, [debouncedQ, pathname, router, sp, spKey]);
-
-  useEffect(() => {
-    const urlC = sp.get("country") ?? "";
-    if (debouncedCountry.trim() === urlC.trim()) return;
-    const p = buildBreedersQueryFromInputs({
-      ...inputsRef.current,
-      country: debouncedCountry,
-    });
-    p.set("page", "1");
-    p.delete("detail");
-    p.delete("reviewsPage");
-    router.replace(`${pathname}?${p.toString()}`);
-  }, [debouncedCountry, pathname, router, sp, spKey]);
-
-  const activeListFiltersQuery = (() => {
-    const e = new URLSearchParams();
-    const c = country.trim();
-    if (c) e.set("country", c);
-    const mr = minRating.trim();
-    if (mr && Number(mr) >= 1 && Number(mr) <= 5) e.set("minRating", mr);
-    const mrev = minReviews.trim();
-    if (mrev && Number(mrev) >= 1) e.set("minReviews", mrev);
-    const s = e.toString();
-    return s ? `&${s}` : "";
-  })();
-
-  const previewList = () => toBreederPreviewList(inputs);
-
   return (
     <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
@@ -143,8 +71,6 @@ export function BreedersCatalogToolbar() {
         <BreedersListSearchField
           value={q}
           onChange={setQ}
-          activeListFiltersQuery={activeListFiltersQuery}
-          buildLinkToBreederDetail={(slug) => breederPreviewPath(slug, previewList())}
           onEnterCommit={() => navigateWith({ q })}
         />
         <div className="min-w-[8rem] shrink-0">
@@ -161,6 +87,11 @@ export function BreedersCatalogToolbar() {
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;
               e.preventDefault();
+              navigateWith({ country: country.trim() });
+            }}
+            onBlur={() => {
+              const urlC = sp.get("country") ?? "";
+              if (country.trim() === urlC.trim()) return;
               navigateWith({ country: country.trim() });
             }}
             className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
@@ -241,9 +172,8 @@ export function BreedersCatalogToolbar() {
         </button>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Catalog search only lists breeders here (header search is for growers &
-        posts). Two+ letters open quick picks; country updates the list after a
-        short pause.{" "}
+        Breeder name updates when you press Enter. Country applies on Enter or
+        when you leave the field. Live suggestions stay on the header search.{" "}
         <Link href="/breeders" className="text-[#ff6a38] hover:underline">
           Reset all filters
         </Link>

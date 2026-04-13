@@ -6,6 +6,8 @@ export type StrainsListQuery = {
   breederSlug?: string;
   minRating?: string;
   minReviews?: string;
+  /** indica | sativa | hybrid */
+  chemotype?: string;
 };
 
 /** Query params for /breeders list (no detail / reviewsPage). */
@@ -27,6 +29,10 @@ function appendStrainsParams(u: URLSearchParams, list: StrainsListQuery) {
   if (mr && Number(mr) >= 1 && Number(mr) <= 5) u.set("minRating", mr);
   const mrev = list.minReviews?.trim();
   if (mrev && Number(mrev) >= 1) u.set("minReviews", mrev);
+  const ct = list.chemotype?.trim().toLowerCase();
+  if (ct === "indica" || ct === "sativa" || ct === "hybrid") {
+    u.set("chemotype", ct);
+  }
 }
 
 export function strainsListPath(list: StrainsListQuery): string {

@@ -533,6 +533,10 @@ export const strains = pgTable(
       .$type<string[]>()
       .default(sql`'[]'::jsonb`),
     effectsNotes: text('effects_notes'),
+    /** indica | sativa | hybrid — from import or staff curation */
+    chemotype: text('chemotype'),
+    /** Short lineage / cross sentence when known */
+    genetics: text('genetics'),
     published: boolean('published').notNull().default(true),
     reviewCount: integer('review_count').notNull().default(0),
     avgRating: numeric('avg_rating', { precision: 4, scale: 2 }),
@@ -547,6 +551,7 @@ export const strains = pgTable(
     index('strains_published_name_idx').on(t.published, t.name),
     index('strains_breeder_idx').on(t.breederId),
     index('strains_slug_idx').on(t.slug),
+    index('strains_chemotype_idx').on(t.chemotype),
   ],
 );
 

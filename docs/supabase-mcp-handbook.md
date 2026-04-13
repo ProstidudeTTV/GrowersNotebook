@@ -53,6 +53,7 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 | `nutrient_products` | Admin-curated product catalog; `notebook_week_nutrients` links rows to a week. |
 | `notebook_votes` | PK (`user_id`, `notebook_id`); `value` ±1. |
 | `notebook_comments` | Threaded comments on a notebook (`parent_id`). |
+| `strains` | Catalog cultivars: `chemotype` (`indica` / `sativa` / `hybrid`, nullable), `genetics` (short lineage text, nullable), plus `effects`, `effects_notes`, `description`, breeder link, ratings. |
 
 ## Domain logic (API mental model)
 

@@ -5,12 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { StrainsListSearchField } from "@/components/catalog/strains-list-search-field";
 import { clientApiJson } from "@/lib/client-api";
-import {
-  strainPreviewPath,
-  type StrainsListQuery,
-} from "@/lib/catalog-list-urls";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
-
 type BreederHit = { slug: string; name: string };
 
 type BreedersListJson = { items: BreederHit[] };
@@ -21,6 +15,7 @@ function buildStrainsQueryFromInputs(s: {
   breederSlug: string;
   minRating: string;
   minReviews: string;
+  chemotype: string;
 }): URLSearchParams {
   const p = new URLSearchParams();
   if (s.q.trim()) p.set("q", s.q.trim());
@@ -30,31 +25,9 @@ function buildStrainsQueryFromInputs(s: {
   if (mr && Number(mr) >= 1 && Number(mr) <= 5) p.set("minRating", mr);
   const mrev = s.minReviews.trim();
   if (mrev && Number(mrev) >= 1) p.set("minReviews", mrev);
+  const ct = s.chemotype.trim().toLowerCase();
+  if (ct === "indica" || ct === "sativa" || ct === "hybrid") p.set("chemotype", ct);
   return p;
-}
-
-function toPreviewList(s: {
-  q: string;
-  sort: string;
-  breederSlug: string;
-  minRating: string;
-  minReviews: string;
-}): StrainsListQuery {
-  return {
-    q: s.q.trim() || undefined,
-    sort: s.sort === "rating" ? "rating" : undefined,
-    breederSlug: s.breederSlug.trim() || undefined,
-    minRating:
-      s.minRating.trim() &&
-      Number(s.minRating) >= 1 &&
-      Number(s.minRating) <= 5
-        ? s.minRating.trim()
-        : undefined,
-    minReviews:
-      s.minReviews.trim() && Number(s.minReviews) >= 1
-        ? s.minReviews.trim()
-        : undefined,
-  };
 }
 
 function BreederFilterCombobox({
@@ -69,7 +42,6 @@ function BreederFilterCombobox({
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState(breederLabel);
-  const debounced = useDebouncedValue(input.trim(), 260);
   const [open, setOpen] = useState(false);
   const [hits, setHits] = useState<BreederHit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,45 +51,36 @@ function BreederFilterCombobox({
     setInput(breederLabel);
   }, [breederLabel, breederSlug]);
 
-  useEffect(() => {
-    if (debounced.length < 1) {
+  const fetchHits = useCallback(async () => {
+    const term = input.trim();
+    if (term.length < 1) {
       setHits([]);
-      setLoading(false);
       setPickError(null);
       setOpen(false);
       return;
     }
-    const ctrl = new AbortController();
     setOpen(true);
     setLoading(true);
     setPickError(null);
     setHits([]);
-    const qs = new URLSearchParams({
-      q: debounced,
-      page: "1",
-      pageSize: "12",
-      sort: "name",
-    });
-    void (async () => {
-      try {
-        const data = await clientApiJson<BreedersListJson>(
-          `/breeders?${qs.toString()}`,
-          { signal: ctrl.signal },
-        );
-        if (!ctrl.signal.aborted) {
-          setHits(data.items ?? []);
-        }
-      } catch (e) {
-        if (!ctrl.signal.aborted) {
-          setHits([]);
-          setPickError(e instanceof Error ? e.message : "Search failed");
-        }
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
-      }
-    })();
-    return () => ctrl.abort();
-  }, [debounced]);
+    try {
+      const qs = new URLSearchParams({
+        q: term,
+        page: "1",
+        pageSize: "12",
+        sort: "name",
+      });
+      const data = await clientApiJson<BreedersListJson>(
+        `/breeders?${qs.toString()}`,
+      );
+      setHits(data.items ?? []);
+    } catch (e) {
+      setHits([]);
+      setPickError(e instanceof Error ? e.message : "Search failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [input]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -127,35 +90,36 @@ function BreederFilterCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const showPanel = open && debounced.length >= 1;
+  const showPanel = open && input.trim().length >= 1;
 
   return (
     <div ref={rootRef} className="relative min-w-[10rem] max-w-[14rem] flex-1">
       <label htmlFor={id} className="mb-1 block text-xs text-[var(--gn-text-muted)]">
         Breeder
       </label>
-      <input
-        id={id}
-        type="search"
-        autoComplete="off"
-        placeholder="Filter breeder…"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onFocus={() => {
-          if (debounced.length >= 1 && hits.length) setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          const h = hits[0];
-          if (h && debounced.length >= 1 && !loading && !pickError) {
-            setInput(h.name);
-            onCommittedSlug(h.slug, h.name);
-            setOpen(false);
-          }
-        }}
-        className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
-      />
+      <div className="flex gap-1">
+        <input
+          id={id}
+          type="search"
+          autoComplete="off"
+          placeholder="Name, then Enter or Find"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            void fetchHits();
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
+        />
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-2 py-1.5 text-xs font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+          onClick={() => void fetchHits()}
+        >
+          Find
+        </button>
+      </div>
       {breederSlug ? (
         <button
           type="button"
@@ -228,6 +192,11 @@ export function StrainsCatalogToolbar({
   );
   const [minRating, setMinRating] = useState(() => sp.get("minRating") ?? "");
   const [minReviews, setMinReviews] = useState(() => sp.get("minReviews") ?? "");
+  const [chemotype, setChemotype] = useState(() => {
+    const c = sp.get("chemotype")?.trim().toLowerCase() ?? "";
+    if (c === "indica" || c === "sativa" || c === "hybrid") return c;
+    return "";
+  });
 
   useEffect(() => {
     setQ(sp.get("q") ?? "");
@@ -236,12 +205,16 @@ export function StrainsCatalogToolbar({
     setBreederSlug(bSlug);
     setMinRating(sp.get("minRating") ?? "");
     setMinReviews(sp.get("minReviews") ?? "");
+    const c = sp.get("chemotype")?.trim().toLowerCase() ?? "";
+    setChemotype(
+      c === "indica" || c === "sativa" || c === "hybrid" ? c : "",
+    );
     const name = breederLabelResolved?.trim() ?? "";
     if (bSlug) setBreederLabel(name);
     else setBreederLabel("");
   }, [spKey, sp, breederLabelResolved]);
 
-  const inputs = { q, sort, breederSlug, minRating, minReviews };
+  const inputs = { q, sort, breederSlug, minRating, minReviews, chemotype };
   const inputsRef = useRef(inputs);
   inputsRef.current = inputs;
 
@@ -258,33 +231,6 @@ export function StrainsCatalogToolbar({
     [pathname, router],
   );
 
-  const debouncedQ = useDebouncedValue(q, 420);
-  useEffect(() => {
-    const urlQ = sp.get("q") ?? "";
-    if (debouncedQ.trim() === urlQ.trim()) return;
-    const p = buildStrainsQueryFromInputs({
-      ...inputsRef.current,
-      q: debouncedQ,
-    });
-    p.set("page", "1");
-    p.delete("detail");
-    p.delete("reviewsPage");
-    router.replace(`${pathname}?${p.toString()}`);
-  }, [debouncedQ, pathname, router, sp, spKey]);
-
-  const activeListFiltersQuery = (() => {
-    const e = new URLSearchParams();
-    if (breederSlug) e.set("breederSlug", breederSlug);
-    const mr = minRating.trim();
-    if (mr && Number(mr) >= 1 && Number(mr) <= 5) e.set("minRating", mr);
-    const mrev = minReviews.trim();
-    if (mrev && Number(mrev) >= 1) e.set("minReviews", mrev);
-    const s = e.toString();
-    return s ? `&${s}` : "";
-  })();
-
-  const previewList = () => toPreviewList(inputs);
-
   return (
     <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
@@ -294,8 +240,6 @@ export function StrainsCatalogToolbar({
         <StrainsListSearchField
           value={q}
           onChange={setQ}
-          activeListFiltersQuery={activeListFiltersQuery}
-          buildStrainDetailHref={(slug) => strainPreviewPath(slug, previewList())}
           onEnterCommit={() => navigateWith({ q })}
         />
         <div className="shrink-0">
@@ -314,6 +258,29 @@ export function StrainsCatalogToolbar({
           >
             <option value="name">Name</option>
             <option value="rating">Rating</option>
+          </select>
+        </div>
+        <div className="shrink-0">
+          <label
+            htmlFor="strain-chemotype"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+          >
+            Type
+          </label>
+          <select
+            id="strain-chemotype"
+            value={chemotype}
+            onChange={(e) => {
+              const v = e.target.value;
+              setChemotype(v);
+              navigateWith({ chemotype: v });
+            }}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="indica">Indica</option>
+            <option value="sativa">Sativa</option>
+            <option value="hybrid">Hybrid</option>
           </select>
         </div>
         <BreederFilterCombobox
@@ -382,8 +349,8 @@ export function StrainsCatalogToolbar({
         </button>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Catalog search only lists strains here (header search is for growers &
-        posts). Two+ letters open quick picks.{" "}
+        Strain name updates the list when you press Enter. Live suggestions stay
+        on the header search (growers & posts).{" "}
         <Link href="/strains" className="text-[#ff6a38] hover:underline">
           Reset all filters
         </Link>

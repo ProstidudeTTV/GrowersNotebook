@@ -247,6 +247,41 @@ function allocStrainSlug(
   return candidate;
 }
 
+function normalizeChemotypeFromRow(row: Record<string, string>): string | null {
+  const raw = (
+    row.strain_type_summary ||
+    row.indica_sativa ||
+    row.type ||
+    ''
+  )
+    .trim()
+    .toLowerCase();
+  if (!raw) return null;
+  if (raw.includes('hybrid')) return 'hybrid';
+  if (raw.includes('indica') && raw.includes('sativa')) return 'hybrid';
+  if (raw.includes('indica')) return 'indica';
+  if (raw.includes('sativa')) return 'sativa';
+  return null;
+}
+
+function extractGeneticsFromDescription(desc: string | undefined): string | null {
+  const t = desc?.trim();
+  if (!t) return null;
+  const sentences = t.split(/(?<=[.!?])\s+/);
+  for (const s of sentences) {
+    const x = s.trim();
+    if (x.length < 18) continue;
+    if (
+      /\bcross(?:ing|ed)?\b/i.test(x) ||
+      /\bparent strains\b/i.test(x) ||
+      /\blineage\b/i.test(x)
+    ) {
+      return truncate(x, 500);
+    }
+  }
+  return null;
+}
+
 /**
  * Core import used by the CLI script and admin upload (same rules as before).
  */
@@ -329,13 +364,16 @@ export async function importStrainCsvRecords(
       22,
     );
     const effectsNotes = buildEffectsNotes(row);
+    const desc = buildDescription(row);
     strainValues.push({
       slug: strainSlug,
       name: truncate(strainName, 200),
-      description: buildDescription(row),
+      description: desc,
       breederId,
       effects,
       effectsNotes: effectsNotes ?? null,
+      chemotype: normalizeChemotypeFromRow(row),
+      genetics: extractGeneticsFromDescription(desc),
       published: true,
     });
   }

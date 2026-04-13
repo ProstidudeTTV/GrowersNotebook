@@ -6,6 +6,8 @@ import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
 import { CatalogSubRatingsSummary } from "@/components/catalog/catalog-sub-ratings-summary";
 import { StarDisplay } from "@/components/catalog/star-display";
+import { StrainChemotypeBadge } from "@/components/catalog/strain-chemotype-badge";
+import { StrainEffectsNotesPanel } from "@/components/catalog/strain-effects-notes-panel";
 import { apiFetch } from "@/lib/api-public";
 import type { StrainsListQuery } from "@/lib/catalog-list-urls";
 import {
@@ -36,6 +38,8 @@ export type StrainDetailJson = {
     description: string | null;
     effects: string[];
     effectsNotes: string | null;
+    chemotype: string | null;
+    genetics: string | null;
     avgRating: string | null;
     reviewCount: number;
     breeder: { id: string; slug: string; name: string } | null;
@@ -193,8 +197,15 @@ export async function StrainDetailBody({
       <div className="px-4 py-6">{inner}</div>
     );
 
+  const geneticsLine =
+    s.genetics?.trim() ||
+    geneticsLineFromDescription(s.description) ||
+    null;
+
   const hasAside =
-    Boolean(s.effects?.length) || Boolean(s.effectsNotes?.trim());
+    Boolean(s.effects?.length) ||
+    Boolean(s.effectsNotes?.trim()) ||
+    Boolean(geneticsLine);
 
   return shell(
     <div className="flex flex-col gap-8 lg:gap-10">
@@ -205,7 +216,10 @@ export async function StrainDetailBody({
       </nav>
 
       <header className="space-y-3">
-        <h1 className="text-2xl font-bold text-[var(--gn-text)]">{s.name}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-[var(--gn-text)]">{s.name}</h1>
+          <StrainChemotypeBadge chemotype={s.chemotype} />
+        </div>
         <StarDisplay avg={s.avgRating} count={s.reviewCount} />
         {s.breeder && breederHref ? (
           <p className="text-sm text-[var(--gn-text-muted)]">
@@ -263,10 +277,18 @@ export async function StrainDetailBody({
                 </ul>
               </div>
             ) : null}
+            {geneticsLine ? (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  Genetics
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text)]">
+                  {geneticsLine}
+                </p>
+              </div>
+            ) : null}
             {s.effectsNotes?.trim() ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
-                {s.effectsNotes.trim()}
-              </p>
+              <StrainEffectsNotesPanel text={s.effectsNotes} />
             ) : null}
           </aside>
         </div>
@@ -423,6 +445,20 @@ export async function StrainDetailBody({
       </section>
     </div>,
   );
+}
+
+function geneticsLineFromDescription(description: string | null): string | null {
+  const t = description?.trim();
+  if (!t) return null;
+  const sentences = t.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    const x = sentence.trim();
+    if (x.length < 22) continue;
+    if (/\bcross(?:ing|ed)?\b/i.test(x) || /\b×\s*[A-Z]/i.test(x)) {
+      return x.length > 420 ? `${x.slice(0, 417)}…` : x;
+    }
+  }
+  return null;
 }
 
 function formatStrainNotebookDate(iso: string): string {

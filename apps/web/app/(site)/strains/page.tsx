@@ -4,6 +4,7 @@ import { StrainDetailBody } from "@/components/catalog/strain-detail-body";
 import { CatalogListPreviewOverlay } from "@/components/catalog/catalog-list-preview-overlay";
 import { StrainsBreederFilterLink } from "@/components/catalog/strains-breeder-filter-link";
 import { StarDisplay } from "@/components/catalog/star-display";
+import { StrainChemotypeBadge } from "@/components/catalog/strain-chemotype-badge";
 import { StrainsCatalogToolbar } from "@/components/catalog/strains-catalog-toolbar";
 import { apiFetch } from "@/lib/api-public";
 import {
@@ -30,6 +31,8 @@ type ListJson = {
     description: string | null;
     avgRating: string | null;
     reviewCount: number;
+    chemotype: string | null;
+    genetics: string | null;
   }>;
   total: number;
   page: number;
@@ -46,6 +49,7 @@ export default async function StrainsPage({
     breederSlug?: string;
     minRating?: string;
     minReviews?: string;
+    chemotype?: string;
     detail?: string;
     reviewsPage?: string;
   }>;
@@ -55,6 +59,13 @@ export default async function StrainsPage({
   const breederSlug = sp.breederSlug?.trim() ?? "";
   const minRatingRaw = sp.minRating?.trim() ?? "";
   const minReviewsRaw = sp.minReviews?.trim() ?? "";
+  const chemotypeRaw = sp.chemotype?.trim().toLowerCase() ?? "";
+  const chemotype =
+    chemotypeRaw === "indica" ||
+    chemotypeRaw === "sativa" ||
+    chemotypeRaw === "hybrid"
+      ? chemotypeRaw
+      : "";
   const sort = sp.sort === "rating" ? "rating" : "name";
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
@@ -75,6 +86,7 @@ export default async function StrainsPage({
   if (minReviewsRaw && minReviewsN >= 1) {
     qs.set("minReviews", minReviewsRaw);
   }
+  if (chemotype) qs.set("chemotype", chemotype);
 
   let data: ListJson = {
     items: [],
@@ -101,6 +113,7 @@ export default async function StrainsPage({
     if (minReviewsRaw && minReviewsN >= 1) {
       p.set("minReviews", minReviewsRaw);
     }
+    if (chemotype) p.set("chemotype", chemotype);
     p.set("page", String(nextPage));
     return `/strains?${p.toString()}`;
   };
@@ -131,6 +144,7 @@ export default async function StrainsPage({
         : undefined,
     minReviews:
       minReviewsRaw && minReviewsN >= 1 ? minReviewsRaw : undefined,
+    chemotype: chemotype || undefined,
   };
 
   /** Breeder drawer dismiss: replace here (no `detail`) so filter is preserved. */
@@ -145,6 +159,7 @@ export default async function StrainsPage({
     if (minReviewsRaw && minReviewsN >= 1) {
       p.set("minReviews", minReviewsRaw);
     }
+    if (chemotype) p.set("chemotype", chemotype);
     if (page > 1) p.set("page", String(page));
     const s = p.toString();
     return s ? `/strains?${s}` : "/strains";
@@ -206,11 +221,14 @@ export default async function StrainsPage({
                   <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#ff6a38] sm:text-base">
                     {s.name}
                   </h2>
-                  <StarDisplay
-                    avg={s.avgRating}
-                    count={s.reviewCount}
-                    compact
-                  />
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <StrainChemotypeBadge chemotype={s.chemotype} size="sm" />
+                    <StarDisplay
+                      avg={s.avgRating}
+                      count={s.reviewCount}
+                      compact
+                    />
+                  </div>
                 </div>
                 {s.description?.trim() ? (
                   <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-3 sm:text-sm">

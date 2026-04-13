@@ -15,6 +15,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  not,
   notInArray,
   or,
 } from 'drizzle-orm';
@@ -61,6 +62,8 @@ export type ListStrainsQuery = {
   breederId?: string;
   /** Resolve published breeder by slug and filter strains to that breeder */
   breederSlug?: string;
+  /** Filter by indica / sativa / hybrid (column + description fallback when unset). */
+  chemotype?: 'indica' | 'sativa' | 'hybrid';
   /** Minimum average rating (1–5); requires non-null avg_rating. */
   minRating?: number;
   /** Minimum review count (>= 1). */
@@ -89,7 +92,10 @@ export class StrainsService {
         .from(breeders)
         .where(inArray(breeders.slug, [...PUBLIC_EXCLUDED_BREEDER_SLUGS]));
       conditions.push(
-        or(isNull(strains.breederId), notInArray(strains.breederId, promoBreederIds)),
+        or(
+          isNull(strains.breederId),
+          notInArray(strains.breederId, promoBreederIds),
+        ),
       );
     }
     let breederIdFilter = query.breederId;
@@ -108,9 +114,7 @@ export class StrainsService {
     }
     if (q) {
       const term = `%${q.replace(/%/g, '\\%')}%`;
-      conditions.push(
-        or(ilike(strains.name, term), ilike(strains.slug, term)),
-      );
+      conditions.push(or(ilike(strains.name, term), ilike(strains.slug, term)));
     }
     const mr = query.minRating;
     if (mr != null && Number.isFinite(mr) && mr >= 1 && mr <= 5) {
@@ -121,8 +125,47 @@ export class StrainsService {
     if (mrev != null && Number.isFinite(mrev) && mrev >= 1) {
       conditions.push(gte(strains.reviewCount, Math.floor(mrev)));
     }
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const ct = query.chemotype;
+    if (ct === 'indica' || ct === 'sativa' || ct === 'hybrid') {
+      const desc = strains.description;
+      const notes = strains.effectsNotes;
+      if (ct === 'hybrid') {
+        conditions.push(
+          or(
+            eq(strains.chemotype, 'hybrid'),
+            and(
+              isNull(strains.chemotype),
+              or(ilike(desc, '%hybrid%'), ilike(notes, '%hybrid%')),
+            ),
+          )!,
+        );
+      } else if (ct === 'indica') {
+        conditions.push(
+          or(
+            eq(strains.chemotype, 'indica'),
+            and(
+              isNull(strains.chemotype),
+              or(ilike(desc, '%indica%'), ilike(notes, '%indica%')),
+              not(ilike(desc, '%sativa%')),
+              not(ilike(desc, '%hybrid%')),
+            ),
+          )!,
+        );
+      } else {
+        conditions.push(
+          or(
+            eq(strains.chemotype, 'sativa'),
+            and(
+              isNull(strains.chemotype),
+              or(ilike(desc, '%sativa%'), ilike(notes, '%sativa%')),
+              not(ilike(desc, '%indica%')),
+              not(ilike(desc, '%hybrid%')),
+            ),
+          )!,
+        );
+      }
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const orderBy =
       query.sort === 'rating'
@@ -157,10 +200,7 @@ export class StrainsService {
     reviewsPageSize = 20,
   ) {
     const db = getDb();
-    const [row] = await db
-      .select()
-      .from(strains)
-      .where(eq(strains.slug, slug));
+    const [row] = await db.select().from(strains).where(eq(strains.slug, slug));
     if (!row) throw new NotFoundException('Strain not found');
     if (!row.published) throw new NotFoundException('Strain not found');
 
@@ -374,10 +414,7 @@ export class StrainsService {
 
   async findBySlug(slug: string) {
     const db = getDb();
-    const [row] = await db
-      .select()
-      .from(strains)
-      .where(eq(strains.slug, slug));
+    const [row] = await db.select().from(strains).where(eq(strains.slug, slug));
     return row ?? null;
   }
 
@@ -473,6 +510,8 @@ export class StrainsService {
       breederId: row.breederId,
       effects: (row.effects ?? []) as string[],
       effectsNotes: row.effectsNotes,
+      chemotype: row.chemotype,
+      genetics: row.genetics,
       published: row.published,
       reviewCount: row.reviewCount,
       avgRating: row.avgRating != null ? String(row.avgRating) : null,

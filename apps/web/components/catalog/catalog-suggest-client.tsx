@@ -42,8 +42,7 @@ export function CatalogSuggestClient() {
   const [isAutoflower, setIsAutoflower] = useState(false);
   const [reportedEffectPctsJson, setReportedEffectPctsJson] = useState("");
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit() {
     setError(null);
     setSaving(true);
     try {
@@ -176,7 +175,10 @@ export function CatalogSuggestClient() {
 
   return (
     <form
-      onSubmit={submit}
+      onSubmit={(e) => {
+        /** Block native submit (Enter in inputs) — only the explicit button sends. */
+        e.preventDefault();
+      }}
       className="space-y-4 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-4"
     >
       <div>
@@ -448,8 +450,9 @@ export function CatalogSuggestClient() {
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       <button
-        type="submit"
+        type="button"
         disabled={saving}
+        onClick={() => void submit()}
         className="rounded-lg bg-[#ff6a38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ff7d4c] disabled:opacity-50"
       >
         {saving ? "Sending…" : "Submit suggestion"}

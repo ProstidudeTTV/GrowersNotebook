@@ -17,6 +17,7 @@ type MeProfile = {
   profilePublic: boolean;
   showGrowerStatsPublic: boolean;
   showNotebooksPublic: boolean;
+  mailingListOptIn: boolean;
 };
 
 export function ProfileSettingsForm() {
@@ -33,6 +34,7 @@ export function ProfileSettingsForm() {
   const [profilePublic, setProfilePublic] = useState(true);
   const [showGrowerStatsPublic, setShowGrowerStatsPublic] = useState(true);
   const [showNotebooksPublic, setShowNotebooksPublic] = useState(true);
+  const [mailingListOptIn, setMailingListOptIn] = useState(false);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [resetSending, setResetSending] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function ProfileSettingsForm() {
       setProfilePublic(me.profilePublic !== false);
       setShowGrowerStatsPublic(me.showGrowerStatsPublic !== false);
       setShowNotebooksPublic(me.showNotebooksPublic !== false);
+      setMailingListOptIn(me.mailingListOptIn === true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load profile");
     } finally {
@@ -89,6 +92,7 @@ export function ProfileSettingsForm() {
           profilePublic,
           showGrowerStatsPublic,
           showNotebooksPublic,
+          mailingListOptIn,
         }),
       });
       router.refresh();
@@ -278,6 +282,27 @@ export function ProfileSettingsForm() {
           show initials.
         </span>
       </label>
+
+      <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
+        <p className="text-sm font-medium text-[var(--gn-text)]">Email</p>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-0.5 hover:bg-[var(--gn-surface-hover)]">
+          <input
+            type="checkbox"
+            checked={mailingListOptIn}
+            onChange={(e) => setMailingListOptIn(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-[var(--gn-border)]"
+          />
+          <span>
+            <span className="block text-sm text-[var(--gn-text)]">
+              Product updates and announcements by email
+            </span>
+            <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+              Occasional messages from the site (not other growers). You can
+              turn this off anytime.
+            </span>
+          </span>
+        </label>
+      </div>
 
       <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
         <p className="text-sm font-medium text-[var(--gn-text)]">

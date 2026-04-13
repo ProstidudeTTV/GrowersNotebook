@@ -7,6 +7,7 @@ import {
   type SidebarHotPost,
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
+import { MailingListPrompt } from "@/components/mailing-list-prompt";
 import { SiteHeader } from "@/components/site-header";
 import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
 
@@ -36,6 +37,7 @@ export function SiteChrome({
   authed,
   motdText,
   announcement,
+  mailingListNudgeRecommended,
 }: {
   children: React.ReactNode;
   modal?: React.ReactNode;
@@ -44,24 +46,48 @@ export function SiteChrome({
   authed: boolean;
   motdText: string | null;
   announcement: PublicSiteConfigPayload["announcement"];
+  mailingListNudgeRecommended: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [followed, setFollowed] = useState<SidebarCommunity[]>(
     initialFollowedCommunities,
   );
+  const [ann, setAnn] = useState(announcement);
 
   useEffect(() => {
     setFollowed(initialFollowedCommunities);
   }, [initialFollowedCommunities]);
 
+  useEffect(() => {
+    setAnn(announcement);
+  }, [announcement]);
+
+  /** Refresh banner from API so admin-published announcements show without a full redeploy. */
+  useEffect(() => {
+    const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+    if (!raw) return;
+    const api = raw.replace(/\/+$/, "");
+    let cancelled = false;
+    fetch(`${api}/site/public-config`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { announcement?: PublicSiteConfigPayload["announcement"] }) => {
+        if (cancelled || !j) return;
+        setAnn(j.announcement ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const annStyle =
-    announcement?.style === "warning"
+    ann?.style === "warning"
       ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
       : "border-sky-500/35 bg-sky-500/10 text-sky-100";
 
   /** Mobile drawer `--gn-mobile-drawer-top` assumes header only; extend when MOTD / banner sit under header. */
   const mobileTopExtraRem =
-    (motdText?.trim() ? 2 : 0) + (announcement ? 3.5 : 0);
+    (motdText?.trim() ? 2 : 0) + (ann ? 3.5 : 0);
 
   return (
     <div
@@ -94,17 +120,17 @@ export function SiteChrome({
         </p>
       ) : null}
 
-      {announcement ? (
+      {ann ? (
         <div
           role="status"
           className={`border-b px-4 py-3 text-sm ${annStyle}`}
         >
-          {announcement.title?.trim() ? (
-            <p className="font-semibold">{announcement.title.trim()}</p>
+          {ann.title?.trim() ? (
+            <p className="font-semibold">{ann.title.trim()}</p>
           ) : null}
-          {announcement.body?.trim() ? (
+          {ann.body?.trim() ? (
             <p className="mt-1 whitespace-pre-wrap opacity-95">
-              {announcement.body.trim()}
+              {ann.body.trim()}
             </p>
           ) : null}
         </div>
@@ -138,6 +164,10 @@ export function SiteChrome({
         </div>
       </div>
       {modal}
+      <MailingListPrompt
+        authed={authed}
+        nudgeRecommended={mailingListNudgeRecommended}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ export const getPublicSiteConfigCached = cache(
         ...emptyPublicSiteConfig,
         ...j,
         announcement: j.announcement ?? null,
+        mailingListNudgeRecommended: Boolean(j.mailingListNudgeRecommended),
       };
     } catch {
       return emptyPublicSiteConfig;

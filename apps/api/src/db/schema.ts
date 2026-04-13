@@ -90,6 +90,8 @@ export const profiles = pgTable('profiles', {
   /** When set with bannedAt, ban lifts after this instant (temporary ban). Null = permanent ban. */
   banExpiresAt: timestamp('ban_expires_at', { withTimezone: true }),
   suspendedUntil: timestamp('suspended_until', { withTimezone: true }),
+  /** Opt-in to site email (announcements, etc.); never exposed to other users. */
+  mailingListOptIn: boolean('mailing_list_opt_in').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -988,5 +990,9 @@ export const siteConfig = pgTable('site_config', {
   seoDefaultDescription: varchar('seo_default_description', { length: 500 }),
   seoKeywords: text('seo_keywords'),
   ogImageUrl: text('og_image_url'),
+  /** When set, public UI may nudge users to join the mailing list (e.g. after bulk send failures). */
+  emailOutreachFailureAt: timestamp('email_outreach_failure_at', {
+    withTimezone: true,
+  }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

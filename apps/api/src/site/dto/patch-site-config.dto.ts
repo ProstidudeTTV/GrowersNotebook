@@ -93,4 +93,9 @@ export class PatchSiteConfigDto {
   @IsUrl({ require_protocol: true, protocols: ['https'] })
   @MaxLength(2000)
   ogImageUrl?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  /** Clears the public “mailing list nudge” flag after outreach issues. */
+  clearEmailOutreachFailure?: boolean;
 }

@@ -34,6 +34,7 @@ type StaffSiteConfig = {
   ogImageUrl: string | null;
   updatedAt: string;
   maintenanceEmailConfigured: boolean;
+  emailOutreachFailureAt: string | null;
 };
 
 function isoToDatetimeLocal(iso: string | null): string {
@@ -60,6 +61,7 @@ export default function AdminSiteSettingsPage() {
   const [loadedSite, setLoadedSite] = useState<{
     maintenanceEnabled: boolean;
     maintenanceEmailConfigured: boolean;
+    emailOutreachFailureAt: string | null;
   } | null>(null);
 
   const load = useCallback(async () => {
@@ -89,6 +91,7 @@ export default function AdminSiteSettingsPage() {
       setLoadedSite({
         maintenanceEnabled: row.maintenanceEnabled,
         maintenanceEmailConfigured: row.maintenanceEmailConfigured ?? false,
+        emailOutreachFailureAt: row.emailOutreachFailureAt ?? null,
       });
       form.setFieldsValue({
         motdText: row.motdText ?? "",
@@ -102,6 +105,7 @@ export default function AdminSiteSettingsPage() {
         maintenanceEnabled: row.maintenanceEnabled,
         maintenanceMessage: row.maintenanceMessage ?? "",
         notifyUsersOnMaintenance: true,
+        clearEmailOutreachFailure: false,
         seoDefaultTitle: row.seoDefaultTitle ?? "",
         seoDefaultDescription: row.seoDefaultDescription ?? "",
         seoKeywords: row.seoKeywords ?? "",
@@ -156,7 +160,7 @@ export default function AdminSiteSettingsPage() {
       !loadedSite.maintenanceEmailConfigured
     ) {
       void message.warning(
-        "Maintenance email is not configured on the API (set RESEND_API_KEY, RESEND_FROM_EMAIL, SUPABASE_SERVICE_ROLE_KEY). Users will not be emailed.",
+        "Maintenance email is not configured on the API (set SMTP_HOST, SMTP_FROM, and SUPABASE_SERVICE_ROLE_KEY). Users will not be emailed.",
       );
     }
 
@@ -185,6 +189,7 @@ export default function AdminSiteSettingsPage() {
             String(values.seoDefaultDescription ?? "").trim() || null,
           seoKeywords: String(values.seoKeywords ?? "").trim() || null,
           ogImageUrl: String(values.ogImageUrl ?? "").trim() || null,
+          clearEmailOutreachFailure: Boolean(values.clearEmailOutreachFailure),
         }),
       });
       await load();
@@ -231,6 +236,7 @@ export default function AdminSiteSettingsPage() {
           announcementEnabled: false,
           maintenanceEnabled: false,
           notifyUsersOnMaintenance: true,
+          clearEmailOutreachFailure: false,
         }}
       >
         <Typography.Title level={5}>Message of the day</Typography.Title>
@@ -287,7 +293,16 @@ export default function AdminSiteSettingsPage() {
             showIcon
             className="mb-4"
             message="Bulk maintenance email is not configured"
-            description="Set RESEND_API_KEY, RESEND_FROM_EMAIL, and SUPABASE_SERVICE_ROLE_KEY on the API service so all registered users can be notified when you turn maintenance on."
+            description="Set SMTP_HOST, SMTP_FROM, optional SMTP_USER/SMTP_PASS, and SUPABASE_SERVICE_ROLE_KEY on the API service so all registered users can be notified when you turn maintenance on. Credentials stay on the server only."
+          />
+        ) : null}
+        {loadedSite?.emailOutreachFailureAt ? (
+          <Alert
+            type="warning"
+            showIcon
+            className="mb-4"
+            message="Bulk email reported failures"
+            description={`Last flagged: ${new Date(loadedSite.emailOutreachFailureAt).toLocaleString()}. Signed-in users may see a bottom-right prompt to join the mailing list until you clear the flag below (e.g. after fixing SMTP).`}
           />
         ) : null}
         <Form.Item name="maintenanceEnabled" valuePropName="checked">
@@ -296,12 +311,19 @@ export default function AdminSiteSettingsPage() {
         <Form.Item
           name="notifyUsersOnMaintenance"
           valuePropName="checked"
-          extra="Sends one email per Supabase auth user when you save with maintenance turning on (was off, now on). Requires API env vars above."
+          extra="Sends one email per Supabase auth user when you save with maintenance turning on (was off, now on). Requires SMTP + service role on the API."
         >
           <Checkbox>Email all registered users when enabling maintenance</Checkbox>
         </Form.Item>
         <Form.Item name="maintenanceMessage" label="Message">
           <Input.TextArea rows={3} maxLength={2000} />
+        </Form.Item>
+        <Form.Item
+          name="clearEmailOutreachFailure"
+          valuePropName="checked"
+          extra="Clears the public “mailing list” recovery prompt for everyone after SMTP is working again."
+        >
+          <Checkbox>Clear mailing-list nudge flag</Checkbox>
         </Form.Item>
 
         <Typography.Title level={5} className="!mt-8">

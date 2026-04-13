@@ -27,6 +27,11 @@ export type PublicSiteConfigPayload = {
   } | null;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  /**
+   * When true, the site may show a one-time (per session) prompt to join the mailing list
+   * after bulk email issues (e.g. SMTP failures).
+   */
+  mailingListNudgeRecommended: boolean;
   /** Empty in DB = use built-in defaults in Next.js. */
   seoDefaultTitle: string | null;
   seoDefaultDescription: string | null;
@@ -54,6 +59,7 @@ export class SiteConfigService {
         announcement: null,
         maintenanceEnabled: false,
         maintenanceMessage: null,
+        mailingListNudgeRecommended: false,
         seoDefaultTitle: null,
         seoDefaultDescription: null,
         seoKeywords: null,
@@ -82,6 +88,7 @@ export class SiteConfigService {
       announcement,
       maintenanceEnabled: row.maintenanceEnabled,
       maintenanceMessage: row.maintenanceMessage?.trim() || null,
+      mailingListNudgeRecommended: row.emailOutreachFailureAt != null,
       seoDefaultTitle: row.seoDefaultTitle?.trim() || null,
       seoDefaultDescription: row.seoDefaultDescription?.trim() || null,
       seoKeywords: row.seoKeywords?.trim() || null,
@@ -107,7 +114,9 @@ export class SiteConfigService {
       seoKeywords: row.seoKeywords ?? null,
       ogImageUrl: row.ogImageUrl ?? null,
       updatedAt: row.updatedAt.toISOString(),
-      maintenanceEmailConfigured: this.maintenanceNotify.isConfigured(),
+      maintenanceEmailConfigured: this.maintenanceNotify.isEmailConfigured(),
+      emailOutreachFailureAt:
+        row.emailOutreachFailureAt?.toISOString() ?? null,
     };
   }
 
@@ -159,6 +168,9 @@ export class SiteConfigService {
       patch.seoDefaultDescription = body.seoDefaultDescription;
     if (body.seoKeywords !== undefined) patch.seoKeywords = body.seoKeywords;
     if (body.ogImageUrl !== undefined) patch.ogImageUrl = body.ogImageUrl;
+    if (body.clearEmailOutreachFailure === true) {
+      patch.emailOutreachFailureAt = null;
+    }
 
     await db.update(siteConfig).set(patch).where(eq(siteConfig.id, 1));
 

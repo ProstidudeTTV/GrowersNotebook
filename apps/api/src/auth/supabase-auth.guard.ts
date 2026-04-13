@@ -8,7 +8,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ProfilesService } from '../profiles/profiles.service';
-import { type JwtUser, preferredProfileDisplayName } from './jwt-user';
+import {
+  type JwtUser,
+  mailingListOptInFromJwt,
+  preferredProfileDisplayName,
+} from './jwt-user';
 import { verifySupabaseAccessToken } from './verify-supabase-access-token';
 
 @Injectable()
@@ -42,6 +46,7 @@ export class SupabaseAuthGuard implements CanActivate {
       payload.sub,
       payload.email ?? null,
       preferredProfileDisplayName(payload),
+      mailingListOptInFromJwt(payload),
     );
     let row = await this.profiles.findById(payload.sub);
     if (

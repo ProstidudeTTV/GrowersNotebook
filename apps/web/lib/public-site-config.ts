@@ -7,6 +7,8 @@ export type PublicSiteConfigPayload = {
   } | null;
   maintenanceEnabled: boolean;
   maintenanceMessage: string | null;
+  /** True after bulk email issues (e.g. SMTP); site may nudge users to opt in. */
+  mailingListNudgeRecommended: boolean;
   seoDefaultTitle: string | null;
   seoDefaultDescription: string | null;
   seoKeywords: string | null;
@@ -18,6 +20,7 @@ export const emptyPublicSiteConfig: PublicSiteConfigPayload = {
   announcement: null,
   maintenanceEnabled: false,
   maintenanceMessage: null,
+  mailingListNudgeRecommended: false,
   seoDefaultTitle: null,
   seoDefaultDescription: null,
   seoKeywords: null,

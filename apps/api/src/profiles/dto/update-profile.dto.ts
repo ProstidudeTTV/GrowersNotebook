@@ -39,4 +39,9 @@ export class UpdateProfileDto {
   @IsBoolean()
   @Type(() => Boolean)
   showNotebooksPublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  mailingListOptIn?: boolean;
 }

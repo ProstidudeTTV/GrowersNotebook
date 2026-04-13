@@ -81,6 +81,7 @@ export class ProfilesService {
     id: string,
     email: string | null,
     preferredDisplayName?: string | null,
+    mailingListOptIn?: boolean,
   ) {
     const db = getDb();
     const fromMeta = preferredDisplayName?.trim();
@@ -103,6 +104,7 @@ export class ProfilesService {
       .values({
         id,
         displayName,
+        mailingListOptIn: mailingListOptIn === true,
       })
       .onConflictDoNothing({ target: profiles.id });
   }
@@ -122,6 +124,7 @@ export class ProfilesService {
       profilePublic: row.profilePublic,
       showGrowerStatsPublic: row.showGrowerStatsPublic,
       showNotebooksPublic: row.showNotebooksPublic,
+      mailingListOptIn: row.mailingListOptIn,
       role: row.role,
       createdAt: row.createdAt,
       seeds,
@@ -259,6 +262,9 @@ export class ProfilesService {
     }
     if (dto.showNotebooksPublic !== undefined) {
       patch.showNotebooksPublic = dto.showNotebooksPublic;
+    }
+    if (dto.mailingListOptIn !== undefined) {
+      patch.mailingListOptIn = dto.mailingListOptIn;
     }
     if (Object.keys(patch).length > 0) {
       await db.update(profiles).set(patch).where(eq(profiles.id, userId));

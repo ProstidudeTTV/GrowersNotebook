@@ -1,21 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import { eq } from 'drizzle-orm';
+import { SmtpMailService } from '../email/smtp-mail.service';
+import { getDb } from '../db';
+import { siteConfig } from '../db/schema';
 
-/** Optional bulk email when maintenance mode is turned on (Resend + Supabase Admin API). */
+/** Optional bulk email when maintenance mode is turned on (SMTP + Supabase Admin API). */
 @Injectable()
 export class MaintenanceNotifyService {
   private readonly logger = new Logger(MaintenanceNotifyService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly smtp: SmtpMailService,
+  ) {}
 
-  /** True when env is set so a blast can run (no secrets exposed to clients). */
-  isConfigured(): boolean {
-    const url = this.config.get<string>('SUPABASE_URL')?.trim();
-    const key = this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY')?.trim();
-    const resendKey = this.config.get<string>('RESEND_API_KEY')?.trim();
-    const from = this.config.get<string>('RESEND_FROM_EMAIL')?.trim();
-    return Boolean(url && key && resendKey && from);
+  /** True when SMTP env is set so a blast can run (secrets stay on the server). */
+  isEmailConfigured(): boolean {
+    return this.smtp.isConfigured();
   }
 
   private siteOrigin(): string {
@@ -58,6 +60,17 @@ export class MaintenanceNotifyService {
     }
   }
 
+  private async setEmailOutreachFailure(failed: boolean): Promise<void> {
+    const db = getDb();
+    await db
+      .update(siteConfig)
+      .set({
+        emailOutreachFailureAt: failed ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteConfig.id, 1));
+  }
+
   /**
    * Send one email per auth user. Fire-and-forget from site patch; errors are logged only.
    */
@@ -66,12 +79,17 @@ export class MaintenanceNotifyService {
     const serviceRoleKey = this.config
       .get<string>('SUPABASE_SERVICE_ROLE_KEY')
       ?.trim();
-    const resendKey = this.config.get<string>('RESEND_API_KEY')?.trim();
-    const from = this.config.get<string>('RESEND_FROM_EMAIL')?.trim();
-    if (!supabaseUrl || !serviceRoleKey || !resendKey || !from) {
+    if (!supabaseUrl || !serviceRoleKey) {
       this.logger.warn(
-        'Maintenance email skipped: set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL',
+        'Maintenance email skipped: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY',
       );
+      return;
+    }
+    if (!this.smtp.isConfigured()) {
+      this.logger.warn(
+        'Maintenance email skipped: configure SMTP (SMTP_HOST, SMTP_FROM, and optional SMTP_USER/SMTP_PASS)',
+      );
+      await this.setEmailOutreachFailure(true);
       return;
     }
 
@@ -83,7 +101,6 @@ export class MaintenanceNotifyService {
       `\n\n${site}`,
     ].join('');
 
-    const resend = new Resend(resendKey);
     const subject = 'Growers Notebook — maintenance notice';
 
     const seen = new Set<string>();
@@ -96,28 +113,18 @@ export class MaintenanceNotifyService {
     )) {
       if (seen.has(to)) continue;
       seen.add(to);
-      try {
-        const { error } = await resend.emails.send({
-          from,
-          to: [to],
-          subject,
-          text,
-        });
-        if (error) {
-          failed += 1;
-          this.logger.warn(`Resend failed for ${to}: ${error.message}`);
-        } else {
-          sent += 1;
-        }
-      } catch (e) {
+      const ok = await this.smtp.sendText({ to, subject, text });
+      if (ok) {
+        sent += 1;
+      } else {
         failed += 1;
-        const m = e instanceof Error ? e.message : String(e);
-        this.logger.warn(`Resend error for ${to}: ${m}`);
       }
       if ((sent + failed) % 25 === 0) {
         await new Promise((r) => setTimeout(r, 1_000));
       }
     }
+
+    await this.setEmailOutreachFailure(failed > 0);
 
     this.logger.log(
       `Maintenance email blast finished: ${sent} sent, ${failed} failed, ${seen.size} unique addresses`,

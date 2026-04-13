@@ -101,6 +101,9 @@ export default async function SiteLayout({
       modal={modal}
       motdText={publicSiteConfig.motdText}
       announcement={publicSiteConfig.announcement}
+      mailingListNudgeRecommended={
+        publicSiteConfig.mailingListNudgeRecommended ?? false
+      }
     >
       {children}
     </SiteChrome>

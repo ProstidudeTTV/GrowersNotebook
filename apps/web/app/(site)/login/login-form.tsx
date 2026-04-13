@@ -29,6 +29,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [mailingListOptIn, setMailingListOptIn] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [message, setMessage] = useState<string | null>(urlError);
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,10 @@ export function LoginForm() {
           password,
           options: {
             emailRedirectTo: `${origin}/auth/callback`,
-            data: { display_name: u.slice(0, 120) },
+            data: {
+              display_name: u.slice(0, 120),
+              mailing_list_opt_in: mailingListOptIn,
+            },
           },
         });
         if (error) throw error;
@@ -117,15 +121,29 @@ export function LoginForm() {
         }}
       >
         {mode === "signup" ? (
-          <input
-            type="text"
-            name="username"
-            autoComplete="username"
-            placeholder="Display name"
-            className="gn-input w-full px-3 py-2"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+          <>
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              placeholder="Display name"
+              className="gn-input w-full px-3 py-2"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+            <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--gn-text-muted)]">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={mailingListOptIn}
+                onChange={(e) => setMailingListOptIn(e.target.checked)}
+              />
+              <span>
+                Email me occasional updates and announcements (you can change
+                this later in your profile).
+              </span>
+            </label>
+          </>
         ) : null}
         <input
           type="email"

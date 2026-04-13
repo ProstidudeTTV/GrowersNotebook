@@ -2,7 +2,7 @@
 
 import { List, useTable } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
-import { Table, Typography } from "antd";
+import { Table, Tooltip, Typography } from "antd";
 import Link from "next/link";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
@@ -19,8 +19,8 @@ export default function AdminAuditLogPage() {
     <List>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
       <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
-        Recent staff actions (moderation, profile updates, and related events).
-        Filter by query params in the URL or extend this list later.
+        Recent staff actions. “What happened” is a short label; hover a row to see
+        the raw request line. Actor and subject show display names when available.
       </p>
       <Table
         {...tableProps}
@@ -35,55 +35,91 @@ export default function AdminAuditLogPage() {
               v ? new Date(v).toLocaleString(undefined, { hour12: true }) : "—",
           },
           {
-            title: "Action",
-            dataIndex: "action",
+            title: "What happened",
+            dataIndex: "actionLabel",
             ellipsis: true,
+            render: (label: string | undefined, r: BaseRecord) => {
+              const raw = String(r.action ?? "");
+              const text = label?.trim() || raw;
+              return (
+                <Tooltip title={raw || undefined}>
+                  <span>{text}</span>
+                </Tooltip>
+              );
+            },
           },
           {
             title: "Actor",
             dataIndex: "actorProfileId",
-            width: 120,
-            render: (id: string | null) =>
-              id ? (
+            width: 200,
+            render: (id: string | null, r: BaseRecord) => {
+              const name = r.actorDisplayName as string | null | undefined;
+              if (!id) return "—";
+              return (
                 <Link
                   href={`/admin/profiles/edit/${encodeURIComponent(id)}`}
                   className="text-[#1677ff] hover:underline"
                 >
-                  <Text code className="text-xs">
+                  {name?.trim() ? (
+                    <span className="font-medium">{name}</span>
+                  ) : (
+                    <Text type="secondary" className="text-xs">
+                      (no name)
+                    </Text>
+                  )}
+                  <Text code className="ml-1 text-[0.65rem]">
                     {id.slice(0, 8)}…
                   </Text>
                 </Link>
-              ) : (
-                "—"
-              ),
+              );
+            },
           },
           {
             title: "Subject",
             dataIndex: "subjectProfileId",
-            width: 120,
-            render: (id: string | null) =>
-              id ? (
+            width: 200,
+            render: (id: string | null, r: BaseRecord) => {
+              const name = r.subjectDisplayName as string | null | undefined;
+              if (!id) return "—";
+              return (
                 <Link
                   href={`/admin/profiles/edit/${encodeURIComponent(id)}`}
                   className="text-[#1677ff] hover:underline"
                 >
-                  <Text code className="text-xs">
+                  {name?.trim() ? (
+                    <span className="font-medium">{name}</span>
+                  ) : (
+                    <Text type="secondary" className="text-xs">
+                      (no name)
+                    </Text>
+                  )}
+                  <Text code className="ml-1 text-[0.65rem]">
                     {id.slice(0, 8)}…
                   </Text>
                 </Link>
-              ) : (
-                "—"
-              ),
+              );
+            },
           },
           {
             title: "Entity",
             key: "entity",
+            width: 160,
             render: (_: unknown, r: BaseRecord) => {
-              const entityType = r.entityType as string | undefined;
+              const entityTypeLabel = r.entityTypeLabel as string | undefined;
               const entityId = r.entityId as string | undefined;
-              return entityType || entityId
-                ? `${entityType ?? ""}${entityId ? ` ${entityId.slice(0, 8)}…` : ""}`
-                : "—";
+              if (!entityTypeLabel && !entityId) return "—";
+              return (
+                <span>
+                  {entityTypeLabel ?? "—"}
+                  {entityId ? (
+                    <Tooltip title={entityId}>
+                      <Text code className="ml-1 text-[0.65rem]">
+                        {entityId.slice(0, 8)}…
+                      </Text>
+                    </Tooltip>
+                  ) : null}
+                </span>
+              );
             },
           },
         ]}

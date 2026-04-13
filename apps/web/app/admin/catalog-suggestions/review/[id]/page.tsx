@@ -14,16 +14,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CatalogSuggestionPayloadEditor } from "@/components/admin/catalog-suggestion-payload-editor";
 import { adminAxios } from "@/lib/admin-axios";
+import { deepJsonEqual } from "@/lib/json-deep-equal";
 
 type Row = {
   id: string;
   kind: string;
   payload: Record<string, unknown>;
+  approvedPayload?: Record<string, unknown> | null;
   suggestedBy: string;
+  suggestedByDisplayName?: string | null;
   status: string;
   createdAt: string;
   moderatedAt?: string | null;
   moderatedBy?: string | null;
+  moderatedByDisplayName?: string | null;
   rejectReason?: string | null;
 };
 
@@ -195,8 +199,21 @@ export default function AdminCatalogSuggestionReviewPage() {
         <Descriptions.Item label="Submitted">
           {new Date(row.createdAt).toLocaleString()}
         </Descriptions.Item>
-        <Descriptions.Item label="Suggested by user id">
-          <Typography.Text copyable>{row.suggestedBy}</Typography.Text>
+        <Descriptions.Item label="Suggested by">
+          <span>
+            {row.suggestedByDisplayName?.trim() ? (
+              <span className="font-medium">{row.suggestedByDisplayName}</span>
+            ) : (
+              <Typography.Text type="secondary">(no display name)</Typography.Text>
+            )}
+            <Typography.Text
+              type="secondary"
+              className="ml-2 text-xs"
+              copyable={{ text: row.suggestedBy }}
+            >
+              {row.suggestedBy.slice(0, 8)}…
+            </Typography.Text>
+          </span>
         </Descriptions.Item>
         {row.moderatedAt ? (
           <Descriptions.Item label="Moderated at">
@@ -205,7 +222,20 @@ export default function AdminCatalogSuggestionReviewPage() {
         ) : null}
         {row.moderatedBy ? (
           <Descriptions.Item label="Moderated by">
-            <Typography.Text copyable>{row.moderatedBy}</Typography.Text>
+            <span>
+              {row.moderatedByDisplayName?.trim() ? (
+                <span className="font-medium">{row.moderatedByDisplayName}</span>
+              ) : (
+                <Typography.Text type="secondary">(no display name)</Typography.Text>
+              )}
+              <Typography.Text
+                type="secondary"
+                className="ml-2 text-xs"
+                copyable={{ text: row.moderatedBy }}
+              >
+                {row.moderatedBy.slice(0, 8)}…
+              </Typography.Text>
+            </span>
           </Descriptions.Item>
         ) : null}
         {row.rejectReason ? (
@@ -245,12 +275,59 @@ export default function AdminCatalogSuggestionReviewPage() {
           )}
         </>
       ) : (
-        <div>
-          <Typography.Title level={5}>Payload (read-only)</Typography.Title>
-          <pre className="max-h-[min(60dvh,28rem)] overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-xs leading-relaxed text-[var(--gn-text)]">
-            {JSON.stringify(row.payload, null, 2)}
-          </pre>
-        </div>
+        <>
+          {row.status === "approved" ? (
+            <div className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+              <Typography.Title level={5} style={{ marginTop: 0 }}>
+                Submitted vs approved
+              </Typography.Title>
+              {row.approvedPayload != null &&
+              !deepJsonEqual(row.payload, row.approvedPayload) ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-[var(--gn-text-muted)]">
+                      User submitted
+                    </div>
+                    <pre className="max-h-[min(40dvh,18rem)] overflow-auto rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3 text-xs leading-relaxed text-[var(--gn-text)]">
+                      {JSON.stringify(row.payload, null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-[var(--gn-text-muted)]">
+                      Staff approved as
+                    </div>
+                    <pre className="max-h-[min(40dvh,18rem)] overflow-auto rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3 text-xs leading-relaxed text-[var(--gn-text)]">
+                      {JSON.stringify(row.approvedPayload, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ) : row.approvedPayload != null &&
+                deepJsonEqual(row.payload, row.approvedPayload) ? (
+                <Typography.Paragraph type="secondary" className="mb-0">
+                  Staff approved this proposal without changing the payload.
+                </Typography.Paragraph>
+              ) : (
+                <Typography.Paragraph type="secondary" className="mb-0">
+                  Approved before staff-edit snapshots were stored; only the
+                  submitted payload is shown below.
+                </Typography.Paragraph>
+              )}
+            </div>
+          ) : null}
+
+          {!(
+            row.status === "approved" &&
+            row.approvedPayload != null &&
+            !deepJsonEqual(row.payload, row.approvedPayload)
+          ) ? (
+            <div>
+              <Typography.Title level={5}>Submitted payload (read-only)</Typography.Title>
+              <pre className="max-h-[min(60dvh,28rem)] overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-xs leading-relaxed text-[var(--gn-text)]">
+                {JSON.stringify(row.payload, null, 2)}
+              </pre>
+            </div>
+          ) : null}
+        </>
       )}
 
       {pending ? (

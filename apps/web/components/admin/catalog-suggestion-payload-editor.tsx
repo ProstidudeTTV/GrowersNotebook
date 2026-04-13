@@ -1,8 +1,23 @@
 "use client";
 
 import { Checkbox, Input, Select, Switch, Typography } from "antd";
+import { EffectsTagsSelect } from "@/components/catalog/effects-tags-select";
 
 const { Text } = Typography;
+
+function effectsAsTags(draft: Record<string, unknown>): string[] {
+  const e = draft.effects;
+  if (Array.isArray(e)) {
+    return (e as unknown[]).map((x) => String(x).trim()).filter(Boolean);
+  }
+  if (typeof e === "string" && e.trim()) {
+    return e
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 export function CatalogSuggestionPayloadEditor({
   kind,
@@ -89,10 +104,6 @@ export function CatalogSuggestionPayloadEditor({
   }
 
   if (kind === "new_strain") {
-    const effectsLines = Array.isArray(draft.effects)
-      ? (draft.effects as string[]).join(", ")
-      : str("effects");
-
     return (
       <div className="space-y-3">
         <div>
@@ -150,19 +161,12 @@ export function CatalogSuggestionPayloadEditor({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-zinc-500">
-            Effects / tags (comma-separated)
+            Tags (effects)
           </label>
-          <Input.TextArea
-            rows={2}
-            value={effectsLines}
-            onChange={(e) => {
-              const effects = e.target.value
-                .split(/[,;\n]+/)
-                .map((s) => s.trim())
-                .filter(Boolean);
-              set({ effects });
-            }}
-            placeholder="e.g. Relaxed, Happy, Euphoric"
+          <EffectsTagsSelect
+            value={effectsAsTags(draft)}
+            onChange={(effects) => set({ effects })}
+            placeholder="Type a tag, press Enter — same as admin strain form"
           />
         </div>
         <div>

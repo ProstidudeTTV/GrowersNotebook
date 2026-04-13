@@ -9,6 +9,7 @@ import {
   buildNewBreederSuggestionPayload,
   buildNewStrainSuggestionPayload,
 } from "@/lib/new-strain-suggestion-payload";
+import { EffectsTagsSelect } from "@/components/catalog/effects-tags-select";
 
 type Kind =
   | "new_strain"
@@ -28,7 +29,7 @@ export function CatalogSuggestClient() {
   const [description, setDescription] = useState("");
   const [targetSlug, setTargetSlug] = useState("");
   const [breederSlug, setBreederSlug] = useState("");
-  const [effectsRaw, setEffectsRaw] = useState("");
+  const [effects, setEffects] = useState<string[]>([]);
   const [effectsNotes, setEffectsNotes] = useState("");
   const [published, setPublished] = useState(true);
   const [breederPublished, setBreederPublished] = useState(true);
@@ -56,11 +57,6 @@ export function CatalogSuggestClient() {
         setSaving(false);
         return;
       }
-
-      const effects = effectsRaw
-        .split(/[,;\n]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
 
       const jsonTrim = reportedEffectPctsJson.trim();
       if (jsonTrim) {
@@ -121,7 +117,7 @@ export function CatalogSuggestClient() {
           if (name.trim()) patch.name = name.trim();
           if (description.trim()) patch.description = description.trim();
           if (breederSlug.trim()) patch.breederSlug = breederSlug.trim();
-          if (effects.length) patch.effects = effects;
+          if (effects.length) patch.effects = [...effects];
           if (effectsNotes.trim()) patch.effectsNotes = effectsNotes.trim();
           payload = patch;
           break;
@@ -292,16 +288,15 @@ export function CatalogSuggestClient() {
         <>
           <div>
             <label className="block text-xs font-medium text-[var(--gn-text-muted)]">
-              Effects / tags (comma or newline →{" "}
-              <code className="text-[0.7rem]">effects[]</code>)
+              Tags (effects) — same as admin: type one, Enter to add
             </label>
-            <textarea
-              value={effectsRaw}
-              onChange={(e) => setEffectsRaw(e.target.value)}
-              rows={2}
-              className="mt-1 w-full rounded border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)]"
-              placeholder="e.g. Relaxed, Happy, Euphoric  or  one per line"
-            />
+            <div className="mt-1">
+              <EffectsTagsSelect
+                value={effects}
+                onChange={setEffects}
+                placeholder="e.g. Relaxed — press Enter, add more"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--gn-text-muted)]">

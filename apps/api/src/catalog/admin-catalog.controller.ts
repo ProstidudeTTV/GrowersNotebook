@@ -204,7 +204,17 @@ export class AdminCatalogController {
   async getSuggestion(@Param('id', ParseUUIDPipe) id: string) {
     const row = await this.suggestions.findById(id);
     if (!row) throw new NotFoundException();
-    return row;
+    const ids = [row.suggestedBy, row.moderatedBy].filter(
+      (x): x is string => typeof x === 'string' && x.length > 0,
+    );
+    const names = await this.profiles.getDisplayNamesByIds(ids);
+    return {
+      ...row,
+      suggestedByDisplayName: names.get(row.suggestedBy) ?? null,
+      moderatedByDisplayName: row.moderatedBy
+        ? names.get(row.moderatedBy) ?? null
+        : null,
+    };
   }
 
   @Patch('catalog-suggestions/:id')

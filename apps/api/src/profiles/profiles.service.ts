@@ -59,6 +59,23 @@ export class ProfilesService {
     return row ?? null;
   }
 
+  /** Display names for audit / admin tables (batch). */
+  async getDisplayNamesByIds(ids: string[]) {
+    const uniq = [...new Set(ids.filter((x) => x && /^[0-9a-f-]{36}$/i.test(x)))];
+    if (uniq.length === 0) {
+      return new Map<string, string | null>();
+    }
+    const db = getDb();
+    const rows = await db
+      .select({ id: profiles.id, displayName: profiles.displayName })
+      .from(profiles)
+      .where(inArray(profiles.id, uniq));
+    const map = new Map<string, string | null>();
+    for (const id of uniq) map.set(id, null);
+    for (const r of rows) map.set(r.id, r.displayName);
+    return map;
+  }
+
   /** Create a profile row on first auth only — never overwrite an existing name. */
   async ensureProfile(
     id: string,

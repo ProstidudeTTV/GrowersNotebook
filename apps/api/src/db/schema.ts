@@ -651,6 +651,10 @@ export const catalogSuggestions = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     kind: catalogSuggestionKindEnum('kind').notNull(),
     payload: jsonb('payload').notNull().$type<Record<string, unknown>>(),
+    /** Payload applied on approve; may differ from `payload` when staff edited before approving. */
+    approvedPayload: jsonb('approved_payload').$type<
+      Record<string, unknown> | null
+    >(),
     suggestedBy: uuid('suggested_by')
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),

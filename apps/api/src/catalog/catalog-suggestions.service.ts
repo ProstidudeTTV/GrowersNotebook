@@ -256,6 +256,7 @@ export class CatalogSuggestionsService {
         moderatedAt: new Date(),
         moderatedBy: moderatorId,
         rejectReason: null,
+        approvedPayload: effectivePayload as Record<string, unknown>,
       })
       .where(eq(catalogSuggestions.id, id));
     return { ok: true };

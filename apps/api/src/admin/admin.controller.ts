@@ -17,6 +17,10 @@ import { CreateNameBlocklistBulkDto } from './dto/create-name-blocklist-bulk.dto
 import { CreateNameBlocklistDto } from './dto/create-name-blocklist.dto';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 import type { Response } from 'express';
+import {
+  humanizeAuditAction,
+  humanizeAuditEntityType,
+} from '../audit/audit-action-label.util';
 import { AuditService } from '../audit/audit.service';
 import type { JwtUser } from '../auth/jwt-user';
 import { Roles, type ProfileRole } from '../auth/roles.decorator';
@@ -77,15 +81,29 @@ export class AdminController {
       action: action?.trim() || undefined,
     });
     res.setHeader('X-Total-Count', String(total));
+    const idSet = new Set<string>();
+    for (const r of rows) {
+      if (r.actorProfileId) idSet.add(r.actorProfileId);
+      if (r.subjectProfileId) idSet.add(r.subjectProfileId);
+    }
+    const names = await this.profiles.getDisplayNamesByIds([...idSet]);
     return rows.map((r) => ({
       id: r.id,
       createdAt: r.createdAt.toISOString(),
       actorProfileId: r.actorProfileId,
+      actorDisplayName: r.actorProfileId
+        ? names.get(r.actorProfileId) ?? null
+        : null,
       actorRole: r.actorRole,
       action: r.action,
+      actionLabel: humanizeAuditAction(r.action),
       entityType: r.entityType,
+      entityTypeLabel: humanizeAuditEntityType(r.entityType),
       entityId: r.entityId,
       subjectProfileId: r.subjectProfileId,
+      subjectDisplayName: r.subjectProfileId
+        ? names.get(r.subjectProfileId) ?? null
+        : null,
       metadata: r.metadata,
       ip: r.ip,
     }));

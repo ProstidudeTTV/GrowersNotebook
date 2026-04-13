@@ -22,7 +22,7 @@ export function EffectsTagsSelect({
     <Select
       id={id}
       mode="tags"
-      className="w-full"
+      className="w-full gn-effects-tags-select"
       placeholder={placeholder}
       value={value}
       onChange={onChange}

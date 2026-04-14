@@ -122,7 +122,7 @@ export function SiteChrome({
       {ann ? (
         <div
           role="status"
-          className={`border-b px-4 py-3 text-sm ${annStyle}`}
+          className={`border-b px-4 py-3 text-center text-sm ${annStyle}`}
         >
           {ann.title?.trim() ? (
             <p className="font-semibold">{ann.title.trim()}</p>

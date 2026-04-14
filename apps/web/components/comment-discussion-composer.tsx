@@ -13,6 +13,7 @@ import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { createClient } from "@/lib/supabase/client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { uploadPostImage } from "@/lib/upload-post-media";
+import { FullEmojiPickerButton } from "@/components/full-emoji-picker-button";
 
 export const COMMENT_DISCUSSION_ATTACH_MAX = 8;
 
@@ -32,6 +33,7 @@ export type PendingCommentImage = {
   remoteUrl?: string;
   uploading: boolean;
   error?: string;
+  source?: "upload" | "giphy";
 };
 
 export function revokePendingCommentImage(a: PendingCommentImage) {
@@ -75,6 +77,7 @@ export function CommentDiscussionComposer({
   pendingRef.current = pendingCommentImages;
   const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
   const gifFetchSeq = useRef(0);
+  const lastGifPickMs = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -113,14 +116,18 @@ export function CommentDiscussionComposer({
   }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
 
   const addGifToComment = useCallback((url: string) => {
+    const now = Date.now();
+    if (now - lastGifPickMs.current < 480) return;
+    lastGifPickMs.current = now;
     setPendingCommentImages((prev) => {
-      if (prev.length >= COMMENT_DISCUSSION_ATTACH_MAX) return prev;
-      if (prev.some((x) => x.remoteUrl === url)) return prev;
+      if (prev.some((x) => x.source === "upload")) return prev;
       const id =
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      return [...prev, { id, remoteUrl: url, uploading: false }];
+      return [
+        { id, remoteUrl: url, uploading: false, source: "giphy" as const },
+      ];
     });
     setGifPickerOpen(false);
     setGifQuery("");
@@ -161,8 +168,14 @@ export function CommentDiscussionComposer({
             : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         localBlobUrl: URL.createObjectURL(file),
         uploading: true,
+        source: "upload" as const,
       }));
-      setPendingCommentImages((prev) => [...prev, ...newItems]);
+      setPendingCommentImages((prev) => {
+        for (const a of prev) {
+          if (a.source === "giphy") revokePendingCommentImage(a);
+        }
+        return [...prev.filter((x) => x.source !== "giphy"), ...newItems];
+      });
       await Promise.all(
         list.map(async (file, i) => {
           const itemId = newItems[i]!.id;
@@ -187,6 +200,7 @@ export function CommentDiscussionComposer({
                       remoteUrl: r.publicUrl,
                       localBlobUrl: undefined,
                       error: undefined,
+                      source: "upload" as const,
                     }
                   : x,
               );
@@ -250,6 +264,9 @@ export function CommentDiscussionComposer({
   };
 
   const busy = disabled || submitting;
+  const pendingHasUploads = pendingCommentImages.some(
+    (a) => a.source === "upload",
+  );
   const canSend =
     (text.trim().length > 0 ||
       pendingCommentImages.some((a) => a.remoteUrl)) &&
@@ -290,9 +307,19 @@ export function CommentDiscussionComposer({
             {emoji}
           </button>
         ))}
+        <FullEmojiPickerButton
+          disabled={!viewerId || busy}
+          ariaLabel="Open full emoji picker"
+          onPick={(emoji) => setText((t) => t + emoji)}
+        />
         <button
           type="button"
-          disabled={!viewerId || busy}
+          disabled={
+            !viewerId ||
+            busy ||
+            pendingHasUploads ||
+            pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX
+          }
           className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
           onClick={() => setGifPickerOpen((o) => !o)}
         >
@@ -324,7 +351,8 @@ export function CommentDiscussionComposer({
             </button>
           </div>
           <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-            Powered by Giphy. Results update as you type (after a short pause).
+            One GIF per comment, and not with photos. Powered by Giphy. Results
+            update as you type (after a short pause).
           </p>
           {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
             <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
@@ -338,11 +366,11 @@ export function CommentDiscussionComposer({
               aria-label="Giphy search results"
             >
               <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {gifItems.map((g) => (
-                  <li key={g.url}>
+                {gifItems.map((g, gi) => (
+                  <li key={`${g.url}-${gi}`}>
                     <button
                       type="button"
-                      className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
+                      className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
                       title={g.title}
                       onClick={() => addGifToComment(g.url)}
                     >

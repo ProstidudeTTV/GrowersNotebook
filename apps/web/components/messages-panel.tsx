@@ -15,7 +15,8 @@ import {
 } from "@/lib/post-share";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { COMMENT_EMOJI_QUICK } from "@/components/comment-discussion-composer";
-import { isDmVideoUrl } from "@/lib/dm-media-url";
+import { dedupeUrlsPreserveOrder, isDmVideoUrl } from "@/lib/dm-media-url";
+import { FullEmojiPickerButton } from "@/components/full-emoji-picker-button";
 import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
@@ -47,6 +48,8 @@ type PendingAttachment = {
   error?: string;
   /** Set after upload or for pasted GIF URLs. */
   kind?: "image" | "video";
+  /** User upload vs Giphy/Tenor sticker (affects GIF button rules). */
+  source?: "upload" | "giphy";
 };
 
 function revokePendingLocal(a: PendingAttachment) {
@@ -107,8 +110,8 @@ function messageImageUrls(
   m: Pick<MessageRow, "imageUrls" | "imageUrl">,
 ): string[] {
   const fromApi = m.imageUrls?.filter(Boolean) ?? [];
-  if (fromApi.length) return fromApi;
-  return m.imageUrl ? [m.imageUrl] : [];
+  const base = fromApi.length ? fromApi : m.imageUrl ? [m.imageUrl] : [];
+  return dedupeUrlsPreserveOrder(base);
 }
 
 /** Stable compare for poll refresh without resetting scroll. */
@@ -198,6 +201,7 @@ export function MessagesPanel() {
   const [gifLoading, setGifLoading] = useState(false);
   const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
   const gifFetchSeq = useRef(0);
+  const lastGifPickMs = useRef(0);
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
   const deepLinkProcessedOk = useRef<string | null>(null);
   const sharePostPrefillDone = useRef<string | null>(null);
@@ -249,20 +253,22 @@ export function MessagesPanel() {
   }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
 
   const addGifAttachment = useCallback((url: string) => {
+    const now = Date.now();
+    if (now - lastGifPickMs.current < 480) return;
+    lastGifPickMs.current = now;
     setPendingAttachments((prev) => {
-      if (prev.length >= DM_ATTACH_MAX) return prev;
-      if (prev.some((x) => x.remoteUrl === url)) return prev;
+      if (prev.some((x) => x.source === "upload")) return prev;
       const id =
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       return [
-        ...prev,
         {
           id,
           remoteUrl: url,
           uploading: false,
           kind: "image" as const,
+          source: "giphy" as const,
         },
       ];
     });
@@ -668,9 +674,15 @@ export function MessagesPanel() {
       localBlobUrl: URL.createObjectURL(file),
       uploading: true,
       kind: isProcessablePostVideo(file) ? "video" : "image",
+      source: "upload" as const,
     }));
 
-    setPendingAttachments((prev) => [...prev, ...newItems]);
+    setPendingAttachments((prev) => {
+      for (const a of prev) {
+        if (a.source === "giphy") revokePendingLocal(a);
+      }
+      return [...prev.filter((x) => x.source !== "giphy"), ...newItems];
+    });
 
     void Promise.all(
       list.map(async (file, i) => {
@@ -700,6 +712,7 @@ export function MessagesPanel() {
                     localBlobUrl: undefined,
                     error: undefined,
                     kind: isVid ? ("video" as const) : ("image" as const),
+                    source: "upload" as const,
                   }
                 : x,
             );
@@ -740,6 +753,9 @@ export function MessagesPanel() {
 
   const activePeer = threads.find((t) => t.id === activeThreadId)?.peer;
   const hasNoThreads = threads.length === 0;
+  const pendingHasUploads = pendingAttachments.some(
+    (a) => a.source === "upload",
+  );
 
   return (
     <div className="space-y-4 border-t border-[var(--gn-divide)] pt-4">
@@ -1083,12 +1099,18 @@ export function MessagesPanel() {
                   {emoji}
                 </button>
               ))}
+              <FullEmojiPickerButton
+                disabled={!activeThreadId}
+                ariaLabel="Open full emoji picker"
+                onPick={(emoji) => setDraft((t) => t + emoji)}
+              />
               <button
                 type="button"
                 disabled={
                   !selfId ||
                   !activeThreadId ||
-                  pendingAttachments.length >= DM_ATTACH_MAX
+                  pendingAttachments.length >= DM_ATTACH_MAX ||
+                  pendingHasUploads
                 }
                 className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
                 onClick={() => setGifPickerOpen((o) => !o)}
@@ -1121,8 +1143,8 @@ export function MessagesPanel() {
                   </button>
                 </div>
                 <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-                  Powered by Giphy. Results update as you type (after a short
-                  pause).
+                  One GIF per message, and not with photos or videos. Powered by
+                  Giphy. Results update as you type (after a short pause).
                 </p>
                 {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
                   <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
@@ -1136,11 +1158,11 @@ export function MessagesPanel() {
                     aria-label="Giphy search results"
                   >
                     <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                      {gifItems.map((g) => (
-                        <li key={g.url}>
+                      {gifItems.map((g, gi) => (
+                        <li key={`${g.url}-${gi}`}>
                           <button
                             type="button"
-                            className="relative block w-full overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff6a38]"
+                            className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff6a38]"
                             title={g.title}
                             onClick={() => addGifAttachment(g.url)}
                           >

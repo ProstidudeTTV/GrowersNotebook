@@ -14,6 +14,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import { assertEmbeddedGifAttachmentRules } from '../common/embed-gif-attachment-rules';
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { getDb } from '../db';
 import {
@@ -36,14 +37,25 @@ function normalizeStoredMessageImages(
   imageUrlsJson: unknown,
   legacyImageUrl: string | null | undefined,
 ): string[] {
+  const seen = new Set<string>();
+  const pushAll = (arr: string[]) => {
+    const out: string[] = [];
+    for (const raw of arr) {
+      const t = raw.trim();
+      if (!t || seen.has(t)) continue;
+      seen.add(t);
+      out.push(t);
+    }
+    return out;
+  };
   if (Array.isArray(imageUrlsJson)) {
     const u = imageUrlsJson.filter(
       (x): x is string => typeof x === 'string' && x.trim().length > 0,
     );
-    if (u.length) return u;
+    if (u.length) return pushAll(u);
   }
   const one = legacyImageUrl?.trim();
-  return one ? [one] : [];
+  return one && !seen.has(one) ? [one] : [];
 }
 
 @Injectable()
@@ -389,6 +401,7 @@ export class DirectMessagesService {
         throw new BadRequestException('Invalid attachment URL.');
       }
     }
+    assertEmbeddedGifAttachmentRules(urls);
     const db = getDb();
     const [msg] = await db
       .insert(dmMessages)

@@ -42,6 +42,7 @@ import {
   CommentDiscussionComposer,
 } from "@/components/comment-discussion-composer";
 import type { PostMediaItem } from "@/lib/feed-post";
+import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
 import { displayPostBodyHtml } from "@/lib/youtube-embed";
 
 type Author = {
@@ -108,7 +109,7 @@ type CommentRow = {
 
 function commentImageUrls(c: Pick<CommentRow, "imageUrls">): string[] {
   const u = c.imageUrls?.filter(Boolean) ?? [];
-  return u;
+  return dedupeUrlsPreserveOrder(u);
 }
 
 function CommentTree({

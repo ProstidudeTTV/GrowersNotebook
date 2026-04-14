@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
+import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
 export type ProfileCommentRow = {
   id: string;
   kind?: "post" | "notebook";
@@ -57,7 +58,9 @@ export function ProfileCommentsList({
       ) : null}
       <ul className="gn-panel divide-y divide-[var(--gn-divide)] overflow-hidden">
         {items.map((c) => {
-          const imgs = c.imageUrls?.filter(Boolean) ?? [];
+          const imgs = dedupeUrlsPreserveOrder(
+            c.imageUrls?.filter(Boolean) ?? [],
+          );
           const preview = excerpt(c.body);
           const threadHref = c.notebookId
             ? `/notebooks/${encodeURIComponent(c.notebookId)}#comments`

@@ -16,6 +16,7 @@ import {
   sql,
   type SQL,
 } from 'drizzle-orm';
+import { assertEmbeddedGifAttachmentRules } from '../common/embed-gif-attachment-rules';
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import { viewerVoteFromRow } from '../common/normalize-viewer-vote';
@@ -46,7 +47,15 @@ function parseStoredCommentImages(raw: unknown): string[] {
   const u = raw.filter(
     (x): x is string => typeof x === 'string' && x.trim().length > 0,
   );
-  return u.map((s) => s.trim());
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of u) {
+    const t = s.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
 }
 
 function commentViewerVoteSelect(viewerId: string | undefined) {
@@ -85,6 +94,7 @@ export class CommentsService {
         throw new BadRequestException('Invalid image URL.');
       }
     }
+    assertEmbeddedGifAttachmentRules(out);
     return out;
   }
 

@@ -42,6 +42,7 @@ import { PostMediaCarousel } from "@/components/post-media-carousel";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { UserProfileLink } from "@/components/user-profile-link";
 import type { PostMediaItem } from "@/lib/feed-post";
+import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 
 type WeekNut = {
@@ -1113,7 +1114,9 @@ export function NotebookDetailClient({
         <SectionHeading>Comments</SectionHeading>
         <ul className="mt-4 space-y-4">
           {comments.map((c) => {
-            const imgs = c.imageUrls?.filter(Boolean) ?? [];
+            const imgs = dedupeUrlsPreserveOrder(
+              c.imageUrls?.filter(Boolean) ?? [],
+            );
             const tier =
               c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
             return (

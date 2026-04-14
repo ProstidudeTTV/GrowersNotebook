@@ -1,14 +1,30 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import EmojiPicker, {
+  Theme,
+  type EmojiClickData,
+} from "emoji-picker-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { EmojiClickData } from "emoji-picker-react";
-import { Theme } from "emoji-picker-react";
 
-const EmojiPicker = dynamic(
-  () => import("emoji-picker-react").then((m) => m.default),
-  { ssr: false },
-);
+function FaceSmileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75h.008v.008H9.75V9.75zm4.5 0h.008v.008h-.008V9.75z"
+      />
+    </svg>
+  );
+}
 
 function useDocumentDark(): boolean {
   const [dark, setDark] = useState(true);
@@ -69,20 +85,21 @@ export function FullEmojiPickerButton({
       <button
         type="button"
         disabled={disabled}
-        className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+        className="inline-flex items-center gap-1 rounded-md border border-[var(--gn-divide)] px-2 py-0.5 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls={open ? menuId : undefined}
-        title="More emojis"
+        title="Browse all emojis"
         aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}
       >
-        {"\u{1F600}"}
+        <FaceSmileIcon className="h-4 w-4 shrink-0 opacity-90" />
+        <span>All</span>
       </button>
       {open ? (
         <div
           id={menuId}
-          className="absolute left-0 top-[calc(100%+6px)] z-[80] max-[100vw] overflow-hidden rounded-xl border border-[var(--gn-border)] shadow-lg"
+          className="absolute left-0 top-[calc(100%+6px)] z-[200] max-[min(100vw-1rem,320px)] overflow-hidden rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] shadow-lg"
           role="dialog"
           aria-label="Emoji picker"
         >

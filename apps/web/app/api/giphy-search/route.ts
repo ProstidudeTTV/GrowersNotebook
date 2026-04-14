@@ -13,9 +13,10 @@ type GiphySearchResponse = {
   }>;
 };
 
-type GiphyItem = { url: string; preview: string; title: string };
+type GiphyItem = { id: string; url: string; preview: string; title: string };
 
 function toItem(d: NonNullable<GiphySearchResponse["data"]>[number]): GiphyItem | null {
+  const id = d.id?.trim();
   const url =
     d.images?.downsized?.url?.trim() ||
     d.images?.fixed_height?.url?.trim() ||
@@ -23,6 +24,7 @@ function toItem(d: NonNullable<GiphySearchResponse["data"]>[number]): GiphyItem 
   const preview = d.images?.fixed_height?.url?.trim() || url;
   if (!url.startsWith("https://")) return null;
   return {
+    id: id && id.length > 0 ? id : url,
     url,
     preview: preview.startsWith("https://") ? preview : url,
     title: d.title?.trim() || "GIF",
@@ -69,6 +71,7 @@ function fuzzyQueries(raw: string): string[] {
 }
 
 function mergeFuzzyResults(chunks: GiphyItem[][], cap: number): GiphyItem[] {
+  /** Dedupe by Giphy id — downsized vs fixed_height URLs differ for the same GIF. */
   const seen = new Set<string>();
   const out: GiphyItem[] = [];
   let round = 0;
@@ -77,8 +80,8 @@ function mergeFuzzyResults(chunks: GiphyItem[][], cap: number): GiphyItem[] {
     for (const chunk of chunks) {
       const item = chunk[round];
       if (!item) continue;
-      if (seen.has(item.url)) continue;
-      seen.add(item.url);
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
       out.push(item);
       added = true;
       if (out.length >= cap) break;

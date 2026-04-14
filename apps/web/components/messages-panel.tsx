@@ -196,7 +196,7 @@ export function MessagesPanel() {
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [gifQuery, setGifQuery] = useState("");
   const [gifItems, setGifItems] = useState<
-    { url: string; preview: string; title: string }[]
+    { id?: string; url: string; preview: string; title: string }[]
   >([]);
   const [gifLoading, setGifLoading] = useState(false);
   const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
@@ -1159,7 +1159,7 @@ export function MessagesPanel() {
                   >
                     <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
                       {gifItems.map((g, gi) => (
-                        <li key={`${g.url}-${gi}`}>
+                        <li key={g.id ?? `${g.url}-${gi}`}>
                           <button
                             type="button"
                             className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff6a38]"

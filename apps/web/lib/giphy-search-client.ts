@@ -4,7 +4,7 @@ export async function fetchGiphySearchItems(q: string) {
     cache: "no-store",
   });
   const j = (await r.json()) as {
-    items?: { url: string; preview: string; title: string }[];
+    items?: { id?: string; url: string; preview: string; title: string }[];
   };
   return j.items ?? [];
 }

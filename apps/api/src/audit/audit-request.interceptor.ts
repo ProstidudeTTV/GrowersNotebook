@@ -23,6 +23,21 @@ function clientIp(req: Request): string | null {
   return req.socket.remoteAddress ?? null;
 }
 
+/** Store a coarse network prefix instead of a full client IP in audit rows. */
+function privacySafeClientIp(req: Request): string | null {
+  const raw = clientIp(req);
+  if (!raw) return null;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) {
+    const parts = raw.split('.');
+    if (parts.length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+  }
+  if (raw.includes(':')) {
+    const parts = raw.split(':').filter(Boolean);
+    if (parts.length >= 3) return `${parts.slice(0, 3).join(':')}::`;
+  }
+  return '[redacted]';
+}
+
 const SENSITIVE_KEY =
   /^(password|token|access_?token|refresh_?token|authorization|secret|api_?key|apikey|card)$/i;
 
@@ -154,7 +169,7 @@ export class AuditRequestInterceptor implements NestInterceptor {
           entityId: null,
           subjectProfileId,
           metadata,
-          ip: clientIp(req),
+          ip: privacySafeClientIp(req),
         })
         .catch((e) => {
           const msg = e instanceof Error ? e.message : String(e);

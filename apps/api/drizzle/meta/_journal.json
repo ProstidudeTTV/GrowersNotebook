@@ -211,6 +211,20 @@
       "when": 1777800000000,
       "tag": "0029_site_config_seo",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1777850000000,
+      "tag": "0030_mailing_list_smtp_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1777900000000,
+      "tag": "0031_rls_hardening_public_core",
+      "breakpoints": true
     }
   ]
 }

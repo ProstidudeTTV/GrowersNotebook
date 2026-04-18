@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BlockedUsersSettings } from "./blocked-users-settings";
 import { ProfileSettingsForm } from "./profile-settings-form";
 
@@ -14,7 +15,11 @@ export default function ProfileSettingsPage() {
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-[var(--gn-text-muted)]">
         Choose how your name and photo appear across GrowersNotebook and who
-        can view your profile.
+        can view your profile. Read{" "}
+        <Link href="/privacy" className="text-[#ff6a38] hover:underline">
+          Privacy &amp; security
+        </Link>{" "}
+        for our mission, photo metadata handling, and data overview.
       </p>
       <div className="gn-card-subtle mt-8 p-6">
         <ProfileSettingsForm />

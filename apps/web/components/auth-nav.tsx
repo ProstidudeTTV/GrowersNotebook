@@ -431,6 +431,14 @@ export function AuthNav() {
             >
               Profile &amp; privacy
             </Link>
+            <Link
+              href="/privacy"
+              role="menuitem"
+              className="block px-3 py-2 text-sm text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+              onClick={() => setMenuOpen(false)}
+            >
+              Privacy &amp; security
+            </Link>
             <div
               className="max-h-64 overflow-y-auto border-t border-[var(--gn-divide)] py-2"
               role="group"

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fileToScrubbedJpegBlob } from "@/lib/image-scrubbed-jpeg";
 
 export const POST_MEDIA_BUCKET = "post-media";
 
@@ -61,85 +62,6 @@ function extForVideo(mime: string): string {
   return "mp4";
 }
 
-function blobToResizedJpegWithImage(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { width, height } = img;
-      const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(width, height));
-      width = Math.max(1, Math.round(width * scale));
-      height = Math.max(1, Math.round(height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Could not process image"));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) reject(new Error("Could not encode image"));
-          else resolve(blob);
-        },
-        "image/jpeg",
-        0.88,
-      );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read image"));
-    };
-    img.src = url;
-  });
-}
-
-async function blobToResizedJpeg(file: File): Promise<Blob> {
-  /**
-   * Prefer createImageBitmap only to honor EXIF orientation, then scale on
-   * canvas in one draw. Pairs { resizeWidth, resizeHeight } on createImageBitmap
-   * are not reliably uniform across browsers; canvas drawImage(dw, dh) is.
-   */
-  if (typeof createImageBitmap === "function") {
-    try {
-      const bmp = await createImageBitmap(file, {
-        imageOrientation: "from-image",
-      });
-      try {
-        const w = bmp.width;
-        const h = bmp.height;
-        const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(w, h));
-        const tw = Math.max(1, Math.round(w * scale));
-        const th = Math.max(1, Math.round(h * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = tw;
-        canvas.height = th;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("Could not process image");
-        ctx.drawImage(bmp, 0, 0, tw, th);
-        const out = await new Promise<Blob | null>((res) =>
-          canvas.toBlob((b) => res(b), "image/jpeg", 0.88),
-        );
-        if (!out) throw new Error("Could not encode image");
-        if (out.size > IMAGE_MAX) {
-          throw new Error(
-            "Processed image is still too large. Try a smaller file.",
-          );
-        }
-        return out;
-      } finally {
-        bmp.close();
-      }
-    } catch {
-      /* Safari / some GIFs — Image() path */
-    }
-  }
-  return blobToResizedJpegWithImage(file);
-}
-
 export type UploadPostMediaResult =
   | { ok: true; publicUrl: string }
   | { ok: false; message: string };
@@ -162,17 +84,14 @@ export async function uploadPostImage(
 
   let blob: Blob;
   try {
-    blob = await blobToResizedJpeg(file);
+    blob = await fileToScrubbedJpegBlob(file, {
+      maxEdge: IMAGE_MAX_EDGE,
+      maxBytes: IMAGE_MAX,
+    });
   } catch (e) {
     return {
       ok: false,
       message: e instanceof Error ? e.message : "Could not process image",
-    };
-  }
-  if (blob.size > IMAGE_MAX) {
-    return {
-      ok: false,
-      message: "Processed image is still too large. Try a smaller file.",
     };
   }
 

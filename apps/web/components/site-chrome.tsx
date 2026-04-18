@@ -8,6 +8,7 @@ import {
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
 import { MailingListPrompt } from "@/components/mailing-list-prompt";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { clientApiJson } from "@/lib/client-api";
 import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
@@ -158,8 +159,9 @@ export function SiteChrome({
           }
         />
 
-        <div className="gn-app-canvas min-w-0 min-h-0 flex-1 overflow-x-clip">
-          {children}
+        <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-clip">
+          <div className="min-h-0 flex-1">{children}</div>
+          <SiteFooter />
         </div>
       </div>
       {modal}

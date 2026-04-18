@@ -16,7 +16,7 @@ Living checklist for major milestones. Update this when you ship a slice of the 
 
 ## Next (suggested order)
 
-1. **RLS** — lock down `public.*` for direct Supabase client access; keep Nest as primary write path until policies are audited.
+1. **RLS** — **in progress:** `20260519120000_rls_hardening_public_core.sql` enables RLS on `public.*` with Realtime-safe `SELECT` on comment/vote tables; re-run Supabase Security Advisor after `pnpm db:migrate` / MCP apply.
 2. **Product identity** — replace placeholder branding, nav, and empty states with Growers Notebook–specific IA.
 3. **Feed quality** — cursor pagination, “hot” ranking, soft deletes / moderation state from admin.
 4. **Profiles UX** — public profile pages, avatars (Storage), edit display name.

@@ -1,50 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fileToScrubbedJpegBlob } from "@/lib/image-scrubbed-jpeg";
 
 export const PROFILE_AVATAR_BUCKET = "avatars";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_EDGE = 512;
 const ALLOWED = /^image\/(jpeg|png|webp|gif)$/i;
-
-/** Resize in-browser to JPEG for predictable size and MIME (bucket allows image/jpeg). */
-function blobToResizedJpeg(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { width, height } = img;
-      const scale = Math.min(1, MAX_EDGE / Math.max(width, height));
-      width = Math.max(1, Math.round(width * scale));
-      height = Math.max(1, Math.round(height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Could not process image"));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("Could not encode image"));
-            return;
-          }
-          resolve(blob);
-        },
-        "image/jpeg",
-        0.88,
-      );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read image"));
-    };
-    img.src = url;
-  });
-}
 
 export type UploadProfileAvatarResult =
   | { ok: true; publicUrl: string }
@@ -70,18 +31,14 @@ export async function uploadProfileAvatar(
 
   let blob: Blob;
   try {
-    blob = await blobToResizedJpeg(file);
+    blob = await fileToScrubbedJpegBlob(file, {
+      maxEdge: MAX_EDGE,
+      maxBytes: MAX_BYTES,
+    });
   } catch (e) {
     return {
       ok: false,
       message: e instanceof Error ? e.message : "Could not process image",
-    };
-  }
-
-  if (blob.size > MAX_BYTES) {
-    return {
-      ok: false,
-      message: "Processed image is still too large. Try a smaller original.",
     };
   }
 

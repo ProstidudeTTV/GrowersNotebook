@@ -33,6 +33,16 @@ Migrations under `supabase/migrations/` enable replication for:
 
 **Not** on `user_follows` / `community_follows` unless you add a new migration to `ALTER PUBLICATION supabase_realtime ADD TABLE ...`.
 
+## Row Level Security (PostgREST / anon key)
+
+Migration **`20260519120000_rls_hardening_public_core.sql`** (and matching Drizzle **`0031_rls_hardening_public_core.sql`**) enables **RLS** on core `public` tables.
+
+- **`comments`**, **`post_votes`**, **`comment_votes`**: `SELECT` for roles **`anon`** and **`authenticated`** so **Supabase Realtime** `postgres_changes` keeps working for live threads (including guests). This matches prior openness for those tables via PostgREST; narrowing further would require product changes (e.g. no guest realtime).
+- **All other tables** in that migration: **no** `anon`/`authenticated` policies → **denied** through PostgREST (Supabase Data API), closing bulk scrape with the public anon key.
+- **Nest** uses **`DATABASE_URL`** with a **privileged** Postgres role (table owner pattern) and **bypasses RLS** for application logic.
+- **`user_notifications`**: existing `user_notifications_select_own` policy unchanged.
+- **`dm_*`**, **`user_blocks`**: earlier migrations unchanged; **`dm_messages`** remains off the Realtime publication (read lockdown).
+
 ## Tables (public schema)
 
 Canonical definitions: `apps/api/src/db/schema.ts`.

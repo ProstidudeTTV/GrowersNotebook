@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type MouseEvent } from "react";
 
 export function CatalogDetailModal({
   children,
@@ -37,6 +36,17 @@ export function CatalogDetailModal({
     }
   }, [onClose, defaultClose]);
 
+  /** Full document navigation bypasses Next intercepting routes (e.g. `(.)strains/[slug]`). */
+  const openFullPage = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
+      if (e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      window.location.assign(fullPageHref);
+    },
+    [fullPageHref],
+  );
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
@@ -54,32 +64,36 @@ export function CatalogDetailModal({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center sm:justify-end">
+    <div className="fixed inset-0 z-[100] flex justify-center sm:justify-end isolate">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+        className="absolute inset-0 z-0 bg-black/50 backdrop-blur-[1px]"
         aria-label="Close details"
         onClick={close}
       />
 
       <div
-        className="relative flex h-full w-full max-w-6xl flex-col border-l border-[var(--gn-divide)] bg-[var(--gn-surface)] shadow-2xl sm:my-0 sm:max-h-full sm:rounded-l-2xl"
+        className="relative z-10 flex h-full w-full max-w-6xl flex-col border-l border-[var(--gn-divide)] bg-[var(--gn-surface)] shadow-2xl sm:my-0 sm:max-h-full sm:rounded-l-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={title?.trim() || "Details"}
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gn-divide)] px-4 py-3">
-          <Link
+          <a
             href={fullPageHref}
             className="text-xs font-medium text-[var(--gn-text-muted)] transition hover:text-[#ff6a38]"
+            onClick={openFullPage}
           >
             Open full page
-          </Link>
+          </a>
           <button
             type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
             aria-label="Close"
-            onClick={close}
+            onClick={(e) => {
+              e.stopPropagation();
+              close();
+            }}
           >
             <span aria-hidden className="text-xl leading-none">
               ×

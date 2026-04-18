@@ -154,13 +154,13 @@ const navItem =
 
 export function AppSidebar({
   followedCommunities,
-  hotWeekPost,
+  hotWeekPosts,
   authed,
   onNavigate,
   className = "",
 }: {
   followedCommunities: SidebarCommunity[];
-  hotWeekPost: SidebarHotPost | null;
+  hotWeekPosts: SidebarHotPost[];
   authed: boolean;
   /** Close mobile drawer after navigation */
   onNavigate?: () => void;
@@ -241,12 +241,29 @@ export function AppSidebar({
           <IconFlame className="shrink-0 text-[#ff4500]" />
           Hot this week
         </Link>
-        {hotWeekPost ? (
-          <p className="mx-3 -mt-0.5 mb-1 line-clamp-2 text-xs leading-snug text-[var(--gn-text-muted)]">
-            <span className="font-medium text-[var(--gn-text)]">#1:</span>{" "}
-            {truncateTitle(hotWeekPost.title, 44)} ·{" "}
-            {formatVoteScore(hotWeekPost.score)}
-          </p>
+        {hotWeekPosts.length > 0 ? (
+          <ul className="mx-1.5 -mt-0.5 mb-1 space-y-0.5">
+            {hotWeekPosts.map((p, i) => (
+              <li key={p.id}>
+                <Link
+                  href={`/p/${p.id}`}
+                  onClick={afterNav}
+                  className="block rounded-lg px-2 py-1.5 text-left text-xs leading-snug text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                >
+                  <span className="font-medium text-[var(--gn-text)]">
+                    #{i + 1}:
+                  </span>{" "}
+                  <span className="text-[var(--gn-text)]/90">
+                    {truncateTitle(p.title, 42)}
+                  </span>
+                  <span className="text-[var(--gn-text-muted)]">
+                    {" "}
+                    · {formatVoteScore(p.score)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         ) : (
           <p className="mx-3 -mt-0.5 mb-1 text-xs text-[var(--gn-text-muted)]">
             No posts in the last week yet.

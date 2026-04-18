@@ -57,7 +57,7 @@ export default async function SiteLayout({
         ),
     apiFetch<{
       items: Array<{ id: string; title: string; score: number }>;
-    }>("/posts/hot/week?page=1&pageSize=1", {
+    }>("/posts/hot/week?page=1&pageSize=3", {
       token: token ?? undefined,
       timeoutMs: SIDEBAR_API_TIMEOUT_MS,
     }).catch(() => ({
@@ -88,15 +88,16 @@ export default async function SiteLayout({
   }
 
   const followedCommunities: SidebarCommunity[] = followingRows;
-  const first = hotRes.items[0];
-  const hotWeekPost: SidebarHotPost | null = first
-    ? { id: first.id, title: first.title, score: first.score }
-    : null;
+  const hotWeekPosts: SidebarHotPost[] = hotRes.items.slice(0, 3).map((p) => ({
+    id: p.id,
+    title: p.title,
+    score: p.score,
+  }));
 
   return (
     <SiteChrome
       initialFollowedCommunities={followedCommunities}
-      initialHotWeekPost={hotWeekPost}
+      initialHotWeekPosts={hotWeekPosts}
       authed={!!token}
       modal={modal}
       motdText={publicSiteConfig.motdText}

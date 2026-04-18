@@ -34,7 +34,7 @@ export function SiteChrome({
   children,
   modal,
   initialFollowedCommunities,
-  initialHotWeekPost,
+  initialHotWeekPosts,
   authed,
   motdText,
   announcement,
@@ -43,7 +43,7 @@ export function SiteChrome({
   children: React.ReactNode;
   modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
-  initialHotWeekPost: SidebarHotPost | null;
+  initialHotWeekPosts: SidebarHotPost[];
   authed: boolean;
   motdText: string | null;
   announcement: PublicSiteConfigPayload["announcement"];
@@ -147,7 +147,7 @@ export function SiteChrome({
 
         <AppSidebar
           followedCommunities={followed}
-          hotWeekPost={initialHotWeekPost}
+          hotWeekPosts={initialHotWeekPosts}
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={

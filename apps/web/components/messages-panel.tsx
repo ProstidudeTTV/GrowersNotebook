@@ -14,9 +14,8 @@ import {
   firstPostShareMatch,
 } from "@/lib/post-share";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
-import { COMMENT_EMOJI_QUICK } from "@/components/comment-discussion-composer";
+import { ComposerQuickReactionsToolbar } from "@/components/composer-quick-reactions-toolbar";
 import { dedupeUrlsPreserveOrder, isDmVideoUrl } from "@/lib/dm-media-url";
-import { FullEmojiPickerButton } from "@/components/full-emoji-picker-button";
 import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
@@ -1083,41 +1082,25 @@ export function MessagesPanel() {
                 </div>
               </div>
             ) : null}
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
-                Emoji
-              </span>
-              {COMMENT_EMOJI_QUICK.map((emoji) => (
+            <ComposerQuickReactionsToolbar
+              disabled={!activeThreadId}
+              onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
+              gifSlot={
                 <button
-                  key={emoji}
                   type="button"
-                  disabled={!activeThreadId}
-                  className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-                  title={emoji}
-                  onClick={() => setDraft((t) => t + emoji)}
+                  disabled={
+                    !selfId ||
+                    !activeThreadId ||
+                    pendingAttachments.length >= DM_ATTACH_MAX ||
+                    pendingHasUploads
+                  }
+                  className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
+                  onClick={() => setGifPickerOpen((o) => !o)}
                 >
-                  {emoji}
+                  GIF
                 </button>
-              ))}
-              <FullEmojiPickerButton
-                disabled={!activeThreadId}
-                ariaLabel="Open full emoji picker"
-                onPick={(emoji) => setDraft((t) => t + emoji)}
-              />
-              <button
-                type="button"
-                disabled={
-                  !selfId ||
-                  !activeThreadId ||
-                  pendingAttachments.length >= DM_ATTACH_MAX ||
-                  pendingHasUploads
-                }
-                className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-                onClick={() => setGifPickerOpen((o) => !o)}
-              >
-                GIF
-              </button>
-            </div>
+              }
+            />
             {gifPickerOpen && selfId && activeThreadId ? (
               <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
                 <div className="flex flex-wrap gap-2">

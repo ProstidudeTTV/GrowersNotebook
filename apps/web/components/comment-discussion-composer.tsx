@@ -13,19 +13,9 @@ import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { createClient } from "@/lib/supabase/client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { uploadPostImage } from "@/lib/upload-post-media";
-import { FullEmojiPickerButton } from "@/components/full-emoji-picker-button";
+import { ComposerQuickReactionsToolbar } from "@/components/composer-quick-reactions-toolbar";
 
 export const COMMENT_DISCUSSION_ATTACH_MAX = 8;
-
-/** Quick-insert emoji for the comment box (Unicode). */
-export const COMMENT_EMOJI_QUICK = [
-  "\u{1F44D}",
-  "\u{1F525}",
-  "\u{2764}\u{FE0F}",
-  "\u{1F389}",
-  "\u{1F604}",
-  "\u{1F331}",
-];
 
 export type PendingCommentImage = {
   id: string;
@@ -291,41 +281,25 @@ export function CommentDiscussionComposer({
         onChange={(e) => setText(e.target.value)}
         disabled={!viewerId || busy}
       />
-      <div className="flex flex-wrap items-center gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
-          Emoji
-        </span>
-        {COMMENT_EMOJI_QUICK.map((emoji) => (
+      <ComposerQuickReactionsToolbar
+        disabled={!viewerId || busy}
+        onEmojiAppend={(emoji) => setText((t) => t + emoji)}
+        gifSlot={
           <button
-            key={emoji}
             type="button"
-            disabled={!viewerId || busy}
-            className="rounded-md border border-[var(--gn-divide)] px-1.5 py-0.5 text-base leading-none transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-            title={emoji}
-            onClick={() => setText((t) => t + emoji)}
+            disabled={
+              !viewerId ||
+              busy ||
+              pendingHasUploads ||
+              pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX
+            }
+            className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
+            onClick={() => setGifPickerOpen((o) => !o)}
           >
-            {emoji}
+            GIF
           </button>
-        ))}
-        <FullEmojiPickerButton
-          disabled={!viewerId || busy}
-          ariaLabel="Open full emoji picker"
-          onPick={(emoji) => setText((t) => t + emoji)}
-        />
-        <button
-          type="button"
-          disabled={
-            !viewerId ||
-            busy ||
-            pendingHasUploads ||
-            pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX
-          }
-          className="ml-1 rounded-full border border-[var(--gn-divide)] px-2.5 py-1 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
-          onClick={() => setGifPickerOpen((o) => !o)}
-        >
-          GIF
-        </button>
-      </div>
+        }
+      />
       {gifPickerOpen && viewerId ? (
         <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
           <div className="flex flex-wrap gap-2">

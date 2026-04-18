@@ -46,10 +46,16 @@ export function FullEmojiPickerButton({
   onPick,
   disabled,
   ariaLabel = "Open emoji picker",
+  buttonClassName,
+  showLabel = true,
 }: {
   onPick: (emoji: string) => void;
   disabled?: boolean;
   ariaLabel?: string;
+  /** Merged after default button classes (Tailwind: later classes may not override without same specificity). */
+  buttonClassName?: string;
+  /** When false, icon-only control (e.g. inline reaction strip). */
+  showLabel?: boolean;
 }) {
   const menuId = useId();
   const dark = useDocumentDark();
@@ -85,7 +91,14 @@ export function FullEmojiPickerButton({
       <button
         type="button"
         disabled={disabled}
-        className="inline-flex items-center gap-1 rounded-md border border-[var(--gn-divide)] px-2 py-0.5 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+        className={[
+          showLabel
+            ? "inline-flex items-center gap-1 rounded-md border border-[var(--gn-divide)] px-2 py-0.5 text-xs font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40"
+            : "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-40",
+          buttonClassName ?? "",
+        ]
+          .join(" ")
+          .trim()}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls={open ? menuId : undefined}
@@ -93,8 +106,14 @@ export function FullEmojiPickerButton({
         aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}
       >
-        <FaceSmileIcon className="h-4 w-4 shrink-0 opacity-90" />
-        <span>All</span>
+        <FaceSmileIcon
+          className={
+            showLabel
+              ? "h-4 w-4 shrink-0 opacity-90"
+              : "h-[1.35rem] w-[1.35rem] shrink-0 opacity-90"
+          }
+        />
+        {showLabel ? <span>All</span> : null}
       </button>
       {open ? (
         <div

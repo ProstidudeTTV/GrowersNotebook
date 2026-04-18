@@ -5,8 +5,9 @@ import { useCallback } from "react";
 import { CatalogDetailModal } from "@/components/catalog/catalog-detail-modal";
 
 /**
- * Intercepted /strains/[slug] modal: dismiss with replace so one click does not
- * walk the whole browser stack (e.g. notebook → strain → … → multi-pop).
+ * Intercepted `/strains/[slug]` slide-over. Closing uses `history.back()` so the
+ * user returns to the page they were on (notebook, feed, post, etc.). The strains
+ * list preview overlay uses `?detail=` on `/strains` instead of this route.
  */
 export function CatalogInterceptStrainModal({
   children,
@@ -17,7 +18,7 @@ export function CatalogInterceptStrainModal({
 }) {
   const router = useRouter();
   const onClose = useCallback(() => {
-    router.replace("/strains", { scroll: false });
+    router.back();
   }, [router]);
   return (
     <CatalogDetailModal fullPageHref={fullPageHref} onClose={onClose}>

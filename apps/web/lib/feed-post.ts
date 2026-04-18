@@ -5,6 +5,8 @@ export type FeedPost = {
   id: string;
   title: string;
   excerpt: string | null;
+  /** Present on list/detail API payloads; used for feed link previews (e.g. YouTube). */
+  bodyHtml?: string;
   media?: PostMediaItem[];
   createdAt: string;
   score: number;

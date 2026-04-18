@@ -115,7 +115,7 @@ export function displayPostBodyHtml(bodyHtml: string): string {
 
 /** Markdown/source text may contain bare YouTube URLs (autolinked on render). */
 const BARE_YT_RE =
-  /https:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?(?:[^>\s]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})\b[^\s<>"']*/gi;
+  /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?(?:[^>\s]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})\b[^\s<>"']*/gi;
 
 export function collectYouTubeIdsFromText(text: string): string[] {
   const out: string[] = [];
@@ -128,5 +128,34 @@ export function collectYouTubeIdsFromText(text: string): string[] {
     seen.add(id);
     out.push(id);
   }
+  return out;
+}
+
+/**
+ * Feed cards: detect YouTube from stored HTML (anchors + pasted URLs in text nodes)
+ * and from plain excerpt (e.g. bare URL or "YouTube video" fallback when excerpt has no id).
+ */
+export function collectYouTubeIdsForFeedPreview(
+  bodyHtml: string | null | undefined,
+  excerpt: string | null | undefined,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (ids: string[]) => {
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+  };
+  if (bodyHtml?.trim()) {
+    push(collectYouTubeIdsFromHtml(bodyHtml));
+    push(
+      collectYouTubeIdsFromText(
+        bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "),
+      ),
+    );
+  }
+  if (excerpt?.trim()) push(collectYouTubeIdsFromText(excerpt));
   return out;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommentActionMenu,
   MenuRow,
@@ -20,6 +20,7 @@ import {
   parseVoteMutationResponse,
   talliesAfterVoteClick,
 } from "@/lib/vote-ui";
+import { collectYouTubeIdsForFeedPreview } from "@/lib/youtube-embed";
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -39,6 +40,38 @@ function compactCount(n: number): string {
 
 const authorAvatarFrame =
   "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+
+function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
+  return (
+    <div className="relative mt-3 aspect-video w-full max-h-[min(28rem,72dvh)] min-h-[8.5rem] overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+        alt=""
+        className="h-full w-full object-cover object-center"
+        loading="lazy"
+      />
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-black/15 to-transparent"
+        aria-hidden
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ff0000] text-white shadow-lg ring-2 ring-white/90 sm:h-14 sm:w-14">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="ml-0.5"
+            aria-hidden
+          >
+            <path d="M8 5v14l11-7L8 5z" />
+          </svg>
+        </span>
+      </div>
+      <span className="sr-only">YouTube video (open post to watch)</span>
+    </div>
+  );
+}
 
 function AuthorFeedAvatar({
   avatarUrl,
@@ -217,6 +250,14 @@ export function FeedPostCard({
     }
   };
 
+  const youTubePreviewId = useMemo(() => {
+    const ids = collectYouTubeIdsForFeedPreview(
+      local.bodyHtml,
+      local.excerpt,
+    );
+    return ids[0] ?? null;
+  }, [local.bodyHtml, local.excerpt]);
+
   const media = local.media?.[0];
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
@@ -362,6 +403,10 @@ export function FeedPostCard({
               </CommentActionMenu>
             </div>
           </div>
+
+          {youTubePreviewId ? (
+            <YouTubeThumbnailPreview videoId={youTubePreviewId} />
+          ) : null}
 
           {media ? (
             media.type === "image" ? (

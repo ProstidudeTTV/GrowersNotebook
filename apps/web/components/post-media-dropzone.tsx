@@ -3,6 +3,7 @@
 import { useCallback, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
 import {
   isProcessablePostImage,
   isProcessablePostVideo,
@@ -62,6 +63,13 @@ export function PostMediaDropzone({
           if (!r.ok) {
             onError?.(r.message);
             return false;
+          }
+          if (r.storagePath && r.videoContentType) {
+            void stripUploadedVideoMetadata(
+              token,
+              r.storagePath,
+              r.videoContentType,
+            ).catch(() => {});
           }
           onMediaReady(r.publicUrl, "video");
         }

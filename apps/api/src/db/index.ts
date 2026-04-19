@@ -17,8 +17,11 @@ function isSupabaseOrManagedHost(connUrl: string): boolean {
 export function getDb(): DbClient {
   const url = process.env.DATABASE_URL?.trim();
   if (!url) {
+    const isProd = process.env.NODE_ENV === 'production';
     throw new ServiceUnavailableException(
-      'DATABASE_URL is not set. Add it to apps/api/.env or a .env file at the repo root (see env.example). Restart the API after saving.',
+      isProd
+        ? 'Database is not configured.'
+        : 'DATABASE_URL is not set. Add it to apps/api/.env or a .env file at the repo root (see env.example). Restart the API after saving.',
     );
   }
   if (!cached) {

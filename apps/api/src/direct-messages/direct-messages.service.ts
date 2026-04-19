@@ -19,6 +19,7 @@ import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { getDb } from '../db';
 import {
   dmMessages,
+  dmRealtimeSignals,
   dmThreadReads,
   dmThreads,
   profiles,
@@ -424,6 +425,10 @@ export class DirectMessagesService {
       .update(dmThreads)
       .set({ lastMessageAt: msg.createdAt })
       .where(eq(dmThreads.id, threadId));
+    await db.insert(dmRealtimeSignals).values({
+      threadId,
+      messageId: msg.id,
+    });
     const outUrls = normalizeStoredMessageImages(msg.imageUrls, msg.imageUrl);
     return {
       id: msg.id,

@@ -63,7 +63,13 @@ function extForVideo(mime: string): string {
 }
 
 export type UploadPostMediaResult =
-  | { ok: true; publicUrl: string }
+  | {
+      ok: true;
+      publicUrl: string;
+      /** Set for video uploads — use with server-side metadata strip. */
+      storagePath?: string;
+      videoContentType?: "video/mp4" | "video/webm" | "video/quicktime";
+    }
   | { ok: false; message: string };
 
 export async function uploadPostImage(
@@ -159,13 +165,21 @@ export async function uploadPostVideo(
   if (!publicUrl?.startsWith("https://")) {
     return { ok: false, message: "Could not get public URL for upload." };
   }
-  return { ok: true, publicUrl };
+  return {
+    ok: true,
+    publicUrl,
+    storagePath: path,
+    videoContentType: videoMime as
+      | "video/mp4"
+      | "video/webm"
+      | "video/quicktime",
+  };
 }
 
 function uploadErrorMessage(msg: string): string {
   const m = msg ?? "Upload failed";
   if (/bucket|not found|404/i.test(m)) {
-    return "Media storage is not set up yet. Run the `post-media` storage migration (Supabase SQL).";
+    return "Media storage is not set up yet. Run the database storage migration for the `post-media` bucket.";
   }
   if (/policy|denied|403|row-level security/i.test(m)) {
     return "Upload was blocked. Sign out and back in, or check storage policies for `post-media`.";

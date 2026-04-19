@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { JwtUser } from '../auth/jwt-user';
 import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
@@ -62,6 +63,7 @@ export class PostsController {
     });
   }
 
+  @Throttle({ default: { limit: 45, ttl: 60000 } })
   @Get('search')
   @UseGuards(OptionalAuthGuard)
   search(

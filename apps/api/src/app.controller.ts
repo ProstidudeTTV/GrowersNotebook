@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { sql } from 'drizzle-orm';
 import { getDb } from './db';
 import {
@@ -17,6 +18,7 @@ function errMessage(e: unknown): string {
   return e.message;
 }
 
+@SkipThrottle()
 @Controller()
 export class AppController {
   /** Root route so GET / returns a hint instead of a bare 404. */
@@ -45,13 +47,15 @@ export class AppController {
     /** Extra detail in development only */
     detail?: string;
   }> {
+    const isProd = process.env.NODE_ENV === 'production';
     const configured = Boolean(process.env.DATABASE_URL?.trim());
     if (!configured) {
       return {
         status: 'degraded',
         databaseConfigured: false,
-        error:
-          'DATABASE_URL is not set. Add it to apps/api/.env and restart the API.',
+        error: isProd
+          ? 'database_not_configured'
+          : 'DATABASE_URL is not set. Add it to apps/api/.env and restart the API.',
       };
     }
 
@@ -65,8 +69,9 @@ export class AppController {
         status: 'degraded',
         databaseConfigured: true,
         databaseReachable: false,
-        error:
-          'Cannot connect to Postgres. Check DATABASE_URL, network, and SSL (Supabase often needs the URL from the dashboard).',
+        error: isProd
+          ? 'database_unreachable'
+          : 'Cannot connect to Postgres. Check DATABASE_URL, network, and SSL (Supabase often needs the URL from the dashboard).',
         detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
       };
     }
@@ -85,8 +90,9 @@ export class AppController {
         databaseConfigured: true,
         databaseReachable: true,
         coreTablesPresent: false,
-        error:
-          'Database is reachable but application tables are missing. From the repo root run: npm run db:migrate (then npm run db:seed if you want demo data).',
+        error: isProd
+          ? 'schema_incomplete'
+          : 'Database is reachable but application tables are missing. From the repo root run: npm run db:migrate (then npm run db:seed if you want demo data).',
         detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
       };
     }
@@ -102,8 +108,9 @@ export class AppController {
         databaseReachable: true,
         coreTablesPresent: true,
         catalogTablesPresent: false,
-        error:
-          'Catalog tables (strains, breeders) are missing. Apply migrations: pnpm --filter @growers/api db:migrate (uses DATABASE_URL). Then import CSV via admin or pnpm --filter @growers/api db:import-strains.',
+        error: isProd
+          ? 'catalog_schema_incomplete'
+          : 'Catalog tables (strains, breeders) are missing. Apply migrations: pnpm --filter @growers/api db:migrate (uses DATABASE_URL). Then import CSV via admin or pnpm --filter @growers/api db:import-strains.',
         detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
       };
     }

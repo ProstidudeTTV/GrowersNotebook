@@ -118,6 +118,14 @@ export class CommentsService {
       .where(eq(posts.id, dto.postId));
     if (!post) throw new NotFoundException('Post not found');
 
+    const postVis = await this.profiles.getProfileFeedVisibility(
+      post.authorId,
+      authorId,
+    );
+    if (!postVis.allowPosts) {
+      throw new NotFoundException('Post not found');
+    }
+
     if (await this.blocks.hasBlockBetween(authorId, post.authorId)) {
       throw new ForbiddenException('You cannot comment on this post.');
     }
@@ -370,6 +378,19 @@ export class CommentsService {
 
   async listForPost(postId: string, viewerId?: string) {
     const db = getDb();
+    const [postRow] = await db
+      .select({ authorId: posts.authorId })
+      .from(posts)
+      .where(eq(posts.id, postId));
+    if (!postRow) throw new NotFoundException('Post not found');
+    const postVis = await this.profiles.getProfileFeedVisibility(
+      postRow.authorId,
+      viewerId,
+    );
+    if (!postVis.allowPosts) {
+      throw new NotFoundException('Post not found');
+    }
+
     let commentWhere: SQL = eq(comments.postId, postId);
     if (viewerId) {
       const hidden = await this.blocks.getHiddenUserIdsForViewer(viewerId);

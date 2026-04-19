@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   and,
   asc,
@@ -38,27 +39,11 @@ import {
   publicEffectsNotesForStrain,
   resolveReportedEffectPctsForPublic,
 } from './strain-catalog-enrichment';
+import { escapeIlikePattern } from '../common/ilike-escape';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
+import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 
 const MAX_STRAIN_REVIEW_MEDIA = 8;
-
-function normalizeStrainReviewMedia(
-  raw: { url: string; type: string }[] | undefined,
-): PostMediaItem[] {
-  if (!raw?.length) return [];
-  const seen = new Set<string>();
-  const out: PostMediaItem[] = [];
-  for (const item of raw) {
-    const url = item.url?.trim();
-    if (!url || !/^https:\/\//i.test(url)) continue;
-    if (item.type !== 'image') continue;
-    if (seen.has(url)) continue;
-    seen.add(url);
-    out.push({ url, type: 'image' });
-    if (out.length >= MAX_STRAIN_REVIEW_MEDIA) break;
-  }
-  return out;
-}
 
 export type ListStrainsQuery = {
   q?: string;
@@ -81,7 +66,31 @@ export type ListStrainsQuery = {
 
 @Injectable()
 export class StrainsService {
-  constructor(private readonly nameBlocklist: NameBlocklistService) {}
+  constructor(
+    private readonly nameBlocklist: NameBlocklistService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private normalizeStrainReviewMedia(
+    raw: { url: string; type: string }[] | undefined,
+  ): PostMediaItem[] {
+    if (!raw?.length) return [];
+    const seen = new Set<string>();
+    const out: PostMediaItem[] = [];
+    for (const item of raw) {
+      const url = item.url?.trim();
+      if (!url || !/^https:\/\//i.test(url)) continue;
+      if (item.type !== 'image') continue;
+      if (!isAllowedPostMediaPublicUrl(this.config, url)) {
+        throw new BadRequestException('Invalid review image URL.');
+      }
+      if (seen.has(url)) continue;
+      seen.add(url);
+      out.push({ url, type: 'image' });
+      if (out.length >= MAX_STRAIN_REVIEW_MEDIA) break;
+    }
+    return out;
+  }
 
   async listPublic(query: ListStrainsQuery) {
     const page = Math.max(1, query.page ?? 1);
@@ -119,7 +128,7 @@ export class StrainsService {
       conditions.push(eq(strains.breederId, breederIdFilter));
     }
     if (q) {
-      const term = `%${q.replace(/%/g, '\\%')}%`;
+      const term = `%${escapeIlikePattern(q)}%`;
       conditions.push(or(ilike(strains.name, term), ilike(strains.slug, term)));
     }
     const mr = query.minRating;
@@ -331,7 +340,7 @@ export class StrainsService {
     if (rating < 1 || rating > 5)
       throw new BadRequestException('Rating must be between 1 and 5');
     const subRatings = normalizeCatalogSubRatings(subRatingsRaw);
-    const mediaItems = normalizeStrainReviewMedia(media);
+    const mediaItems = this.normalizeStrainReviewMedia(media);
     const db = getDb();
     const [s] = await db.select().from(strains).where(eq(strains.slug, slug));
     if (!s) throw new NotFoundException('Strain not found');
@@ -436,8 +445,8 @@ export class StrainsService {
     const raw = opts?.q?.trim();
     const whereClause = raw
       ? or(
-          ilike(strains.name, `%${raw.replace(/%/g, '\\%')}%`),
-          ilike(strains.slug, `%${raw.replace(/%/g, '\\%')}%`),
+          ilike(strains.name, `%${escapeIlikePattern(raw)}%`),
+          ilike(strains.slug, `%${escapeIlikePattern(raw)}%`),
         )
       : undefined;
 

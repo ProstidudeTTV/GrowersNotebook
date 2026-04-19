@@ -744,6 +744,26 @@ export const dmThreadReads = pgTable(
   ],
 );
 
+/** Realtime delivery ping only; no message body. Inserted by Nest after dm_messages insert. */
+export const dmRealtimeSignals = pgTable(
+  'dm_realtime_signals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => dmThreads.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => dmMessages.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('dm_realtime_signals_thread_created_idx').on(t.threadId, t.createdAt),
+  ],
+);
+
 /** Grow diary (NOTEBOOK) — one run per cultivar / grow. */
 export const notebooks = pgTable(
   'notebooks',

@@ -290,7 +290,8 @@ export function GuestLanding({
                 </li>
                 <li>
                   If the API recently added catalog columns, run the migration
-                  on your Supabase DB (e.g. <code className="rounded bg-black/10 px-1 dark:bg-white/10">icon_key</code> on{" "}
+                  on your hosted Postgres database (e.g.{" "}
+                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">icon_key</code> on{" "}
                   <code className="rounded bg-black/10 px-1 dark:bg-white/10">communities</code>).
                 </li>
               </ul>

@@ -21,6 +21,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
+import { escapeIlikePattern } from '../common/ilike-escape';
 import { getDb } from '../db';
 import {
   breeders,
@@ -396,7 +397,7 @@ export class NotebooksService {
     }
     const q = opts.q?.trim();
     if (q) {
-      const pat = `%${q}%`;
+      const pat = `%${escapeIlikePattern(q)}%`;
       filters.push(
         or(
           ilike(notebooks.title, pat),
@@ -407,12 +408,12 @@ export class NotebooksService {
     }
     const grower = opts.grower?.trim();
     if (grower) {
-      const pat = `%${grower}%`;
+      const pat = `%${escapeIlikePattern(grower)}%`;
       filters.push(ilike(profiles.displayName, pat));
     }
     const breederQ = opts.breeder?.trim();
     if (breederQ) {
-      const pat = `%${breederQ}%`;
+      const pat = `%${escapeIlikePattern(breederQ)}%`;
       filters.push(
         and(
           isNotNull(breeders.id),
@@ -1294,10 +1295,11 @@ export class NotebooksService {
       conds.push(eq(nutrientProducts.published, true));
     }
     if (q) {
+      const pat = `%${escapeIlikePattern(q)}%`;
       conds.push(
         or(
-          ilike(nutrientProducts.name, `%${q}%`),
-          ilike(nutrientProducts.brand, `%${q}%`),
+          ilike(nutrientProducts.name, pat),
+          ilike(nutrientProducts.brand, pat),
         )!,
       );
     }

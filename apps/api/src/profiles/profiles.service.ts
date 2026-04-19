@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   and,
   asc,
@@ -39,6 +40,7 @@ import {
   userNotifications,
 } from '../db/schema';
 import { BlocksService } from '../blocks/blocks.service';
+import { isAllowedAvatarPublicUrl } from '../common/post-media-public-url';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -51,6 +53,7 @@ export class ProfilesService {
     private readonly notifications: NotificationsService,
     private readonly nameBlocklist: NameBlocklistService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
   ) {}
 
   async findById(id: string) {
@@ -252,6 +255,9 @@ export class ProfilesService {
     }
     if (dto.avatarUrl !== undefined) {
       const v = dto.avatarUrl?.trim();
+      if (v && !isAllowedAvatarPublicUrl(this.config, v)) {
+        throw new BadRequestException('Invalid avatar URL.');
+      }
       patch.avatarUrl = !v ? null : v;
     }
     if (dto.profilePublic !== undefined) {
@@ -567,6 +573,32 @@ export class ProfilesService {
       .where(eq(profiles.id, profileId));
   }
 
+  /**
+   * Ban / temporary suspension checks for authenticated routes (shared by auth guards).
+   */
+  async enforceActiveAccountOrThrow(userId: string): Promise<void> {
+    let row = await this.findById(userId);
+    if (
+      row?.bannedAt &&
+      row.banExpiresAt &&
+      row.banExpiresAt.getTime() <= Date.now()
+    ) {
+      await this.clearExpiredBan(userId);
+      row = await this.findById(userId);
+    }
+    if (
+      row?.bannedAt &&
+      (!row.banExpiresAt || row.banExpiresAt.getTime() > Date.now())
+    ) {
+      throw new ForbiddenException('This account has been banned.');
+    }
+    if (row?.suspendedUntil && row.suspendedUntil.getTime() > Date.now()) {
+      throw new ForbiddenException(
+        `This account is suspended until ${row.suspendedUntil.toISOString()}.`,
+      );
+    }
+  }
+
   async moderationSummaryAdmin(subjectId: string) {
     const profile = await this.findById(subjectId);
     if (!profile) throw new NotFoundException();
@@ -672,7 +704,15 @@ export class ProfilesService {
       patch.role = partial.role;
     }
     if (partial.avatarUrl !== undefined) {
-      patch.avatarUrl = partial.avatarUrl;
+      if (partial.avatarUrl === null || partial.avatarUrl === '') {
+        patch.avatarUrl = null;
+      } else {
+        const v = String(partial.avatarUrl).trim();
+        if (v && !isAllowedAvatarPublicUrl(this.config, v)) {
+          throw new BadRequestException('Invalid avatar URL.');
+        }
+        patch.avatarUrl = v || null;
+      }
     }
     if (partial.bannedAt !== undefined) {
       patch.bannedAt =

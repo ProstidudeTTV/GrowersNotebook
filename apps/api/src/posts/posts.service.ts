@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   and,
   asc,
@@ -30,6 +31,7 @@ import {
   sanitizePostHtml,
 } from '../common/html';
 import { htmlHasExpandableYouTubeLink } from '../common/youtube-embed';
+import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { viewerVoteFromRow } from '../common/normalize-viewer-vote';
 import { getDb } from '../db';
 import {
@@ -46,6 +48,7 @@ import {
 import { BlocksService } from '../blocks/blocks.service';
 import { FollowsService } from '../follows/follows.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ProfilesService } from '../profiles/profiles.service';
 import type { CreatePostDto } from './dto/create-post.dto';
 import type { UpdatePostDto } from './dto/update-post.dto';
 
@@ -64,24 +67,6 @@ const authorSeedsExpr = sql<number>`(
 )`;
 
 const MAX_POST_MEDIA = 30;
-
-function normalizePostMedia(
-  raw: { url: string; type: string }[] | undefined,
-): PostMediaItem[] {
-  if (!raw?.length) return [];
-  const seen = new Set<string>();
-  const out: PostMediaItem[] = [];
-  for (const item of raw) {
-    const url = item.url?.trim();
-    if (!url || !/^https:\/\//i.test(url)) continue;
-    if (item.type !== 'image' && item.type !== 'video') continue;
-    if (seen.has(url)) continue;
-    seen.add(url);
-    out.push({ url, type: item.type });
-    if (out.length >= MAX_POST_MEDIA) break;
-  }
-  return out;
-}
 
 function excerptForPost(
   bodyHtml: string,
@@ -115,7 +100,30 @@ export class PostsService {
     private readonly blocks: BlocksService,
     private readonly follows: FollowsService,
     private readonly notifications: NotificationsService,
+    private readonly config: ConfigService,
+    private readonly profiles: ProfilesService,
   ) {}
+
+  private normalizePostMedia(
+    raw: { url: string; type: string }[] | undefined,
+  ): PostMediaItem[] {
+    if (!raw?.length) return [];
+    const seen = new Set<string>();
+    const out: PostMediaItem[] = [];
+    for (const item of raw) {
+      const url = item.url?.trim();
+      if (!url || !/^https:\/\//i.test(url)) continue;
+      if (item.type !== 'image' && item.type !== 'video') continue;
+      if (!isAllowedPostMediaPublicUrl(this.config, url)) {
+        throw new BadRequestException('Invalid media URL.');
+      }
+      if (seen.has(url)) continue;
+      seen.add(url);
+      out.push({ url, type: item.type });
+      if (out.length >= MAX_POST_MEDIA) break;
+    }
+    return out;
+  }
 
   private async authorNotBlockedClause(
     viewerId: string | undefined,
@@ -160,10 +168,16 @@ export class PostsService {
     );
 
     const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const authorVisible = or(
+      eq(profiles.profilePublic, true),
+      query.viewerId
+        ? eq(posts.authorId, query.viewerId)
+        : sql`false`,
+    );
     const whereClause =
       blockAuthors != null
-        ? and(authorOk, textMatch, blockAuthors)
-        : and(authorOk, textMatch);
+        ? and(authorOk, textMatch, authorVisible, blockAuthors)
+        : and(authorOk, textMatch, authorVisible);
 
     const [{ total }] = await db
       .select({ total: count() })
@@ -242,12 +256,22 @@ export class PostsService {
     const offset = (query.page - 1) * query.pageSize;
 
     const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
-    const hotWhere =
-      blockAuthors != null ? and(weekWhere, blockAuthors) : weekWhere;
+    const authorVisible = or(
+      eq(profiles.profilePublic, true),
+      query.viewerId
+        ? eq(posts.authorId, query.viewerId)
+        : sql`false`,
+    );
+    const hotWhere = and(
+      weekWhere,
+      authorVisible,
+      blockAuthors ?? sql`true`,
+    );
 
     const [{ total }] = await db
       .select({ total: count() })
       .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
       .where(hotWhere);
 
     const rows = await db
@@ -315,7 +339,7 @@ export class PostsService {
 
   async create(authorId: string, dto: CreatePostDto) {
     const db = getDb();
-    const mediaItems = normalizePostMedia(dto.media);
+    const mediaItems = this.normalizePostMedia(dto.media);
     const bodyHtml = sanitizePostHtml(dto.bodyHtml);
     if (!hasRenderablePostBody(bodyHtml, mediaItems)) {
       throw new BadRequestException(
@@ -375,7 +399,7 @@ export class PostsService {
       bodyJson = dto.bodyJson as Record<string, unknown>;
     }
     if (dto.media !== undefined) {
-      mediaItems = normalizePostMedia(dto.media);
+      mediaItems = this.normalizePostMedia(dto.media);
     }
 
     const bodyOrMediaTouched =
@@ -473,6 +497,14 @@ export class PostsService {
       }
     }
 
+    const feedVis = await this.profiles.getProfileFeedVisibility(
+      row.author.id,
+      viewerId,
+    );
+    if (!feedVis.allowPosts) {
+      throw new NotFoundException('Post not found');
+    }
+
     const seeds = Number(row.authorSeeds);
     const r = row as unknown as Record<string, unknown>;
     const authorFollowing = viewerId
@@ -512,14 +544,22 @@ export class PostsService {
     const offset = (query.page - 1) * query.pageSize;
 
     const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
-    const communityWhere =
-      blockAuthors != null
-        ? and(eq(posts.communityId, query.communityId), blockAuthors)
-        : eq(posts.communityId, query.communityId);
+    const authorVisible = or(
+      eq(profiles.profilePublic, true),
+      query.viewerId
+        ? eq(posts.authorId, query.viewerId)
+        : sql`false`,
+    );
+    const communityWhere = and(
+      eq(posts.communityId, query.communityId),
+      authorVisible,
+      blockAuthors ?? sql`true`,
+    );
 
     const [{ total }] = await db
       .select({ total: count() })
       .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
       .where(communityWhere);
 
     const pinThenExpr = sql`(case when ${communityPins.pinnedAt} is null then 1 else 0 end)`;

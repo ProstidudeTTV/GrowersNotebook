@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { and, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { escapeIlikePattern } from '../common/ilike-escape';
 import { getDb } from '../db';
 import { auditEvents } from '../db/schema';
 
@@ -46,7 +47,8 @@ export class AuditService {
       filters.push(eq(auditEvents.actorProfileId, opts.actorProfileId));
     }
     if (opts.action?.trim()) {
-      filters.push(ilike(auditEvents.action, `%${opts.action.trim()}%`));
+      const pat = `%${escapeIlikePattern(opts.action.trim())}%`;
+      filters.push(ilike(auditEvents.action, pat));
     }
     const whereClause =
       filters.length > 0 ? and(...filters)! : sql`true`;

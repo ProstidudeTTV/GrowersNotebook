@@ -18,6 +18,7 @@ import { ComposerQuickReactionsToolbar } from "@/components/composer-quick-react
 import { dedupeUrlsPreserveOrder, isDmVideoUrl } from "@/lib/dm-media-url";
 import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
 import {
   isProcessablePostImage,
   isProcessablePostVideo,
@@ -35,7 +36,8 @@ import {
   type ChangeEvent,
 } from "react";
 
-const POLL_MS = 3000;
+/** Fallback when Realtime is unavailable; primary updates use dm_realtime_signals. */
+const POLL_MS = 25000;
 const DM_ATTACH_MAX = 8;
 
 type PendingAttachment = {
@@ -390,6 +392,62 @@ export function MessagesPanel() {
     return () => clearInterval(id);
   }, [status, activeThreadId, loadMessagesPage]);
 
+  /** Supabase Realtime: new DM signal rows (RLS limits to threads the user participates in). */
+  useEffect(() => {
+    if (status !== "ready" || !selfId) return;
+    const channel = supabase
+      .channel("dm-realtime-signals")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "dm_realtime_signals",
+        },
+        (payload) => {
+          const row = payload.new as {
+            thread_id?: string;
+            message_id?: string;
+          };
+          const tid = row.thread_id;
+          if (!tid) return;
+          void loadThreads();
+          if (activeThreadId === tid) {
+            void loadMessagesPage(tid, undefined, false, {
+              backgroundPoll: true,
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [
+    status,
+    selfId,
+    supabase,
+    activeThreadId,
+    loadThreads,
+    loadMessagesPage,
+  ]);
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadThreads();
+      if (activeThreadId) {
+        void loadMessagesPage(activeThreadId, undefined, false, {
+          backgroundPoll: true,
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisible);
+  }, [status, activeThreadId, loadThreads, loadMessagesPage]);
+
   useEffect(() => {
     if (status !== "ready") return;
     const onFocus = () => {
@@ -691,6 +749,22 @@ export function MessagesPanel() {
           const r = isVid
             ? await uploadPostVideo(supabase, selfId, file)
             : await uploadPostImage(supabase, selfId, file);
+          if (
+            r.ok &&
+            isVid &&
+            "storagePath" in r &&
+            r.storagePath &&
+            r.videoContentType
+          ) {
+            const t = await fetchToken();
+            if (t) {
+              void stripUploadedVideoMetadata(
+                t,
+                r.storagePath,
+                r.videoContentType,
+              ).catch(() => {});
+            }
+          }
           setPendingAttachments((prev) => {
             const cur = prev.find((x) => x.id === itemId);
             if (!cur) return prev;

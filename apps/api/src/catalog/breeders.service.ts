@@ -32,6 +32,7 @@ import {
   isPublicExcludedBreederSlug,
   PUBLIC_EXCLUDED_BREEDER_SLUGS,
 } from './catalog-promo-exclusions';
+import { escapeIlikePattern } from '../common/ilike-escape';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 
 export type ListBreedersQuery = {
@@ -66,14 +67,14 @@ export class BreedersService {
       );
     }
     if (q) {
-      const term = `%${q.replace(/%/g, '\\%')}%`;
+      const term = `%${escapeIlikePattern(q)}%`;
       conditions.push(
         or(ilike(breeders.name, term), ilike(breeders.slug, term)),
       );
     }
     const countryQ = query.country?.trim();
     if (countryQ) {
-      const term = `%${countryQ.replace(/%/g, '\\%')}%`;
+      const term = `%${escapeIlikePattern(countryQ)}%`;
       conditions.push(ilike(breeders.country, term));
     }
     const mr = query.minRating;

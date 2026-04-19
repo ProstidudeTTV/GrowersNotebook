@@ -172,11 +172,9 @@ export default async function Home() {
               <code className="rounded bg-black/10 px-1 dark:bg-white/10">
                 communities.icon_key
               </code>
-              ). Apply Supabase migrations or run the SQL from{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                supabase/migrations/
-              </code>{" "}
-              on the project database, then redeploy or restart the API if needed.
+              ). Apply database migrations (from the project repo) or run the
+              bundled SQL on the project database, then redeploy or restart the
+              API if needed.
             </li>
             <li>
               This page loads from{" "}
@@ -200,7 +198,7 @@ export default async function Home() {
       {!loadError && communities.length === 0 ? (
         <p className="border-b border-dashed border-[var(--gn-divide)] py-10 text-center text-sm text-[var(--gn-text-muted)]">
           No communities yet. Create one via the API or seed your database after
-          connecting Supabase and running migrations.
+          connecting the app database and running migrations.
         </p>
       ) : null}
       {communities.length > 0 ? (

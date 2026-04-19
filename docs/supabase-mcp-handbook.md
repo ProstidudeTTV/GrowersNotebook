@@ -41,7 +41,7 @@ Migration **`20260519120000_rls_hardening_public_core.sql`** (and matching Drizz
 - **All other tables** in that migration: **no** `anon`/`authenticated` policies → **denied** through PostgREST (Supabase Data API), closing bulk scrape with the public anon key.
 - **Nest** uses **`DATABASE_URL`** with a **privileged** Postgres role (table owner pattern) and **bypasses RLS** for application logic.
 - **`user_notifications`**: existing `user_notifications_select_own` policy unchanged.
-- **`dm_*`**, **`user_blocks`**: earlier migrations unchanged; **`dm_messages`** remains off the Realtime publication (read lockdown).
+- **`dm_*`**, **`user_blocks`**: earlier migrations unchanged; **`dm_messages`** remains off the Realtime publication (read lockdown). **`dm_realtime_signals`** (migration **`20260522120000_dm_realtime_signals.sql`**) holds only `{ thread_id, message_id }` pings; Nest inserts after each new DM; participants get **`SELECT`** via RLS; table is on **`supabase_realtime`** so clients receive **`postgres_changes`** without exposing message bodies through the anon/authenticated Data API.
 
 Migration **`20260520120000_rls_explicit_postgrest_deny.sql`** adds explicit **`USING (false)`** policies for **`anon` / `authenticated`** on backend-only tables (and on **`public.__drizzle_migrations`**) so the Supabase linter stops reporting **“RLS Enabled No Policy”** (INFO) without changing access: Nest still bypasses RLS. If this was applied via Supabase MCP in two steps, **`list_migrations`** may show **`rls_explicit_postgrest_deny_part1`** and **`_part2`** instead of one name—the SQL is equivalent to the single file in the repo.
 

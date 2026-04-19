@@ -4,7 +4,10 @@ WORKDIR /app
 
 ENV NPM_CONFIG_YES=true
 # corepack + pnpm fails on node:bookworm-slim in Render's Docker build; use npm -g.
-RUN npm install -g pnpm@9.15.9
+RUN npm install -g pnpm@9.15.9 \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps ./apps

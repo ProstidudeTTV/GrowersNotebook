@@ -75,7 +75,7 @@ export default function AdminSiteSettingsPage() {
     try {
       supabase = createClient();
     } catch {
-      setLoadError("Could not load Supabase client.");
+      setLoadError("Could not load sign-in client.");
       setLoading(false);
       return;
     }
@@ -393,7 +393,7 @@ export default function AdminSiteSettingsPage() {
             </Button>
             {!loadedSite?.maintenanceEmailConfigured ? (
               <Typography.Text type="secondary" className="text-sm">
-                Bulk email needs SMTP and Supabase admin keys on the API.
+                Bulk email needs SMTP and auth admin credentials on the API.
               </Typography.Text>
             ) : null}
           </Space>

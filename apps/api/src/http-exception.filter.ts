@@ -31,6 +31,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
+      if (isProd && status >= 500) {
+        response.status(status).json({
+          statusCode: status,
+          message:
+            status === HttpStatus.SERVICE_UNAVAILABLE
+              ? 'Service unavailable'
+              : 'Internal server error',
+        });
+        return;
+      }
       const body = exception.getResponse();
       if (typeof body === 'object' && body !== null && !Array.isArray(body)) {
         response.status(status).json(body);

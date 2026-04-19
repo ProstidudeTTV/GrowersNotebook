@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -37,9 +38,11 @@ export class OptionalAuthGuard implements CanActivate {
           preferredProfileDisplayName(payload),
           mailingListOptInFromJwt(payload),
         );
+        await this.profiles.enforceActiveAccountOrThrow(payload.sub);
         request.user = payload;
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof ForbiddenException) throw e;
       /* malformed, wrong secret/JWKS, or missing env — treat as anonymous */
     }
     return true;

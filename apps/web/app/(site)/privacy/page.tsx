@@ -41,9 +41,10 @@ export default function PrivacyPage() {
             (posts, comments, messages, avatars) are re-encoded in your browser
             to JPEG before storage, which removes EXIF and most embedded image
             metadata from those files.{" "}
-            <strong className="text-[var(--gn-text)]">Videos</strong> are not
-            stripped the same way. Images you only link to from other sites are
-            unchanged.
+            <strong className="text-[var(--gn-text)]">Videos</strong>: the
+            browser uploads them as-is; our servers may remux them to drop common
+            container metadata (best-effort). Images you only link to from other
+            sites are unchanged.
           </li>
           <li>
             <strong className="text-[var(--gn-text)]">Transport</strong>: we use
@@ -52,9 +53,10 @@ export default function PrivacyPage() {
           <li>
             <strong className="text-[var(--gn-text)]">Database access</strong>:
             Row Level Security is enabled on public tables in Postgres so the
-            public Supabase API key cannot bulk-read private application data;
-            the API server uses a privileged database role for writes. (Direct
-            message content is not exposed through Supabase Realtime.)
+            public data API key cannot bulk-read private application data; the
+            API server uses a privileged database role for writes. Direct
+            message content is not delivered through live database subscriptions
+            to clients.
           </li>
           <li>
             <strong className="text-[var(--gn-text)]">Audit logs</strong>: when
@@ -94,7 +96,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong className="text-[var(--gn-text)]">What we collect</strong>:
-            account and profile data from Supabase Auth (e.g. email), content you
+            account and profile data from our sign-in provider (e.g. email), content you
             post, votes, follows, messages you send, notebook data, and technical
             data needed to run the service (including truncated IPs in audit
             events for mutating API requests).

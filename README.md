@@ -31,4 +31,4 @@ pnpm dev
 - Web: `apps/web/.env.local` — see `env.example`.
 - API: `apps/api/.env` — `DATABASE_URL`, `SUPABASE_JWT_SECRET` (see `apps/api/.env.example`).
 
-See also `ROADMAP.md`.
+See also `ROADMAP.md` and **[`docs/build-notes.md`](docs/build-notes.md)** (security scope, trust boundaries, and change checklist for agents).

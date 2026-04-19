@@ -29,6 +29,12 @@ You still need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or 
 
 `getPublicSiteOrigin()` prefers `NEXT_PUBLIC_SITE_URL`, then `X-Forwarded-Host` / `X-Forwarded-Proto` from Render so redirects stay correct behind the proxy.
 
+## 2b. Security Advisor (Auth hardening)
+
+In **Supabase Dashboard → Authentication**, enable **leaked password protection** (HaveIBeenPwned) when you want the linter warning cleared and stronger password hygiene. See [Password security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+RLS and Storage notes for the rest of the advisor live in **`docs/supabase-mcp-handbook.md`**.
+
 ## 3. Supabase Dashboard → Authentication → URL configuration
 
 [Authentication → URL Configuration](https://supabase.com/dashboard/project/_/auth/url-configuration) for your project.

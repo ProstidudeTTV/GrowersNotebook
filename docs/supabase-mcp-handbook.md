@@ -43,6 +43,13 @@ Migration **`20260519120000_rls_hardening_public_core.sql`** (and matching Drizz
 - **`user_notifications`**: existing `user_notifications_select_own` policy unchanged.
 - **`dm_*`**, **`user_blocks`**: earlier migrations unchanged; **`dm_messages`** remains off the Realtime publication (read lockdown).
 
+Migration **`20260520120000_rls_explicit_postgrest_deny.sql`** adds explicit **`USING (false)`** policies for **`anon` / `authenticated`** on backend-only tables (and on **`public.__drizzle_migrations`**) so the Supabase linter stops reporting **“RLS Enabled No Policy”** (INFO) without changing access: Nest still bypasses RLS. If this was applied via Supabase MCP in two steps, **`list_migrations`** may show **`rls_explicit_postgrest_deny_part1`** and **`_part2`** instead of one name—the SQL is equivalent to the single file in the repo.
+
+### Security Advisor items that stay as dashboard / product choices
+
+- **[Leaked password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)** (WARN): enable in **Supabase Dashboard → Authentication** (HaveIBeenPwned check for signups/password changes). Not configurable via SQL migration.
+- **Public storage bucket listing** ([lint 0025](https://supabase.com/docs/guides/database/database-linter?lint=0025_public_bucket_allows_listing)) on **`avatars`** / **`post-media`**: broad **`SELECT`** on `storage.objects` is what allows **public `<img>` / video URLs** for arbitrary paths; narrowing policy typically means **private buckets + signed URLs** (app change). Accept the WARN or plan that migration separately.
+
 ## Tables (public schema)
 
 Canonical definitions: `apps/api/src/db/schema.ts`.

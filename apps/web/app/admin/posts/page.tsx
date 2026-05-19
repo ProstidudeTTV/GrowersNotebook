@@ -6,6 +6,7 @@ import { useInvalidate } from "@refinedev/core";
 import {
   Button,
   Checkbox,
+  Form,
   Input,
   Modal,
   Space,
@@ -45,6 +46,10 @@ function AdminPostsInner() {
     syncWithLocation: true,
     pagination: { pageSize: 20 },
     filters: { permanent: permanentFilters },
+    onSearch: (values: { q?: string }) =>
+      values.q
+        ? [{ field: "q", operator: "contains" as const, value: values.q }]
+        : [],
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -148,6 +153,19 @@ function AdminPostsInner() {
         {pinError ? (
           <p className="mb-3 text-sm text-red-500">{pinError}</p>
         ) : null}
+        <Form
+          {...(({ children: _c, ...rest }) => rest)(searchFormProps)}
+          layout="inline"
+          className="mb-4"
+        >
+          <Form.Item name="q" className="mb-0">
+            <Input.Search
+              placeholder="Search posts…"
+              allowClear
+              onSearch={() => searchFormProps.form?.submit()}
+            />
+          </Form.Item>
+        </Form>
         <RefineHiddenSearchForm searchFormProps={searchFormProps} />
         <Table
           {...tableProps}
@@ -157,8 +175,56 @@ function AdminPostsInner() {
           }
         >
           <Table.Column dataIndex="title" title="Title" />
-          <Table.Column dataIndex="communitySlug" title="Community" />
-          <Table.Column dataIndex="authorName" title="Author" />
+          <Table.Column<BaseRecord>
+            dataIndex="body"
+            title="Excerpt"
+            render={(body: string | null | undefined, record) => {
+              const src = body ?? (record.excerpt as string | null | undefined) ?? "";
+              const text = src.replace(/\s+/g, " ").trim().slice(0, 80);
+              return text ? (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {text}
+                  {src.length > 80 ? "…" : ""}
+                </span>
+              ) : (
+                "—"
+              );
+            }}
+          />
+          <Table.Column<BaseRecord>
+            dataIndex="communitySlug"
+            title="Community"
+            render={(slug: string | null | undefined, record) =>
+              slug && record.communityId ? (
+                <Link
+                  href={`/admin/communities/edit/${String(record.communityId)}`}
+                  className="text-[#1677ff] dark:text-[#69b1ff]"
+                  onClick={stopAdminRowClick}
+                >
+                  {slug}
+                </Link>
+              ) : (
+                slug ?? "—"
+              )
+            }
+          />
+          <Table.Column<BaseRecord>
+            dataIndex="authorName"
+            title="Author"
+            render={(name: string | null | undefined, record) =>
+              name && record.authorId ? (
+                <Link
+                  href={`/admin/profiles/edit/${String(record.authorId)}`}
+                  className="text-[#1677ff] dark:text-[#69b1ff]"
+                  onClick={stopAdminRowClick}
+                >
+                  {name}
+                </Link>
+              ) : (
+                name ?? "—"
+              )
+            }
+          />
           <Table.Column<BaseRecord>
             dataIndex="pinnedAt"
             title="Pinned"

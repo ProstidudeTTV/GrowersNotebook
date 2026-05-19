@@ -916,7 +916,7 @@ export function MessagesPanel() {
   );
 
   return (
-    <div className="space-y-4 border-t border-[var(--gn-divide)] pt-4">
+    <div className="space-y-3">
       {lightbox ? (
         <DmImageLightbox
           urls={lightbox.urls}
@@ -984,9 +984,7 @@ export function MessagesPanel() {
           className="rounded-lg border border-red-300/50 bg-red-500/10 px-4 py-3 text-sm text-[var(--gn-text)]"
           role="alert"
         >
-          <p className="font-medium text-red-700 dark:text-red-400">
-            Messaging
-          </p>
+          <p className="font-medium text-red-700 dark:text-red-400">Messaging</p>
           <p className="mt-1 text-[var(--gn-text-muted)]">{actionError}</p>
           <button
             type="button"
@@ -1163,9 +1161,10 @@ export function MessagesPanel() {
                         <div
                           className={`text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "ml-auto max-w-[70%] rounded-2xl rounded-br-sm bg-[var(--gn-surface-raised)] px-4 py-2 text-[var(--gn-text)]"
-                              : "mr-auto max-w-[70%] rounded-2xl rounded-bl-sm border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-4 py-2 text-[var(--gn-text)]"
+                              ? "ml-auto max-w-[72%] rounded-2xl rounded-br-sm bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)]"
+                              : "mr-auto max-w-[72%] rounded-2xl rounded-bl-sm border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-2.5 text-[var(--gn-text)]"
                           }`}
+                          style={isSelf ? { borderLeft: "3px solid var(--gn-accent)" } : undefined}
                         >
                           {hasText ? (
                             <p className="whitespace-pre-wrap break-words">
@@ -1177,7 +1176,7 @@ export function MessagesPanel() {
                           ) : null}
                           {(hasText || showPostEmbed) && hasMedia ? (
                             <div
-                              className={`my-2 border-t ${isSelf ? "border-white/20" : "border-[var(--gn-divide)]"}`}
+                              className="my-2 border-t border-[var(--gn-divide)]"
                               role="separator"
                             />
                           ) : null}
@@ -1203,7 +1202,7 @@ export function MessagesPanel() {
                                 type="button"
                                 disabled={messageDeletingId === ln.id}
                                 onClick={() => void removeOwnMessage(ln.id)}
-                                className="text-[11px] font-normal text-white/60 hover:text-white/90 hover:underline disabled:opacity-45"
+                                className="text-[11px] font-normal text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline disabled:opacity-45"
                               >
                                 {messageDeletingId === ln.id
                                   ? "Removing…"

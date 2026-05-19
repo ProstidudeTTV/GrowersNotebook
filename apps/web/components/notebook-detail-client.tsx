@@ -137,7 +137,7 @@ type NbComment = {
 type WeekRow = NotebookDetailPayload["weeks"][number];
 
 const sectionCapsClass =
-  "text-[10px] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]";
+  "text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]";
 
 /** Short rule only under the heading text (not full card width). */
 function SectionCapsTitle({
@@ -172,7 +172,7 @@ function SectionHeading({
 }) {
   return (
     <h2
-      className={`inline-block w-fit max-w-full border-b border-[var(--gn-divide)]/45 pb-1.5 text-xs font-semibold text-[var(--gn-text)] sm:text-sm ${className}`.trim()}
+      className={`inline-block w-fit max-w-full border-b-2 border-[var(--gn-accent)]/30 pb-1.5 text-sm font-bold text-[var(--gn-text)] sm:text-base ${className}`.trim()}
     >
       {children}
     </h2>
@@ -256,7 +256,7 @@ function MetricGrid({
                   {item.value}
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-2.5 py-0.5 text-xs font-medium text-[var(--gn-text)]">
+                <span className="inline-flex items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] px-3 py-1 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)]">
                   {item.value}
                 </span>
               )}
@@ -749,12 +749,16 @@ export function NotebookDetailClient({
                 </div>
               ) : null}
 
-              <div className="mt-2 lg:hidden">
-                <div className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface)]/40 p-2">
-                  <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="mobile" />
-                </div>
               </div>
-              </div>
+
+      {/* Mobile week nav — sticky so users can jump to any week while scrolling */}
+      <div className="mt-3 lg:hidden">
+        <div className="sticky top-16 z-10">
+          <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]/95 p-2.5 shadow-[var(--gn-shadow-sm)] backdrop-blur-sm">
+            <NotebookWeekSidebar notebook={nb} weeks={nb.weeks} variant="mobile" />
+          </div>
+        </div>
+      </div>
 
       {showGrowingSetup ? (
         <section className="mt-5 rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-3.5">
@@ -1025,30 +1029,35 @@ export function NotebookDetailClient({
               <li
                 key={w.id}
                 id={`week-${w.weekIndex}`}
-                className={`scroll-mt-20 rounded-2xl px-3 py-2.5 shadow-sm ring-1 ring-black/5 sm:px-4 sm:py-3 dark:ring-white/5 ${phaseClass}`}
+                className={`scroll-mt-20 rounded-2xl px-3 py-3 shadow-[var(--gn-shadow-sm)] ring-1 ring-black/5 sm:px-4 sm:py-4 dark:ring-white/5 ${phaseClass}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="w-fit max-w-[min(100%,42rem)] min-w-0 border-b border-[var(--gn-divide)]/40 pb-1.5">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                      <p className="text-sm font-semibold tracking-tight text-[var(--gn-text)]">
-                        Week {w.weekIndex}
-                      </p>
-                      <span className="text-[10px] font-medium text-[var(--gn-text-muted)]">
-                        {GROWTH_STAGE_LABEL[phase] ?? phase}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[10px] leading-snug text-[var(--gn-text-muted)]">
-                      {w.createdAt ? (
-                        <time dateTime={w.createdAt}>
-                          {formatNotebookWeekInstant(w.createdAt)}
-                        </time>
-                      ) : null}
-                      {weekEntryWasEdited(w.createdAt, w.updatedAt) ? (
-                        <span className="ml-1.5 font-medium text-[var(--gn-text-muted)]">
-                          (edited)
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-sm font-bold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)]">
+                      {w.weekIndex}
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <p className="text-sm font-bold tracking-tight text-[var(--gn-text)]">
+                          Week {w.weekIndex}
+                        </p>
+                        <span className="rounded-full bg-[var(--gn-surface-elevated)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-ring)]">
+                          {GROWTH_STAGE_LABEL[phase] ?? phase}
                         </span>
-                      ) : null}
-                    </p>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-snug text-[var(--gn-text-muted)]">
+                        {w.createdAt ? (
+                          <time dateTime={w.createdAt}>
+                            {formatNotebookWeekInstant(w.createdAt)}
+                          </time>
+                        ) : null}
+                        {weekEntryWasEdited(w.createdAt, w.updatedAt) ? (
+                          <span className="ml-1.5 font-medium text-[var(--gn-text-muted)]">
+                            · edited
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
                   </div>
                   {isOwner ? (
                     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">

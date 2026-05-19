@@ -42,18 +42,41 @@ function getTypeIcon(kind?: string | null): {
   switch (kind) {
     case "comment":
     case "reply":
-      return { icon: "💬", colorClass: "bg-blue-500/20 text-blue-400" };
+      return {
+        icon: "💬",
+        colorClass:
+          "bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300",
+      };
     case "follow":
-      return { icon: "👤", colorClass: "bg-purple-500/20 text-purple-400" };
+      return {
+        icon: "👤",
+        colorClass:
+          "bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
+      };
     case "vote":
     case "upvote":
-      return { icon: "⬆", colorClass: "bg-green-500/20 text-green-400" };
+      return {
+        icon: "▲",
+        colorClass:
+          "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
+      };
     case "mention":
-      return { icon: "@", colorClass: "bg-yellow-500/20 text-yellow-400" };
+      return {
+        icon: "@",
+        colorClass:
+          "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
+      };
+    case "moderation_warning":
+      return {
+        icon: "⚠",
+        colorClass:
+          "bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-300",
+      };
     default:
       return {
         icon: "🔔",
-        colorClass: "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]",
+        colorClass:
+          "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)]",
       };
   }
 }
@@ -237,7 +260,17 @@ export function NotificationsPanel() {
 
   if (loading) {
     return (
-      <p className="text-sm text-[var(--gn-text-muted)]">Loading…</p>
+      <div className="space-y-3 py-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-start gap-3 animate-pulse">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-[var(--gn-surface-muted)]" />
+            <div className="flex-1 space-y-1.5 pt-1">
+              <div className="h-3.5 w-3/4 rounded bg-[var(--gn-surface-muted)]" />
+              <div className="h-3 w-1/2 rounded bg-[var(--gn-surface-muted)]" />
+            </div>
+          </div>
+        ))}
+      </div>
     );
   }
 
@@ -283,9 +316,13 @@ export function NotificationsPanel() {
         </div>
 
         {!hasAnyItems ? (
-          <p className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
-            No notifications yet.
-          </p>
+          <div className="rounded-2xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-10 text-center">
+            <div className="text-3xl mb-2">🌱</div>
+            <p className="text-sm font-medium text-[var(--gn-text)]">Nothing here yet</p>
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              You&apos;ll get notified when someone comments, votes, or follows you.
+            </p>
+          </div>
         ) : (
           <div className="space-y-5">
             {BUCKETS.map((bucket) => {

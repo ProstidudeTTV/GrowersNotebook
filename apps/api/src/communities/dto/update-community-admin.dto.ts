@@ -3,7 +3,9 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsUrl,
   Length,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
 import { COMMUNITY_ICON_KEYS } from '../community-icon-keys';
@@ -35,6 +37,8 @@ export class UpdateCommunityAdminDto {
   iconKey?: string | null;
 
   @IsOptional()
-  @IsString()
-  bannerUrl?: string;
+  @ValidateIf((_, v) => v != null)
+  @IsUrl({ require_tld: true })
+  @MaxLength(2000)
+  bannerUrl?: string | null;
 }

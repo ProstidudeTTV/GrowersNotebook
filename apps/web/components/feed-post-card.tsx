@@ -10,7 +10,7 @@ import {
 } from "@/components/comment-action-menu";
 import { CommunityIcon } from "@/components/community-icon";
 import { PostShareButton } from "@/components/post-share-button";
-import { VoteFeedPill } from "@/components/vote-score-rail";
+import { VoteScoreRail } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import { formatFeedExcerpt } from "@/lib/feed-excerpt";
 import type { FeedPost } from "@/lib/feed-post";
@@ -39,19 +39,9 @@ function compactCount(n: number): string {
   return String(n);
 }
 
-// A1.1 — 56 px avatar (h-14 w-14)
-const authorAvatarFrame =
-  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
-
-// A1.4 — shared pill style (maps --gn-surface-2 → --gn-surface-elevated, --gn-text-2 → --gn-text-muted)
 const tagPillClass =
   "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] border border-[var(--gn-divide)]";
 
-// A1.1 — 56 px community/author icon frame
-const iconFrameClass =
-  "flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
-
-// A1.2 — YouTube thumbnail resized to match hero image (h-48, rounded-xl)
 function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
   return (
     <div className="relative mt-3 h-48 w-full overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
@@ -84,31 +74,6 @@ function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
   );
 }
 
-function AuthorFeedAvatar({
-  avatarUrl,
-  displayName,
-}: {
-  avatarUrl?: string | null;
-  displayName: string | null;
-}) {
-  const label = (displayName ?? "member").trim();
-  const initial = label.charAt(0).toUpperCase() || "?";
-  if (avatarUrl) {
-    return (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img
-        src={avatarUrl}
-        alt=""
-        className={`${authorAvatarFrame} object-cover`}
-      />
-    );
-  }
-  return (
-    <span className={authorAvatarFrame} aria-hidden>
-      {initial}
-    </span>
-  );
-}
 
 export function FeedPostCard({
   post,
@@ -288,42 +253,32 @@ export function FeedPostCard({
     router.push(`/p/${local.id}`);
   };
 
-  // A1.1 — 56 px icons for all three lead variants
-  const headerLead =
+  // Compact single-line meta row (community icon + names + time)
+  const metaRow =
     pinnedCommunity != null ? (
-      <CommunityIcon
-        iconKey={pinnedCommunity.iconKey}
-        nameFallback={pinnedCommunity.name}
-        slugFallback={pinnedCommunity.slug}
-        frameClassName={iconFrameClass}
-      />
-    ) : community ? (
-      <CommunityIcon
-        iconKey={null}
-        nameFallback={community.name}
-        slugFallback={community.slug}
-        frameClassName={iconFrameClass}
-      />
-    ) : (
-      <AuthorFeedAvatar
-        avatarUrl={local.author.avatarUrl}
-        displayName={local.author.displayName}
-      />
-    );
-
-  const headerMeta =
-    pinnedCommunity != null ? (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+        <CommunityIcon
+          iconKey={pinnedCommunity.iconKey}
+          nameFallback={pinnedCommunity.name}
+          slugFallback={pinnedCommunity.slug}
+          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[9px]"
+        />
         <span className="font-semibold text-[var(--gn-text)]">
           {pinnedCommunity.name.trim() || pinnedCommunity.slug}
         </span>
-        <span aria-hidden>·</span>
+        <span aria-hidden className="opacity-40">·</span>
         <span title={new Date(local.createdAt).toLocaleString()}>
           {timeAgo(local.createdAt)}
         </span>
       </div>
     ) : community ? (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+        <CommunityIcon
+          iconKey={null}
+          nameFallback={community.name}
+          slugFallback={community.slug}
+          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[9px]"
+        />
         <Link
           href={`/community/${community.slug}`}
           className="font-semibold text-[var(--gn-text)] hover:underline"
@@ -332,22 +287,22 @@ export function FeedPostCard({
         >
           {community.name.trim() || community.slug}
         </Link>
-        <span aria-hidden>·</span>
+        <span aria-hidden className="opacity-40">·</span>
         <Link
           href={`/u/${local.author.id}`}
-          className="font-medium text-[var(--gn-text)] hover:underline"
+          className="hover:underline"
           data-interactive
           onClick={(e) => e.stopPropagation()}
         >
           {local.author.displayName ?? "member"}
         </Link>
-        <span aria-hidden>·</span>
+        <span aria-hidden className="opacity-40">·</span>
         <span title={new Date(local.createdAt).toLocaleString()}>
           {timeAgo(local.createdAt)}
         </span>
       </div>
     ) : (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
         <Link
           href={`/u/${local.author.id}`}
           className="font-semibold text-[var(--gn-text)] hover:underline"
@@ -356,7 +311,7 @@ export function FeedPostCard({
         >
           {local.author.displayName ?? "member"}
         </Link>
-        <span aria-hidden>·</span>
+        <span aria-hidden className="opacity-40">·</span>
         <span title={new Date(local.createdAt).toLocaleString()}>
           {timeAgo(local.createdAt)}
         </span>
@@ -364,49 +319,90 @@ export function FeedPostCard({
     );
 
   return (
-    // A1.3 — borderless card with shadow lift on hover
     <article
-      className={`relative rounded-2xl border-0 bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative overflow-hidden rounded-2xl bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
     >
       {rank != null && rank >= 1 && rank <= 5 && (
-        <span className="absolute top-3 left-3 z-10 text-xs font-bold bg-[var(--gn-accent)]/90 text-white rounded-full h-6 w-6 flex items-center justify-center pointer-events-none">
+        <span className="absolute top-3 left-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gn-accent)]/90 text-xs font-bold text-white pointer-events-none">
           {rank}
         </span>
       )}
-      <div
-        role="link"
-        tabIndex={0}
-        className="block cursor-pointer rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)]"
-        onClick={(e) => {
-          const t = e.target as HTMLElement;
-          if (t.closest("[data-interactive]")) return;
-          openPost();
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          if ((e.target as HTMLElement).closest("[data-interactive]")) return;
-          e.preventDefault();
-          openPost();
-        }}
-        aria-label={`Open post: ${local.title}`}
-      >
-        <div className="p-3.5 sm:p-4">
-          {/* Header row: lead icon + meta + title + action menu */}
-          <div className="flex items-start gap-3">
-            {headerLead}
-            <div className="min-w-0 flex-1">
-              {headerMeta}
-              <h2 className="mt-2 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
-                {local.title}
-              </h2>
-            </div>
+
+      {/* Hero image — edge-to-edge, no padding, photo is the star */}
+      {heroImage ? (
+        <div
+          className="cursor-pointer"
+          onClick={(e) => {
+            const t = e.target as HTMLElement;
+            if (t.closest("[data-interactive]")) return;
+            openPost();
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage.url}
+            alt=""
+            className="h-52 w-full object-cover sm:h-64"
+            loading="lazy"
+          />
+        </div>
+      ) : youTubePreviewId ? (
+        <div
+          className="cursor-pointer"
+          onClick={(e) => {
+            const t = e.target as HTMLElement;
+            if (t.closest("[data-interactive]")) return;
+            openPost();
+          }}
+        >
+          <YouTubeThumbnailPreview videoId={youTubePreviewId} />
+        </div>
+      ) : null}
+
+      {/* Body: left vote rail + right content */}
+      <div className="flex">
+        {/* Left vote rail — Reddit-style */}
+        <div
+          className="flex w-12 shrink-0 flex-col items-center justify-start border-r border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_55%,transparent)] py-3"
+          data-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
+          <VoteScoreRail
+            score={local.score}
+            upvotes={local.upvotes}
+            downvotes={local.downvotes}
+            viewerVote={local.viewerVote}
+            onUp={() => void vote(1)}
+            onDown={() => void vote(-1)}
+            disabled={voteBusy}
+            size="sm"
+          />
+        </div>
+
+        {/* Right content */}
+        <div
+          role="link"
+          tabIndex={0}
+          className="min-w-0 flex-1 cursor-pointer px-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)]"
+          onClick={(e) => {
+            const t = e.target as HTMLElement;
+            if (t.closest("[data-interactive]")) return;
+            openPost();
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            if ((e.target as HTMLElement).closest("[data-interactive]")) return;
+            e.preventDefault();
+            openPost();
+          }}
+          aria-label={`Open post: ${local.title}`}
+        >
+          {/* Meta row + action menu */}
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">{metaRow}</div>
             <div className="shrink-0" data-interactive>
               <CommentActionMenu ariaLabel="Post actions">
-                <MenuRow
-                  onClick={() => {
-                    router.push(`/u/${local.author.id}`);
-                  }}
-                >
+                <MenuRow onClick={() => { router.push(`/u/${local.author.id}`); }}>
                   View profile
                 </MenuRow>
                 {!isOwn ? (
@@ -423,26 +419,29 @@ export function FeedPostCard({
             </div>
           </div>
 
-          {/* Hero image: full-width, tall and photo-first */}
-          {heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImage.url}
-              alt=""
-              className="mt-3 h-56 w-full rounded-xl object-cover sm:h-64"
-              loading="lazy"
-            />
+          {/* Title */}
+          <h2 className="mt-1.5 text-[15px] font-bold leading-snug text-[var(--gn-text)] sm:text-base">
+            {local.title}
+          </h2>
+
+          {/* Strain pill */}
+          {local.strain ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              <span className={tagPillClass}>{local.strain}</span>
+            </div>
           ) : null}
 
-          {/* A1.2 — YouTube preview (same size/style as hero image; skip if hero present) */}
-          {!heroImage && youTubePreviewId ? (
-            <YouTubeThumbnailPreview videoId={youTubePreviewId} />
+          {/* Excerpt */}
+          {excerpt ? (
+            <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
+              {excerpt}
+            </p>
           ) : null}
 
           {/* Video media */}
           {videoMedia ? (
             <div
-              className="mt-3 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
+              className="mt-2 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
               data-interactive
             >
               <video
@@ -455,75 +454,43 @@ export function FeedPostCard({
             </div>
           ) : null}
 
-          {/* Excerpt — below hero */}
-          {excerpt ? (
-            <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
-              {excerpt}
-            </p>
-          ) : null}
-
-          {/* A1.4 — Grow-tag pill slot (no-op when strain is absent) */}
-          {local.strain ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className={tagPillClass}>{local.strain}</span>
-            </div>
-          ) : null}
+          {/* Action row: comments + share */}
+          <div className="mt-2.5 flex items-center gap-1" data-interactive>
+            <Link
+              href={`/p/${local.id}#comments`}
+              prefetch={false}
+              data-interactive
+              className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="shrink-0 opacity-75"
+                aria-hidden
+              >
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+              </svg>
+              <span className="tabular-nums">{compactCount(commentsN)}</span>
+              <span className="hidden sm:inline">comments</span>
+            </Link>
+            <span
+              data-interactive
+              className="inline-flex"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PostShareButton
+                postId={local.id}
+                postTitle={local.title}
+                viewerId={viewerId}
+              />
+            </span>
+          </div>
         </div>
-      </div>
-
-      {/* A1.5 — Footer: votes · comments · share · muted date */}
-      <div
-        className="flex flex-wrap items-center gap-2 border-t border-[var(--gn-divide)] px-3.5 py-2.5 sm:px-4"
-        data-interactive
-      >
-        <VoteFeedPill
-          score={local.score}
-          upvotes={local.upvotes}
-          downvotes={local.downvotes}
-          viewerVote={local.viewerVote}
-          onUp={() => void vote(1)}
-          onDown={() => void vote(-1)}
-          disabled={voteBusy}
-        />
-        <Link
-          href={`/p/${local.id}#comments`}
-          prefetch={false}
-          data-interactive
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="shrink-0 opacity-80"
-            aria-hidden
-          >
-            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-          </svg>
-          <span className="tabular-nums">{compactCount(commentsN)}</span>
-          <span className="sr-only">comments</span>
-        </Link>
-        <span
-          data-interactive
-          className="inline-flex"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <PostShareButton
-            postId={local.id}
-            postTitle={local.title}
-            viewerId={viewerId}
-          />
-        </span>
-        <span
-          className="ml-auto text-xs text-[var(--gn-text-muted)]"
-          title={new Date(local.createdAt).toLocaleString()}
-        >
-          {timeAgo(local.createdAt)}
-        </span>
       </div>
 
       {reportMsg ? (

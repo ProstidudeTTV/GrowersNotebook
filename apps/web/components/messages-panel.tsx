@@ -189,7 +189,7 @@ function getInitials(name: string): string {
 }
 
 const AVATAR_COLORS = [
-  "bg-orange-600",
+  "bg-teal-700",
   "bg-emerald-700",
   "bg-sky-700",
   "bg-violet-700",
@@ -1010,7 +1010,7 @@ export function MessagesPanel() {
                 + New
               </button>
             </div>
-            <ul className="flex-1 divide-y divide-[var(--gn-divide)] overflow-y-auto">
+            <ul className="flex-1 overflow-y-auto py-2 space-y-0.5">
               {threads.length === 0 ? (
                 <li className="px-4 py-8 text-center">
                   <p className="text-sm font-medium text-[var(--gn-text)]">No conversations</p>

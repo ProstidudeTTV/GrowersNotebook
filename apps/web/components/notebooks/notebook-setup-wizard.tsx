@@ -1,8 +1,7 @@
 "use client";
 
-import { Form, Input, InputNumber, Select } from "antd";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -11,30 +10,44 @@ import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-
 import {
   normalizeTempUnit,
   normalizeVolumeUnit,
-  TEMP_UNIT_OPTIONS,
-  VOLUME_UNIT_OPTIONS,
 } from "@/lib/notebook-units";
 
 const STEPS = 4;
 
-const ROOM_OPTIONS = [
-  { value: "indoor", label: "Indoor" },
-  { value: "outdoor", label: "Outdoor" },
-  { value: "greenhouse", label: "Greenhouse" },
-];
+const inputClass =
+  "w-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 py-3 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--gn-accent)]/40 transition";
 
-const WATERING_OPTIONS = [
-  { value: "manual", label: "Manual" },
-  { value: "drip", label: "Drip" },
-  { value: "hydro", label: "Hydro" },
-  { value: "aeroponic", label: "Aeroponic" },
-];
+const labelClass = "block text-sm font-semibold text-[var(--gn-text)] mb-1";
+const helpClass = "mt-1.5 text-xs text-[var(--gn-text-muted)] leading-relaxed";
 
-const START_OPTIONS = [
-  { value: "seed", label: "Seed / germination" },
-  { value: "clone", label: "Clone" },
-  { value: "seedling", label: "Seedling" },
-];
+function PillChoice({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: string; label: string; icon?: string }[];
+  value: string | undefined;
+  onChange: (v: string | undefined) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(value === o.value ? undefined : o.value)}
+          className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+            value === o.value
+              ? "border-[var(--gn-accent)] bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]"
+              : "border-[var(--gn-divide)] bg-[var(--gn-surface)] text-[var(--gn-text-muted)] hover:border-[var(--gn-accent)]/40 hover:text-[var(--gn-text)]"
+          }`}
+        >
+          {o.icon ? `${o.icon} ` : ""}{o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function NotebookSetupWizard({
   open,
@@ -43,67 +56,58 @@ export function NotebookSetupWizard({
   onCompleted,
 }: {
   open: boolean;
-  /** When null, wizard creates the notebook on final save (no row until then). */
   notebook: NotebookDetailPayload | null;
   onClose: () => void;
   onCompleted: (createdNotebookId?: string) => void | Promise<void>;
 }) {
   const isCreate = notebook === null;
   const [step, setStep] = useState(1);
-  const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const titleWatch = Form.useWatch("title", form);
+
+  const [title, setTitle] = useState("");
+  const [strainLabel, setStrainLabel] = useState("");
+  const [tempUnit, setTempUnit] = useState<"C" | "F">("C");
+  const [volumeUnit, setVolumeUnit] = useState<"L" | "gal">("L");
+  const [roomType, setRoomType] = useState<string | undefined>(undefined);
+  const [wateringType, setWateringType] = useState<string | undefined>(undefined);
+  const [startType, setStartType] = useState<string | undefined>(undefined);
+  const [plantCount, setPlantCount] = useState<string>("");
+  const [lightWatts, setLightWatts] = useState<string>("");
+  const [vegLightCycle, setVegLightCycle] = useState<string>("");
+  const [flowerLightCycle, setFlowerLightCycle] = useState<string>("");
+  const [setupNotes, setSetupNotes] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setError(null);
     if (!notebook) {
-      form.setFieldsValue({
-        title: "",
-        customStrainLabel: "",
-        preferredTempUnit: "C",
-        preferredVolumeUnit: "L",
-        roomType: undefined,
-        wateringType: undefined,
-        startType: undefined,
-        plantCount: undefined,
-        totalLightWatts: "",
-        vegLightCycle: "",
-        flowerLightCycle: "",
-        setupNotes: "",
-      });
+      setTitle(""); setStrainLabel(""); setTempUnit("C"); setVolumeUnit("L");
+      setRoomType(undefined); setWateringType(undefined); setStartType(undefined);
+      setPlantCount(""); setLightWatts(""); setVegLightCycle("");
+      setFlowerLightCycle(""); setSetupNotes("");
       return;
     }
-    form.setFieldsValue({
-      title: notebook.title,
-      customStrainLabel: notebook.customStrainLabel ?? "",
-      preferredTempUnit: normalizeTempUnit(notebook.preferredTempUnit),
-      preferredVolumeUnit: normalizeVolumeUnit(notebook.preferredVolumeUnit),
-      roomType: notebook.roomType ?? undefined,
-      wateringType: notebook.wateringType ?? undefined,
-      startType: notebook.startType ?? undefined,
-      plantCount: notebook.plantCount ?? undefined,
-      totalLightWatts: notebook.totalLightWatts ?? "",
-      vegLightCycle: notebook.vegLightCycle ?? "",
-      flowerLightCycle: notebook.flowerLightCycle ?? "",
-      setupNotes: notebook.setupNotes ?? "",
-    });
-  }, [open, notebook, form]);
-
-  const canContinue = useMemo(() => {
-    if (step === 1) {
-      return typeof titleWatch === "string" && titleWatch.trim().length > 0;
-    }
-    return true;
-  }, [step, titleWatch]);
+    setTitle(notebook.title ?? "");
+    setStrainLabel(notebook.customStrainLabel ?? "");
+    setTempUnit(normalizeTempUnit(notebook.preferredTempUnit));
+    setVolumeUnit(normalizeVolumeUnit(notebook.preferredVolumeUnit) as "L" | "gal");
+    setRoomType(notebook.roomType ?? undefined);
+    setWateringType(notebook.wateringType ?? undefined);
+    setStartType(notebook.startType ?? undefined);
+    setPlantCount(notebook.plantCount != null ? String(notebook.plantCount) : "");
+    setLightWatts(notebook.totalLightWatts ?? "");
+    setVegLightCycle(notebook.vegLightCycle ?? "");
+    setFlowerLightCycle(notebook.flowerLightCycle ?? "");
+    setSetupNotes(notebook.setupNotes ?? "");
+  }, [open, notebook]);
 
   async function patchBody(extra: Record<string, unknown>) {
     if (!notebook) throw new Error("Missing notebook.");
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
-    if (!token) throw new Error("Sign in to save your notebook.");
+    if (!token) throw new Error("Sign in to save.");
     await apiFetch(`/notebooks/${notebook.id}`, {
       method: "PATCH",
       token,
@@ -115,41 +119,30 @@ export function NotebookSetupWizard({
     setError(null);
     setSaving(true);
     try {
-      const v = await form.validateFields();
-      const title = String(v.title ?? "").trim();
-      if (!title) {
-        setError("Add a title.");
-        setStep(1);
-        setSaving(false);
-        return;
-      }
+      if (!title.trim()) { setError("Give your grow a name first."); setStep(1); setSaving(false); return; }
       const payload = {
-        title,
-        customStrainLabel: v.customStrainLabel?.trim() || null,
-        preferredTempUnit: normalizeTempUnit(v.preferredTempUnit),
-        preferredVolumeUnit: normalizeVolumeUnit(v.preferredVolumeUnit),
-        roomType: v.roomType ?? null,
-        wateringType: v.wateringType ?? null,
-        startType: v.startType ?? null,
-        plantCount: v.plantCount ?? null,
-        totalLightWatts: v.totalLightWatts?.trim() || null,
-        vegLightCycle: v.vegLightCycle?.trim() || null,
-        flowerLightCycle: v.flowerLightCycle?.trim() || null,
-        setupNotes: v.setupNotes?.trim() || null,
+        title: title.trim(),
+        customStrainLabel: strainLabel.trim() || null,
+        preferredTempUnit: tempUnit,
+        preferredVolumeUnit: volumeUnit,
+        roomType: roomType ?? null,
+        wateringType: wateringType ?? null,
+        startType: startType ?? null,
+        plantCount: plantCount ? parseInt(plantCount, 10) : null,
+        totalLightWatts: lightWatts.trim() || null,
+        vegLightCycle: vegLightCycle.trim() || null,
+        flowerLightCycle: flowerLightCycle.trim() || null,
+        setupNotes: setupNotes.trim() || null,
         setupWizardCompletedAt: new Date().toISOString(),
       };
       if (isCreate) {
         const supabase = createClient();
         const token = await getAccessTokenForApi(supabase);
-        if (!token) throw new Error("Sign in to save your notebook.");
+        if (!token) throw new Error("Sign in to save.");
         const row = await apiFetch<{ id: string }>("/notebooks", {
           method: "POST",
           token,
-          body: JSON.stringify({
-            ...payload,
-            strainId: null,
-            status: "active",
-          }),
+          body: JSON.stringify({ ...payload, strainId: null, status: "active" }),
         });
         await onCompleted(row.id);
       } else {
@@ -157,7 +150,7 @@ export function NotebookSetupWizard({
         await onCompleted();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save notebook");
+      setError(e instanceof Error ? e.message : "Could not save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -168,9 +161,7 @@ export function NotebookSetupWizard({
     setError(null);
     setSaving(true);
     try {
-      await patchBody({
-        setupWizardCompletedAt: new Date().toISOString(),
-      });
+      await patchBody({ setupWizardCompletedAt: new Date().toISOString() });
       await onCompleted();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not update notebook");
@@ -179,9 +170,14 @@ export function NotebookSetupWizard({
     }
   }
 
-  const stepTitle = ["Title", "Grow setup", "Setup notes", "Publish"][
-    step - 1
+  const STEP_TITLES = [
+    "📖 Name your grow",
+    "🌱 How are you growing?",
+    "🏕️ Describe your setup",
+    "✅ Ready to go!",
   ];
+
+  const canGoNext = step === 1 ? title.trim().length > 0 : true;
 
   return (
     <NotebookCenteredModal
@@ -189,231 +185,325 @@ export function NotebookSetupWizard({
       onClose={() => (!saving ? onClose() : undefined)}
       title="Set up your notebook"
     >
-      <Form
-        form={form}
-        layout="vertical"
-        size="middle"
-        className="px-5 py-5 sm:px-6 sm:py-6"
-      >
+      <div className="px-5 py-5 sm:px-6 sm:py-6">
         <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-5">
-          <div className="flex gap-1">
-            {Array.from({ length: STEPS }, (_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                  step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
-                }`}
-              />
-            ))}
+
+          {/* Progress */}
+          <div className="mb-6">
+            <div className="flex gap-1">
+              {Array.from({ length: STEPS }, (_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
+                    step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="mt-2.5 text-sm font-semibold text-[var(--gn-text)]">
+              {STEP_TITLES[step - 1]}
+            </p>
+            <p className="text-xs text-[var(--gn-text-muted)]">Step {step} of {STEPS}</p>
           </div>
-          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
-            Step {step} of {STEPS}: {stepTitle}
-          </p>
-        </div>
 
-        {/* Keep every Form.Item mounted so Ant Design does not discard values when steps change. */}
-        <div className={step === 1 ? "space-y-5" : "hidden"} aria-hidden={step !== 1}>
-            {notebook?.strain?.slug ? (
+          {/* Step 1 — Name */}
+          {step === 1 && (
+            <div className="space-y-5">
+              {notebook?.strain?.slug ? (
+                <p className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3 text-sm text-[var(--gn-text-muted)]">
+                  This grow is linked to{" "}
+                  <Link href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
+                    className="font-medium text-[var(--gn-accent)] hover:underline">
+                    {notebook.strain.name?.trim() || notebook.strain.slug}
+                  </Link>{" "}in the strain catalog.
+                </p>
+              ) : (
+                <p className="text-sm text-[var(--gn-text-muted)]">
+                  Give your grow a name people will recognize — you can change it anytime.
+                </p>
+              )}
+              <div>
+                <label className={labelClass} htmlFor="ns-title">What are you calling this grow?</label>
+                <input
+                  id="ns-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={inputClass}
+                  placeholder="e.g. Blue Dream — Spring 2026"
+                  autoFocus
+                />
+                <p className={helpClass}>Keep it short and memorable. Strain + season works great.</p>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="ns-strain">What strain are you growing? <span className="font-normal text-[var(--gn-text-muted)]">(optional)</span></label>
+                <input
+                  id="ns-strain"
+                  value={strainLabel}
+                  onChange={(e) => setStrainLabel(e.target.value)}
+                  className={inputClass}
+                  placeholder="e.g. Blue Dream, Wedding Cake..."
+                />
+                <p className={helpClass}>Just a label — you can link to the full strain catalog after setup.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 — Setup */}
+          {step === 2 && (
+            <div className="space-y-6">
               <p className="text-sm text-[var(--gn-text-muted)]">
-                This notebook is linked to the catalog strain{" "}
-                <Link
-                  href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
-                  className="font-medium text-[var(--gn-accent)] hover:underline"
-                >
-                  {notebook.strain.name?.trim() || notebook.strain.slug}
-                </Link>
-                . The optional label below is extra display text. To pick a
-                different cultivar, use{" "}
-                <strong className="text-[var(--gn-text)]">Details</strong> and
-                browse the{" "}
-                <Link
-                  href="/strains"
-                  className="font-medium text-[var(--gn-accent)] hover:underline"
-                >
-                  Strains
-                </Link>{" "}
-                catalog.
+                These help other growers compare setups. All optional — fill in what you know.
               </p>
-            ) : (
+
+              <div>
+                <label className={labelClass}>Where are you growing?</label>
+                <PillChoice
+                  options={[
+                    { value: "indoor", label: "Indoor", icon: "🏠" },
+                    { value: "outdoor", label: "Outdoor", icon: "☀️" },
+                    { value: "greenhouse", label: "Greenhouse", icon: "🪟" },
+                  ]}
+                  value={roomType}
+                  onChange={setRoomType}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>How did you start?</label>
+                <PillChoice
+                  options={[
+                    { value: "seed", label: "From seed" },
+                    { value: "clone", label: "From clone" },
+                    { value: "seedling", label: "Already a seedling" },
+                  ]}
+                  value={startType}
+                  onChange={setStartType}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>How do you water?</label>
+                <PillChoice
+                  options={[
+                    { value: "manual", label: "By hand" },
+                    { value: "drip", label: "Drip system" },
+                    { value: "hydro", label: "Hydro / DWC" },
+                    { value: "aeroponic", label: "Aeroponic" },
+                  ]}
+                  value={wateringType}
+                  onChange={setWateringType}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Temperatures</label>
+                  <PillChoice
+                    options={[{ value: "F", label: "°F" }, { value: "C", label: "°C" }]}
+                    value={tempUnit}
+                    onChange={(v) => { if (v) setTempUnit(v as "C" | "F"); }}
+                  />
+                  <p className={helpClass}>Used for your weekly readings.</p>
+                </div>
+                <div>
+                  <label className={labelClass}>Water volume</label>
+                  <PillChoice
+                    options={[{ value: "L", label: "Liters" }, { value: "gal", label: "Gallons" }]}
+                    value={volumeUnit}
+                    onChange={(v) => { if (v) setVolumeUnit(v as "L" | "gal"); }}
+                  />
+                  <p className={helpClass}>Used when logging waterings.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass} htmlFor="ns-plants">Number of plants</label>
+                  <input
+                    id="ns-plants"
+                    type="number"
+                    min={1}
+                    value={plantCount}
+                    onChange={(e) => setPlantCount(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 4"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="ns-watts">Total light watts</label>
+                  <input
+                    id="ns-watts"
+                    value={lightWatts}
+                    onChange={(e) => setLightWatts(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 480"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass} htmlFor="ns-veg-light">Veg light schedule</label>
+                  <input
+                    id="ns-veg-light"
+                    value={vegLightCycle}
+                    onChange={(e) => setVegLightCycle(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 18/6"
+                  />
+                  <p className={helpClass}>Hours on / hours off</p>
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="ns-flower-light">Flower light schedule</label>
+                  <input
+                    id="ns-flower-light"
+                    value={flowerLightCycle}
+                    onChange={(e) => setFlowerLightCycle(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 12/12"
+                  />
+                  <p className={helpClass}>Hours on / hours off</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Setup notes */}
+          {step === 3 && (
+            <div className="space-y-4">
               <p className="text-sm text-[var(--gn-text-muted)]">
-                Name this notebook. Optional free-text strain label below. To
-                link a{" "}
-                <Link
-                  href="/strains"
-                  className="font-medium text-[var(--gn-accent)] hover:underline"
-                >
-                  catalog strain
-                </Link>{" "}
-                (strain page, breeders, directory filters), open{" "}
-                <strong className="text-[var(--gn-text)]">Details</strong> after
-                this guide and choose one from Strains.
+                Describe your grow room for readers. The more detail you give, the more useful your journal is to other growers who want to replicate your results.
               </p>
-            )}
-            <Form.Item
-              name="title"
-              label={<span className="text-[var(--gn-text)]">Title</span>}
-              rules={[{ required: true, message: "Add a title." }]}
-            >
-              <Input placeholder="e.g. Blue Dream — spring 2026" />
-            </Form.Item>
-            <Form.Item
-              name="customStrainLabel"
-              label="Strain label (optional)"
-              tooltip="Shown on your notebook. Catalog strain (if any) is set under Details; browse /strains to compare cultivars."
-            >
-              <Input placeholder="e.g. Blue Dream" />
-            </Form.Item>
-        </div>
-
-        <div className={step === 2 ? "" : "hidden"} aria-hidden={step !== 2}>
-            <p className="mb-5 text-sm leading-relaxed text-[var(--gn-text-muted)]">
-              How you run this notebook helps others compare setups. You can
-              change this anytime under Details on your notebook page.
-            </p>
-            <Form.Item
-              name="preferredTempUnit"
-              label="Temperature unit (weekly readings)"
-              tooltip="Week logs and this notebook use this for °C vs °F. Values are stored as °C in the database."
-            >
-              <Select options={[...TEMP_UNIT_OPTIONS]} />
-            </Form.Item>
-            <Form.Item
-              name="preferredVolumeUnit"
-              label="Water / feed volume unit"
-              tooltip="Used for structured volume in week entries (liters vs US gallons)."
-            >
-              <Select options={[...VOLUME_UNIT_OPTIONS]} />
-            </Form.Item>
-            <Form.Item name="roomType" label="Room type">
-              <Select allowClear placeholder="Select…" options={ROOM_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="wateringType" label="Watering / irrigation">
-              <Select
-                allowClear
-                placeholder="Select…"
-                options={WATERING_OPTIONS}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Tent size",
+                  "Grow medium",
+                  "Nutrient line",
+                  "Carbon filter",
+                  "Training method",
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() =>
+                      setSetupNotes((prev) =>
+                        prev ? `${prev}\n${prompt}: ` : `${prompt}: `
+                      )
+                    }
+                    className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] transition hover:border-emerald-500/50 hover:text-emerald-500"
+                  >
+                    + {prompt}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={setupNotes}
+                onChange={(e) => setSetupNotes(e.target.value)}
+                rows={7}
+                className={inputClass}
+                placeholder="e.g. 4×4 tent, Mars Hydro FC8000 (800W), coco/perlite 70/30, Athena nutrients, AC Infinity fan with carbon filter, temps sit around 78°F with lights on..."
               />
-            </Form.Item>
-            <Form.Item name="startType" label="How you started">
-              <Select allowClear placeholder="Select…" options={START_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="plantCount" label="Plant count">
-              <InputNumber min={0} className="w-full" />
-            </Form.Item>
-            <Form.Item name="totalLightWatts" label="Total light (watts)">
-              <Input placeholder="Optional — for g/W after harvest" />
-            </Form.Item>
-            <Form.Item
-              name="vegLightCycle"
-              label="Vegetation light schedule"
-              tooltip="Photoperiod during veg (e.g. 18/6). Stored on the notebook, not on weekly entries."
-            >
-              <Input placeholder="e.g. 18/6" />
-            </Form.Item>
-            <Form.Item
-              name="flowerLightCycle"
-              label="Flower light schedule"
-              tooltip="Photoperiod during flower (e.g. 12/12)."
-            >
-              <Input placeholder="e.g. 12/12" />
-            </Form.Item>
-        </div>
+              <p className={helpClass}>Tap any prompt above to add it to your notes, or just write freely.</p>
+            </div>
+          )}
 
-        <div className={step === 3 ? "" : "hidden"} aria-hidden={step !== 3}>
-            <label className="block text-sm font-semibold text-[var(--gn-text)]">
-              Setup notes
-            </label>
-            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Tent size, lights, fans, medium, or nutrient line—anything useful
-              for someone reading along.
+          {/* Step 4 — Confirm */}
+          {step === 4 && (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-5 text-center">
+                <div className="mx-auto mb-3 text-4xl">🌱</div>
+                <h3 className="text-base font-bold text-[var(--gn-text)]">
+                  {isCreate ? "Ready to create your journal!" : "Ready to save!"}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                  {isCreate
+                    ? "Your notebook will be created and you can start adding weeks right away."
+                    : "Your notebook setup will be saved. You can update any of this later from the notebook settings."}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] divide-y divide-[var(--gn-divide)] text-sm overflow-hidden">
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="text-[var(--gn-text-muted)]">Name</span>
+                  <span className="font-medium text-[var(--gn-text)] truncate ml-4">{title || "—"}</span>
+                </div>
+                {strainLabel && (
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-[var(--gn-text-muted)]">Strain</span>
+                    <span className="font-medium text-[var(--gn-text)]">{strainLabel}</span>
+                  </div>
+                )}
+                {roomType && (
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-[var(--gn-text-muted)]">Location</span>
+                    <span className="font-medium text-[var(--gn-text)] capitalize">{roomType}</span>
+                  </div>
+                )}
+                {plantCount && (
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-[var(--gn-text-muted)]">Plants</span>
+                    <span className="font-medium text-[var(--gn-text)]">{plantCount}</span>
+                  </div>
+                )}
+              </div>
+
+              {notebook && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void skipSetup()}
+                  className="block w-full text-center text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] underline decoration-dotted"
+                >
+                  Skip for now — finish setup later
+                </button>
+              )}
+              {!notebook && (
+                <p className="text-center text-xs text-[var(--gn-text-muted)]">
+                  Close this window to cancel — nothing is saved until you click Create.
+                </p>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
             </p>
-            <Form.Item name="setupNotes" noStyle>
-              <Input.TextArea
-                rows={6}
-                placeholder="Describe your setup…"
-                className="mt-2"
-              />
-            </Form.Item>
-        </div>
+          )}
 
-        <div
-          className={step === 4 ? "space-y-5 text-sm leading-relaxed" : "hidden"}
-          aria-hidden={step !== 4}
-        >
-            <h3 className="font-semibold text-[var(--gn-text)]">
-              Ready to save?
-            </h3>
-            <p className="text-[var(--gn-text-muted)]">
-              This saves your answers. You can update details anytime from{" "}
-              <strong className="text-[var(--gn-text)]">Details</strong> on this
-              page—including linking a cultivar from the{" "}
-              <Link
-                href="/strains"
-                className="font-medium text-[var(--gn-accent)] hover:underline"
+          {/* Nav */}
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-5">
+            <button
+              type="button"
+              disabled={step <= 1 || saving}
+              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              className="inline-flex items-center gap-1 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-text)] disabled:opacity-40"
+            >
+              ‹ Back
+            </button>
+            {step < STEPS ? (
+              <button
+                type="button"
+                disabled={saving || !canGoNext}
+                onClick={() => setStep((s) => Math.min(STEPS, s + 1))}
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
               >
-                Strains
-              </Link>{" "}
-              catalog. Weekly entries use <strong>Add week</strong>.
-            </p>
-            {notebook ? (
+                Next ›
+              </button>
+            ) : (
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => void skipSetup()}
-                className="text-xs font-medium text-[var(--gn-text-muted)] underline decoration-dotted hover:text-[var(--gn-text)]"
+                onClick={() => void finishSetup()}
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
               >
-                Skip and finish later (only dismisses this guide)
+                {saving ? "Saving…" : isCreate ? "Create Journal →" : "Save Setup →"}
               </button>
-            ) : (
-              <p className="text-xs text-[var(--gn-text-muted)]">
-                Close this window to cancel—no diary is created until you save.
-              </p>
             )}
-        </div>
+          </div>
 
-        {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
-
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-[var(--gn-divide)] px-1 pb-5 pt-5 sm:px-2 sm:pb-6">
-          <button
-            type="button"
-            disabled={step <= 1 || saving}
-            onClick={() => setStep((s) => Math.max(1, s - 1))}
-            className="inline-flex items-center gap-1 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-text)] disabled:opacity-40"
-          >
-            <span aria-hidden>‹</span> Back
-          </button>
-          {step < STEPS ? (
-            <button
-              type="button"
-              disabled={saving || (step === 1 && !canContinue)}
-              onClick={async () => {
-                if (step === 1) {
-                  try {
-                    await form.validateFields(["title"]);
-                  } catch {
-                    return;
-                  }
-                }
-                setStep((s) => Math.min(STEPS, s + 1));
-              }}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
-            >
-              Next <span aria-hidden>›</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void finishSetup()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
-            >
-              {saving ? "Saving…" : "Save notebook setup"}
-            </button>
-          )}
         </div>
-        </div>
-      </Form>
+      </div>
     </NotebookCenteredModal>
   );
 }

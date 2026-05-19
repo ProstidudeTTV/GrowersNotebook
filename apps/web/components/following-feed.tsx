@@ -193,18 +193,18 @@ export function FollowingFeed({
             Follow some growers or join communities to see their posts here.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <a
+            <Link
               href="/community"
               className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
             >
               Browse Communities
-            </a>
-            <a
+            </Link>
+            <Link
               href="/hot"
               className="inline-flex items-center gap-2 bg-[var(--gn-surface-2)] text-[var(--gn-text-1)] border border-[var(--gn-divide)] rounded-full px-5 py-2 text-sm font-medium hover:bg-[var(--gn-surface-3)] transition-colors"
             >
               See What&apos;s Hot
-            </a>
+            </Link>
           </div>
         </div>
       ) : (

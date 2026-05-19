@@ -113,38 +113,38 @@ html:not(.dark) .gn-post-content-flow .prose {
 /* ----- Dark (default) ----- */
 html.dark {
   color-scheme: dark;
-  /* Forest green in the dark — a night grow room, not a fast food app */
+  /* Green ACCENT only — neutral dark gray canvas so the green actually pops */
   --gn-accent: #4ade80;
   --gn-hot: #f97316;
-  /* Deep forest dark — rich, not cold */
-  --gn-page-top: #0d1610;
-  --gn-page-mid: #0a1209;
-  --gn-page-bottom: #070e06;
-  --gn-surface: #111a12;
-  --gn-surface-raised: #162118;
-  --gn-surface-elevated: #1b2a1d;
-  --gn-surface-muted: #0f1810;
-  --gn-surface-hover: rgba(74, 222, 128, 0.06);
-  --gn-ring: rgba(74, 222, 128, 0.10);
+  /* Neutral near-black — Reddit-style dark, not a green terminal */
+  --gn-page-top: #141414;
+  --gn-page-mid: #111111;
+  --gn-page-bottom: #0d0d0d;
+  --gn-surface: #1a1a1a;
+  --gn-surface-raised: #1e1e1e;
+  --gn-surface-elevated: #252525;
+  --gn-surface-muted: #171717;
+  --gn-surface-hover: rgba(255, 255, 255, 0.06);
+  --gn-ring: rgba(255, 255, 255, 0.08);
   --gn-ring-focus: rgba(74, 222, 128, 0.5);
-  --gn-divide: rgba(74, 222, 128, 0.07);
-  --gn-border: rgba(74, 222, 128, 0.10);
-  --gn-text: #e8f5ea;
-  --gn-text-muted: #7fa887;
-  --gn-text-excerpt: #8fba97;
-  --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.05) inset,
+  --gn-divide: rgba(255, 255, 255, 0.07);
+  --gn-border: rgba(255, 255, 255, 0.10);
+  --gn-text: #f0f0f0;
+  --gn-text-muted: #9ca3af;
+  --gn-text-excerpt: #6b7280;
+  --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.04) inset,
     0 1px 3px rgb(0 0 0 / 0.5);
   --gn-shadow-md:
     0 6px 28px rgb(0 0 0 / 0.5),
-    0 0 0 1px rgb(74 222 128 / 0.04);
+    0 0 0 1px rgb(255 255 255 / 0.04);
   --gn-shadow-lg:
     0 28px 56px -22px rgb(0 0 0 / 0.65),
-    0 0 0 1px rgb(74 222 128 / 0.05);
+    0 0 0 1px rgb(255 255 255 / 0.04);
   --gn-shadow-hover:
     0 12px 32px -12px rgb(0 0 0 / 0.5),
-    0 0 0 1px rgb(74 222 128 / 0.18);
-  --gn-header-bg: rgba(13, 22, 16, 0.92);
-  --gn-menu-bg: rgba(22, 33, 24, 0.97);
+    0 0 0 1px rgb(74 222 128 / 0.25);
+  --gn-header-bg: rgba(20, 20, 20, 0.92);
+  --gn-menu-bg: rgba(26, 26, 26, 0.97);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
@@ -159,29 +159,13 @@ html.dark {
 html.dark .gn-app-canvas {
   background-color: var(--gn-page-mid);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%234ade80' stroke-opacity='0.04' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%234ade80' stroke-opacity='0.03' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
-    radial-gradient(
-      ellipse 110% 85% at 50% -25%,
-      rgb(20 83 45 / 0.14) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 75% 55% at 0% 100%,
-      rgb(34 197 94 / 0.06) 0%,
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse 60% 45% at 100% 85%,
-      rgb(15 60 25 / 0.08) 0%,
-      transparent 45%
-    ),
     linear-gradient(
       180deg,
       var(--gn-page-top) 0%,
       var(--gn-page-mid) 40%,
       var(--gn-page-bottom) 100%
     );
-  background-size: 140px 140px, auto, auto, auto, auto;
+  background-size: auto;
   background-attachment: scroll;
   min-height: 100%;
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CommunityIcon } from "@/components/community-icon";
 import {
@@ -214,6 +215,10 @@ export default async function Home() {
     );
   }
 
+  // Logged-in users land on the community feed, not a bare directory
+  redirect("/hot");
+
+  // Unreachable — kept only so TS doesn't complain about missing return
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6">

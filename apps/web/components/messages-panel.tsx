@@ -1024,9 +1024,9 @@ export function MessagesPanel() {
                   <div
                     role="button"
                     tabIndex={0}
-                    className={`cursor-pointer px-4 py-3 transition-colors ${
+                    className={`mx-2 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
                       t.id === activeThreadId
-                        ? "bg-[var(--gn-surface-muted)]"
+                        ? "bg-[var(--gn-surface-elevated)]"
                         : "hover:bg-[var(--gn-surface-hover)]"
                     }`}
                     onClick={() => void selectThread(t.id)}
@@ -1041,7 +1041,7 @@ export function MessagesPanel() {
                       <span className="relative mt-0.5 shrink-0">
                         <MiniAvatar
                           name={displayNameFor(t.peer.id, selfId, t.peer)}
-                          size={40}
+                          size={36}
                         />
                         {t.unread ? (
                           <span
@@ -1117,7 +1117,7 @@ export function MessagesPanel() {
                     </Link>
                     <span className="flex items-center gap-1.5 text-[10px] text-[var(--gn-text-muted)]">
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Growers Notebook member
+                      Direct message
                     </span>
                   </div>
                 </>
@@ -1134,8 +1134,8 @@ export function MessagesPanel() {
             <div
               ref={timelineRef}
               onScroll={onTimelineScroll}
-              className="gn-messages-timeline flex flex-1 flex-col gap-3 overflow-y-auto p-4"
-              style={{ minHeight: "260px", maxHeight: "clamp(260px, 50vh, 420px)" }}
+              className="gn-messages-timeline flex flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
+              style={{ minHeight: "260px", maxHeight: "clamp(260px, 60vh, 520px)" }}
             >
               {!activeThreadId ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
@@ -1425,7 +1425,7 @@ export function MessagesPanel() {
                   ) : null}
                 </div>
               ) : null}
-              <div className="flex items-center gap-2 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-2.5 transition-shadow focus-within:ring-1 focus-within:ring-[var(--gn-accent)]/40">
+              <div className="flex items-center gap-2 rounded-2xl bg-[var(--gn-surface-elevated)] px-4 py-2.5 ring-1 ring-[var(--gn-ring,var(--gn-border))] transition-shadow focus-within:ring-2 focus-within:ring-[var(--gn-accent)]/50">
                 {!activeThreadId ||
                 pendingAttachments.length >= DM_ATTACH_MAX ? (
                   <span

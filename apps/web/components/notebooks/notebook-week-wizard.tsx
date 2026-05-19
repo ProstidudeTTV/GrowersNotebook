@@ -503,33 +503,69 @@ export function NotebookWeekWizard({
                 />
               </div>
             ) : null}
-            {noteSlots.map((slot, i) => (
-              <div key={i}>
-                <label className={labelClass} htmlFor={`nw-notes-${i}`}>
-                  {i === 0
-                    ? "Primary note"
-                    : `Mid-week update ${i} (optional)`}
-                </label>
-                <textarea
-                  id={`nw-notes-${i}`}
-                  rows={i === 0 ? 5 : 4}
-                  value={slot.body}
-                  onChange={(e) =>
-                    setNoteSlots((prev) => {
-                      const next = [...prev];
-                      next[i] = { ...next[i], body: e.target.value };
-                      return next;
-                    })
-                  }
-                  placeholder={
-                    i === 0
-                      ? "What happened this week?"
-                      : "Anything that changed later in the week?"
-                  }
-                  className={`${textareaClass} mt-1`}
-                />
-              </div>
-            ))}
+            {noteSlots.map((slot, i) => {
+              const prompts =
+                i === 0
+                  ? [
+                      "How's the growth looking?",
+                      "Any issues or concerns?",
+                      "Smell / structure update",
+                      "Feeding changes this week",
+                    ]
+                  : ["Any mid-week changes?", "Spotted anything new?"];
+              return (
+                <div key={i}>
+                  <label className={labelClass} htmlFor={`nw-notes-${i}`}>
+                    {i === 0
+                      ? "Weekly journal entry"
+                      : `Mid-week update ${i} (optional)`}
+                  </label>
+                  {i === 0 && slot.body.length === 0 ? (
+                    <div className="mt-1 mb-1 flex flex-wrap gap-1.5">
+                      {prompts.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() =>
+                            setNoteSlots((prev) => {
+                              const next = [...prev];
+                              next[0] = {
+                                ...next[0],
+                                body: next[0].body
+                                  ? `${next[0].body}\n${p} `
+                                  : `${p} `,
+                              };
+                              return next;
+                            })
+                          }
+                          className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] hover:border-emerald-500/50 hover:text-emerald-500 transition-colors"
+                        >
+                          + {p}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  <textarea
+                    id={`nw-notes-${i}`}
+                    rows={i === 0 ? 5 : 3}
+                    value={slot.body}
+                    onChange={(e) =>
+                      setNoteSlots((prev) => {
+                        const next = [...prev];
+                        next[i] = { ...next[i], body: e.target.value };
+                        return next;
+                      })
+                    }
+                    placeholder={
+                      i === 0
+                        ? "What happened this week? Growth progress, observations, any issues, feeding notes..."
+                        : "Anything that changed later in the week?"
+                    }
+                    className={`${textareaClass} mt-1`}
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : null}
 

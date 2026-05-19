@@ -840,6 +840,44 @@ export function NotebookDetailClient({
         </section>
       )}
 
+      {/* "Suggest entry" banner — shown to owner when active notebook has weeks but no entry this week */}
+      {isOwner && nb.status === "active" && nb.weeks.length > 0 ? (() => {
+        const latestCreatedAt = nb.weeks.reduce((latest, w) => {
+          const t = w.createdAt ? new Date(w.createdAt).getTime() : 0;
+          return t > latest ? t : latest;
+        }, 0);
+        const daysSince = latestCreatedAt
+          ? Math.floor((Date.now() - latestCreatedAt) / 86_400_000)
+          : 999;
+        if (daysSince < 5) return null;
+        return (
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/40 bg-emerald-500/8 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📋</span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--gn-text)]">
+                  Time for a new entry!
+                </p>
+                <p className="text-xs text-[var(--gn-text-muted)]">
+                  It&apos;s been {daysSince} day{daysSince !== 1 ? "s" : ""} since your last log. Keep your grow journal up to date.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setWeekWizardMode("create");
+                setWeekEditTarget(null);
+                setWeekWizardOpen(true);
+              }}
+              className="shrink-0 rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 transition-colors"
+            >
+              Log week {nextWeekIndex}
+            </button>
+          </div>
+        );
+      })() : null}
+
       <section className="mt-5">
         <SectionHeading>Weeks</SectionHeading>
         {nb.weeks.length === 0 ? (

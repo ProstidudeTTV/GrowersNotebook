@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
+import { FeedSidebar } from "@/components/feed-sidebar";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
@@ -90,7 +91,7 @@ export default async function HotWeekPage({
       <p className="mt-1 text-sm text-[var(--gn-text-muted)]">{config.subheading}</p>
 
       {/* Time-range tab pills */}
-      <div className="flex gap-2 mt-5 mb-6">
+      <div className="flex gap-2 mt-4 mb-5">
         {(Object.entries(RANGE_CONFIG) as [ValidRange, (typeof RANGE_CONFIG)[ValidRange]][]).map(
           ([key, { label }]) => (
             <Link
@@ -108,48 +109,53 @@ export default async function HotWeekPage({
         )}
       </div>
 
-      {feed.items.length === 0 ? (
-        <div className="text-center py-10 gn-panel rounded-2xl">
-          <div className="text-4xl mb-3">🌿</div>
-          <h3 className="text-lg font-semibold text-[var(--gn-text-1)] mb-2">
-            No hot posts yet
-          </h3>
-          <p className="text-sm text-[var(--gn-text-2)] mb-6">
-            Be the first to start a discussion in a community.
-          </p>
-          <Link
-            href="/community"
-            className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Browse Communities
-          </Link>
-        </div>
-      ) : (
-        <div className="mt-6">
-          <FeedPostCardList items={feed.items} showRanks />
-        </div>
-      )}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          {feed.items.length === 0 ? (
+            <div className="text-center py-10 gn-panel rounded-2xl">
+              <div className="text-4xl mb-3">🌿</div>
+              <h3 className="text-lg font-semibold text-[var(--gn-text)] mb-2">
+                No hot posts yet
+              </h3>
+              <p className="text-sm text-[var(--gn-text-muted)] mb-5">
+                Be the first to start a discussion in a community.
+              </p>
+              <Link
+                href="/community"
+                className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Browse Communities
+              </Link>
+            </div>
+          ) : (
+            <FeedPostCardList items={feed.items} showRanks />
+          )}
 
-      {feed.total > feed.pageSize ? (
-        <div className="mt-6 flex justify-center gap-4 text-sm">
-          {page > 1 ? (
-            <Link
-              className="text-[var(--gn-accent)] hover:underline"
-              href={`/hot?range=${range}&page=${page - 1}`}
-            >
-              Previous
-            </Link>
-          ) : null}
-          {page * feed.pageSize < feed.total ? (
-            <Link
-              className="text-[var(--gn-accent)] hover:underline"
-              href={`/hot?range=${range}&page=${page + 1}`}
-            >
-              Next
-            </Link>
+          {feed.total > feed.pageSize ? (
+            <div className="mt-6 flex justify-center gap-4 text-sm">
+              {page > 1 ? (
+                <Link
+                  className="text-[var(--gn-accent)] hover:underline"
+                  href={`/hot?range=${range}&page=${page - 1}`}
+                >
+                  Previous
+                </Link>
+              ) : null}
+              {page * feed.pageSize < feed.total ? (
+                <Link
+                  className="text-[var(--gn-accent)] hover:underline"
+                  href={`/hot?range=${range}&page=${page + 1}`}
+                >
+                  Next
+                </Link>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      ) : null}
+        <div className="w-full shrink-0 lg:w-72">
+          <FeedSidebar hideHotPosts />
+        </div>
+      </div>
     </main>
   );
 }

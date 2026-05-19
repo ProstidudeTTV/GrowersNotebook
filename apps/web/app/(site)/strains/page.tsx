@@ -192,17 +192,28 @@ export default async function StrainsPage({
 
   return (
     <main className="w-full max-w-none px-3 py-5 sm:px-4 sm:py-6 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-10 2xl:pl-5 2xl:pr-14">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-        <div className="min-w-0 lg:max-w-xl">
-          <h1 className="text-xl font-bold tracking-tight text-[var(--gn-text)] sm:text-2xl">
-            Strains
+      {/* Hero header */}
+      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950 via-purple-900/60 to-[var(--gn-surface-elevated)] p-6 sm:p-8">
+        <div className="relative z-10">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-violet-300">
+            🧬 Strain Database
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+            Explore Cultivars
           </h1>
-          <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-            Cultivars and strains — reference entries and community ratings.
-            Staff curate the catalog.
+          <p className="mt-2 max-w-lg text-sm text-white/70">
+            {data.total > 0
+              ? `${data.total} strains in the catalog`
+              : "Reference entries with community ratings — grown by real growers."}
           </p>
         </div>
+        <div className="pointer-events-none absolute right-4 top-4 select-none text-8xl opacity-10">
+          🧬
+        </div>
+      </div>
 
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+        <div className="min-w-0" />
         <StrainsCatalogToolbar
           breederLabelResolved={filterBreederName}
           totalPages={totalPages}
@@ -251,41 +262,63 @@ export default async function StrainsPage({
             No strains match yet. Check back as the catalog grows.
           </li>
         ) : (
-          data.items.map((s) => (
-            <li key={s.id} className="min-w-0">
-              <Link
-                href={strainPreviewPath(s.slug, listPreview)}
-                scroll={false}
-                className="block h-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[var(--gn-accent)] sm:text-base">
-                    {s.name}
-                  </h2>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      <StrainChemotypeBadge chemotype={s.chemotype} size="sm" />
-                      {s.isAutoflower ? <StrainAutoflowerBadge size="sm" /> : null}
+          data.items.map((s) => {
+            const chemotypeLower = s.chemotype?.toLowerCase() ?? "";
+            const accentStrip =
+              chemotypeLower === "indica"
+                ? "bg-gradient-to-r from-violet-600/80 to-purple-800/40"
+                : chemotypeLower === "sativa"
+                  ? "bg-gradient-to-r from-amber-500/80 to-yellow-700/40"
+                  : chemotypeLower === "hybrid"
+                    ? "bg-gradient-to-r from-emerald-600/80 to-teal-800/40"
+                    : "bg-gradient-to-r from-gray-600/50 to-gray-800/30";
+            return (
+              <li key={s.id} className="min-w-0">
+                <Link
+                  href={strainPreviewPath(s.slug, listPreview)}
+                  scroll={false}
+                  className="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-sm transition-all hover:scale-[1.02] hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] hover:shadow-md"
+                >
+                  {/* Chemotype accent strip */}
+                  <div className={`h-1.5 w-full ${accentStrip}`} />
+                  <div className="flex flex-1 flex-col p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="min-w-0 flex-1 text-sm font-bold leading-snug text-[var(--gn-text)] group-hover:text-[var(--gn-accent)] sm:text-base">
+                        {s.name}
+                      </h2>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <div className="flex flex-wrap justify-end gap-1">
+                          <StrainChemotypeBadge chemotype={s.chemotype} size="sm" />
+                          {s.isAutoflower ? <StrainAutoflowerBadge size="sm" /> : null}
+                        </div>
+                      </div>
                     </div>
-                    <StarDisplay
-                      avg={s.avgRating}
-                      count={s.reviewCount}
-                      compact
-                    />
+                    {s.genetics?.trim() ? (
+                      <p className="mt-1 text-[11px] text-[var(--gn-text-muted)]">
+                        {s.genetics.trim()}
+                      </p>
+                    ) : null}
+                    <div className="mt-1.5">
+                      <StarDisplay
+                        avg={s.avgRating}
+                        count={s.reviewCount}
+                        compact
+                      />
+                    </div>
+                    {s.description?.trim() ? (
+                      <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+                        {s.description.trim()}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                        View details…
+                      </p>
+                    )}
                   </div>
-                </div>
-                {s.description?.trim() ? (
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-3 sm:text-sm">
-                    {s.description.trim()}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-                    View details…
-                  </p>
-                )}
-              </Link>
-            </li>
-          ))
+                </Link>
+              </li>
+            );
+          })
         )}
       </ul>
 

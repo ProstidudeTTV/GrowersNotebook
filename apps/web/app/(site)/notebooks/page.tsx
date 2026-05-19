@@ -242,20 +242,31 @@ export default async function NotebooksDirectoryPage({
           )}
         </aside>
 
-        {/* Center: directory (unchanged) */}
+        {/* Center: directory */}
         <div className="order-1 lg:order-2 min-w-0">
-          <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-            Notebooks
-          </h1>
-          <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-            Public notebooks shared by the community.
-          </p>
-          <Link
-            href="/notebooks/new"
-            className="mt-6 inline-flex rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
-          >
-            Set up your notebook
-          </Link>
+          {/* Hero header */}
+          <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-green-900/60 to-[var(--gn-surface-elevated)] p-6 sm:p-8">
+            <div className="relative z-10">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-300">
+                📓 Grow Journals
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Notebooks
+              </h1>
+              <p className="mt-2 max-w-lg text-sm text-white/70">
+                Public grow journals shared by the community — from seed to harvest.
+              </p>
+              <Link
+                href="/notebooks/new"
+                className="mt-4 inline-flex rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-black shadow-sm transition hover:brightness-110"
+              >
+                Start your notebook →
+              </Link>
+            </div>
+            <div className="pointer-events-none absolute right-4 top-4 select-none text-8xl opacity-10">
+              📓
+            </div>
+          </div>
 
           <form
             method="get"
@@ -345,7 +356,7 @@ export default async function NotebooksDirectoryPage({
             </div>
           </form>
 
-          <ul className="mt-8 space-y-4">
+          <ul className="mt-6 space-y-4">
             {data.items.map((n) => {
               const growerName =
                 n.owner.displayName?.trim() || "Grower";
@@ -354,22 +365,30 @@ export default async function NotebooksDirectoryPage({
                 n.customStrainLabel?.trim() ||
                 null;
               const notebookHref = `/notebooks/${encodeURIComponent(n.id)}`;
+              const statusStrip =
+                n.status === "active"
+                  ? "bg-gradient-to-r from-emerald-600/70 to-teal-800/30"
+                  : n.status === "completed"
+                    ? "bg-gradient-to-r from-sky-600/70 to-blue-800/30"
+                    : "bg-gradient-to-r from-gray-600/50 to-gray-800/20";
               return (
                 <li key={n.id}>
-                  <article className="group relative rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-4 shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
+                  <article className="group relative overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
+                    {/* Status accent strip */}
+                    <div className={`h-1 w-full ${statusStrip}`} />
                     <Link
                       href={notebookHref}
                       className="absolute inset-0 z-10 rounded-2xl outline-none ring-[var(--gn-accent)] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
                       aria-label={`Open notebook: ${n.title}`}
                     />
-                    <div className="pointer-events-none relative z-20 flex gap-3 sm:gap-4">
+                    <div className="pointer-events-none relative z-20 flex gap-3 p-4 sm:gap-4">
                       <NotebookCardAvatar
                         avatarUrl={n.owner.avatarUrl}
                         displayName={n.owner.displayName}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="text-base font-semibold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
+                          <p className="text-base font-bold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
                             {n.title}
                           </p>
                           <span
@@ -391,12 +410,12 @@ export default async function NotebooksDirectoryPage({
                               {n.strain?.slug ? (
                                 <Link
                                   href={`/strains/${encodeURIComponent(n.strain.slug)}`}
-                                  className="relative z-30 inline pointer-events-auto hover:text-[var(--gn-accent)] hover:underline"
+                                  className="relative z-30 inline pointer-events-auto text-[var(--gn-accent)] hover:underline"
                                 >
                                   {strainLabel}
                                 </Link>
                               ) : (
-                                strainLabel
+                                <span className="text-[var(--gn-text)]">{strainLabel}</span>
                               )}
                             </>
                           ) : null}
@@ -412,10 +431,10 @@ export default async function NotebooksDirectoryPage({
                             </>
                           ) : null}
                         </p>
-                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--gn-text-muted)]">
-                          <span>
-                            Score{" "}
-                            <span className="font-medium text-[var(--gn-text)]">
+                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--gn-text-muted)]">
+                          <span className="inline-flex items-center gap-1">
+                            <span>Score</span>
+                            <span className="font-semibold text-[var(--gn-text)]">
                               {n.score}
                             </span>
                           </span>

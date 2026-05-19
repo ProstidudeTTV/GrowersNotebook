@@ -123,16 +123,28 @@ export default async function BreedersPage({
 
   return (
     <main className="w-full max-w-none px-3 py-5 sm:px-4 sm:py-6 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-10 2xl:pl-5 2xl:pr-14">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-        <div className="min-w-0 lg:max-w-xl">
-          <h1 className="text-xl font-bold tracking-tight text-[var(--gn-text)] sm:text-2xl">
-            Breeders
+      {/* Hero header */}
+      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-950 via-orange-900/60 to-[var(--gn-surface-elevated)] p-6 sm:p-8">
+        <div className="relative z-10">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
+            🏆 Breeder Catalog
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+            Top Breeders
           </h1>
-          <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-            Strain breeders with community ratings. Curated by staff.
+          <p className="mt-2 text-sm text-white/70">
+            {data.total > 0
+              ? `${data.total} breeders in the directory`
+              : "Explore genetics from the world's best seed companies."}
           </p>
         </div>
+        <div className="pointer-events-none absolute right-4 top-4 select-none text-8xl opacity-10">
+          🏆
+        </div>
+      </div>
 
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+        <div className="min-w-0" />
         <BreedersCatalogToolbar />
       </div>
 
@@ -147,27 +159,34 @@ export default async function BreedersPage({
               <Link
                 href={breederPreviewPath(b.slug, listPreview)}
                 scroll={false}
-                className="block h-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-4"
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-sm transition-all hover:scale-[1.02] hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] hover:shadow-md"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[var(--gn-accent)] sm:text-base">
+                {/* Amber accent strip */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-amber-500/80 to-yellow-700/40" />
+                <div className="flex flex-1 flex-col p-3 sm:p-4">
+                  <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 text-lg">
+                    🏆
+                  </div>
+                  <h2 className="min-w-0 text-sm font-bold leading-snug text-[var(--gn-text)] group-hover:text-[var(--gn-accent)] sm:text-base">
                     {b.name}
                   </h2>
-                  <StarDisplay
-                    avg={b.avgRating}
-                    count={b.reviewCount}
-                    compact
-                  />
+                  <div className="mt-1.5">
+                    <StarDisplay
+                      avg={b.avgRating}
+                      count={b.reviewCount}
+                      compact
+                    />
+                  </div>
+                  {b.description?.trim() ? (
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+                      {b.description.trim()}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                      View profile…
+                    </p>
+                  )}
                 </div>
-                {b.description?.trim() ? (
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--gn-text-muted)] sm:mt-3 sm:text-sm">
-                    {b.description.trim()}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-[var(--gn-text-muted)] sm:text-sm">
-                    View profile…
-                  </p>
-                )}
               </Link>
             </li>
           ))

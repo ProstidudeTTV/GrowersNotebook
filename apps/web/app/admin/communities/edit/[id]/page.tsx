@@ -1,7 +1,16 @@
 "use client";
 
 import { Edit, useForm } from "@refinedev/antd";
-import { Button, Form, Input, message, Select, Space, Typography } from "antd";
+import {
+  Button,
+  Divider,
+  Form,
+  Input,
+  message,
+  Select,
+  Space,
+  Typography,
+} from "antd";
 import {
   COMMUNITY_ICON_KEYS,
   COMMUNITY_ICON_LABELS,
@@ -22,6 +31,7 @@ export default function AdminCommunityEditPage() {
   });
 
   const bannerUrl = Form.useWatch<string | null | undefined>("bannerUrl", form);
+  const iconUrl = Form.useWatch<string | null | undefined>("iconUrl", form);
   const slug = Form.useWatch<string | undefined>("slug", form);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -59,26 +69,55 @@ export default function AdminCommunityEditPage() {
       )}
     >
       <Form {...formProps} form={form} layout="vertical">
+        {/* ── Basic Info ── */}
+        <Divider orientation="left" orientationMargin={0}>
+          <Typography.Text
+            type="secondary"
+            className="text-xs font-bold uppercase tracking-widest"
+          >
+            Basic Info
+          </Typography.Text>
+        </Divider>
+
         <Paragraph type="secondary">
           Slug cannot be changed after creation (URLs and links depend on it).
         </Paragraph>
+
         <Form.Item label="Slug" name="slug">
           <Input disabled />
         </Form.Item>
+
         <Form.Item
           label="Name"
           name="name"
           rules={[{ required: true, min: 2, max: 120 }]}
         >
-          <Input />
+          <Input placeholder="Display name" />
         </Form.Item>
+
         <Form.Item label="Description" name="description">
-          <Input.TextArea rows={6} maxLength={2000} showCount />
+          <Input.TextArea
+            rows={6}
+            maxLength={2000}
+            showCount
+            placeholder="What is this community about?"
+          />
         </Form.Item>
+
+        {/* ── Appearance ── */}
+        <Divider orientation="left" orientationMargin={0} className="!mt-8">
+          <Typography.Text
+            type="secondary"
+            className="text-xs font-bold uppercase tracking-widest"
+          >
+            Appearance
+          </Typography.Text>
+        </Divider>
+
         <Form.Item
-          label="Icon"
+          label="Icon style"
           name="iconKey"
-          extra="Optional — directory, guest landing, sidebar."
+          extra="Optional predefined icon — directory, guest landing, sidebar."
         >
           <Select
             allowClear
@@ -91,8 +130,35 @@ export default function AdminCommunityEditPage() {
         </Form.Item>
 
         <Form.Item
+          label="Icon image URL"
+          name="iconUrl"
+          extra="Optional custom icon image URL. Recommended: square, at least 128×128px."
+        >
+          <Space direction="vertical" size="small" style={{ width: "100%" }}>
+            <Input
+              placeholder="https://… (e.g. from Supabase Storage)"
+              allowClear
+            />
+            {iconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={iconUrl}
+                alt="Icon preview"
+                style={{
+                  width: 64,
+                  height: 64,
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                  border: "2px solid #303030",
+                }}
+              />
+            ) : null}
+          </Space>
+        </Form.Item>
+
+        <Form.Item
           label="Community Banner"
-          extra="Wide hero image shown on the community page. JPEG / PNG / WebP / GIF, max 5 MB. Leave empty to use no banner."
+          extra="Wide hero image shown on the community page. JPEG / PNG / WebP / GIF, max 5 MB. Leave empty for no banner."
         >
           <Space direction="vertical" size="middle" style={{ width: "100%" }}>
             {bannerUrl ? (
@@ -139,12 +205,19 @@ export default function AdminCommunityEditPage() {
                 <Typography.Text type="secondary">Uploading…</Typography.Text>
               ) : null}
             </Space>
+            <Typography.Text type="secondary" className="text-xs">
+              Tip: Upload images to Supabase Storage and paste the public URL
+              into the icon URL field above, or use the file picker here for the
+              banner.
+            </Typography.Text>
           </Space>
         </Form.Item>
         <Form.Item name="bannerUrl" hidden>
           <Input />
         </Form.Item>
 
+        {/* ── Submit ── */}
+        <Divider className="!mt-8" />
         <Form.Item>
           <Button type="primary" htmlType="submit" {...saveButtonProps}>
             Save changes

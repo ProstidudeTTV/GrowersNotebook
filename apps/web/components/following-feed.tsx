@@ -184,26 +184,33 @@ export function FollowingFeed({
           onRetry={() => window.location.reload()}
         />
       ) : items.length === 0 ? (
-        <div className="text-center py-8 gn-panel rounded-2xl">
-          <div className="text-4xl mb-3">🌱</div>
-          <h3 className="text-lg font-semibold text-[var(--gn-text-1)] mb-2">
-            Your feed is empty
-          </h3>
-          <p className="text-sm text-[var(--gn-text-2)] mb-6 max-w-xs mx-auto">
-            Follow some growers or join communities to see their posts here.
-          </p>
-          <div className="flex gap-3 justify-center flex-wrap">
+        <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]">
+          {/* Gradient banner */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-green-900/80 to-teal-950 px-6 py-10 text-center">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-green-400/10 blur-2xl" />
+            <div className="relative">
+              <div className="mb-3 text-5xl">🌿</div>
+              <h3 className="text-xl font-extrabold tracking-tight text-white">
+                Your feed is waiting
+              </h3>
+              <p className="mx-auto mt-2 max-w-xs text-sm text-white/70">
+                Follow communities to build your personalized grow feed.
+              </p>
+            </div>
+          </div>
+          {/* CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-5">
             <Link
               href="/community"
-              className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
             >
-              Browse Communities
+              🌿 Discover Communities
             </Link>
             <Link
               href="/hot"
-              className="inline-flex items-center gap-2 bg-[var(--gn-surface-2)] text-[var(--gn-text-1)] border border-[var(--gn-divide)] rounded-full px-5 py-2 text-sm font-medium hover:bg-[var(--gn-surface-3)] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
             >
-              See What&apos;s Hot
+              🔥 What&apos;s Hot
             </Link>
           </div>
         </div>

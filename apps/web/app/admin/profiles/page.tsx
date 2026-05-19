@@ -2,10 +2,13 @@
 
 import { EditButton, List, useTable } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
-import { Select, Space, Table, Tag } from "antd";
+import { Avatar, message, Select, Space, Table, Tag, Tooltip } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
+import {
+  adminClickableRowTo,
+  stopAdminRowClick,
+} from "@/lib/admin-clickable-table-row";
 import { RefineHiddenSearchForm } from "../refine-hidden-search-form";
 
 function roleTag(role: string) {
@@ -91,8 +94,55 @@ export default function AdminProfilesPage() {
           )
         }
       >
-        <Table.Column dataIndex="id" title="User ID" ellipsis />
-        <Table.Column dataIndex="displayName" title="Display name" />
+        <Table.Column<BaseRecord>
+          title=""
+          width={48}
+          render={(_, record) => {
+            const avatarUrl = record.avatarUrl as string | null | undefined;
+            const name = String(record.displayName ?? record.id ?? "?");
+            return avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={name}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <Avatar size={32} style={{ backgroundColor: "#15803d", fontWeight: 600 }}>
+                {name.charAt(0).toUpperCase()}
+              </Avatar>
+            );
+          }}
+        />
+        <Table.Column<BaseRecord>
+          title="User"
+          render={(_, record) => (
+            <div>
+              <p className="font-medium leading-tight">
+                {String(record.displayName ?? "—")}
+              </p>
+              <Tooltip title="Click to copy ID">
+                <code
+                  className="cursor-pointer text-xs text-neutral-500 hover:text-neutral-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void navigator.clipboard
+                      .writeText(String(record.id))
+                      .then(() => void message.success("ID copied"));
+                  }}
+                >
+                  {String(record.id).slice(0, 8)}…
+                </code>
+              </Tooltip>
+            </div>
+          )}
+        />
         <Table.Column
           dataIndex="role"
           title="Role"
@@ -121,7 +171,7 @@ export default function AdminProfilesPage() {
                   className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
                   onClick={stopAdminRowClick}
                 >
-                  View Profile →
+                  View →
                 </a>
                 <EditButton
                   hideText

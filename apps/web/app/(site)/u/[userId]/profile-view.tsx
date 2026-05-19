@@ -75,12 +75,23 @@ function getTierInfo(tier: string | null): { emoji: string; label: string } {
   return { emoji: "🌱", label: tier };
 }
 
-const tabClass = (active: boolean) =>
-  `rounded-full px-5 py-2 text-sm font-semibold transition ${
-    active
-      ? "bg-[var(--gn-accent)] text-white shadow-sm"
-      : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
-  }`;
+/** Stable color from first char — matches community-icon hashing approach */
+const AVATAR_COLORS = [
+  "from-emerald-700 to-green-600",
+  "from-teal-700 to-cyan-600",
+  "from-sky-700 to-blue-600",
+  "from-violet-700 to-purple-600",
+  "from-amber-600 to-yellow-500",
+  "from-fuchsia-700 to-pink-600",
+  "from-rose-700 to-red-600",
+  "from-indigo-700 to-blue-600",
+  "from-lime-600 to-green-500",
+  "from-cyan-700 to-sky-600",
+];
+function avatarGradient(name: string): string {
+  const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx] ?? "from-emerald-700 to-green-600";
+}
 
 export function ProfileView({
   profile: initialProfile,
@@ -238,16 +249,59 @@ export function ProfileView({
 
   const feedHidden = !!profile.profileFeedHiddenFromViewer;
   const { emoji: tierEmoji, label: tierLabel } = getTierInfo(tier);
+  const avatarGrad = avatarGradient(profileLabel);
+
+  const tabItems = [
+    { id: "posts", label: "Posts", count: postsTotal },
+    { id: "comments", label: "Comments", count: null },
+    { id: "notebooks", label: "Journals", count: notebooksTotal },
+    { id: "media", label: "Media", count: null },
+  ] as const;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl pb-16">
 
-      {/* ── Profile header card ──────────────────────────────────────── */}
-      <div className="gn-card overflow-hidden">
-        {/* Top: avatar + name + actions row */}
-        <div className="flex flex-wrap items-start gap-5 p-6">
-          {/* Large avatar */}
-          <span className="flex h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-4 ring-[var(--gn-divide)] sm:h-28 sm:w-28">
+      {/* ── Cover Banner ─────────────────────────────────────────────── */}
+      <div className="relative h-40 w-full overflow-hidden sm:h-52">
+        {profile.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.bannerUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-green-900 to-teal-900">
+            {/* Subtle organic dot / vine pattern overlay */}
+            <svg
+              className="absolute inset-0 h-full w-full opacity-[0.07]"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <pattern id="leaf-dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <circle cx="10" cy="10" r="1.5" fill="white" />
+                  <circle cx="30" cy="30" r="1" fill="white" />
+                  <path d="M20 5 Q25 15 20 25 Q15 15 20 5Z" fill="none" stroke="white" strokeWidth="0.8" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#leaf-dots)" />
+            </svg>
+            {/* Radial glow from top-right */}
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-green-400/10 blur-3xl" />
+          </div>
+        )}
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
+      </div>
+
+      {/* ── Profile identity block ────────────────────────────────────── */}
+      <div className="relative bg-[var(--gn-surface-raised)] px-5 sm:px-8 pb-0">
+        {/* Avatar — breaks out of banner into this section */}
+        <div className="absolute -top-10 left-5 sm:left-8 z-10">
+          <span
+            className={`flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-4 ring-[var(--gn-surface-raised)] shadow-2xl bg-gradient-to-br ${avatarGrad}`}
+          >
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -257,107 +311,76 @@ export function ProfileView({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-text-muted)] sm:text-4xl">
+              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-white/90">
                 {profileLabel.charAt(0).toUpperCase() || "?"}
               </span>
             )}
           </span>
-
-          {/* Name + tier + bio */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-[var(--gn-text)] sm:text-3xl">
-                  {profileLabel}
-                </h1>
-                {!statsHidden && (
-                  <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
-                    {tierEmoji} {tierLabel}
-                  </span>
-                )}
-              </div>
-              {viewerId ? (
-                <CommentActionMenu ariaLabel="Profile actions">
-                  {isOwn ? (
-                    <MenuRow onClick={() => router.push("/settings/profile")}>
-                      Edit profile
-                    </MenuRow>
-                  ) : (
-                    <>
-                      <MenuRow
-                        danger
-                        disabled={blockBusy}
-                        onClick={() => {
-                          setReportNotice(null);
-                          void toggleBlock();
-                        }}
-                      >
-                        {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
-                      </MenuRow>
-                      <MenuRow
-                        danger
-                        onClick={() => {
-                          setReportNotice(null);
-                          setReportOpen(true);
-                        }}
-                      >
-                        Report user
-                      </MenuRow>
-                    </>
-                  )}
-                </CommentActionMenu>
-              ) : null}
-            </div>
-
-            {bio ? (
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
-                {bio}
-              </p>
-            ) : null}
-          </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-6 py-3">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-            <span>
-              <strong className="font-semibold text-[var(--gn-text)]">
-                {postsTotal}
-              </strong>{" "}
-              <span className="text-[var(--gn-text-muted)]">posts</span>
-            </span>
-            <span>
-              <strong className="font-semibold text-[var(--gn-text)]">
-                {commentsTotal}
-              </strong>{" "}
-              <span className="text-[var(--gn-text-muted)]">comments</span>
-            </span>
-            <span>
-              <strong className="font-semibold text-[var(--gn-text)]">
-                {profile.followerCount ?? 0}
-              </strong>{" "}
-              <span className="text-[var(--gn-text-muted)]">followers</span>
-            </span>
-            <span>
-              <strong className="font-semibold text-[var(--gn-text)]">
-                {profile.followingCount ?? 0}
-              </strong>{" "}
-              <span className="text-[var(--gn-text-muted)]">following</span>
-            </span>
+        {/* Right-side action row (positioned top-right while avatar floats left) */}
+        <div className="flex justify-end pt-3 pb-2 min-h-[3rem]">
+          {viewerId ? (
+            <CommentActionMenu ariaLabel="Profile actions">
+              {isOwn ? (
+                <MenuRow onClick={() => router.push("/settings/profile")}>
+                  Edit profile
+                </MenuRow>
+              ) : (
+                <>
+                  <MenuRow
+                    danger
+                    disabled={blockBusy}
+                    onClick={() => {
+                      setReportNotice(null);
+                      void toggleBlock();
+                    }}
+                  >
+                    {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
+                  </MenuRow>
+                  <MenuRow
+                    danger
+                    onClick={() => {
+                      setReportNotice(null);
+                      setReportOpen(true);
+                    }}
+                  >
+                    Report user
+                  </MenuRow>
+                </>
+              )}
+            </CommentActionMenu>
+          ) : null}
+        </div>
+
+        {/* Name + badges + bio */}
+        <div className="pt-8 pb-4">
+          <div className="flex flex-wrap items-start gap-2">
+            <h1 className="text-2xl font-extrabold tracking-tight text-[var(--gn-text)] sm:text-3xl">
+              {profileLabel}
+            </h1>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {!statsHidden && (
-              <span className="flex items-center gap-1">
-                <span>🌰</span>
-                <strong className="font-semibold text-[var(--gn-text)]">
-                  {formatSeeds(profile.seeds)}
-                </strong>{" "}
-                <span className="text-[var(--gn-text-muted)]">seeds</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
+                {tierEmoji} {tierLabel}
+              </span>
+            )}
+            {!statsHidden && profile.seeds != null && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-0.5 text-xs font-semibold text-amber-400 dark:text-amber-300">
+                🌱 {formatSeeds(profile.seeds)} Seeds
               </span>
             )}
           </div>
+          {bio ? (
+            <p className="mt-3 max-w-prose whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
+              {bio}
+            </p>
+          ) : null}
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-3 px-6 py-4">
+        <div className="flex flex-wrap items-center gap-3 pb-4">
           {!isOwn ? (
             <>
               {viewerId && profile.viewerHasBlocked !== true ? (
@@ -399,7 +422,7 @@ export function ProfileView({
                 href={buildPostsHref({ tab: "notebooks", page: 1 })}
                 className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
               >
-                📔 Notebooks
+                📔 Journals
               </Link>
             </>
           )}
@@ -407,7 +430,7 @@ export function ProfileView({
 
         {/* Report form */}
         {!isOwn && reportOpen ? (
-          <div className="mx-6 mb-4 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+          <div className="mb-4 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
             <p className="text-xs text-[var(--gn-text-muted)]">
               Moderators review reports in the admin area. Add context (optional).
             </p>
@@ -446,287 +469,425 @@ export function ProfileView({
 
         {reportNotice ? (
           <p
-            className={`mx-6 mb-4 text-sm ${reportNotice.tone === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
+            className={`mb-4 text-sm ${reportNotice.tone === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
           >
             {reportNotice.text}
           </p>
         ) : null}
-      </div>
 
-      {/* ── Pill tab bar ─────────────────────────────────────────────── */}
-      <div className="mt-6 flex items-center gap-1 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1.5">
-        <Link
-          href={buildPostsHref({ tab: "posts", sort: activeSort })}
-          className={tabClass(activeTab === "posts")}
-        >
-          Posts
-          {postsTotal > 0 && (
-            <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold ${activeTab === "posts" ? "bg-white/20 text-white" : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]"}`}>
+        {/* ── Stats strip ──────────────────────────────────────────────── */}
+        <div className="border-t border-[var(--gn-divide)] py-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
               {postsTotal}
-            </span>
-          )}
-        </Link>
-        <Link
-          href={buildPostsHref({ tab: "comments" })}
-          className={tabClass(activeTab === "comments")}
-        >
-          Comments
-        </Link>
-        <Link
-          href={buildPostsHref({ tab: "notebooks" })}
-          className={tabClass(activeTab === "notebooks")}
-        >
-          Notebooks
-        </Link>
-        <Link
-          href={buildPostsHref({ tab: "media" })}
-          className={tabClass(activeTab === "media")}
-        >
-          Media
-        </Link>
+            </strong>
+            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">posts</span>
+          </span>
+          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+              {commentsTotal}
+            </strong>
+            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">comments</span>
+          </span>
+          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+              {profile.followerCount ?? 0}
+            </strong>
+            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">followers</span>
+          </span>
+          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+              {profile.followingCount ?? 0}
+            </strong>
+            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">following</span>
+          </span>
+        </div>
       </div>
 
-      {/* ── Tab content ──────────────────────────────────────────────── */}
-      {activeTab === "posts" ? (
-        <div className="mt-5 space-y-4">
-          {feedHidden ? (
-            <div className="py-16 text-center">
-              <div className="text-4xl mb-3">🔒</div>
-              <p className="text-[var(--gn-text-muted)]">No posts here to see!</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                  Sort:
-                </span>
-                <Link
-                  href={buildPostsHref({ tab: "posts", sort: "new", page: 1 })}
-                  className={
-                    activeSort === "new"
-                      ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
-                      : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
-                  }
-                >
-                  New
-                </Link>
-                <Link
-                  href={buildPostsHref({ tab: "posts", sort: "top", page: 1 })}
-                  className={
-                    activeSort === "top"
-                      ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
-                      : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
-                  }
-                >
-                  Top
-                </Link>
-              </div>
-              {posts.length === 0 ? (
+      {/* ── Tab navigation ───────────────────────────────────────────── */}
+      <div className="sticky top-14 z-10 border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-5 sm:px-8">
+        <div className="-mb-px flex gap-0.5">
+          {tabItems.map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <Link
+                key={t.id}
+                href={buildPostsHref({ tab: t.id, sort: activeSort })}
+                className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "text-[var(--gn-accent)] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-[var(--gn-accent)]"
+                    : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
+                }`}
+              >
+                {t.label}
+                {t.count != null && t.count > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold leading-none ${
+                      isActive
+                        ? "bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]"
+                        : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]"
+                    }`}
+                  >
+                    {t.count}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Two-column content area ───────────────────────────────────── */}
+      <div className="px-4 pt-5 lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
+
+        {/* Main content */}
+        <div className="min-w-0">
+          {activeTab === "posts" ? (
+            <div className="space-y-4">
+              {feedHidden ? (
                 <div className="py-16 text-center">
-                  <div className="text-4xl mb-3">✍️</div>
-                  <p className="text-sm text-[var(--gn-text-muted)]">No posts shared yet.</p>
+                  <div className="text-4xl mb-3">🔒</div>
+                  <p className="text-[var(--gn-text-muted)]">No posts here to see!</p>
                 </div>
               ) : (
-                <FeedPostCardList items={posts} />
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+                      Sort:
+                    </span>
+                    <Link
+                      href={buildPostsHref({ tab: "posts", sort: "new", page: 1 })}
+                      className={
+                        activeSort === "new"
+                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                          : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
+                      }
+                    >
+                      New
+                    </Link>
+                    <Link
+                      href={buildPostsHref({ tab: "posts", sort: "top", page: 1 })}
+                      className={
+                        activeSort === "top"
+                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                          : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
+                      }
+                    >
+                      Top
+                    </Link>
+                  </div>
+                  {posts.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="text-4xl mb-3">✍️</div>
+                      <p className="text-sm text-[var(--gn-text-muted)]">No posts shared yet.</p>
+                    </div>
+                  ) : (
+                    <FeedPostCardList items={posts} />
+                  )}
+                  {postsTotal > postsPageSize ? (
+                    <div className="flex gap-4 text-sm">
+                      {postsPage > 1 ? (
+                        <Link
+                          href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage - 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
+                        >
+                          ← Previous
+                        </Link>
+                      ) : null}
+                      {postsPage * postsPageSize < postsTotal ? (
+                        <Link
+                          href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage + 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
+                        >
+                          Next →
+                        </Link>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
               )}
-              {postsTotal > postsPageSize ? (
-                <div className="flex gap-4 text-sm">
-                  {postsPage > 1 ? (
-                    <Link
-                      href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage - 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      ← Previous
-                    </Link>
-                  ) : null}
-                  {postsPage * postsPageSize < postsTotal ? (
-                    <Link
-                      href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage + 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      Next →
-                    </Link>
-                  ) : null}
+            </div>
+          ) : activeTab === "media" ? (
+            (() => {
+              const mediaPosts = posts.filter(
+                (p) => p.media && p.media.some((m) => m.type === "image"),
+              );
+              const imageItems = mediaPosts.flatMap(
+                (p) =>
+                  (p.media ?? [])
+                    .filter((m) => m.type === "image")
+                    .map((m) => ({ url: m.url, postId: p.id, title: p.title })),
+              );
+              return (
+                <div>
+                  {feedHidden ? (
+                    <div className="py-16 text-center">
+                      <div className="text-4xl mb-3">🔒</div>
+                      <p className="text-sm text-[var(--gn-text-muted)]">Nothing to see here!</p>
+                    </div>
+                  ) : imageItems.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="text-4xl mb-3">🌿</div>
+                      <p className="text-sm text-[var(--gn-text-muted)]">No photos shared yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {imageItems.map((item, i) => (
+                        <Link
+                          key={`${item.postId}-${i}`}
+                          href={`/p/${item.postId}`}
+                          className="block aspect-square overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] transition hover:opacity-90"
+                          title={item.title}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.url}
+                            alt={item.title}
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      ) : activeTab === "media" ? (
-        (() => {
-          const mediaPosts = posts.filter(
-            (p) => p.media && p.media.some((m) => m.type === "image"),
-          );
-          const imageItems = mediaPosts.flatMap(
-            (p) =>
-              (p.media ?? [])
-                .filter((m) => m.type === "image")
-                .map((m) => ({ url: m.url, postId: p.id, title: p.title })),
-          );
-          return (
-            <div className="mt-5">
+              );
+            })()
+          ) : activeTab === "comments" ? (
+            <div className="space-y-3">
+              {feedHidden ? (
+                <div className="py-16 text-center">
+                  <div className="text-4xl mb-3">🔒</div>
+                  <p className="text-sm text-[var(--gn-text-muted)]">No comments here to see!</p>
+                </div>
+              ) : (
+                <>
+                  {commentItems.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="text-4xl mb-3">💬</div>
+                      <p className="text-sm text-[var(--gn-text-muted)]">No comments yet.</p>
+                    </div>
+                  ) : (
+                    <ProfileCommentsList
+                      items={commentItems}
+                      profileUserId={uid}
+                      profileLabel={profileLabel}
+                    />
+                  )}
+                  {commentsTotal > commentsPageSize ? (
+                    <div className="flex gap-4 text-sm">
+                      {commentsPage > 1 ? (
+                        <Link
+                          href={buildPostsHref({ tab: "comments", page: commentsPage - 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
+                        >
+                          ← Previous
+                        </Link>
+                      ) : null}
+                      {commentsPage * commentsPageSize < commentsTotal ? (
+                        <Link
+                          href={buildPostsHref({ tab: "comments", page: commentsPage + 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
+                        >
+                          Next →
+                        </Link>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : (
+            /* Notebooks tab */
+            <div className="space-y-4">
               {feedHidden ? (
                 <div className="py-16 text-center">
                   <div className="text-4xl mb-3">🔒</div>
                   <p className="text-sm text-[var(--gn-text-muted)]">Nothing to see here!</p>
                 </div>
-              ) : imageItems.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="text-4xl mb-3">🌿</div>
-                  <p className="text-sm text-[var(--gn-text-muted)]">No photos shared yet.</p>
-                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {imageItems.map((item, i) => (
-                    <Link
-                      key={`${item.postId}-${i}`}
-                      href={`/p/${item.postId}`}
-                      className="block aspect-square overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] transition hover:opacity-90"
-                      title={item.title}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.url}
-                        alt={item.title}
-                        className="h-full w-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()
-      ) : activeTab === "comments" ? (
-        <div className="mt-5 space-y-3">
-          {feedHidden ? (
-            <div className="py-16 text-center">
-              <div className="text-4xl mb-3">🔒</div>
-              <p className="text-sm text-[var(--gn-text-muted)]">No comments here to see!</p>
-            </div>
-          ) : (
-            <>
-              {commentItems.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="text-4xl mb-3">💬</div>
-                  <p className="text-sm text-[var(--gn-text-muted)]">No comments yet.</p>
-                </div>
-              ) : (
-                <ProfileCommentsList
-                  items={commentItems}
-                  profileUserId={uid}
-                  profileLabel={profileLabel}
-                />
-              )}
-              {commentsTotal > commentsPageSize ? (
-                <div className="flex gap-4 text-sm">
-                  {commentsPage > 1 ? (
-                    <Link
-                      href={buildPostsHref({ tab: "comments", page: commentsPage - 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      ← Previous
-                    </Link>
+                <>
+                  {isOwn ? (
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href="/notebooks/new"
+                        className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+                      >
+                        📔 Start a grow journal
+                      </Link>
+                    </div>
                   ) : null}
-                  {commentsPage * commentsPageSize < commentsTotal ? (
-                    <Link
-                      href={buildPostsHref({ tab: "comments", page: commentsPage + 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      Next →
-                    </Link>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      ) : (
-        /* Notebooks tab */
-        <div className="mt-5 space-y-4">
-          {feedHidden ? (
-            <div className="py-16 text-center">
-              <div className="text-4xl mb-3">🔒</div>
-              <p className="text-sm text-[var(--gn-text-muted)]">Nothing to see here!</p>
-            </div>
-          ) : (
-            <>
-              {isOwn ? (
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    href="/notebooks/new"
-                    className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
-                  >
-                    📔 Set up a grow journal
-                  </Link>
-                </div>
-              ) : null}
-              {notebookItems.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="text-4xl mb-3">📔</div>
-                  <p className="text-sm text-[var(--gn-text-muted)]">No grow journals yet.</p>
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  {notebookItems.map((n) => {
-                    const strainLabel =
-                      n.strain?.name?.trim() ||
-                      n.customStrainLabel?.trim() ||
-                      null;
-                    return (
-                      <li key={n.id}>
+                  {notebookItems.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <div className="text-4xl mb-3">📔</div>
+                      <p className="text-sm text-[var(--gn-text-muted)]">No grow journals yet.</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {notebookItems.map((n) => {
+                        const strainLabel =
+                          n.strain?.name?.trim() ||
+                          n.customStrainLabel?.trim() ||
+                          null;
+                        const statusColors: Record<string, string> = {
+                          active: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                          harvest: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                          complete: "text-sky-400 bg-sky-500/10 border-sky-500/20",
+                        };
+                        const statusClass =
+                          statusColors[n.status?.toLowerCase() ?? ""] ??
+                          "text-[var(--gn-text-muted)] bg-[var(--gn-surface-muted)] border-[var(--gn-border)]";
+                        return (
+                          <li key={n.id}>
+                            <Link
+                              href={`/notebooks/${encodeURIComponent(n.id)}`}
+                              className="flex items-start gap-4 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 transition hover:border-[var(--gn-accent)]/30 hover:shadow-[var(--gn-shadow-md)]"
+                            >
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-accent)]/10 text-xl">
+                                📔
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-semibold text-[var(--gn-text)] leading-snug">
+                                    {n.title}
+                                  </p>
+                                  <span
+                                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold capitalize ${statusClass}`}
+                                  >
+                                    {n.status}
+                                  </span>
+                                </div>
+                                {strainLabel ? (
+                                  <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                                    🌿 {strainLabel}
+                                  </p>
+                                ) : null}
+                                <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
+                                  Score {n.score} · updated{" "}
+                                  {new Date(n.updatedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {notebooksTotal > notebooksPageSize ? (
+                    <div className="flex gap-4 text-sm">
+                      {notebooksPage > 1 ? (
                         <Link
-                          href={`/notebooks/${encodeURIComponent(n.id)}`}
-                          className="block rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 transition hover:border-[var(--gn-text-muted)] hover:shadow-sm"
+                          href={buildPostsHref({ tab: "notebooks", page: notebooksPage - 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <p className="font-semibold text-[var(--gn-text)]">
-                              {n.title}
-                            </p>
-                            <span className="shrink-0 rounded-full border border-[var(--gn-border)] px-2 py-0.5 text-[0.65rem] font-medium capitalize text-[var(--gn-text-muted)]">
-                              {n.status}
-                            </span>
-                          </div>
-                          {strainLabel ? (
-                            <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                              🌿 {strainLabel}
-                            </p>
-                          ) : null}
-                          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-                            Score {n.score} · updated{" "}
-                            {new Date(n.updatedAt).toLocaleDateString()}
-                          </p>
+                          ← Previous
                         </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      ) : null}
+                      {notebooksPage * notebooksPageSize < notebooksTotal ? (
+                        <Link
+                          href={buildPostsHref({ tab: "notebooks", page: notebooksPage + 1 })}
+                          className="text-[var(--gn-accent)] hover:underline"
+                        >
+                          Next →
+                        </Link>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
               )}
-              {notebooksTotal > notebooksPageSize ? (
-                <div className="flex gap-4 text-sm">
-                  {notebooksPage > 1 ? (
-                    <Link
-                      href={buildPostsHref({ tab: "notebooks", page: notebooksPage - 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      ← Previous
-                    </Link>
-                  ) : null}
-                  {notebooksPage * notebooksPageSize < notebooksTotal ? (
-                    <Link
-                      href={buildPostsHref({ tab: "notebooks", page: notebooksPage + 1 })}
-                      className="text-[var(--gn-accent)] hover:underline"
-                    >
-                      Next →
-                    </Link>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
+            </div>
           )}
         </div>
-      )}
+
+        {/* ── Right sidebar (lg+) ───────────────────────────────────── */}
+        <div className="hidden lg:block mt-0">
+          <div className="sticky top-20 space-y-4">
+
+            {/* About This Grower card */}
+            <div className="gn-card overflow-hidden">
+              <div className="h-8 w-full bg-gradient-to-r from-emerald-900/80 via-green-800/60 to-teal-900/50" />
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-bold text-[var(--gn-text)]">
+                  About {profileLabel}
+                </h3>
+                {bio ? (
+                  <p className="text-sm leading-relaxed text-[var(--gn-text-muted)] line-clamp-4">
+                    {bio}
+                  </p>
+                ) : null}
+                <div className="space-y-2 pt-1">
+                  {!statsHidden && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--gn-text-muted)]">Level</span>
+                      <span className="font-semibold text-[var(--gn-accent)]">
+                        {tierEmoji} {tierLabel}
+                      </span>
+                    </div>
+                  )}
+                  {!statsHidden && profile.seeds != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--gn-text-muted)]">Seeds</span>
+                      <span className="font-semibold text-amber-400">
+                        🌱 {formatSeeds(profile.seeds)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--gn-text-muted)]">Posts</span>
+                    <strong className="text-[var(--gn-text)]">{postsTotal}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--gn-text-muted)]">Followers</span>
+                    <strong className="text-[var(--gn-text)]">{profile.followerCount ?? 0}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--gn-text-muted)]">Following</span>
+                    <strong className="text-[var(--gn-text)]">{profile.followingCount ?? 0}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Journals mini-list */}
+            {notebookItems.length > 0 && (
+              <div className="gn-card p-4 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--gn-text-muted)]">
+                  Recent Journals
+                </h3>
+                <ul className="space-y-2">
+                  {notebookItems.slice(0, 4).map((n) => (
+                    <li key={n.id}>
+                      <Link
+                        href={`/notebooks/${encodeURIComponent(n.id)}`}
+                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition hover:bg-[var(--gn-surface-elevated)]"
+                      >
+                        <span className="text-base leading-none">📔</span>
+                        <span className="min-w-0 flex-1 truncate font-medium text-[var(--gn-text)]">
+                          {n.title}
+                        </span>
+                        <span className="shrink-0 text-[0.6rem] font-semibold uppercase text-[var(--gn-text-muted)]">
+                          {n.status}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                {notebooksTotal > 4 && (
+                  <Link
+                    href={buildPostsHref({ tab: "notebooks" })}
+                    className="block text-center text-xs font-semibold text-[var(--gn-accent)] hover:underline pt-1"
+                  >
+                    View all {notebooksTotal} journals →
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -1,5 +1,11 @@
-Visual redesign: messages panel, feed sidebar, and post view
+redesign: post view hero-first + comment avatars + feed sidebar lift
 
-- Messages panel: fix unreadable orange bubbles (now surface-elevated with accent left border), iMessage-style layout with avatar list on left, chat header with peer name, improved compose area
-- Feed sidebar: add pulse growing-right-now counter, community spotlight card, hot posts with numbered rank and thumbnails, forest-green start-a-notebook CTA
-- Post view: taller hero image (h-80/96), larger bold post title, bigger body prose, improved comment cards with depth indentation lines, larger comment composer avatar
+- post-view: carousel now renders before prose body (show-plants-first)
+- post-view: replace big icon+meta row with clean author strip: h-10 avatar, name semibold, emerald tier pill, seeds, timestamp
+- post-view: wrap CommentDiscussionComposer in rounded-2xl elevated card
+- post-view: replace flat AvatarChip in comments with 28px color-hashed CommentAvatar (emerald/teal/sky/violet/amber palettes)
+- feed-sidebar: hot post rank numbers now accent-colored circles; score pills added; thumbnails 56x56
+- feed-sidebar: community lists now use CommunityIcon with color variety at h-8 w-8
+- feed-sidebar: section headers updated to 0.6rem uppercase tracking-widest style
+- feed-sidebar: divide-y lists replaced with spaced rounded-xl card items
+- feed-sidebar: CTA card updated to rounded-2xl with leaf SVG icon and Start a Grow Journal copy

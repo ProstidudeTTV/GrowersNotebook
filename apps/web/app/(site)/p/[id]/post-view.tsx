@@ -13,7 +13,6 @@ import {
   CommentActionMenu,
   MenuRow,
 } from "@/components/comment-action-menu";
-import { CommunityIcon } from "@/components/community-icon";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { PostShareButton } from "@/components/post-share-button";
 import { UserProfileLink } from "@/components/user-profile-link";
@@ -105,37 +104,6 @@ function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
 
 function isYouTubeMedia(item: { url: string; type: string }): boolean {
   return item.type === "video" && Boolean(extractYouTubeVideoId(item.url));
-}
-
-function AvatarChip({
-  avatarUrl,
-  displayName,
-  sizePx = 32,
-}: {
-  avatarUrl?: string | null;
-  displayName?: string | null;
-  sizePx?: 32 | 48;
-}) {
-  const initial = (displayName ?? "").trim().charAt(0).toUpperCase() || "?";
-  const sizeClass = sizePx === 48 ? "h-12 w-12 text-sm" : "h-8 w-8 text-xs";
-  if (avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={avatarUrl}
-        alt=""
-        className={`${sizeClass} shrink-0 rounded-full object-cover ring-1 ring-[var(--gn-ring)]`}
-      />
-    );
-  }
-  return (
-    <span
-      className={`${sizeClass} inline-flex shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]`}
-      aria-hidden
-    >
-      {initial}
-    </span>
-  );
 }
 
 type PostDetail = {

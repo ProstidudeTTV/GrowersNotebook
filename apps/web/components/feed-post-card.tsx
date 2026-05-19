@@ -9,7 +9,7 @@ import {
 } from "@/components/comment-action-menu";
 import { CommunityIcon } from "@/components/community-icon";
 import { PostShareButton } from "@/components/post-share-button";
-import { VoteFeedPill } from "@/components/vote-score-rail";
+import { VoteScoreRail } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import { formatFeedExcerpt } from "@/lib/feed-excerpt";
 import type { FeedPost } from "@/lib/feed-post";
@@ -39,11 +39,14 @@ function compactCount(n: number): string {
 }
 
 const authorAvatarFrame =
-  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] sm:h-12 sm:w-12";
+
+const communityIconFrame =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)]";
 
 function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
   return (
-    <div className="relative mt-3 aspect-video w-full max-h-[min(28rem,72dvh)] min-h-[8.5rem] overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
+    <div className="relative mt-3 aspect-video w-full max-h-[min(28rem,72dvh)] min-h-[8.5rem] overflow-hidden rounded-2xl bg-black/35 shadow-[var(--gn-shadow-sm)]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
@@ -268,223 +271,229 @@ export function FeedPostCard({
     router.push(`/p/${local.id}`);
   };
 
-  const headerLead =
+  const communityChip =
+    pinnedCommunity != null ? (
+      <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--gn-forest)_10%,var(--gn-surface-muted))] px-2 py-0.5 text-[10px] font-medium text-[var(--gn-forest)] dark:text-emerald-400">
+        {pinnedCommunity.name.trim() || pinnedCommunity.slug}
+      </span>
+    ) : community ? (
+      <Link
+        href={`/community/${community.slug}`}
+        className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--gn-forest)_10%,var(--gn-surface-muted))] px-2 py-0.5 text-[10px] font-medium text-[var(--gn-forest)] transition hover:underline dark:text-emerald-400"
+        data-interactive
+        onClick={(e) => e.stopPropagation()}
+      >
+        {community.name.trim() || community.slug}
+      </Link>
+    ) : null;
+
+  const communityIconSmall =
     pinnedCommunity != null ? (
       <CommunityIcon
         iconKey={pinnedCommunity.iconKey}
         nameFallback={pinnedCommunity.name}
         slugFallback={pinnedCommunity.slug}
-        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+        frameClassName={communityIconFrame}
       />
     ) : community ? (
       <CommunityIcon
         iconKey={null}
         nameFallback={community.name}
         slugFallback={community.slug}
-        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+        frameClassName={communityIconFrame}
       />
-    ) : (
-      <AuthorFeedAvatar
-        avatarUrl={local.author.avatarUrl}
-        displayName={local.author.displayName}
-      />
-    );
+    ) : null;
 
-  const headerMeta =
-    pinnedCommunity != null ? (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
-        <span className="font-semibold text-[var(--gn-text)]">
-          {pinnedCommunity.name.trim() || pinnedCommunity.slug}
-        </span>
-        <span aria-hidden>·</span>
-        <span title={new Date(local.createdAt).toLocaleString()}>
-          {timeAgo(local.createdAt)}
-        </span>
-      </div>
-    ) : community ? (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
-        <Link
-          href={`/community/${community.slug}`}
-          className="font-semibold text-[var(--gn-text)] hover:underline"
-          data-interactive
-          onClick={(e) => e.stopPropagation()}
-        >
-          {community.name.trim() || community.slug}
-        </Link>
-        <span aria-hidden>·</span>
-        <Link
-          href={`/u/${local.author.id}`}
-          className="font-medium text-[var(--gn-text)] hover:underline"
-          data-interactive
-          onClick={(e) => e.stopPropagation()}
-        >
-          {local.author.displayName ?? "member"}
-        </Link>
-        <span aria-hidden>·</span>
-        <span title={new Date(local.createdAt).toLocaleString()}>
-          {timeAgo(local.createdAt)}
-        </span>
-      </div>
-    ) : (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
-        <Link
-          href={`/u/${local.author.id}`}
-          className="font-semibold text-[var(--gn-text)] hover:underline"
-          data-interactive
-          onClick={(e) => e.stopPropagation()}
-        >
-          {local.author.displayName ?? "member"}
-        </Link>
-        <span aria-hidden>·</span>
-        <span title={new Date(local.createdAt).toLocaleString()}>
-          {timeAgo(local.createdAt)}
-        </span>
-      </div>
-    );
+  const excerptPreview = formatFeedExcerpt(local.excerpt);
 
   return (
     <article
-      className={`relative rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_22%,var(--gn-border))] hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative overflow-hidden rounded-3xl border border-transparent bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-md)] ring-1 ring-[color-mix(in_srgb,var(--gn-forest)_6%,transparent)] transition hover:shadow-[var(--gn-shadow-hover)] ${local.pinnedAt ? "ring-amber-400/30" : ""}`}
     >
-      <div
-        role="link"
-        tabIndex={0}
-        className="block cursor-pointer rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)]"
-        onClick={(e) => {
-          const t = e.target as HTMLElement;
-          if (t.closest("[data-interactive]")) return;
-          openPost();
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          if ((e.target as HTMLElement).closest("[data-interactive]")) return;
-          e.preventDefault();
-          openPost();
-        }}
-        aria-label={`Open post: ${local.title}`}
-      >
-        <div className="p-3.5 sm:p-4">
-          <div className="flex items-start gap-2">
-            {headerLead}
-            <div className="min-w-0 flex-1">
-              {headerMeta}
-              <h2 className="mt-2 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
+      <div className="flex min-w-0">
+        <div
+          className="shrink-0 px-1.5 py-3 sm:px-2 sm:py-4"
+          data-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
+          <VoteScoreRail
+            score={local.score}
+            upvotes={local.upvotes}
+            downvotes={local.downvotes}
+            viewerVote={local.viewerVote}
+            onUp={() => void vote(1)}
+            onDown={() => void vote(-1)}
+            disabled={voteBusy}
+            size="lg"
+            titles={{ up: "Leaf up", down: "Downvote" }}
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div
+            role="link"
+            tabIndex={0}
+            className="block cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--gn-surface-raised)]"
+            onClick={(e) => {
+              const t = e.target as HTMLElement;
+              if (t.closest("[data-interactive]")) return;
+              openPost();
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              if ((e.target as HTMLElement).closest("[data-interactive]"))
+                return;
+              e.preventDefault();
+              openPost();
+            }}
+            aria-label={`Open post: ${local.title}`}
+          >
+            <div className="px-3 pb-2 pt-3 sm:px-4 sm:pt-4">
+              <div className="flex items-start gap-3">
+                <div className="flex shrink-0 items-start gap-1.5">
+                  {communityIconSmall}
+                  <AuthorFeedAvatar
+                    avatarUrl={local.author.avatarUrl}
+                    displayName={local.author.displayName}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link
+                      href={`/u/${local.author.id}`}
+                      className="text-sm font-semibold text-[var(--gn-text)] hover:text-[var(--gn-forest)] hover:underline dark:hover:text-emerald-400"
+                      data-interactive
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {local.author.displayName ?? "member"}
+                    </Link>
+                    {communityChip}
+                  </div>
+                </div>
+                <div className="shrink-0" data-interactive>
+                  <CommentActionMenu ariaLabel="Post actions">
+                    <MenuRow
+                      onClick={() => {
+                        router.push(`/u/${local.author.id}`);
+                      }}
+                    >
+                      View profile
+                    </MenuRow>
+                    {!isOwn ? (
+                      <MenuRow
+                        onClick={() => {
+                          setReportOpen(true);
+                          setReportMsg(null);
+                        }}
+                      >
+                        Report post
+                      </MenuRow>
+                    ) : null}
+                  </CommentActionMenu>
+                </div>
+              </div>
+
+              {youTubePreviewId ? (
+                <YouTubeThumbnailPreview videoId={youTubePreviewId} />
+              ) : null}
+
+              {media ? (
+                media.type === "image" ? (
+                  <div className="relative mt-3 aspect-[16/10] max-h-[min(28rem,72dvh)] min-h-[8.5rem] w-full overflow-hidden rounded-2xl bg-black/20 shadow-[var(--gn-shadow-sm)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={media.url}
+                      alt=""
+                      className="pointer-events-none h-full w-full object-cover object-center select-none"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="mt-3 overflow-hidden rounded-2xl bg-black/20 shadow-[var(--gn-shadow-sm)]"
+                    data-interactive
+                  >
+                    <video
+                      src={media.url}
+                      className="max-h-[min(28rem,72dvh)] w-full object-contain"
+                      controls
+                      preload="metadata"
+                      playsInline
+                    />
+                  </div>
+                )
+              ) : null}
+
+              <h2 className="mt-3 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
                 {local.title}
               </h2>
-              {(() => {
-                const preview = formatFeedExcerpt(local.excerpt);
-                if (!preview) return null;
-                return (
-                  <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
-                    {preview}
-                  </p>
-                );
-              })()}
-            </div>
-            <div className="shrink-0" data-interactive>
-              <CommentActionMenu ariaLabel="Post actions">
-                <MenuRow
-                  onClick={() => {
-                    router.push(`/u/${local.author.id}`);
-                  }}
-                >
-                  View profile
-                </MenuRow>
-                {!isOwn ? (
-                  <MenuRow
-                    onClick={() => {
-                      setReportOpen(true);
-                      setReportMsg(null);
-                    }}
-                  >
-                    Report post
-                  </MenuRow>
-                ) : null}
-              </CommentActionMenu>
+              {excerptPreview ? (
+                <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
+                  {excerptPreview}
+                </p>
+              ) : null}
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[var(--gn-text-muted)] sm:text-xs">
+                <span title={new Date(local.createdAt).toLocaleString()}>
+                  {timeAgo(local.createdAt)}
+                </span>
+                <span aria-hidden>·</span>
+                <span className="tabular-nums opacity-80">
+                  {compactCount(commentsN)} comments
+                </span>
+              </p>
             </div>
           </div>
 
-          {youTubePreviewId ? (
-            <YouTubeThumbnailPreview videoId={youTubePreviewId} />
-          ) : null}
+          <Link
+            href={`/p/${local.id}#comments`}
+            prefetch={false}
+            data-interactive
+            className="mx-3 mb-2 block rounded-2xl border border-transparent bg-[color-mix(in_srgb,var(--gn-surface-muted)_90%,transparent)] px-3 py-2.5 text-sm text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)] sm:mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Add a cultivator note…
+          </Link>
 
-          {media ? (
-            media.type === "image" ? (
-              <div className="relative mt-3 aspect-[16/10] max-h-[min(28rem,72dvh)] min-h-[8.5rem] w-full overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={media.url}
-                  alt=""
-                  className="pointer-events-none h-full w-full object-cover object-center select-none"
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <div
-                className="mt-3 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
-                data-interactive
+          <div
+            className="flex flex-wrap items-center gap-2 px-3 pb-3 sm:px-4 sm:pb-4"
+            data-interactive
+          >
+            <Link
+              href={`/p/${local.id}#comments`}
+              prefetch={false}
+              data-interactive
+              className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-[color-mix(in_srgb,var(--gn-forest)_8%,var(--gn-surface-muted))] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="shrink-0 opacity-80"
+                aria-hidden
               >
-                <video
-                  src={media.url}
-                  className="max-h-[min(28rem,72dvh)] w-full object-contain"
-                  controls
-                  preload="metadata"
-                  playsInline
-                />
-              </div>
-            )
-          ) : null}
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+              </svg>
+              <span className="tabular-nums">{compactCount(commentsN)}</span>
+              <span className="sr-only">comments</span>
+            </Link>
+            <span
+              data-interactive
+              className="inline-flex"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PostShareButton
+                postId={local.id}
+                postTitle={local.title}
+                viewerId={viewerId}
+              />
+            </span>
+          </div>
         </div>
       </div>
-
-      <div
-        className="flex flex-wrap items-center gap-2 border-t border-[var(--gn-divide)] px-3.5 py-2.5 sm:px-4"
-        data-interactive
-      >
-        <VoteFeedPill
-          score={local.score}
-          upvotes={local.upvotes}
-          downvotes={local.downvotes}
-          viewerVote={local.viewerVote}
-          onUp={() => void vote(1)}
-          onDown={() => void vote(-1)}
-          disabled={voteBusy}
-        />
-        <Link
-          href={`/p/${local.id}#comments`}
-          prefetch={false}
-          data-interactive
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="shrink-0 opacity-80"
-            aria-hidden
-          >
-            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-          </svg>
-          <span className="tabular-nums">{compactCount(commentsN)}</span>
-          <span className="sr-only">comments</span>
-        </Link>
-        <span
-          data-interactive
-          className="inline-flex"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <PostShareButton
-            postId={local.id}
-            postTitle={local.title}
-            viewerId={viewerId}
-          />
-        </span>
-      </div>
-
       {reportMsg ? (
         <p className="border-t border-[var(--gn-divide)] px-4 py-2 text-xs text-[var(--gn-text-muted)]">
           {reportMsg}

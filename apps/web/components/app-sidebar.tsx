@@ -150,7 +150,10 @@ function Chevron({ open }: { open: boolean }) {
 }
 
 const navItem =
-  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-hover)]";
+  "flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-hover)]";
+
+const sidebarDivider =
+  "my-3 border-t border-[color-mix(in_srgb,var(--gn-divide)_65%,transparent)]";
 
 export function AppSidebar({
   followedCommunities,
@@ -199,7 +202,7 @@ export function AppSidebar({
 
   return (
     <aside
-      className={`flex min-h-0 flex-col border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] ${className}`}
+      className={`flex min-h-0 flex-col bg-[var(--gn-surface-muted)] shadow-[4px_0_24px_-12px_rgb(45_58_48/0.08)] dark:shadow-[4px_0_28px_-12px_rgb(0_0_0/0.35)] ${className}`}
       aria-label="Site"
     >
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-6 pt-3">
@@ -231,7 +234,7 @@ export function AppSidebar({
           Communities
         </Link>
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        <div className={sidebarDivider} />
 
         <Link
           href="/hot"
@@ -248,7 +251,7 @@ export function AppSidebar({
                 <Link
                   href={`/p/${p.id}`}
                   onClick={afterNav}
-                  className="block rounded-lg px-2 py-1.5 text-left text-xs leading-snug text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                  className="block rounded-2xl px-2 py-1.5 text-left text-xs leading-snug text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
                 >
                   <span className="font-medium text-[var(--gn-text)]">
                     #{i + 1}:
@@ -270,7 +273,7 @@ export function AppSidebar({
           </p>
         )}
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        <div className={sidebarDivider} />
 
         <p className="px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
           Cultivars &amp; strains
@@ -285,7 +288,7 @@ export function AppSidebar({
           Suggest an entry
         </Link>
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        <div className={sidebarDivider} />
 
         <div className="mt-1">
           <button
@@ -346,7 +349,7 @@ export function AppSidebar({
               ))}
               {recentCommunities.length > 0 ? (
                 <>
-                  <li className="mt-3 list-none border-t border-[var(--gn-divide)] pt-3">
+                  <li className="mt-3 list-none border-t border-[color-mix(in_srgb,var(--gn-divide)_65%,transparent)] pt-3">
                     <h3 className="px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                       Recent
                     </h3>

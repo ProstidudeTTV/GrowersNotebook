@@ -1,7 +1,7 @@
 "use client";
 
 import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
-import { Button, Table } from "antd";
+import { Avatar, Button, Form, Input, Table } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
@@ -13,6 +13,10 @@ export default function AdminCommunitiesPage() {
     resource: "communities",
     syncWithLocation: true,
     pagination: { pageSize: 20 },
+    onSearch: (values: { q?: string }) =>
+      values.q
+        ? [{ field: "q", operator: "contains" as const, value: values.q }]
+        : [],
   });
 
   return (
@@ -20,6 +24,19 @@ export default function AdminCommunitiesPage() {
       title="Communities"
       headerButtons={<CreateButton />}
     >
+      <Form
+        {...(({ children: _c, ...rest }) => rest)(searchFormProps)}
+        layout="inline"
+        className="mb-4"
+      >
+        <Form.Item name="q" className="mb-0">
+          <Input.Search
+            placeholder="Search communities…"
+            allowClear
+            onSearch={() => searchFormProps.form?.submit()}
+          />
+        </Form.Item>
+      </Form>
       <RefineHiddenSearchForm searchFormProps={searchFormProps} />
       <Table
         {...tableProps}
@@ -31,6 +48,19 @@ export default function AdminCommunitiesPage() {
           )
         }
       >
+        <Table.Column<{ name: string; iconUrl?: string | null }>
+          title=""
+          width={48}
+          render={(_, record) =>
+            record.iconUrl ? (
+              <Avatar src={record.iconUrl} size={32} alt={record.name} />
+            ) : (
+              <Avatar size={32} style={{ backgroundColor: "#ff6b35", fontWeight: 600 }}>
+                {record.name.charAt(0).toUpperCase()}
+              </Avatar>
+            )
+          }
+        />
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
         <Table.Column
@@ -44,7 +74,7 @@ export default function AdminCommunitiesPage() {
           title="Created"
           render={(v: string) => new Date(v).toLocaleString()}
         />
-        <Table.Column<{ id: string; name: string }>
+        <Table.Column<{ id: string; name: string; slug: string }>
           title="Actions"
           render={(_, record) => (
             <span
@@ -62,6 +92,14 @@ export default function AdminCommunitiesPage() {
               >
                 Posts
               </Link>
+              <a
+                href={`/community/${record.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+              >
+                View Public →
+              </a>
               <DeleteButton
                 resource="communities"
                 recordItemId={record.id}

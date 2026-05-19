@@ -73,6 +73,11 @@ export const fullAdminResources: ResourceProps[] = [
     meta: { label: "Comment reports" },
   },
   {
+    name: "post-reports",
+    list: "/admin/post-reports",
+    meta: { label: "Post reports" },
+  },
+  {
     name: "profile-reports",
     list: "/admin/profile-reports",
     meta: { label: "Profile reports" },
@@ -147,6 +152,7 @@ export const fullAdminResources: ResourceProps[] = [
 const MODERATOR_RESOURCE_NAMES = new Set([
   "profiles",
   "comment-reports",
+  "post-reports",
   "profile-reports",
   "strains",
   "breeders",

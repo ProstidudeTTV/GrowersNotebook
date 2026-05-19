@@ -62,7 +62,7 @@ function compactCount(n: number): string {
 }
 
 const headerIconFrame =
-  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)] sm:h-10 sm:w-10";
+  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-2 ring-[var(--gn-ring)] sm:h-12 sm:w-12";
 
 function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
   const html = displayPostBodyHtml(rawHtml);
@@ -250,7 +250,7 @@ function CommentTree({
           className="mt-3"
           id={`comment-${c.id}`}
         >
-          <div className="flex gap-2" style={{ marginLeft: depth * 12 }}>
+          <div className="flex gap-2.5" style={{ marginLeft: depth * 16 }}>
             <VoteScoreRail
               score={c.score}
               upvotes={c.upvotes}
@@ -261,7 +261,7 @@ function CommentTree({
               disabled={busy}
               size="sm"
             />
-            <div className="min-w-0 flex-1 gn-card-subtle p-3.5">
+            <div className={`min-w-0 flex-1 rounded-xl border p-4 ${depth === 0 ? "border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]" : "border-[var(--gn-divide)]/60 bg-[var(--gn-surface-elevated)]/40"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-start gap-2">
                   <AvatarChip displayName={c.author.displayName} sizePx={32} />
@@ -343,7 +343,7 @@ function CommentTree({
               ) : (
                 <>
                   {c.body.trim() ? (
-                    <div className="mt-1 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
+                    <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
                       {c.body}
                     </div>
                   ) : null}
@@ -407,9 +407,11 @@ function CommentTree({
               </button>
             </div>
           </div>
-          <ul className="list-none pl-0">
-            {renderNodes(c.id, depth + 1)}
-          </ul>
+          {byParent.has(c.id) ? (
+            <ul className="list-none border-l-2 border-[var(--gn-divide)] pl-0 ml-4">
+              {renderNodes(c.id, depth + 1)}
+            </ul>
+          ) : null}
         </li>
       );
     });
@@ -986,12 +988,12 @@ export function PostView({
             <img
               src={heroMedia.url}
               alt=""
-              className="w-full max-h-[480px] object-cover"
+              className="h-80 w-full object-cover sm:h-96"
             />
           )
         ) : null}
-        <div className="p-3.5 sm:p-5">
-          <div className="flex items-start gap-2.5 sm:gap-3">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
             {post.community ? (
               <CommunityIcon
                 iconKey={null}
@@ -1015,7 +1017,7 @@ export function PostView({
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)] sm:text-sm">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
                 {post.community ? (
                   <>
                     <Link
@@ -1060,7 +1062,7 @@ export function PostView({
                   aria-label="Post title"
                 />
               ) : (
-                <h1 className="mt-2 text-xl font-bold leading-snug text-[var(--gn-text)] sm:text-2xl">
+                <h1 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-[var(--gn-text)] sm:text-3xl">
                   {post.title}
                 </h1>
               )}
@@ -1236,7 +1238,7 @@ export function PostView({
           <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
             {showPostBody ? (
               <div
-                className="gn-post-body prose prose-zinc max-w-none px-3.5 py-4 prose-p:text-[0.9375rem] prose-p:leading-relaxed dark:prose-invert sm:px-5 sm:py-5"
+                className="gn-post-body prose prose-zinc max-w-none px-4 py-5 text-base prose-p:text-base prose-p:leading-relaxed dark:prose-invert sm:px-6 sm:py-6"
                 dangerouslySetInnerHTML={{
                   __html: displayPostBodyHtml(post.bodyHtml),
                 }}
@@ -1315,9 +1317,9 @@ export function PostView({
 
       <section
         id="comments"
-        className="relative z-10 scroll-mt-20 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-3.5 shadow-[var(--gn-shadow-sm)] sm:scroll-mt-24 sm:p-5"
+        className="relative z-10 scroll-mt-20 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 shadow-[var(--gn-shadow-sm)] sm:scroll-mt-24 sm:p-6"
       >
-        <h2 className="text-base font-semibold text-[var(--gn-text)] sm:text-lg">
+        <h2 className="text-lg font-bold text-[var(--gn-text)] sm:text-xl">
           Comments
         </h2>
         {commentsLoadHadError ? (
@@ -1340,10 +1342,10 @@ export function PostView({
             </button>
           </div>
         ) : null}
-        <div className="mt-4 flex items-start gap-3 border-t border-[var(--gn-divide)] pt-4">
+        <div className="mt-5 flex items-start gap-3 border-t border-[var(--gn-divide)] pt-5">
           {/* Viewer avatar placeholder — profile data isn't loaded here */}
           <span
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] ring-2 ring-[var(--gn-ring)]"
             aria-hidden
           >
             <svg
@@ -1381,7 +1383,7 @@ export function PostView({
             />
           </div>
         </div>
-        <div className="mt-5 sm:mt-6">
+        <div className="mt-6">
           <CommentTree
             comments={comments}
             viewerId={viewerId}

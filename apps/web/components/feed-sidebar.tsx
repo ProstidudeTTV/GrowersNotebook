@@ -50,24 +50,35 @@ export async function FeedSidebar({
     fetchCommunities(),
   ]);
 
+  const spotlightCommunity = communities[0] ?? null;
+  const moreCommunities = communities.slice(1);
+
   return (
-    <aside className="flex flex-col gap-4">
-      {/* Growers online pill */}
-      <div className="flex items-center gap-2 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3">
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-        </span>
-        <span className="text-sm text-[var(--gn-text)]">
-          <strong>{growersOnline > 0 ? growersOnline.toLocaleString() : "—"}</strong>
-          <span className="text-[var(--gn-text-muted)]"> growers online</span>
-        </span>
+    <aside className="flex flex-col gap-5">
+
+      {/* Growing right now */}
+      <div className="overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <span className="relative flex h-3 w-3 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[var(--gn-text)]">
+              {growersOnline > 0 ? growersOnline.toLocaleString() : "—"}{" "}
+              growers growing right now
+            </p>
+            <p className="text-xs text-[var(--gn-text-muted)]">
+              Share your grow with the community
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Hot this week */}
       {!hideHotPosts && hotPosts.length > 0 ? (
-        <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--gn-divide)]">
+        <div className="overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
+          <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
               🔥 Hot this week
             </h2>
@@ -85,9 +96,9 @@ export async function FeedSidebar({
                 <li key={p.id}>
                   <Link
                     href={`/p/${p.id}`}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--gn-surface-hover)] transition-colors"
+                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--gn-surface-hover)]"
                   >
-                    <span className="mt-0.5 text-xs font-bold text-[var(--gn-text-muted)] w-4 shrink-0 text-center">
+                    <span className="mt-1 w-4 shrink-0 text-center text-xs font-bold text-[var(--gn-text-muted)]">
                       {i + 1}
                     </span>
                     {thumb ? (
@@ -104,12 +115,12 @@ export async function FeedSidebar({
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-xs font-medium leading-snug text-[var(--gn-text)]">
+                      <p className="line-clamp-2 text-xs font-semibold leading-snug text-[var(--gn-text)]">
                         {p.title}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-[var(--gn-text-muted)]">
-                        {p.community?.name ?? "Community"} ·{" "}
-                        {p.score != null ? `${p.score} pts` : ""}
+                      <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
+                        {p.community?.name ?? "Community"}
+                        {p.score != null ? ` · ${p.score} pts` : ""}
                       </p>
                     </div>
                   </Link>
@@ -120,10 +131,89 @@ export async function FeedSidebar({
         </div>
       ) : null}
 
-      {/* Communities */}
-      {communities.length > 0 ? (
-        <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--gn-divide)]">
+      {/* Community spotlight */}
+      {spotlightCommunity ? (
+        <div className="overflow-hidden rounded-xl border border-[var(--gn-accent)]/25 bg-[var(--gn-surface-muted)]">
+          <div className="border-b border-[var(--gn-divide)] px-4 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--gn-accent)]">
+              Community Spotlight
+            </p>
+          </div>
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-lg font-bold text-[var(--gn-text)]">
+                {spotlightCommunity.name.charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <Link
+                  href={`/community/${spotlightCommunity.slug}`}
+                  className="block truncate text-sm font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
+                >
+                  {spotlightCommunity.name}
+                </Link>
+                {spotlightCommunity.memberCount != null &&
+                spotlightCommunity.memberCount > 0 ? (
+                  <p className="text-xs text-[var(--gn-text-muted)]">
+                    {spotlightCommunity.memberCount.toLocaleString()} members
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <Link
+              href={`/community/${spotlightCommunity.slug}`}
+              className="mt-3 flex w-full items-center justify-center rounded-full border border-[var(--gn-accent)]/40 px-3 py-1.5 text-xs font-semibold text-[var(--gn-accent)] transition hover:bg-[var(--gn-accent)]/10"
+            >
+              Visit community →
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {/* More communities */}
+      {moreCommunities.length > 0 ? (
+        <div className="overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
+          <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+              🌱 Communities
+            </h2>
+            <Link
+              href="/community"
+              className="text-xs text-[var(--gn-accent)] hover:underline"
+            >
+              All
+            </Link>
+          </div>
+          <ul className="divide-y divide-[var(--gn-divide)]">
+            {moreCommunities.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/community/${c.slug}`}
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--gn-surface-hover)]"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-sm font-bold text-[var(--gn-text)]">
+                    {c.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-[var(--gn-text)]">
+                      {c.name}
+                    </p>
+                    {c.memberCount != null && c.memberCount > 0 ? (
+                      <p className="text-[10px] text-[var(--gn-text-muted)]">
+                        {c.memberCount.toLocaleString()} members
+                      </p>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {/* Communities fallback (no spotlight) */}
+      {!spotlightCommunity && communities.length > 0 ? (
+        <div className="overflow-hidden rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
+          <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
               🌱 Communities
             </h2>
@@ -139,7 +229,7 @@ export async function FeedSidebar({
               <li key={c.id}>
                 <Link
                   href={`/community/${c.slug}`}
-                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--gn-surface-hover)] transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--gn-surface-hover)]"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-sm font-bold text-[var(--gn-text)]">
                     {c.name.charAt(0).toUpperCase()}
@@ -162,19 +252,20 @@ export async function FeedSidebar({
       ) : null}
 
       {/* Start growing CTA */}
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
-        <div className="text-2xl mb-2">📓</div>
-        <p className="text-sm font-semibold text-[var(--gn-text)] mb-1">
-          Track your grow
+      <div className="overflow-hidden rounded-xl border border-emerald-600/30 bg-gradient-to-br from-emerald-950/60 via-emerald-900/30 to-emerald-800/10 p-5">
+        <div className="mb-2 text-3xl">📓</div>
+        <p className="mb-1 text-sm font-bold text-[var(--gn-text)]">
+          Start your grow journal
         </p>
-        <p className="text-xs text-[var(--gn-text-muted)] mb-3">
-          Log weekly progress, photos, and metrics in a public grow journal.
+        <p className="mb-4 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+          Log weekly progress, photos, and metrics. Share your grow with the
+          community.
         </p>
         <Link
           href="/notebooks/new"
-          className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 transition-colors"
+          className="flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-neutral-950 transition hover:bg-emerald-400"
         >
-          Start a notebook
+          🌱 Start a notebook
         </Link>
       </div>
     </aside>

@@ -112,35 +112,35 @@ html:not(.dark) .gn-post-content-flow .prose {
 html.dark {
   color-scheme: dark;
   --gn-accent: #ff6b35;
-  /* Lifted from near-black so the page reads as a gradient, not #000 voids */
-  --gn-page-top: #1a1e2a;
-  --gn-page-mid: #131823;
-  --gn-page-bottom: #0f121c;
-  --gn-surface: #13151b;
-  --gn-surface-raised: #191c24;
-  --gn-surface-elevated: #1e222b;
-  --gn-surface-muted: #161820;
-  --gn-surface-hover: rgba(255, 255, 255, 0.06);
-  --gn-ring: rgba(230, 235, 255, 0.09);
+  /* Warm charcoal — forest at night, not a cold server room */
+  --gn-page-top: #1c1a16;
+  --gn-page-mid: #151210;
+  --gn-page-bottom: #100e0b;
+  --gn-surface: #1e1b16;
+  --gn-surface-raised: #242018;
+  --gn-surface-elevated: #2a261e;
+  --gn-surface-muted: #1b1813;
+  --gn-surface-hover: rgba(255, 220, 150, 0.06);
+  --gn-ring: rgba(255, 200, 120, 0.08);
   --gn-ring-focus: rgba(255, 107, 53, 0.5);
-  --gn-divide: rgba(230, 235, 255, 0.07);
-  --gn-border: rgba(230, 235, 255, 0.11);
-  --gn-text: #eceef3;
-  --gn-text-muted: #9aa3b5;
-  --gn-text-excerpt: #aeb5c4;
+  --gn-divide: rgba(255, 200, 120, 0.07);
+  --gn-border: rgba(255, 200, 120, 0.10);
+  --gn-text: #f0ece4;
+  --gn-text-muted: #a09278;
+  --gn-text-excerpt: #b5a88a;
   --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.06) inset,
     0 1px 3px rgb(0 0 0 / 0.4);
   --gn-shadow-md:
-    0 6px 28px rgb(0 0 0 / 0.42),
-    0 0 0 1px rgb(230 235 255 / 0.05);
+    0 6px 28px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(200 160 80 / 0.04);
   --gn-shadow-lg:
-    0 28px 56px -22px rgb(0 0 0 / 0.58),
-    0 0 0 1px rgb(230 235 255 / 0.06);
+    0 28px 56px -22px rgb(0 0 0 / 0.60),
+    0 0 0 1px rgb(200 160 80 / 0.05);
   --gn-shadow-hover:
-    0 12px 32px -12px rgb(0 0 0 / 0.42),
-    0 0 0 1px rgb(255 107 53 / 0.12);
-  --gn-header-bg: rgba(19, 21, 27, 0.78);
-  --gn-menu-bg: rgba(25, 28, 36, 0.95);
+    0 12px 32px -12px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(255 107 53 / 0.14);
+  --gn-header-bg: rgba(28, 26, 22, 0.88);
+  --gn-menu-bg: rgba(36, 32, 24, 0.97);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
@@ -155,20 +155,20 @@ html.dark {
 html.dark .gn-app-canvas {
   background-color: var(--gn-page-mid);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23e6ebff' stroke-opacity='0.07' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%23e6ebff' stroke-opacity='0.05' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23c8a060' stroke-opacity='0.06' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%23c8a060' stroke-opacity='0.04' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
     radial-gradient(
       ellipse 110% 85% at 50% -25%,
-      rgb(130 155 220 / 0.14) 0%,
+      rgb(180 100 30 / 0.10) 0%,
       transparent 55%
     ),
     radial-gradient(
       ellipse 75% 55% at 0% 100%,
-      rgb(255 107 53 / 0.09) 0%,
+      rgb(255 107 53 / 0.08) 0%,
       transparent 52%
     ),
     radial-gradient(
       ellipse 60% 45% at 100% 85%,
-      rgb(90 110 180 / 0.06) 0%,
+      rgb(100 60 20 / 0.06) 0%,
       transparent 45%
     ),
     linear-gradient(
@@ -208,8 +208,8 @@ html.dark body {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow:
-      0 1px 0 color-mix(in srgb, var(--gn-accent) 18%, transparent),
-      0 12px 40px -16px rgb(0 0 0 / 0.35);
+      0 1px 0 color-mix(in srgb, var(--gn-accent) 22%, transparent),
+      0 12px 40px -16px rgb(0 0 0 / 0.40);
   }
 
   /** Message thread: comfortable reading line-height inside scroll area */
@@ -234,7 +234,7 @@ html.dark body {
   }
 
   html.dark .gn-scrollbar-themed {
-    scrollbar-color: rgba(154, 163, 181, 0.45) rgba(22, 24, 32, 0.65);
+    scrollbar-color: rgba(160, 130, 90, 0.45) rgba(28, 25, 19, 0.65);
   }
 
   html:not(.dark) .gn-scrollbar-themed {
@@ -249,17 +249,17 @@ html.dark body {
   html.dark .gn-scrollbar-themed::-webkit-scrollbar-track {
     margin-block: 4px;
     border-radius: 999px;
-    background: rgba(19, 21, 27, 0.72);
+    background: rgba(28, 24, 18, 0.72);
   }
 
   html.dark .gn-scrollbar-themed::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    border: 2px solid rgba(19, 21, 27, 0.72);
-    background: rgba(154, 163, 181, 0.4);
+    border: 2px solid rgba(28, 24, 18, 0.72);
+    background: rgba(160, 130, 90, 0.40);
   }
 
   html.dark .gn-scrollbar-themed::-webkit-scrollbar-thumb:hover {
-    background: rgba(174, 181, 196, 0.55);
+    background: rgba(180, 150, 100, 0.55);
   }
 
   /** GIF search grids: dark track + accent-tinted thumb (Firefox + WebKit). */
@@ -304,7 +304,7 @@ html.dark body {
   html.dark .ant-select-dropdown .rc-virtual-list-holder,
   html.dark .ant-select-dropdown .rc-virtual-list {
     scrollbar-width: thin;
-    scrollbar-color: rgba(154, 163, 181, 0.45) rgba(22, 24, 32, 0.65);
+    scrollbar-color: rgba(160, 130, 90, 0.45) rgba(28, 24, 18, 0.65);
   }
 
   html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar,
@@ -316,13 +316,13 @@ html.dark body {
   html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar-track,
   html.dark .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar-track {
     border-radius: 999px;
-    background: rgba(19, 21, 27, 0.72);
+    background: rgba(28, 24, 18, 0.72);
   }
 
   html.dark .ant-select-dropdown .rc-virtual-list-holder::-webkit-scrollbar-thumb,
   html.dark .ant-select-dropdown .rc-virtual-list::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: rgba(154, 163, 181, 0.4);
+    background: rgba(160, 130, 90, 0.40);
   }
 
   html:not(.dark) .ant-select-dropdown .rc-virtual-list-holder,
@@ -423,12 +423,12 @@ html.dark body {
   }
 
   html.dark .gn-card-subtle {
-    background: rgb(255 255 255 / 0.03);
+    background: rgb(255 200 100 / 0.025);
     box-shadow: none;
   }
 
   html.dark .gn-card-subtle:hover {
-    background: rgb(255 255 255 / 0.045);
+    background: rgb(255 200 100 / 0.04);
   }
 
   .gn-input {
@@ -760,7 +760,7 @@ html.dark body {
   }
 
   html.dark .gn-article-body {
-    background: rgb(255 255 255 / 0.02);
+    background: rgb(255 200 100 / 0.018);
   }
 }
 

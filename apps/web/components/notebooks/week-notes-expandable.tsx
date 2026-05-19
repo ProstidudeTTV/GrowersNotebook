@@ -37,7 +37,7 @@ export function WeekNotesExpandable({
             }
           >
             <time
-              className="text-[10px] font-medium tabular-nums text-[var(--gn-text-muted)]"
+              className="text-xs font-medium tabular-nums text-[var(--gn-text-muted)]"
               dateTime={spot.at}
             >
               {formatInstant(spot.at)}
@@ -52,7 +52,7 @@ export function WeekNotesExpandable({
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="mt-1.5 text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
+          className="mt-1.5 text-xs font-medium text-[var(--gn-accent)]/90 hover:brightness-110 hover:underline"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

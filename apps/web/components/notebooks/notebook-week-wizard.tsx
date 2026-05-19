@@ -155,7 +155,7 @@ function serializeNutrients(lines: NutLine[]) {
 }
 
 const fieldShell =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_60%,transparent)] focus:outline-none focus:ring-1 focus:ring-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)]";
 
 /** Single-line fields */
 const inputClass = `${fieldShell} py-2.5 min-h-[2.75rem]`;
@@ -472,12 +472,12 @@ export function NotebookWeekWizard({
               <div
                 key={i}
                 className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                  step >= i + 1 ? "bg-emerald-500" : "bg-[var(--gn-divide)]"
+                  step >= i + 1 ? "bg-[var(--gn-accent)]" : "bg-[var(--gn-divide)]"
                 }`}
               />
             ))}
           </div>
-          <p className="mt-3 text-[11px] font-medium leading-relaxed text-[var(--gn-text-muted)]">
+          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
             Step {step} of {STEPS}: {stepTitle}
           </p>
         </div>
@@ -501,7 +501,7 @@ export function NotebookWeekWizard({
                   onChange={(e) => setWeekIndex(Number(e.target.value))}
                   placeholder="e.g. 1"
                 />
-                <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
+                <p className="text-xs text-[var(--gn-text-muted)] mt-1 leading-relaxed">
                   Week 1 = first week of your grow. Just add 1 each week.
                 </p>
               </div>
@@ -541,7 +541,7 @@ export function NotebookWeekWizard({
                               return next;
                             })
                           }
-                          className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] hover:border-emerald-500/50 hover:text-emerald-500 transition-colors"
+                          className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_50%,transparent)] hover:text-[var(--gn-accent)] transition-colors"
                         >
                           + {p}
                         </button>
@@ -588,7 +588,7 @@ export function NotebookWeekWizard({
                 inputMode="decimal"
                 placeholder="e.g. 75°F / 24°C"
               />
-              <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)] leading-relaxed">
                 Ideal range: 70–85°F (21–29°C) during lights-on
               </p>
             </div>
@@ -601,7 +601,7 @@ export function NotebookWeekWizard({
                 inputMode="decimal"
                 placeholder="e.g. 55%"
               />
-              <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)] leading-relaxed">
                 Veg: 50–70% · Flower: 40–55% · Late flower: 35–45%
               </p>
             </div>
@@ -620,7 +620,7 @@ export function NotebookWeekWizard({
               <button
                 type="button"
                 onClick={addWaterLine}
-                className="text-xs font-medium text-emerald-500 hover:underline"
+                className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
               >
                 + Add watering
               </button>
@@ -668,7 +668,7 @@ export function NotebookWeekWizard({
                     inputMode="decimal"
                     placeholder="e.g. 2.5"
                   />
-                  <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
+                  <p className="text-xs text-[var(--gn-text-muted)] mt-1 leading-relaxed">
                     Total for all plants this session — or leave blank.
                   </p>
                   {waterLines.length > 1 ? (
@@ -696,7 +696,7 @@ export function NotebookWeekWizard({
                   inputMode="decimal"
                   placeholder="e.g. 6.2"
                 />
-                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)] leading-relaxed">
                   Soil: 6.0–7.0 · Hydro/coco: 5.5–6.5
                 </p>
               </div>
@@ -712,7 +712,7 @@ export function NotebookWeekWizard({
                   inputMode="decimal"
                   placeholder="e.g. 1.4"
                 />
-                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)] leading-relaxed">
                   Low = weak feed · High = strong feed. Seedling ≈ 0.8–1.4
                 </p>
               </div>
@@ -725,7 +725,7 @@ export function NotebookWeekWizard({
                   inputMode="decimal"
                   placeholder="e.g. 840"
                 />
-                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)] leading-relaxed">
                   Only fill this OR EC — same reading, different scale.
                 </p>
               </div>
@@ -734,7 +734,7 @@ export function NotebookWeekWizard({
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3 text-sm text-[var(--gn-text)]">
                 <input
                   type="checkbox"
-                  className="mt-0.5 h-4 w-4 accent-emerald-500"
+                  className="mt-0.5 h-4 w-4 accent-[var(--gn-accent)]"
                   checked={copyNutrientsFromPreviousWeek}
                   onChange={(e) => setCopyNutrients(e.target.checked)}
                 />
@@ -754,7 +754,7 @@ export function NotebookWeekWizard({
                   <button
                     type="button"
                     onClick={addNutrientLine}
-                    className="text-xs font-medium text-emerald-500 hover:underline"
+                    className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
                   >
                     + Add product
                   </button>
@@ -884,7 +884,7 @@ export function NotebookWeekWizard({
                 <button
                   type="button"
                   onClick={addImageField}
-                  className="text-xs font-medium text-emerald-500 hover:underline"
+                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   Add URL
                 </button>
@@ -1003,7 +1003,7 @@ export function NotebookWeekWizard({
                 if (step === 1 && mode === "create" && !(weekIndex >= 1)) return;
                 setStep((s) => Math.min(STEPS, s + 1));
               }}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -1012,7 +1012,7 @@ export function NotebookWeekWizard({
               type="button"
               disabled={saving}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save week"}
             </button>

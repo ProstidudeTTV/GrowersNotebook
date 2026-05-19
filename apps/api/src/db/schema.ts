@@ -183,6 +183,10 @@ export const posts = pgTable(
       .$type<PostMediaItem[]>()
       .default(sql`'[]'::jsonb`),
     excerpt: text('excerpt'),
+    /** Denormalized from post_votes (maintained by sync_post_vote_counts trigger). */
+    upvoteCount: integer('upvote_count').notNull().default(0),
+    downvoteCount: integer('downvote_count').notNull().default(0),
+    voteScore: integer('vote_score').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -193,6 +197,8 @@ export const posts = pgTable(
   (t) => [
     index('posts_community_created_idx').on(t.communityId, t.createdAt),
     index('posts_author_idx').on(t.authorId),
+    index('posts_created_at_desc_idx').on(t.createdAt),
+    index('posts_author_created_at_desc_idx').on(t.authorId, t.createdAt),
   ],
 );
 
@@ -308,6 +314,11 @@ export const postReports = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     reason: text('reason'),
+    status: text('status').notNull().default('open'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    reporterMessage: text('reporter_message'),
+    notifyReported: boolean('notify_reported').notNull().default(false),
+    reportedWarning: text('reported_warning'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

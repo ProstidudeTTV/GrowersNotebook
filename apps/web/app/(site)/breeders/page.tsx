@@ -124,15 +124,15 @@ export default async function BreedersPage({
   return (
     <main className="w-full max-w-none px-3 py-5 sm:px-4 sm:py-6 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-10 2xl:pl-5 2xl:pr-14">
       {/* Hero header */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-950 via-orange-900/60 to-[var(--gn-surface-elevated)] p-6 sm:p-8">
+      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-950 via-[color-mix(in_srgb,var(--gn-hot)_40%,var(--gn-surface-elevated))] to-[var(--gn-surface-elevated)] p-6 sm:p-8">
         <div className="relative z-10">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-[0.6rem] font-bold uppercase tracking-widest text-amber-300">
             🏆 Breeder Catalog
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+          <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
             Top Breeders
           </h1>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/70">
             {data.total > 0
               ? `${data.total} breeders in the directory`
               : "Explore genetics from the world's best seed companies."}

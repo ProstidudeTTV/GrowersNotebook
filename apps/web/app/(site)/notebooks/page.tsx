@@ -66,7 +66,7 @@ function formatListDate(iso: string): string {
 function statusPillClass(status: string): string {
   switch (status) {
     case "active":
-      return "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25";
+      return "bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] text-[var(--gn-accent)] ring-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)]";
     case "completed":
       return "bg-sky-500/15 text-sky-200 ring-sky-500/25";
     case "archived":
@@ -179,9 +179,9 @@ export default async function NotebooksDirectoryPage({
         {/* Main: directory */}
         <div className="order-1 min-w-0">
           {/* Hero header */}
-          <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950 via-green-900/60 to-[var(--gn-surface-elevated)] p-6 sm:p-8">
+          <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-page-top))] via-[color-mix(in_srgb,var(--gn-accent)_18%,var(--gn-surface-elevated))] to-[var(--gn-surface-elevated)] p-6 sm:p-8">
             <div className="relative z-10">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-300">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--gn-accent)_20%,transparent)] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
                 📓 Grow Journals
               </div>
               <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
@@ -192,7 +192,7 @@ export default async function NotebooksDirectoryPage({
               </p>
               <Link
                 href="/notebooks/new"
-                className="mt-4 inline-flex rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-black shadow-sm transition hover:brightness-110"
+                className="mt-4 inline-flex rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110"
               >
                 Start your notebook →
               </Link>
@@ -277,7 +277,7 @@ export default async function NotebooksDirectoryPage({
             <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
-                className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-emerald-400"
+                className="rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
               >
                 Apply filters
               </button>
@@ -301,7 +301,7 @@ export default async function NotebooksDirectoryPage({
               const notebookHref = `/notebooks/${encodeURIComponent(n.id)}`;
               const statusStrip =
                 n.status === "active"
-                  ? "bg-gradient-to-r from-emerald-600/70 to-teal-800/30"
+                  ? "bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_70%,transparent)] to-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-surface-elevated))]"
                   : n.status === "completed"
                     ? "bg-gradient-to-r from-sky-600/70 to-blue-800/30"
                     : "bg-gradient-to-r from-gray-600/50 to-gray-800/20";
@@ -457,7 +457,7 @@ export default async function NotebooksDirectoryPage({
                           displayName={n.owner.displayName}
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                             #{i + 1}
                           </p>
                           <p className="text-sm font-semibold leading-snug text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)] line-clamp-2">

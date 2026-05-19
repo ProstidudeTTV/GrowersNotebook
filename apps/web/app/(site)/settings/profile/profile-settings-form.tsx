@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -97,6 +98,7 @@ export function ProfileSettingsForm() {
       });
       router.refresh();
       await load();
+      toast.success("Profile saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {

@@ -18,11 +18,11 @@ export default function CatalogSuggestPage() {
           </p>
           <div className="mt-4 flex flex-wrap gap-3 text-xs text-white/60">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--gn-accent)]" />
               Staff review everything before it goes live
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--gn-accent)]" />
               No account? <Link href="/login" className="underline hover:text-white">Sign in first</Link>
             </span>
           </div>

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api-public";
 import { isUuid } from "@/lib/is-uuid";
-import { SITE_NAME, canonicalPath } from "@/lib/site-config";
+import { ArticleJsonLd } from "@/components/seo-json-ld";
+import { SITE_NAME, canonicalPath, getSiteUrl } from "@/lib/site-config";
 import { PostView } from "./post-view";
 import type { PostMediaItem } from "@/lib/feed-post";
 
@@ -58,11 +59,16 @@ export async function generateMetadata({
   const { id } = await params;
   if (!isUuid(id)) return { title: "Post" };
   try {
-    const post = await apiFetch<{ title: string }>(`/posts/${id}`, {
+    const post = await apiFetch<{
+      title: string;
+      media?: PostMediaItem[];
+    }>(`/posts/${id}`, {
       timeoutMs: 10_000,
     });
     const title = post.title?.trim() || "Post";
     const description = `${title} — cannabis home grow discussion on ${SITE_NAME}.`;
+    const firstImage = (post.media ?? []).find((m) => m.type === "image");
+    const ogImage = firstImage?.url;
     return {
       title,
       description,
@@ -71,11 +77,13 @@ export async function generateMetadata({
         description,
         type: "article",
         url: canonicalPath(`/p/${id}`),
+        ...(ogImage ? { images: [{ url: ogImage }] } : {}),
       },
       twitter: {
-        card: "summary_large_image",
+        card: ogImage ? "summary_large_image" : "summary",
         title: `${title} · ${SITE_NAME}`,
         description,
+        ...(ogImage ? { images: [ogImage] } : {}),
       },
       alternates: { canonical: canonicalPath(`/p/${id}`) },
     };
@@ -113,8 +121,17 @@ export default async function PostPage({
     commentsFetchFailed = true;
   }
 
+  const firstImage = (post.media ?? []).find((m) => m.type === "image");
+
   return (
     <main className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 sm:py-8">
+      <ArticleJsonLd
+        headline={post.title}
+        description={`${post.title} — cannabis home grow discussion on ${SITE_NAME}.`}
+        url={`${getSiteUrl()}/p/${id}`}
+        imageUrl={firstImage?.url}
+        datePublished={post.createdAt}
+      />
       <PostView
         initialPost={post}
         initialComments={comments}

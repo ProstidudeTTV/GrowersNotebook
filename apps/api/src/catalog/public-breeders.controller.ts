@@ -13,6 +13,7 @@ import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
 import { BreedersService } from './breeders.service';
+import { ListBreedersQueryDto } from './dto/list-catalog.query.dto';
 import { UpsertCatalogReviewDto } from './dto/upsert-catalog-review.dto';
 
 @Controller('breeders')
@@ -21,29 +22,23 @@ export class PublicBreedersController {
 
   @Get()
   @UseGuards(OptionalAuthGuard)
-  list(
-    @Query('q') q?: string,
-    @Query('sort') sort?: 'name' | 'rating',
-    @Query('country') country?: string,
-    @Query('minRating') minRatingRaw?: string,
-    @Query('minReviews') minReviewsRaw?: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
-    const minRating = minRatingRaw != null ? Number(minRatingRaw) : NaN;
-    const minReviews = minReviewsRaw != null ? Number(minReviewsRaw) : NaN;
+  list(@Query() query: ListBreedersQueryDto) {
+    const minRating =
+      query.minRating != null ? Number(query.minRating) : NaN;
+    const minReviews =
+      query.minReviews != null ? Number(query.minReviews) : NaN;
     return this.breeders.listPublic({
-      q,
-      sort: sort === 'rating' ? 'rating' : 'name',
-      country: country?.trim() || undefined,
+      q: query.q,
+      sort: query.sort === 'rating' ? 'rating' : 'name',
+      country: query.country?.trim() || undefined,
       minRating:
         Number.isFinite(minRating) && minRating >= 1 && minRating <= 5
           ? minRating
           : undefined,
       minReviews:
         Number.isFinite(minReviews) && minReviews >= 1 ? minReviews : undefined,
-      page: page ? Number(page) : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
+      page: query.page,
+      pageSize: query.pageSize,
     });
   }
 

@@ -195,6 +195,7 @@ export class CommentsService {
         ? `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`
         : `On “${post.title.length > 70 ? `${post.title.slice(0, 70)}…` : post.title}”: ${preview}`;
       await this.notifications.createForUser(notifyUserId, title, body, {
+        kind: 'new_comment',
         actionUrl: `/p/${post.id}#comment-${row.id}`,
       });
     }

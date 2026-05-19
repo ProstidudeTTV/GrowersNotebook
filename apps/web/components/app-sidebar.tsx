@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   getRecentCommunities,
@@ -154,7 +155,37 @@ export function AppSidebar({
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
+  const pathname = usePathname();
   const afterNav = useCallback(() => { onNavigate?.(); }, [onNavigate]);
+
+  const isNavActive = useCallback(
+    (href: string) => {
+      if (href === "/following") {
+        return pathname === "/" || pathname === "/following";
+      }
+      return pathname === href || pathname.startsWith(`${href}/`);
+    },
+    [pathname],
+  );
+
+  const navClass = useCallback(
+    (href: string, extra = "") => {
+      const active = isNavActive(href);
+      return [
+        navItem,
+        active
+          ? "bg-[var(--gn-surface-hover)] font-semibold text-[var(--gn-accent)]"
+          : "",
+        extra,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    },
+    [isNavActive],
+  );
+
+  const navAriaCurrent = (href: string) =>
+    isNavActive(href) ? ("page" as const) : undefined;
 
   useEffect(() => {
     const sync = () => setRecentCommunities(getRecentCommunities());
@@ -224,10 +255,11 @@ export function AppSidebar({
       {authed ? (
         <div className="px-3 pt-3">
           <Link
-            href="/"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-white shadow-[0_2px_12px_-3px_var(--gn-accent)] transition-all hover:brightness-110 active:scale-[0.97]"
+            href="/new-post"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-[0_2px_12px_-3px_var(--gn-accent)] transition-all hover:brightness-110 active:scale-[0.97]"
             onClick={afterNav}
-            title="Pick a community to post in"
+            title="Create a new post"
+            aria-current={navAriaCurrent("/new-post")}
           >
             <IconPlus />
             New Post
@@ -240,7 +272,12 @@ export function AppSidebar({
 
         {/* Primary — Feed & Messages */}
         <div className="mt-2 space-y-0.5">
-          <Link href={authed ? "/following" : "/"} className={navItem} onClick={afterNav}>
+          <Link
+            href={authed ? "/following" : "/"}
+            className={navClass(authed ? "/following" : "/")}
+            onClick={afterNav}
+            aria-current={navAriaCurrent(authed ? "/following" : "/")}
+          >
             <NavIcon color="bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]">
               <IconHome />
             </NavIcon>
@@ -248,7 +285,12 @@ export function AppSidebar({
           </Link>
 
           {authed ? (
-            <Link href="/messages" className={navItem} onClick={afterNav}>
+            <Link
+              href="/messages"
+              className={navClass("/messages")}
+              onClick={afterNav}
+              aria-current={navAriaCurrent("/messages")}
+            >
               <NavIcon color="bg-sky-500/15 text-sky-500 dark:text-sky-400">
                 <IconMessage />
               </NavIcon>
@@ -262,7 +304,12 @@ export function AppSidebar({
         {/* Explore */}
         <p className={sectionLabel}>Explore</p>
         <div className="space-y-0.5">
-          <Link href="/hot" className={navItem} onClick={afterNav}>
+          <Link
+            href="/hot"
+            className={navClass("/hot")}
+            onClick={afterNav}
+            aria-current={navAriaCurrent("/hot")}
+          >
             <NavIcon color="bg-orange-500/15 text-orange-500">
               <IconFlame />
             </NavIcon>
@@ -288,8 +335,20 @@ export function AppSidebar({
             </ul>
           ) : null}
 
+          <Link
+            href="/community"
+            className={navClass("/community")}
+            onClick={afterNav}
+            aria-current={navAriaCurrent("/community")}
+          >
+            <NavIcon color="bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]">
+              <IconUsers />
+            </NavIcon>
+            Communities
+          </Link>
+
           <Link href="/notebooks?status=active" className={navItem} onClick={afterNav}>
-            <NavIcon color="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <NavIcon color="bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]">
               <IconNotebook />
             </NavIcon>
             Grow Journals
@@ -336,7 +395,12 @@ export function AppSidebar({
           {communitiesOpen ? (
             <ul className="mt-0.5 space-y-0.5">
               <li>
-                <Link href="/" className={`${navItem} text-[var(--gn-text-muted)]`} onClick={afterNav}>
+                <Link
+                  href="/community"
+                  className={navClass("/community", "text-[var(--gn-text-muted)]")}
+                  onClick={afterNav}
+                  aria-current={navAriaCurrent("/community")}
+                >
                   <NavIcon color="bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)]">
                     <IconUsers />
                   </NavIcon>

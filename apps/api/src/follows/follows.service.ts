@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   communities,
@@ -11,9 +11,12 @@ import {
   profiles,
   userFollows,
 } from '../db/schema';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class FollowsService {
+  constructor(private readonly notifications: NotificationsService) {}
+
   async followUser(followerId: string, followingId: string) {
     if (followerId === followingId) {
       throw new BadRequestException('Cannot follow yourself');
@@ -25,10 +28,28 @@ export class FollowsService {
       .where(eq(profiles.id, followingId))
       .limit(1);
     if (!target) throw new NotFoundException('User not found.');
-    await db
+    const inserted = await db
       .insert(userFollows)
       .values({ followerId, followingId })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ followerId: userFollows.followerId });
+    if (inserted.length > 0) {
+      const [follower] = await db
+        .select({ displayName: profiles.displayName })
+        .from(profiles)
+        .where(eq(profiles.id, followerId))
+        .limit(1);
+      const label = follower?.displayName?.trim() || 'A grower';
+      await this.notifications.createForUser(
+        followingId,
+        'New follower',
+        `${label} started following you.`,
+        {
+          kind: 'new_follower',
+          actionUrl: `/u/${followerId}`,
+        },
+      );
+    }
     return { ok: true };
   }
 
@@ -125,6 +146,74 @@ export class FollowsService {
       .from(communityFollows)
       .where(eq(communityFollows.userId, userId));
     return rows.map((r) => r.id);
+  }
+
+  async listFollowers(userId: string, page: number, pageSize: number) {
+    const db = getDb();
+    const [target] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+    if (!target) throw new NotFoundException('User not found.');
+    const skip = (page - 1) * pageSize;
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(userFollows)
+      .where(eq(userFollows.followingId, userId));
+    const rows = await db
+      .select({
+        id: profiles.id,
+        displayName: profiles.displayName,
+        avatarUrl: profiles.avatarUrl,
+        followedAt: userFollows.createdAt,
+      })
+      .from(userFollows)
+      .innerJoin(profiles, eq(profiles.id, userFollows.followerId))
+      .where(eq(userFollows.followingId, userId))
+      .orderBy(desc(userFollows.createdAt))
+      .limit(pageSize)
+      .offset(skip);
+    return {
+      items: rows,
+      total: Number(total),
+      page,
+      pageSize,
+    };
+  }
+
+  async listFollowing(userId: string, page: number, pageSize: number) {
+    const db = getDb();
+    const [target] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+    if (!target) throw new NotFoundException('User not found.');
+    const skip = (page - 1) * pageSize;
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(userFollows)
+      .where(eq(userFollows.followerId, userId));
+    const rows = await db
+      .select({
+        id: profiles.id,
+        displayName: profiles.displayName,
+        avatarUrl: profiles.avatarUrl,
+        followedAt: userFollows.createdAt,
+      })
+      .from(userFollows)
+      .innerJoin(profiles, eq(profiles.id, userFollows.followingId))
+      .where(eq(userFollows.followerId, userId))
+      .orderBy(desc(userFollows.createdAt))
+      .limit(pageSize)
+      .offset(skip);
+    return {
+      items: rows,
+      total: Number(total),
+      page,
+      pageSize,
+    };
   }
 
   async getFollowingCommunityIds(

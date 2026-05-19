@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../db';
-import { communities, communityModerators, profiles } from '../db/schema';
+import {
+  communities,
+  communityFollows,
+  communityModerators,
+  profiles,
+} from '../db/schema';
 import { FollowsService } from '../follows/follows.service';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 import { assertCommunityIconKey } from './community-icon-keys';
@@ -17,6 +22,35 @@ export class CommunitiesService {
     private readonly follows: FollowsService,
     private readonly nameBlocklist: NameBlocklistService,
   ) {}
+
+  private async memberCountsByCommunityIds(
+    ids: string[],
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (ids.length === 0) return map;
+    const db = getDb();
+    const rows = await db
+      .select({
+        communityId: communityFollows.communityId,
+        memberCount: count(),
+      })
+      .from(communityFollows)
+      .where(inArray(communityFollows.communityId, ids))
+      .groupBy(communityFollows.communityId);
+    for (const id of ids) map.set(id, 0);
+    for (const r of rows) map.set(r.communityId, Number(r.memberCount));
+    return map;
+  }
+
+  private withMemberCounts<T extends { id: string }>(
+    rows: T[],
+    counts: Map<string, number>,
+  ) {
+    return rows.map((r) => ({
+      ...r,
+      memberCount: counts.get(r.id) ?? 0,
+    }));
+  }
 
   async create(dto: CreateCommunityDto) {
     await this.nameBlocklist.assertAllowed(dto.name);
@@ -50,7 +84,11 @@ export class CommunitiesService {
       .from(communities)
       .where(inArray(communities.id, ids))
       .orderBy(asc(communities.name));
-    return rows.map((r) => ({ ...r, viewerFollowing: true }));
+    const counts = await this.memberCountsByCommunityIds(ids);
+    return this.withMemberCounts(
+      rows.map((r) => ({ ...r, viewerFollowing: true })),
+      counts,
+    );
   }
 
   async list(viewerId?: string) {
@@ -59,18 +97,25 @@ export class CommunitiesService {
       .select()
       .from(communities)
       .orderBy(asc(communities.name));
-    if (!viewerId) {
-      return rows.map((r) => ({ ...r, viewerFollowing: false }));
-    }
     const ids = rows.map((r) => r.id);
+    const counts = await this.memberCountsByCommunityIds(ids);
+    if (!viewerId) {
+      return this.withMemberCounts(
+        rows.map((r) => ({ ...r, viewerFollowing: false })),
+        counts,
+      );
+    }
     const followed = await this.follows.getFollowingCommunityIds(
       viewerId,
       ids,
     );
-    return rows.map((r) => ({
-      ...r,
-      viewerFollowing: followed.has(r.id),
-    }));
+    return this.withMemberCounts(
+      rows.map((r) => ({
+        ...r,
+        viewerFollowing: followed.has(r.id),
+      })),
+      counts,
+    );
   }
 
   async getBySlug(slug: string, viewerId?: string) {
@@ -80,13 +125,15 @@ export class CommunitiesService {
       .from(communities)
       .where(eq(communities.slug, slug));
     if (!row) throw new NotFoundException('Community not found');
+    const counts = await this.memberCountsByCommunityIds([row.id]);
+    const memberCount = counts.get(row.id) ?? 0;
     if (!viewerId) {
-      return { ...row, viewerFollowing: false };
+      return { ...row, memberCount, viewerFollowing: false };
     }
     const following = await this.follows.getFollowingCommunityIds(viewerId, [
       row.id,
     ]);
-    return { ...row, viewerFollowing: following.has(row.id) };
+    return { ...row, memberCount, viewerFollowing: following.has(row.id) };
   }
 
   async findById(id: string) {

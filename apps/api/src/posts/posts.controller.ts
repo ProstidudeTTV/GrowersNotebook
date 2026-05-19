@@ -97,6 +97,7 @@ export class PostsController {
     return this.posts.getById(id, user?.sub);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
   @UseGuards(SupabaseAuthGuard)
   create(@CurrentUser() user: JwtUser, @Body() dto: CreatePostDto) {

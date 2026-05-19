@@ -154,7 +154,7 @@ export default function WelcomePage() {
                 return (
                   <div
                     key={c.id}
-                    className={`gn-card flex items-center gap-4 p-4 transition ${isJoined ? "ring-1 ring-emerald-500/40" : ""}`}
+                    className={`gn-card flex items-center gap-4 p-4 transition ${isJoined ? "ring-1 ring-[var(--gn-accent)]/40" : ""}`}
                   >
                     <CommunityIcon
                       iconKey={c.iconKey}
@@ -176,7 +176,7 @@ export default function WelcomePage() {
                       onClick={() => void handleJoin(c)}
                       className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${
                         isJoined
-                          ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                          ? "border border-[var(--gn-accent)]/40 bg-[var(--gn-accent)]/10 text-[var(--gn-accent)]"
                           : "bg-[var(--gn-accent)] text-white hover:brightness-110"
                       }`}
                     >

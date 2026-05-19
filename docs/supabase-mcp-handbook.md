@@ -63,7 +63,7 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 |-------|---------|
 | `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `role` enum (`member` / `moderator` / `admin`), `notification_preferences` JSONB (`{ new_comment, new_follower, vote_milestone, direct_message }`, all default true; read/written by `/settings/notifications`), `last_seen` (rolling activity timestamp, indexed; powers the guest landing "Growers online now" badge via the `growers_online_count()` RPC). |
 | `communities` | `slug`, `name`, `description`, `icon_key` (curated sidebar icon), `banner_url` (public `community-banners` URL for wide hero). |
-| `posts` | `community_id` (**nullable**: null = profile post), `author_id`, `title`, `body_json`, `body_html`, `excerpt`, timestamps. |
+| `posts` | `community_id` (**nullable**: null = profile post), `author_id`, `title`, `body_json`, `body_html`, `excerpt`, denormalized `upvote_count` / `downvote_count` / `vote_score` (synced from `post_votes` via trigger), timestamps. Indexes: `posts_created_at_desc_idx`, `posts_author_created_at_desc_idx`. |
 | `comments` | Threaded: `post_id`, `author_id`, `parent_id`, `body`. |
 | `post_votes` | PK (`user_id`, `post_id`); `value` ±1. |
 | `comment_votes` | PK (`user_id`, `comment_id`); **`post_id`** denormalized for Realtime filters. |

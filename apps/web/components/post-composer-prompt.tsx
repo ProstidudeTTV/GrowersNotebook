@@ -1,12 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const AVATAR_COLORS = [
-  "bg-emerald-700",
+  "bg-[var(--gn-accent)]",
   "bg-violet-700",
   "bg-amber-600",
   "bg-teal-700",
@@ -65,7 +66,7 @@ export function PostComposerPrompt({
         </Link>
         <Link
           href="/login"
-          className="shrink-0 rounded-full bg-[var(--gn-accent)] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
+          className="shrink-0 rounded-full bg-[var(--gn-accent)] px-4 py-2 text-xs font-bold text-[var(--gn-on-accent)] transition hover:brightness-110"
         >
           Join
         </Link>
@@ -79,11 +80,17 @@ export function PostComposerPrompt({
       <div className="flex items-center gap-3 p-3">
         {/* Avatar */}
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-white/10 ${avatarBg}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-[var(--gn-on-accent)] ring-2 ring-white/10 ${avatarBg}`}
         >
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            <Image
+              src={avatarUrl}
+              alt=""
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+              sizes="36px"
+            />
           ) : (
             <span>{initial}</span>
           )}

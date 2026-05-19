@@ -16,6 +16,8 @@ import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { StrainsService } from '../catalog/strains.service';
 import { CurrentUser } from '../common/current-user.decorator';
+import { ListNotebooksQueryDto } from './dto/list-notebooks.query.dto';
+import { ListNutrientProductsQueryDto } from './dto/list-nutrient-products.query.dto';
 import { CreateNotebookCommentDto } from './dto/create-notebook-comment.dto';
 import { CreateNotebookDto, UpdateNotebookDto } from './dto/create-notebook.dto';
 import {
@@ -35,15 +37,11 @@ export class NotebooksController {
 
   @Get('nutrient-products')
   @UseGuards(OptionalAuthGuard)
-  listNutrients(
-    @Query('q') q?: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
+  listNutrients(@Query() query: ListNutrientProductsQueryDto) {
     return this.notebooks.listNutrientProducts({
-      q,
-      page: page ? Number(page) : 1,
-      pageSize: pageSize ? Number(pageSize) : 30,
+      q: query.q,
+      page: query.page,
+      pageSize: Math.min(100, query.pageSize),
     });
   }
 
@@ -72,30 +70,19 @@ export class NotebooksController {
   @Get()
   @UseGuards(OptionalAuthGuard)
   listPublic(
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-    @Query('status') status?: string,
-    @Query('sort') sort?: string,
-    @Query('q') q?: string,
-    @Query('grower') grower?: string,
-    @Query('breeder') breeder?: string,
-    @Query('strainSlug') strainSlug?: string,
+    @Query() query: ListNotebooksQueryDto,
     @CurrentUser() user?: JwtUser,
   ) {
-    const st =
-      status === 'active' || status === 'completed' || status === 'archived'
-        ? status
-        : undefined;
     return this.notebooks.listPublic({
-      page: page ? Number(page) : 1,
-      pageSize: pageSize ? Number(pageSize) : 24,
+      page: query.page,
+      pageSize: query.pageSize,
       viewerId: user?.sub,
-      status: st,
-      sort: sort === 'hot' ? 'hot' : 'updated',
-      q: q?.trim() || undefined,
-      grower: grower?.trim() || undefined,
-      breeder: breeder?.trim() || undefined,
-      strainSlug: strainSlug?.trim() || undefined,
+      status: query.status,
+      sort: query.sort === 'hot' ? 'hot' : 'updated',
+      q: query.q?.trim() || undefined,
+      grower: query.grower?.trim() || undefined,
+      breeder: query.breeder?.trim() || undefined,
+      strainSlug: query.strainSlug?.trim() || undefined,
     });
   }
 

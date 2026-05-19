@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { SiteChrome } from "@/components/site-chrome";
+import { SiteProviders } from "@/components/site-providers";
 import type { SidebarCommunity, SidebarHotPost } from "@/components/app-sidebar";
 import { SiteMaintenancePage } from "@/components/site-maintenance-page";
 import { apiFetch } from "@/lib/api-public";
@@ -111,8 +112,8 @@ export default async function SiteLayout({
         on large screens while allowing full-bleed pages (like guest landing)
         to use their own inner max-w via mx-auto on child sections.
       */}
-      <div className="mx-auto w-full max-w-5xl lg:max-w-[1100px]">
-        {children}
+      <div className="mx-auto w-full max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] sm:px-0">
+        <SiteProviders>{children}</SiteProviders>
       </div>
     </SiteChrome>
   );

@@ -37,7 +37,7 @@ function StarSlot({
     >
       {/* Base “empty” star — neutral + amber tint so it never matches the page background */}
       <svg
-        className="pointer-events-none absolute left-0 top-0 h-8 w-8 text-neutral-600 opacity-35 dark:text-amber-100 dark:opacity-25"
+        className="pointer-events-none absolute left-0 top-0 h-8 w-8 text-[var(--gn-text-muted)] opacity-40"
         width="32"
         height="32"
         viewBox="0 0 24 24"
@@ -144,7 +144,7 @@ export function InteractiveStarRating({
 
 function CatalogStarGlyph({
   filled,
-  accentClassName = "text-emerald-400",
+  accentClassName = "text-[var(--gn-accent)]",
   size = "md",
 }: {
   filled: boolean;
@@ -159,7 +159,7 @@ function CatalogStarGlyph({
       className={`${dim} shrink-0 ${
         filled
           ? accentClassName
-          : "text-neutral-500 opacity-45 dark:text-neutral-600 dark:opacity-70"
+          : "text-[var(--gn-text-muted)] opacity-50"
       }`}
       width={wh}
       height={wh}
@@ -196,7 +196,7 @@ export function CatalogOverallStarRow({
           type="button"
           role="radio"
           aria-checked={value === n}
-          className="rounded p-0.5 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500"
+          className="rounded p-0.5 outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)]"
           onClick={() => onChange(n)}
         >
           <CatalogStarGlyph
@@ -231,7 +231,7 @@ export function CatalogOptionalSubStarRow({
           <button
             key={n}
             type="button"
-            className={`rounded outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`rounded outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--gn-ring-focus)] ${
               starSize === "sm" ? "p-px" : "p-0.5"
             }`}
             onClick={() => onChange(n)}
@@ -247,7 +247,7 @@ export function CatalogOptionalSubStarRow({
       {value != null ? (
         <button
           type="button"
-          className="text-[10px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)] underline-offset-2 hover:text-emerald-500 hover:underline"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--gn-text-muted)] underline-offset-2 hover:text-[var(--gn-accent)] hover:underline"
           onClick={() => onChange(null)}
         >
           Clear

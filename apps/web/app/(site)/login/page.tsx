@@ -48,7 +48,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel — brand banner (lg+) */}
-      <div className="hidden lg:flex lg:max-w-[50%] lg:flex-1 lg:flex-col lg:items-center lg:justify-center bg-gradient-to-br from-emerald-950 to-green-900 p-12 relative overflow-hidden">
+      <div className="hidden lg:flex lg:max-w-[50%] lg:flex-1 lg:flex-col lg:items-center lg:justify-center bg-gradient-to-br from-[var(--gn-page-top)] via-[var(--gn-surface-muted)] to-[var(--gn-page-bot)] p-12 relative overflow-hidden">
         {/* Decorative leaf */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
           <span className="text-[18rem] opacity-[0.06]">🌿</span>

@@ -229,7 +229,9 @@ export function CatalogReviewForm({
             <div
               key={i}
               className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
+                step >= i + 1
+                  ? "bg-[var(--gn-accent)]"
+                  : "bg-[color-mix(in_srgb,var(--gn-text-muted)_30%,transparent)]"
               }`}
             />
           ))}
@@ -296,7 +298,7 @@ export function CatalogReviewForm({
               onChange={(e) => setBody(e.target.value)}
               rows={8}
               placeholder="Write your review…"
-              className="mt-3 w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+              className="mt-3 w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_60%,transparent)] focus:outline-none focus:ring-1 focus:ring-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)]"
             />
           </div>
         ) : null}
@@ -316,7 +318,7 @@ export function CatalogReviewForm({
                   <button
                     type="button"
                     onClick={addImageField}
-                    className="text-xs font-medium text-emerald-500 hover:underline"
+                    className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
                   >
                     Add URL
                   </button>
@@ -434,7 +436,7 @@ export function CatalogReviewForm({
               type="button"
               disabled={!canContinue || saving}
               onClick={() => setStep((s) => Math.min(STEPS, s + 1))}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -443,7 +445,7 @@ export function CatalogReviewForm({
               type="button"
               disabled={saving || overall == null}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               {saving ? "Saving…" : isEditing ? "Update review" : "Post review"}
             </button>

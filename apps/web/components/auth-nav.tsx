@@ -82,7 +82,7 @@ function UserAvatarChip({
           referrerPolicy="no-referrer"
         />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+        <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-[var(--gn-text-muted)]">
           {initial}
         </span>
       )}
@@ -549,7 +549,7 @@ export function AuthNav() {
             <button
               type="button"
               role="menuitem"
-              className="flex w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+              className="flex w-full px-3 py-2 text-left text-sm text-red-400 transition hover:bg-red-500/10"
               onClick={() => void signOut()}
             >
               Sign out

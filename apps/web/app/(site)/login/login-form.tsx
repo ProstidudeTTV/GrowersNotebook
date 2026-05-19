@@ -32,10 +32,14 @@ export function LoginForm() {
   const [mailingListOptIn, setMailingListOptIn] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [message, setMessage] = useState<string | null>(urlError);
+  const [messageTone, setMessageTone] = useState<"error" | "success" | "info">(
+    urlError ? "error" : "info",
+  );
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
     setMessage(null);
+    setMessageTone("info");
     setLoading(true);
     const supabase = createClient();
     const origin = getSiteOriginForAuth();
@@ -43,6 +47,7 @@ export function LoginForm() {
       if (mode === "signup") {
         const u = username.trim();
         if (!u) {
+          setMessageTone("error");
           setMessage("Choose a display name (username).");
           setLoading(false);
           return;
@@ -59,9 +64,11 @@ export function LoginForm() {
           },
         });
         if (error) throw error;
+        setMessageTone("success");
         setMessage("Check your email to confirm, then sign in.");
       } else if (mode === "forgot") {
         if (!email.trim()) {
+          setMessageTone("error");
           setMessage("Enter your email address.");
           setLoading(false);
           return;
@@ -82,6 +89,7 @@ export function LoginForm() {
               : "Could not send reset email.";
           throw new Error(msg);
         }
+        setMessageTone("success");
         setMessage(
           "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.",
         );
@@ -97,6 +105,7 @@ export function LoginForm() {
         router.refresh();
       }
     } catch (e) {
+      setMessageTone("error");
       setMessage(e instanceof Error ? e.message : "Authentication failed");
     } finally {
       setLoading(false);
@@ -237,7 +246,18 @@ export function LoginForm() {
                 : "Continue"}
         </button>
         {message ? (
-          <p className="text-sm text-[var(--gn-text)]">{message}</p>
+          <p
+            role="alert"
+            className={`rounded-lg px-3 py-2 text-sm ${
+              messageTone === "error"
+                ? "border border-red-500/40 bg-red-500/10 text-red-200"
+                : messageTone === "success"
+                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
+                  : "text-[var(--gn-text-muted)]"
+            }`}
+          >
+            {message}
+          </p>
         ) : null}
       </form>
       <Link

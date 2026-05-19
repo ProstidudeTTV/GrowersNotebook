@@ -89,7 +89,7 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
           autoComplete="off"
         />
         {linkedStrainId ? (
-          <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+          <p className="mt-1 text-xs text-[var(--gn-accent)]">
             Linked to catalog strain.
           </p>
         ) : null}

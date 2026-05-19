@@ -10,6 +10,7 @@ import {
   postVotes,
   posts,
 } from '../db/schema';
+import { BlocksService } from '../blocks/blocks.service';
 import { NotebooksService } from '../notebooks/notebooks.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProfilesService } from '../profiles/profiles.service';
@@ -88,13 +89,67 @@ function truncateNotif(s: string, max: number): string {
   return `${t.slice(0, max - 1)}…`;
 }
 
+const VOTE_MILESTONES = [50, 100, 500] as const;
+
+function voteMilestoneCrossed(
+  scoreBefore: number,
+  scoreAfter: number,
+): number | null {
+  let crossed: number | null = null;
+  for (const m of VOTE_MILESTONES) {
+    if (scoreBefore < m && scoreAfter >= m) crossed = m;
+  }
+  return crossed;
+}
+
+async function postVoteScore(db: ReturnType<typeof getDb>, postId: string) {
+  const [{ score }] = await db
+    .select({
+      score: sql<number>`coalesce(sum(${postVotes.value})::int, 0)`.as('score'),
+    })
+    .from(postVotes)
+    .where(eq(postVotes.postId, postId));
+  return Number(score ?? 0);
+}
+
+async function notebookVoteScore(
+  db: ReturnType<typeof getDb>,
+  notebookId: string,
+) {
+  const [{ score }] = await db
+    .select({
+      score: sql<number>`coalesce(sum(${notebookVotes.value})::int, 0)`.as(
+        'score',
+      ),
+    })
+    .from(notebookVotes)
+    .where(eq(notebookVotes.notebookId, notebookId));
+  return Number(score ?? 0);
+}
+
 @Injectable()
 export class VotesService {
   constructor(
+    private readonly blocks: BlocksService,
     private readonly notebooksSvc: NotebooksService,
     private readonly notifications: NotificationsService,
     private readonly profiles: ProfilesService,
   ) {}
+
+  private async assertCanVoteOnProfileContent(
+    authorId: string,
+    voterId: string,
+  ) {
+    if (authorId !== voterId) {
+      if (await this.blocks.hasBlockBetween(voterId, authorId)) {
+        throw new NotFoundException('Not found');
+      }
+      const vis = await this.profiles.getProfileFeedVisibility(authorId, voterId);
+      if (!vis.allowPosts) {
+        throw new NotFoundException('Not found');
+      }
+    }
+  }
 
   async votePost(userId: string, postId: string, value: -1 | 1) {
     const db = getDb();
@@ -107,6 +162,8 @@ export class VotesService {
       .from(posts)
       .where(eq(posts.id, postId));
     if (!post) throw new NotFoundException('Post not found');
+
+    await this.assertCanVoteOnProfileContent(post.authorId, userId);
 
     let seedsBefore = 0;
     let levelBefore = '';
@@ -123,6 +180,8 @@ export class VotesService {
 
     const prev = existing?.value === undefined ? null : Number(existing.value);
     const incoming = Number(value);
+    const scoreBefore =
+      post.authorId !== userId ? await postVoteScore(db, postId) : 0;
     if (prev === incoming) {
       await db
         .delete(postVotes)
@@ -137,13 +196,17 @@ export class VotesService {
     await setPostVoteRow(db, userId, postId, value, prev !== null);
 
     if (post.authorId !== userId) {
-      const isUpvote = incoming === 1;
-      if (isUpvote) {
+      const scoreAfter = await postVoteScore(db, postId);
+      const milestone = voteMilestoneCrossed(scoreBefore, scoreAfter);
+      if (milestone != null) {
         await this.notifications.createForUser(
           post.authorId,
-          'Upvote on your post',
-          `Someone upvoted “${truncateNotif(post.title, 100)}”.`,
-          { actionUrl: `/p/${postId}` },
+          'Vote milestone!',
+          `Your post “${truncateNotif(post.title, 80)}” reached ${milestone} seeds.`,
+          {
+            kind: 'vote_milestone',
+            actionUrl: `/p/${postId}`,
+          },
         );
       }
       const afterMap = await this.profiles.getSeedsByUserIds([post.authorId]);
@@ -178,6 +241,8 @@ export class VotesService {
       .from(comments)
       .where(eq(comments.id, commentId));
     if (!c) throw new NotFoundException('Comment not found');
+
+    await this.assertCanVoteOnProfileContent(c.authorId, userId);
 
     let seedsBefore = 0;
     let levelBefore = '';
@@ -225,24 +290,6 @@ export class VotesService {
     );
 
     if (c.authorId !== userId) {
-      const isUpvote = incoming === 1;
-      if (isUpvote) {
-        const [postRow] = await db
-          .select({ title: posts.title })
-          .from(posts)
-          .where(eq(posts.id, c.postId));
-        const postTitle = postRow?.title ?? 'a post';
-        const preview = truncateNotif(
-          c.body?.trim() || '(comment)',
-          80,
-        );
-        await this.notifications.createForUser(
-          c.authorId,
-          'Upvote on your comment',
-          `On “${truncateNotif(postTitle, 60)}”: ${preview}`,
-          { actionUrl: `/p/${c.postId}#comment-${commentId}` },
-        );
-      }
       const afterMap = await this.profiles.getSeedsByUserIds([c.authorId]);
       const seedsAfter = afterMap.get(c.authorId) ?? 0;
       const levelAfter = growerLevelFromSeeds(seedsAfter);
@@ -288,6 +335,11 @@ export class VotesService {
       nb.ownerId,
       userId,
     );
+    if (nb.ownerId !== userId) {
+      if (await this.blocks.hasBlockBetween(userId, nb.ownerId)) {
+        throw new NotFoundException('Notebook not found');
+      }
+    }
 
     const [existing] = await db
       .select({ value: notebookVotes.value })
@@ -318,15 +370,26 @@ export class VotesService {
       };
     }
 
+    const scoreBefore =
+      nb.ownerId !== userId
+        ? await notebookVoteScore(db, notebookId)
+        : 0;
     await setNotebookVoteRow(db, userId, notebookId, value, prev !== null);
 
-    if (nb.ownerId !== userId && incoming === 1) {
-      await this.notifications.createForUser(
-        nb.ownerId,
-        'Upvote on your notebook',
-        `Someone upvoted “${truncateNotif(nb.title, 100)}”.`,
-        { actionUrl: `/notebooks/${notebookId}#comments` },
-      );
+    if (nb.ownerId !== userId) {
+      const scoreAfter = await notebookVoteScore(db, notebookId);
+      const milestone = voteMilestoneCrossed(scoreBefore, scoreAfter);
+      if (milestone != null) {
+        await this.notifications.createForUser(
+          nb.ownerId,
+          'Vote milestone!',
+          `Your journal “${truncateNotif(nb.title, 80)}” reached ${milestone} seeds.`,
+          {
+            kind: 'vote_milestone',
+            actionUrl: `/notebooks/${notebookId}`,
+          },
+        );
+      }
     }
 
     const m = await this.notebookVoteMetrics(notebookId, userId);

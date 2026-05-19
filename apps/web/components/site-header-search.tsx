@@ -161,7 +161,7 @@ export function SiteHeaderSearch() {
         />
         <button
           type="submit"
-          className="shrink-0 rounded-lg bg-[var(--gn-accent)] px-3 py-2 text-sm font-semibold text-white hover:brightness-110"
+          className="shrink-0 rounded-lg bg-[var(--gn-accent)] px-3 py-2 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
         >
           Search
         </button>

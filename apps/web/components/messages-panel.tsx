@@ -190,7 +190,7 @@ function getInitials(name: string): string {
 
 const AVATAR_COLORS = [
   "bg-teal-700",
-  "bg-emerald-700",
+  "bg-[var(--gn-accent)]",
   "bg-sky-700",
   "bg-violet-700",
   "bg-rose-700",
@@ -999,15 +999,15 @@ export function MessagesPanel() {
         </div>
       ) : null}
 
-      {/* Two-panel layout */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Two-panel layout — mobile cross-fades between list and thread */}
+      <div className="relative flex flex-1 overflow-hidden">
 
         {/* Left: conversation list */}
         <div
-          className={`flex shrink-0 flex-col border-[var(--gn-divide)] ${
+          className={`flex shrink-0 flex-col border-[var(--gn-divide)] transition-opacity duration-200 ease-out lg:transition-none ${
             activeThreadId
-              ? "hidden lg:flex lg:w-80 lg:border-r"
-              : "w-full lg:w-80 lg:border-r"
+              ? "pointer-events-none absolute inset-0 z-0 w-full opacity-0 lg:pointer-events-auto lg:static lg:z-auto lg:flex lg:w-80 lg:border-r lg:opacity-100"
+              : "relative z-10 w-full opacity-100 lg:w-80 lg:border-r"
           }`}
         >
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
@@ -1139,8 +1139,10 @@ export function MessagesPanel() {
 
         {/* Right: active conversation */}
         <div
-          className={`flex flex-1 flex-col overflow-hidden ${
-            activeThreadId ? "flex" : "hidden lg:flex"
+          className={`flex flex-1 flex-col overflow-hidden transition-opacity duration-200 ease-out lg:transition-none ${
+            activeThreadId
+              ? "relative z-10 opacity-100"
+              : "pointer-events-none absolute inset-0 z-0 opacity-0 lg:pointer-events-auto lg:static lg:z-auto lg:opacity-100"
           }`}
         >
           {/* Chat header */}
@@ -1184,7 +1186,7 @@ export function MessagesPanel() {
                   </Link>
                   <p className="flex items-center gap-1.5 text-[10px] text-[var(--gn-text-muted)]">
                     <span
-                      className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--gn-accent)]"
                       aria-hidden
                     />
                     Direct message

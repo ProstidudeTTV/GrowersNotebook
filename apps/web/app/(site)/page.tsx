@@ -19,6 +19,7 @@ import {
   defaultSiteMetadata,
   mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
+import { fetchGrowersOnlineCount } from "@/lib/growers-online";
 
 /** Shape of items returned by `GET /posts/hot/week` that we surface on the guest hero. */
 type HotPostApiItem = {
@@ -30,23 +31,7 @@ type HotPostApiItem = {
   community?: { slug?: string | null; name?: string | null } | null;
 };
 
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
-
-/** Calls the SECURITY DEFINER RPC; returns 0 on any failure so the badge always renders. */
-async function fetchGrowersOnline(
-  supabase: SupabaseServerClient,
-): Promise<number> {
-  try {
-    const { data, error } = await supabase.rpc("growers_online_count");
-    if (error) return 0;
-    const value = typeof data === "number" ? data : Number(data);
-    return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-/** Server-side fetch of the top hot posts; returns [] on any failure (page still renders mock cards). */
+/** Server-side fetch of the top hot posts for the guest hero; returns [] on any failure. */
 async function fetchGuestHeroHotPosts(): Promise<GuestLandingHotPost[]> {
   let base: string;
   try {
@@ -56,13 +41,13 @@ async function fetchGuestHeroHotPosts(): Promise<GuestLandingHotPost[]> {
       process.env.API_URL?.trim().replace(/\/+$/, "") ?? "http://localhost:3001";
   }
   try {
-    const res = await fetch(`${base}/posts/hot/week?pageSize=2`, {
+    const res = await fetch(`${base}/posts/hot/week?pageSize=6`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     const payload = (await res.json()) as { items?: HotPostApiItem[] };
     const items = Array.isArray(payload?.items) ? payload.items : [];
-    return items.slice(0, 2).map((p): GuestLandingHotPost => {
+    return items.slice(0, 6).map((p): GuestLandingHotPost => {
       const firstImage = (p.media ?? []).find(
         (m) => m && typeof m.url === "string" && m.type === "image",
       );
@@ -196,7 +181,7 @@ export default async function Home() {
 
   if (!token) {
     const [growersOnline, hotPosts] = await Promise.all([
-      fetchGrowersOnline(supabase),
+      fetchGrowersOnlineCount(supabase),
       fetchGuestHeroHotPosts(),
     ]);
 
@@ -220,7 +205,7 @@ export default async function Home() {
 
   // Unreachable — kept only so TS doesn't complain about missing return
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] px-4 py-8">
       <div className="mb-6">
         <div className="flex items-center gap-2.5">
           <span className="text-2xl" aria-hidden>🌿</span>
@@ -242,7 +227,7 @@ export default async function Home() {
             </div>
             <h3 className="text-base font-bold text-[var(--gn-text)] mb-1">Something went sideways</h3>
             <p className="text-sm text-[var(--gn-text-muted)] mb-5 max-w-xs mx-auto">Could not load communities right now. Please try again in a moment.</p>
-            <Link href="/" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110">
+            <Link href="/" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] transition-all hover:brightness-110">
               Try again
             </Link>
           </div>
@@ -257,7 +242,7 @@ export default async function Home() {
             <p className="text-sm text-[var(--gn-text-muted)] mb-5 max-w-xs mx-auto">
               No communities are set up yet. Join one to connect with fellow growers and share your journey.
             </p>
-            <Link href="/community" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110">
+            <Link href="/community" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] transition-all hover:brightness-110">
               Browse Communities
             </Link>
           </div>

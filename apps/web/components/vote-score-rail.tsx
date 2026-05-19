@@ -13,18 +13,27 @@ const sizes: Record<
   sm: {
     shell: "w-[2.75rem] gap-px py-0.5",
     btn: "h-7 w-full rounded-md",
-    arrow: "text-[11px] font-semibold leading-none",
+    arrow: "text-xs font-semibold leading-none",
     counts:
-      "min-h-[2rem] px-0.5 text-[10px] font-medium tabular-nums leading-tight text-[var(--gn-text-muted)]",
+      "min-h-[2rem] px-0.5 text-xs font-medium tabular-nums leading-tight text-[var(--gn-text-muted)]",
   },
   lg: {
     shell: "w-11 gap-0.5 p-1",
     btn: "h-9 w-full rounded-lg",
     arrow: "text-sm font-bold leading-none",
     counts:
-      "min-h-[2.25rem] px-0.5 text-[11px] font-semibold tabular-nums leading-snug text-[var(--gn-text-muted)]",
+      "min-h-[2.25rem] px-0.5 text-xs font-semibold tabular-nums leading-snug text-[var(--gn-text-muted)]",
   },
 };
+
+const upActive =
+  "bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] text-[var(--gn-accent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--gn-accent)_35%,transparent)]";
+const upIdle =
+  "text-[var(--gn-text-muted)] hover:bg-[color-mix(in_srgb,var(--gn-accent)_12%,transparent)] hover:text-[var(--gn-accent)]";
+const downActive =
+  "bg-violet-500/15 text-violet-600 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:bg-violet-500/20 dark:text-violet-300";
+const downIdle =
+  "text-[var(--gn-text-muted)] hover:bg-violet-500/12 hover:text-violet-600 dark:hover:text-violet-400";
 
 /**
  * ▲ / +up · −down / ▼ — no large net score; arrows stay colored when viewerVote matches.
@@ -68,14 +77,6 @@ export function VoteScoreRail({
   }, [upvotes, downvotes]);
 
   const s = sizes[size];
-  const upActive =
-    "bg-green-500/15 text-green-600 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.35)] dark:bg-green-500/20 dark:text-green-400";
-  const upIdle =
-    "text-[var(--gn-text-muted)] hover:bg-green-500/12 hover:text-green-600 dark:hover:text-green-400";
-  const downActive =
-    "bg-violet-500/15 text-violet-600 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:bg-violet-500/20 dark:text-violet-300";
-  const downIdle =
-    "text-[var(--gn-text-muted)] hover:bg-violet-500/12 hover:text-violet-600 dark:hover:text-violet-400";
 
   const upCls = `${s.btn} flex items-center justify-center border-0 transition ${vv === 1 ? upActive : upIdle}`;
   const downCls = `${s.btn} flex items-center justify-center border-0 transition ${vv === -1 ? downActive : downIdle}`;
@@ -105,7 +106,7 @@ export function VoteScoreRail({
         ref={countsRef}
         className={`flex flex-col items-center justify-center text-center ${s.counts}`}
       >
-        <span className="text-emerald-600/90 dark:text-emerald-400/90">
+        <span className="text-[var(--gn-accent)]/90">
           +{upvotes}
         </span>
         <span className="opacity-50">·</span>
@@ -157,7 +158,7 @@ export function VoteScoreReadonly({
 
   const scoreColor =
     score > 0
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-[var(--gn-accent)]"
       : score < 0
         ? "text-violet-600 dark:text-violet-400"
         : "text-[var(--gn-text-muted)]";
@@ -174,8 +175,8 @@ export function VoteScoreReadonly({
         >
           {formatVoteScore(score)}
         </div>
-        <div className="mt-1.5 flex items-center gap-1 text-[10px] tabular-nums leading-none text-[var(--gn-text-muted)]">
-          <span className="text-emerald-600/85 dark:text-emerald-400/90">
+        <div className="mt-1.5 flex items-center gap-1 text-xs tabular-nums leading-none text-[var(--gn-text-muted)]">
+          <span className="text-[var(--gn-accent)]/85">
             +{upvotes}
           </span>
           <span className="opacity-40">/</span>
@@ -195,7 +196,7 @@ export function VoteScoreReadonly({
       >
         {formatVoteScore(score)}
       </div>
-      <div className="mt-1 text-center text-[10px] tabular-nums leading-tight text-[var(--gn-text-muted)]">
+      <div className="mt-1 text-center text-xs tabular-nums leading-tight text-[var(--gn-text-muted)]">
         +{upvotes}
         <span className="opacity-50"> · </span>−{downvotes}
       </div>
@@ -229,14 +230,6 @@ export function VoteFeedPill({
     ? Number(scoreIn)
     : upvotes - downvotes;
   const vv = normalizedViewerVote(viewerVote);
-  const upActive =
-    "bg-green-500/15 text-green-600 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.35)] dark:bg-green-500/20 dark:text-green-400";
-  const upIdle =
-    "text-[var(--gn-text-muted)] hover:bg-green-500/12 hover:text-green-600 dark:hover:text-green-400";
-  const downActive =
-    "bg-violet-500/18 text-violet-500 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:text-violet-300";
-  const downIdle =
-    "text-[var(--gn-text-muted)] hover:bg-violet-500/10 hover:text-violet-500 dark:hover:text-violet-400";
 
   return (
     <div

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BlocksModule } from '../blocks/blocks.module';
 import { CommentsModule } from '../comments/comments.module';
 import { NotebooksModule } from '../notebooks/notebooks.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -11,6 +12,7 @@ import { VotesService } from './votes.service';
 @Module({
   imports: [
     AuthModule,
+    BlocksModule,
     PostsModule,
     CommentsModule,
     NotebooksModule,

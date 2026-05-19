@@ -180,6 +180,7 @@ export class NotebookCommentsService {
         : 'New comment on your notebook';
       const body = `“${titleShort}”: ${preview}`;
       await this.notifications.createForUser(notifyUserId, title, body, {
+        kind: 'new_comment',
         actionUrl: `/notebooks/${notebookId}#comments`,
       });
     }

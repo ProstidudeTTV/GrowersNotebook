@@ -12,6 +12,7 @@ import type { JwtUser } from '../auth/jwt-user';
 import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
+import { ListStrainsQueryDto } from './dto/list-catalog.query.dto';
 import { UpsertCatalogReviewDto } from './dto/upsert-catalog-review.dto';
 import { StrainsService } from './strains.service';
 
@@ -21,31 +22,22 @@ export class PublicStrainsController {
 
   @Get()
   @UseGuards(OptionalAuthGuard)
-  list(
-    @Query('q') q?: string,
-    @Query('sort') sort?: 'name' | 'rating',
-    @Query('breederId') breederId?: string,
-    @Query('breederSlug') breederSlug?: string,
-    @Query('minRating') minRatingRaw?: string,
-    @Query('minReviews') minReviewsRaw?: string,
-    @Query('chemotype') chemotypeRaw?: string,
-    @Query('autoflower') autoflowerRaw?: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
-    const minRating = minRatingRaw != null ? Number(minRatingRaw) : NaN;
-    const minReviews = minReviewsRaw != null ? Number(minReviewsRaw) : NaN;
-    const c = chemotypeRaw?.trim().toLowerCase();
+  list(@Query() query: ListStrainsQueryDto) {
+    const minRating =
+      query.minRating != null ? Number(query.minRating) : NaN;
+    const minReviews =
+      query.minReviews != null ? Number(query.minReviews) : NaN;
+    const c = query.chemotype?.trim().toLowerCase();
     const chemotype =
       c === 'indica' || c === 'sativa' || c === 'hybrid' ? c : undefined;
-    const af = autoflowerRaw?.trim().toLowerCase();
+    const af = query.autoflower?.trim().toLowerCase();
     const autoflower =
       af === '1' || af === 'true' || af === 'yes' ? true : undefined;
     return this.strains.listPublic({
-      q,
-      sort: sort === 'rating' ? 'rating' : 'name',
-      breederId,
-      breederSlug,
+      q: query.q,
+      sort: query.sort === 'rating' ? 'rating' : 'name',
+      breederId: query.breederId,
+      breederSlug: query.breederSlug,
       chemotype,
       autoflower,
       minRating:
@@ -54,8 +46,8 @@ export class PublicStrainsController {
           : undefined,
       minReviews:
         Number.isFinite(minReviews) && minReviews >= 1 ? minReviews : undefined,
-      page: page ? Number(page) : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
+      page: query.page,
+      pageSize: query.pageSize,
     });
   }
 

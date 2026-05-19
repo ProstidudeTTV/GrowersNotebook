@@ -23,7 +23,7 @@ function isHttpsImageUrl(s: string): boolean {
 }
 
 const fieldShell =
-  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40";
+  "w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 text-sm leading-snug text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_60%,transparent)] focus:outline-none focus:ring-1 focus:ring-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)]";
 
 const inputClass = `${fieldShell} py-2.5 min-h-[2.75rem]`;
 
@@ -160,7 +160,7 @@ export function NotebookHarvestWizard({
               <div
                 key={i}
                 className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                  step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
+                  step >= i + 1 ? "bg-[var(--gn-accent)]" : "bg-neutral-600/50"
                 }`}
               />
             ))}
@@ -253,7 +253,7 @@ export function NotebookHarvestWizard({
                 <button
                   type="button"
                   onClick={addImageField}
-                  className="text-xs font-medium text-emerald-500 hover:underline"
+                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   Add URL field
                 </button>
@@ -335,7 +335,7 @@ export function NotebookHarvestWizard({
               type="button"
               disabled={saving}
               onClick={() => setStep((s) => Math.min(STEPS, s + 1))}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               Next <span aria-hidden>›</span>
             </button>
@@ -344,7 +344,7 @@ export function NotebookHarvestWizard({
               type="button"
               disabled={saving}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
             >
               {saving ? "Saving…" : "Save harvest"}
             </button>

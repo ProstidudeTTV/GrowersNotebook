@@ -61,7 +61,7 @@ function compactCount(n: number): string {
 }
 
 const COMMENT_AVATAR_COLORS = [
-  "bg-emerald-800",
+  "bg-[var(--gn-accent)]",
   "bg-teal-800",
   "bg-sky-800",
   "bg-violet-800",
@@ -364,7 +364,7 @@ function CommentTree({
                 <p
                   className={
                     reportNotice.tone === "success"
-                      ? "mt-2 text-xs text-emerald-700 dark:text-emerald-400"
+                      ? "mt-2 text-xs text-[var(--gn-accent)]"
                       : "mt-2 text-xs text-amber-800 dark:text-amber-200"
                   }
                 >
@@ -1045,7 +1045,7 @@ export function PostView({
               >
                 {post.author.displayName ?? "member"}
               </UserProfileLink>
-              <span className="rounded-full bg-emerald-950/40 px-2 py-0.5 text-[10px] text-emerald-400">
+              <span className="rounded-full bg-[var(--gn-accent)]/15 px-2 py-0.5 text-[10px] text-[var(--gn-accent)]">
                 {authorTier}
               </span>
               <span className="text-[var(--gn-text-muted)]" title="Net seeds from this grower">

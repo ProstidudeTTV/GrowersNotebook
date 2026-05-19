@@ -36,3 +36,39 @@ export async function SeoJsonLd() {
     />
   );
 }
+
+/** Article structured data for post / catalog detail pages. */
+export function ArticleJsonLd({
+  headline,
+  description,
+  url,
+  imageUrl,
+  datePublished,
+}: {
+  headline: string;
+  description?: string;
+  url: string;
+  imageUrl?: string | null;
+  datePublished?: string;
+}) {
+  const data: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    url,
+    ...(description ? { description } : {}),
+    ...(datePublished ? { datePublished } : {}),
+    ...(imageUrl ? { image: [imageUrl] } : {}),
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}

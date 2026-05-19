@@ -195,7 +195,7 @@ export function NotebookSetupWizard({
                 <div
                   key={i}
                   className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                    step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
+                    step >= i + 1 ? "bg-[var(--gn-accent)]" : "bg-neutral-600/50"
                   }`}
                 />
               ))}
@@ -390,7 +390,7 @@ export function NotebookSetupWizard({
                         prev ? `${prev}\n${prompt}: ` : `${prompt}: `
                       )
                     }
-                    className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] transition hover:border-emerald-500/50 hover:text-emerald-500"
+                    className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-1 text-xs text-[var(--gn-text-muted)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_50%,transparent)] hover:text-[var(--gn-accent)]"
                   >
                     + {prompt}
                   </button>
@@ -410,7 +410,7 @@ export function NotebookSetupWizard({
           {/* Step 4 — Confirm */}
           {step === 4 && (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-5 text-center">
+              <div className="rounded-2xl border border-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_10%,transparent)] p-5 text-center">
                 <div className="mx-auto mb-3 text-4xl">🌱</div>
                 <h3 className="text-base font-bold text-[var(--gn-text)]">
                   {isCreate ? "Ready to create your journal!" : "Ready to save!"}
@@ -486,7 +486,7 @@ export function NotebookSetupWizard({
                 type="button"
                 disabled={saving || !canGoNext}
                 onClick={() => setStep((s) => Math.min(STEPS, s + 1))}
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
               >
                 Next ›
               </button>
@@ -495,7 +495,7 @@ export function NotebookSetupWizard({
                 type="button"
                 disabled={saving}
                 onClick={() => void finishSetup()}
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-neutral-950 shadow-sm transition hover:bg-emerald-400 disabled:opacity-45"
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-6 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
               >
                 {saving ? "Saving…" : isCreate ? "Create Journal →" : "Save Setup →"}
               </button>

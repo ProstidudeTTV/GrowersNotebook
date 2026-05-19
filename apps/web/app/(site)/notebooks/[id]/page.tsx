@@ -24,7 +24,7 @@ export async function generateMetadata({
     const strain =
       n.strain?.name?.trim() || n.customStrainLabel?.trim() || "";
     return {
-      title: `${n.title}${strain ? ` · ${strain}` : ""} · ${SITE_NAME}`,
+      title: `${n.title}${strain ? ` · ${strain}` : ""}`,
       alternates: { canonical: canonicalPath(`/notebooks/${id}`) },
     };
   } catch {

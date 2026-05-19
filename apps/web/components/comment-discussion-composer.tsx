@@ -324,12 +324,12 @@ export function CommentDiscussionComposer({
               {gifLoading ? "…" : "Search now"}
             </button>
           </div>
-          <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
+          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
             One GIF per comment, and not with photos. Powered by Giphy. Results
             update as you type (after a short pause).
           </p>
           {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
-            <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
               Type at least 2 characters.
             </p>
           ) : null}
@@ -418,7 +418,7 @@ export function CommentDiscussionComposer({
                 ) : null}
                 {att.uploading ? (
                   <div
-                    className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
+                    className="absolute inset-0 flex items-center justify-center bg-black/35 text-xs font-medium text-white"
                     aria-hidden
                   >
                     …
@@ -426,7 +426,7 @@ export function CommentDiscussionComposer({
                 ) : null}
                 {att.error ? (
                   <div
-                    className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-[9px] font-medium leading-tight text-white"
+                    className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-xs font-medium leading-tight text-white"
                     title={att.error}
                   >
                     Failed
@@ -436,7 +436,7 @@ export function CommentDiscussionComposer({
                   <button
                     type="button"
                     aria-label="Remove photo"
-                    className="absolute right-0.5 top-0.5 rounded bg-black/55 px-1 text-[10px] text-white hover:bg-black/75"
+                    className="absolute right-0.5 top-0.5 rounded bg-black/55 px-1 text-xs text-white hover:bg-black/75"
                     onClick={() => {
                       setPendingCommentImages((prev) => {
                         const found = prev.find((x) => x.id === att.id);
@@ -458,7 +458,7 @@ export function CommentDiscussionComposer({
         type="button"
         onClick={() => void submit()}
         disabled={!viewerId || busy || !canSend}
-        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
+        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-[var(--gn-on-accent)] transition hover:brightness-110 disabled:opacity-50"
       >
         {submitting ? "Posting…" : submitLabel}
       </button>

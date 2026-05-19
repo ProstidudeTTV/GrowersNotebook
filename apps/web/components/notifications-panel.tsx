@@ -58,7 +58,7 @@ function getTypeIcon(kind?: string | null): {
       return {
         icon: "▲",
         colorClass:
-          "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
+          "bg-[var(--gn-accent)]/15 text-[var(--gn-accent)] dark:bg-[var(--gn-accent)]/20",
       };
     case "mention":
       return {
@@ -90,6 +90,7 @@ export function NotificationsPanel() {
     title: string;
     body: string;
   } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     let supabase: ReturnType<typeof createClient>;
@@ -106,11 +107,13 @@ export function NotificationsPanel() {
     } = await supabase.auth.getSession();
     if (!session?.access_token) {
       setSignedIn(false);
+      setUserId(null);
       setLoading(false);
       setNotificationsUnreadCount(0);
       return;
     }
     setSignedIn(true);
+    setUserId(session.user.id);
     setLoading(true);
     try {
       const res = await apiFetch<{
@@ -132,6 +135,33 @@ export function NotificationsPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const supabase = createClient();
+      const channel = supabase
+        .channel(`gn-notifications-panel:${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "user_notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            void load();
+          },
+        )
+        .subscribe();
+      return () => {
+        void supabase.removeChannel(channel);
+      };
+    } catch {
+      return;
+    }
+  }, [userId, load]);
 
   const markRead = async (nId: string) => {
     let supabase: ReturnType<typeof createClient>;

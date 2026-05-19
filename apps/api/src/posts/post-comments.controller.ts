@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { JwtUser } from '../auth/jwt-user';
 import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
@@ -34,6 +35,7 @@ export class PostCommentsController {
     return this.comments.listForPost(postId, user?.sub);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post()
   @UseGuards(SupabaseAuthGuard)
   create(

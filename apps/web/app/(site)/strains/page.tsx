@@ -270,7 +270,7 @@ export default async function StrainsPage({
                 : chemotypeLower === "sativa"
                   ? "bg-gradient-to-r from-amber-500/80 to-yellow-700/40"
                   : chemotypeLower === "hybrid"
-                    ? "bg-gradient-to-r from-emerald-600/80 to-teal-800/40"
+                    ? "bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_80%,transparent)] to-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-surface-elevated))]"
                     : "bg-gradient-to-r from-gray-600/50 to-gray-800/30";
             return (
               <li key={s.id} className="min-w-0">
@@ -294,7 +294,7 @@ export default async function StrainsPage({
                       </div>
                     </div>
                     {s.genetics?.trim() ? (
-                      <p className="mt-1 text-[11px] text-[var(--gn-text-muted)]">
+                      <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
                         {s.genetics.trim()}
                       </p>
                     ) : null}

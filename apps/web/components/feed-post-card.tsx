@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +15,7 @@ import { VoteScoreRail } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import { formatFeedExcerpt } from "@/lib/feed-excerpt";
 import type { FeedPost } from "@/lib/feed-post";
+import { useAuth } from "@/components/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import {
@@ -45,12 +47,12 @@ const tagPillClass =
 function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
   return (
     <div className="relative mt-3 h-48 w-full overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
         alt=""
-        className="h-full w-full object-cover object-center"
-        loading="lazy"
+        fill
+        className="object-cover object-center"
+        sizes="(max-width: 1024px) 100vw, min(1100px, 70vw)"
       />
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-black/15 to-transparent"
@@ -90,7 +92,7 @@ export function FeedPostCard({
 }) {
   const router = useRouter();
   const [local, setLocal] = useState(post);
-  const [viewerId, setViewerId] = useState<string | null>(null);
+  const { userId: viewerId } = useAuth();
   const [voteBusy, setVoteBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportDraft, setReportDraft] = useState("");
@@ -101,19 +103,6 @@ export function FeedPostCard({
   useEffect(() => {
     setLocal(post);
   }, [post]);
-
-  useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      setViewerId(session?.user?.id ?? null);
-    });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_e, session) => {
-      setViewerId(session?.user?.id ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   const refreshPost = useCallback(async () => {
     const supabase = createClient();
@@ -261,7 +250,7 @@ export function FeedPostCard({
           iconKey={pinnedCommunity.iconKey}
           nameFallback={pinnedCommunity.name}
           slugFallback={pinnedCommunity.slug}
-          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[9px]"
+          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs"
         />
         <span className="font-semibold text-[var(--gn-text)]">
           {pinnedCommunity.name.trim() || pinnedCommunity.slug}
@@ -277,7 +266,7 @@ export function FeedPostCard({
           iconKey={null}
           nameFallback={community.name}
           slugFallback={community.slug}
-          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-[9px]"
+          frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs"
         />
         <Link
           href={`/community/${community.slug}`}
@@ -320,10 +309,10 @@ export function FeedPostCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-all duration-200 hover:border-[var(--gn-accent)]/40 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-[border-color,box-shadow] duration-200 hover:border-[var(--gn-accent)]/40 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
     >
       {rank != null && rank >= 1 && rank <= 5 && (
-        <span className="absolute top-3 left-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gn-accent)]/90 text-xs font-bold text-white pointer-events-none">
+        <span className="absolute top-3 left-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gn-accent)]/90 text-xs font-bold text-[var(--gn-on-accent)] pointer-events-none">
           {rank}
         </span>
       )}
@@ -338,13 +327,15 @@ export function FeedPostCard({
             openPost();
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImage.url}
-            alt=""
-            className="h-56 w-full object-cover sm:h-72 md:h-80"
-            loading="lazy"
-          />
+          <div className="relative h-56 w-full sm:h-72 md:h-80">
+            <Image
+              src={heroImage.url}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
+            />
+          </div>
         </div>
       ) : youTubePreviewId ? (
         <div
@@ -519,7 +510,7 @@ export function FeedPostCard({
             <button
               type="button"
               disabled={reportBusy}
-              className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)] disabled:opacity-50"
               onClick={() => void submitReport()}
             >
               {reportBusy ? "Sending…" : "Submit report"}

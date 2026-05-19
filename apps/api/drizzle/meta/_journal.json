@@ -239,6 +239,20 @@
       "when": 1778100000000,
       "tag": "0033_dm_realtime_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1778200000000,
+      "tag": "0034_post_reports_status_resolution",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1778300000000,
+      "tag": "0035_posts_vote_counts_feed_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -117,7 +117,7 @@ export function FollowingFeed({
         </p>
         <Link
           href="/login"
-          className="mt-4 inline-block rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
+          className="mt-4 inline-block rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
         >
           Sign in
         </Link>
@@ -158,7 +158,7 @@ export function FollowingFeed({
           href={sortLink("new")}
           className={
             sort === "new"
-              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white"
+              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-[var(--gn-on-accent)]"
               : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-sm)]"
           }
         >
@@ -168,7 +168,7 @@ export function FollowingFeed({
           href={sortLink("top")}
           className={
             sort === "top"
-              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white"
+              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-[var(--gn-on-accent)]"
               : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-sm)]"
           }
         >
@@ -186,8 +186,8 @@ export function FollowingFeed({
       ) : items.length === 0 ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]">
           {/* Gradient banner */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-green-900/80 to-teal-950 px-6 py-10 text-center">
-            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-green-400/10 blur-2xl" />
+          <div className="relative overflow-hidden bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-page-top))] via-[var(--gn-surface-muted)] to-[var(--gn-page-bot)] px-6 py-10 text-center">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-[var(--gn-accent)]/10 blur-2xl" />
             <div className="relative">
               <div className="mb-3 text-5xl">🌿</div>
               <h3 className="text-xl font-extrabold tracking-tight text-white">
@@ -202,7 +202,7 @@ export function FollowingFeed({
           <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-5">
             <Link
               href="/community"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110"
             >
               🌿 Discover Communities
             </Link>

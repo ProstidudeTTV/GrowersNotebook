@@ -1257,25 +1257,37 @@ export class NotebooksService {
     await db
       .delete(notebookWeekNutrients)
       .where(eq(notebookWeekNutrients.weekId, weekId));
-    let order = 0;
-    for (const line of lines) {
-      const pid = line.productId ?? null;
-      if (pid) {
-        const [p] = await db
-          .select({ id: nutrientProducts.id })
-          .from(nutrientProducts)
-          .where(eq(nutrientProducts.id, pid));
-        if (!p) throw new BadRequestException('Unknown nutrient product.');
+    if (lines.length === 0) return;
+
+    const productIds = [
+      ...new Set(
+        lines
+          .map((line) => line.productId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (productIds.length > 0) {
+      const existing = await db
+        .select({ id: nutrientProducts.id })
+        .from(nutrientProducts)
+        .where(inArray(nutrientProducts.id, productIds));
+      const found = new Set(existing.map((row) => row.id));
+      for (const pid of productIds) {
+        if (!found.has(pid)) {
+          throw new BadRequestException('Unknown nutrient product.');
+        }
       }
-      await db.insert(notebookWeekNutrients).values({
+    }
+
+    await db.insert(notebookWeekNutrients).values(
+      lines.map((line, order) => ({
         weekId,
-        productId: pid,
+        productId: line.productId ?? null,
         customLabel: line.customLabel?.trim() || null,
         dosage: line.dosage?.trim() || null,
         sortOrder: line.sortOrder ?? order,
-      });
-      order += 1;
-    }
+      })),
+    );
   }
 
   async listNutrientProducts(opts: {

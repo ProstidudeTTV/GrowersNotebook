@@ -77,7 +77,6 @@ function getTierInfo(tier: string | null): { emoji: string; label: string } {
 
 /** Stable color from first char — matches community-icon hashing approach */
 const AVATAR_COLORS = [
-  "from-emerald-700 to-green-600",
   "from-teal-700 to-cyan-600",
   "from-sky-700 to-blue-600",
   "from-violet-700 to-purple-600",
@@ -85,12 +84,13 @@ const AVATAR_COLORS = [
   "from-fuchsia-700 to-pink-600",
   "from-rose-700 to-red-600",
   "from-indigo-700 to-blue-600",
-  "from-lime-600 to-green-500",
   "from-cyan-700 to-sky-600",
+  "from-teal-800 to-teal-600",
+  "from-violet-800 to-indigo-600",
 ];
 function avatarGradient(name: string): string {
   const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[idx] ?? "from-emerald-700 to-green-600";
+  return AVATAR_COLORS[idx] ?? "from-teal-700 to-cyan-600";
 }
 
 export function ProfileView({
@@ -272,7 +272,7 @@ export function ProfileView({
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-green-900 to-teal-900">
+          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_28%,var(--gn-page-bottom))] via-[color-mix(in_srgb,var(--gn-accent)_16%,var(--gn-surface-muted))] to-[var(--gn-surface-elevated)]">
             {/* Subtle organic dot / vine pattern overlay */}
             <svg
               className="absolute inset-0 h-full w-full opacity-[0.07]"
@@ -288,7 +288,7 @@ export function ProfileView({
               <rect width="100%" height="100%" fill="url(#leaf-dots)" />
             </svg>
             {/* Radial glow from top-right */}
-            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-green-400/10 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[var(--gn-accent)]/10 blur-3xl" />
           </div>
         )}
         {/* Bottom fade */}
@@ -311,7 +311,7 @@ export function ProfileView({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-white/90">
+              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-on-accent)]">
                 {profileLabel.charAt(0).toUpperCase() || "?"}
               </span>
             )}
@@ -367,7 +367,7 @@ export function ProfileView({
               </span>
             )}
             {!statsHidden && profile.seeds != null && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-0.5 text-xs font-semibold text-amber-400 dark:text-amber-300">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-0.5 text-xs font-semibold text-amber-400">
                 🌱 {formatSeeds(profile.seeds)} Seeds
               </span>
             )}
@@ -408,7 +408,7 @@ export function ProfileView({
             <>
               <Link
                 href="/new-post"
-                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110"
               >
                 ✏️ New post
               </Link>
@@ -448,7 +448,7 @@ export function ProfileView({
                 type="button"
                 disabled={reportBusy}
                 onClick={() => void submitReport()}
-                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] transition hover:brightness-110 disabled:opacity-50"
               >
                 {reportBusy ? "Submitting…" : "Submit report"}
               </button>
@@ -469,7 +469,7 @@ export function ProfileView({
 
         {reportNotice ? (
           <p
-            className={`mb-4 text-sm ${reportNotice.tone === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
+            className={`mb-4 text-sm ${reportNotice.tone === "success" ? "text-[var(--gn-accent)]" : "text-red-400"}`}
           >
             {reportNotice.text}
           </p>
@@ -491,19 +491,25 @@ export function ProfileView({
             <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">comments</span>
           </span>
           <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+          <Link
+            href={`${base}/followers`}
+            className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+          >
             <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
               {profile.followerCount ?? 0}
             </strong>
             <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">followers</span>
-          </span>
+          </Link>
           <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+          <Link
+            href={`${base}/following`}
+            className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+          >
             <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
               {profile.followingCount ?? 0}
             </strong>
             <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">following</span>
-          </span>
+          </Link>
         </div>
       </div>
 
@@ -562,7 +568,7 @@ export function ProfileView({
                       href={buildPostsHref({ tab: "posts", sort: "new", page: 1 })}
                       className={
                         activeSort === "new"
-                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)]"
                           : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
                       }
                     >
@@ -572,7 +578,7 @@ export function ProfileView({
                       href={buildPostsHref({ tab: "posts", sort: "top", page: 1 })}
                       className={
                         activeSort === "top"
-                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                          ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)]"
                           : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
                       }
                     >
@@ -714,7 +720,7 @@ export function ProfileView({
                     <div className="flex flex-wrap gap-3">
                       <Link
                         href="/notebooks/new"
-                        className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+                        className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110"
                       >
                         📔 Start a grow journal
                       </Link>
@@ -808,7 +814,7 @@ export function ProfileView({
 
             {/* About This Grower card */}
             <div className="gn-card overflow-hidden">
-              <div className="h-8 w-full bg-gradient-to-r from-emerald-900/80 via-green-800/60 to-teal-900/50" />
+              <div className="h-8 w-full bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_55%,transparent)] via-[color-mix(in_srgb,var(--gn-accent)_35%,transparent)] to-transparent" />
               <div className="p-4 space-y-3">
                 <h3 className="text-sm font-bold text-[var(--gn-text)]">
                   About {profileLabel}
@@ -841,11 +847,21 @@ export function ProfileView({
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--gn-text-muted)]">Followers</span>
-                    <strong className="text-[var(--gn-text)]">{profile.followerCount ?? 0}</strong>
+                    <Link
+                      href={`${base}/followers`}
+                      className="font-semibold text-[var(--gn-accent)] hover:underline"
+                    >
+                      {profile.followerCount ?? 0}
+                    </Link>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--gn-text-muted)]">Following</span>
-                    <strong className="text-[var(--gn-text)]">{profile.followingCount ?? 0}</strong>
+                    <Link
+                      href={`${base}/following`}
+                      className="font-semibold text-[var(--gn-accent)] hover:underline"
+                    >
+                      {profile.followingCount ?? 0}
+                    </Link>
                   </div>
                 </div>
               </div>

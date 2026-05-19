@@ -11,7 +11,14 @@ html:not(.dark) {
   color-scheme: light;
   /* Forest green — nature, growth, cannabis — not a corporate orange */
   --gn-accent: #15803d;
+  --gn-on-accent: #ffffff;
   --gn-hot: #ea580c;
+  --gn-duration-fast: 150ms;
+  --gn-duration-normal: 200ms;
+  --gn-duration-slow: 300ms;
+  --gn-container-max: 68.75rem;
+  --gn-rail-width: 18rem;
+  --gn-gutter-mobile: 1rem;
   /* Warm cream palette — earthy, inviting, not clinical */
   --gn-page-top: #faf9f7;
   --gn-page-mid: #f4f0ea;
@@ -28,7 +35,7 @@ html:not(.dark) {
   --gn-border: rgba(20, 80, 45, 0.12);
   --gn-text: #111a14;
   --gn-text-muted: #4a6455;
-  --gn-text-excerpt: #5a7465;
+  --gn-text-excerpt: #4a6455;
   --gn-shadow-sm: 0 1px 2px rgb(20 50 30 / 0.06),
     0 1px 3px rgb(20 50 30 / 0.04);
   --gn-shadow-md:
@@ -115,7 +122,14 @@ html.dark {
   color-scheme: dark;
   /* Green ACCENT only — neutral dark gray canvas so the green actually pops */
   --gn-accent: #4ade80;
+  --gn-on-accent: #0d0d0d;
   --gn-hot: #f97316;
+  --gn-duration-fast: 150ms;
+  --gn-duration-normal: 200ms;
+  --gn-duration-slow: 300ms;
+  --gn-container-max: 68.75rem;
+  --gn-rail-width: 18rem;
+  --gn-gutter-mobile: 1rem;
   /* Neutral near-black — Reddit-style dark, not a green terminal */
   --gn-page-top: #141414;
   --gn-page-mid: #111111;
@@ -131,7 +145,7 @@ html.dark {
   --gn-border: rgba(255, 255, 255, 0.10);
   --gn-text: #f0f0f0;
   --gn-text-muted: #9ca3af;
-  --gn-text-excerpt: #6b7280;
+  --gn-text-excerpt: #9ca3af;
   --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.04) inset,
     0 1px 3px rgb(0 0 0 / 0.5);
   --gn-shadow-md:
@@ -799,4 +813,15 @@ html.dark .gn-post-content-flow .prose {
 
 .vote-score-pulse {
   animation: vote-score-pulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

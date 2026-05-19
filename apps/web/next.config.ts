@@ -5,6 +5,40 @@ import {
 } from "./lib/plausible-proxy";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/vi/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.giphy.com",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "media.tenor.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "c.tenor.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

@@ -19,6 +19,8 @@ type PublicProfile = {
   viewerFollowing: boolean;
   viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;
+  followerCount?: number;
+  followingCount?: number;
 };
 
 type FeedResponse = {

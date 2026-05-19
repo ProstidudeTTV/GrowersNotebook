@@ -3,13 +3,13 @@ import { isCommunityIconKey } from "@/lib/community-icon-keys";
 
 /** Deterministic color palette for community letter avatars. */
 const PALETTE = [
-  { bg: "#14532d", color: "#86efac" },  // emerald-900 / green-300
+  { bg: "#0d1610", color: "#4ade80" },  // gn-page-top / gn-accent (dark)
   { bg: "#134e4a", color: "#5eead4" },  // teal-900 / teal-300
   { bg: "#1e3a5f", color: "#93c5fd" },  // blue-950 / blue-300
   { bg: "#2e1065", color: "#c4b5fd" },  // violet-950 / violet-300
   { bg: "#451a03", color: "#fde68a" },  // amber-950 / amber-200
   { bg: "#3b0764", color: "#f0abfc" },  // fuchsia-950 / fuchsia-300
-  { bg: "#064e3b", color: "#6ee7b7" },  // emerald-900 alt / emerald-300
+  { bg: "#162118", color: "#86efac" },  // gn-surface-raised / accent tint
   { bg: "#164e63", color: "#a5f3fc" },  // cyan-900 / cyan-300
   { bg: "#1c1917", color: "#d6d3d1" },  // stone-900 / stone-300
   { bg: "#2d1b00", color: "#fdba74" },  // amber warm / orange-300

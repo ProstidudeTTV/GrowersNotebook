@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CatalogStrainBreederLink } from "@/components/catalog/catalog-strain-breeder-link";
 import { CatalogModalCrumb } from "@/components/catalog/catalog-modal-crumb";
 import { CatalogReviewForm } from "@/components/catalog/catalog-review-form";
@@ -221,11 +222,21 @@ export async function StrainDetailBody({
 
   return shell(
     <div className="flex flex-col gap-8 lg:gap-10">
-      <nav className="text-sm text-[var(--gn-text-muted)]">
-        {strainsCrumb}
-        <span className="mx-2">/</span>
-        <span className="text-[var(--gn-text)]">{s.name}</span>
-      </nav>
+      {variant === "page" ? (
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Strains", href: "/strains" },
+            { label: s.name },
+          ]}
+        />
+      ) : (
+        <nav className="text-sm text-[var(--gn-text-muted)]">
+          {strainsCrumb}
+          <span className="mx-2">/</span>
+          <span className="text-[var(--gn-text)]">{s.name}</span>
+        </nav>
+      )}
 
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">

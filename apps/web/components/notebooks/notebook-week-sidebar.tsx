@@ -73,7 +73,7 @@ export function NotebookWeekSidebar({
   return (
     <nav aria-label="Week calendar">
       {variant === "sidebar" ? (
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
           Weeks
         </p>
       ) : null}

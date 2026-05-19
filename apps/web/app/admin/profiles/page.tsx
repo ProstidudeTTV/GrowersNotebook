@@ -2,7 +2,18 @@
 
 import { EditButton, List, useTable } from "@refinedev/antd";
 import type { BaseRecord } from "@refinedev/core";
-import { Avatar, message, Select, Space, Table, Tag, Tooltip } from "antd";
+import {
+  Avatar,
+  Button,
+  Form,
+  Input,
+  message,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+} from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -56,6 +67,10 @@ export default function AdminProfilesPage() {
     resource: "profiles",
     syncWithLocation: true,
     pagination: { pageSize: 20 },
+    onSearch: (values: { q?: string }) =>
+      values.q
+        ? [{ field: "q", operator: "contains" as const, value: values.q }]
+        : [],
   });
 
   const roleFilterValue = (
@@ -64,7 +79,20 @@ export default function AdminProfilesPage() {
 
   return (
     <List title="Profiles">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <Form
+          {...(({ children: _c, ...rest }) => rest)(searchFormProps)}
+          layout="inline"
+          className="mb-0 flex flex-wrap items-end gap-3"
+        >
+          <Form.Item name="q" label="Search" className="mb-0 min-w-[14rem]">
+            <Input.Search
+              placeholder="Name or profile ID…"
+              allowClear
+              onSearch={() => searchFormProps.form?.submit()}
+            />
+          </Form.Item>
+        </Form>
         <Select
           placeholder="Filter by role"
           allowClear

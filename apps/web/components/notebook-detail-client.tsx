@@ -262,7 +262,7 @@ function MetricGrid({
                 : `min-w-0 ${item.wide ? "sm:col-span-2" : ""}`
             }
           >
-            <dt className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
               {item.label}
             </dt>
             <dd className={isWrap ? "mt-0.5" : "mt-1"}>
@@ -662,12 +662,12 @@ export function NotebookDetailClient({
                       {(strainLabel || nb.growthStage) && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {strainLabel ? (
-                            <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-[11px] font-medium text-[var(--gn-text)]">
+                            <span className="rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-px text-xs font-medium text-[var(--gn-text)]">
                               {strainLabel}
                             </span>
                           ) : null}
                           {nb.growthStage ? (
-                            <span className={`rounded-full px-2 py-px text-[11px] font-medium ${weekPhaseBadgeClass(nb.growthStage)}`}>
+                            <span className={`rounded-full px-2 py-px text-xs font-medium ${weekPhaseBadgeClass(nb.growthStage)}`}>
                               {GROWTH_STAGE_LABEL[nb.growthStage] ??
                                 nb.growthStage}
                             </span>
@@ -717,7 +717,7 @@ export function NotebookDetailClient({
                             setWeekEditTarget(null);
                             setWeekWizardOpen(true);
                           }}
-                          className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+                          className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)] shadow-sm hover:brightness-110"
                         >
                           Add week
                         </button>
@@ -727,18 +727,18 @@ export function NotebookDetailClient({
                 </div>
 
               {isOwner && showStartVegetation(nb) ? (
-                <div className="mt-3 rounded-lg border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
+                <div className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
                   <p className="text-xs font-medium text-[var(--gn-text)]">
                     Ready for vegetation?
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[var(--gn-text-muted)]">
+                  <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
                     You&apos;ve logged a germination week. Continue to vegetation
                     to track the next phase.
                   </p>
                   <button
                     type="button"
                     onClick={() => void transitionToVegetation()}
-                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-emerald-400"
+                    className="mt-2 rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
                   >
                     Start vegetation
                   </button>
@@ -746,18 +746,18 @@ export function NotebookDetailClient({
               ) : null}
 
               {isOwner && showStartFlowering(nb) ? (
-                <div className="mt-3 rounded-lg border border-emerald-500/40 bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
+                <div className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_8%,var(--gn-surface-muted))] p-3">
                   <p className="text-xs font-medium text-[var(--gn-text)]">
                     Start flowering
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[var(--gn-text-muted)]">
+                  <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
                     Two vegetation weeks logged—move to flower to unlock the
                     harvest log.
                   </p>
                   <button
                     type="button"
                     onClick={() => void transitionToFlowering()}
-                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-emerald-400"
+                    className="mt-2 rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
                   >
                     Start flowering
                   </button>
@@ -870,7 +870,7 @@ export function NotebookDetailClient({
           : 999;
         if (daysSince < 5) return null;
         return (
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/40 bg-emerald-500/8 px-4 py-3">
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-[color-mix(in_srgb,var(--gn-accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_8%,transparent)] px-4 py-3">
             <div className="flex items-center gap-3">
               <span className="text-xl">📋</span>
               <div>
@@ -889,7 +889,7 @@ export function NotebookDetailClient({
                 setWeekEditTarget(null);
                 setWeekWizardOpen(true);
               }}
-              className="shrink-0 rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 transition-colors"
+              className="shrink-0 rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-xs font-semibold text-[var(--gn-on-accent)] hover:brightness-110 transition-colors"
             >
               Log week {nextWeekIndex}
             </button>
@@ -914,7 +914,7 @@ export function NotebookDetailClient({
                   setWeekEditTarget(null);
                   setWeekWizardOpen(true);
                 }}
-                className="mt-4 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+                className="mt-4 rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm hover:brightness-110"
               >
                 Log week 1
               </button>
@@ -1056,7 +1056,7 @@ export function NotebookDetailClient({
                         <p className="text-sm font-bold tracking-tight text-[var(--gn-text)]">
                           Week {w.weekIndex}
                         </p>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${weekPhaseBadgeClass(phase)}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${weekPhaseBadgeClass(phase)}`}>
                           {GROWTH_STAGE_LABEL[phase] ?? phase}
                         </span>
                       </div>
@@ -1083,7 +1083,7 @@ export function NotebookDetailClient({
                           setWeekEditTarget(w);
                           setWeekWizardOpen(true);
                         }}
-                        className="text-[11px] font-medium text-emerald-400/90 hover:text-emerald-300 hover:underline"
+                        className="text-xs font-medium text-[var(--gn-accent)]/90 hover:brightness-110 hover:underline"
                       >
                         Edit week
                       </button>
@@ -1091,7 +1091,7 @@ export function NotebookDetailClient({
                         type="button"
                         disabled={weekDeletingId === w.id}
                         onClick={() => void deleteWeekEntry(w)}
-                        className="text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+                        className="text-xs font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
                       >
                         {weekDeletingId === w.id ? "Deleting…" : "Delete week"}
                       </button>
@@ -1232,7 +1232,7 @@ export function NotebookDetailClient({
                       type="button"
                       disabled={commentDeletingId === c.id}
                       onClick={() => void deleteOwnComment(c.id)}
-                      className="shrink-0 text-[11px] font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
+                      className="shrink-0 text-xs font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
                     >
                       {commentDeletingId === c.id ? "Removing…" : "Delete"}
                     </button>

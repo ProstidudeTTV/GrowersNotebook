@@ -115,6 +115,6 @@ export function weekPhaseNavActiveClass(phase: WeekLogPhase): string {
     case "harvest":
       return "border-red-400 bg-red-500/25 font-medium text-red-50 ring-1 ring-red-400/50";
     default:
-      return "border-emerald-500/50 bg-emerald-500/15 font-medium text-[var(--gn-text)]";
+      return "border-[color-mix(in_srgb,var(--gn-accent)_50%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] font-medium text-[var(--gn-text)]";
   }
 }

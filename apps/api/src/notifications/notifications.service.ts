@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { getDb } from '../db';
-import { userNotifications } from '../db/schema';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationPreferences,
+  profiles,
+  userNotifications,
+} from '../db/schema';
 
 export type CreateUserNotificationOptions = {
   kind?: string;
@@ -11,6 +16,31 @@ export type CreateUserNotificationOptions = {
 
 @Injectable()
 export class NotificationsService {
+  private prefKeyForKind(
+    kind: string,
+  ): keyof NotificationPreferences | null {
+    if (kind === 'new_comment') return 'new_comment';
+    if (kind === 'new_follower') return 'new_follower';
+    if (kind === 'vote_milestone') return 'vote_milestone';
+    if (kind === 'direct_message') return 'direct_message';
+    return null;
+  }
+
+  private async isPreferenceEnabled(
+    userId: string,
+    key: keyof NotificationPreferences,
+  ): Promise<boolean> {
+    const db = getDb();
+    const [row] = await db
+      .select({ notificationPreferences: profiles.notificationPreferences })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+    const prefs =
+      row?.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    return prefs[key] !== false;
+  }
+
   async createForUser(
     userId: string,
     title: string,
@@ -18,6 +48,11 @@ export class NotificationsService {
     options?: CreateUserNotificationOptions,
   ) {
     const kind = options?.kind ?? 'general';
+    const prefKey = this.prefKeyForKind(kind);
+    if (prefKey) {
+      const allowed = await this.isPreferenceEnabled(userId, prefKey);
+      if (!allowed) return null;
+    }
     const actionUrl = options?.actionUrl ?? null;
     const db = getDb();
     const [row] = await db

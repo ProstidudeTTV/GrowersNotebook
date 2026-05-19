@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
@@ -63,23 +63,24 @@ export function CommunityPostList({
   }, [communityId, sort, page]);
 
   if (items.length === 0) {
+    if (page <= 1) {
+      return (
+        <EmptyState
+          title="No posts yet"
+          description="Be the first to share something in this community."
+          action={{
+            label: "Start the first post",
+            href: `/community/${communitySlug}/new`,
+          }}
+          icon="🌱"
+        />
+      );
+    }
     return (
-      <p className="mt-2 rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-4 py-6 text-center text-sm text-[var(--gn-text-muted)]">
-        {page <= 1 ? (
-          <>
-            No posts in this community yet.{" "}
-            <Link
-              href={`/community/${communitySlug}/new`}
-              className="font-medium text-[var(--gn-accent)] hover:underline"
-            >
-              Start the first one
-            </Link>
-            .
-          </>
-        ) : (
-          "No posts on this page."
-        )}
-      </p>
+      <EmptyState
+        title="No posts on this page"
+        description="Try an earlier page or switch sort order."
+      />
     );
   }
 

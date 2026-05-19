@@ -37,6 +37,7 @@ import {
   posts,
   profileReports,
   profiles,
+  userFollows,
   userNotifications,
 } from '../db/schema';
 import { BlocksService } from '../blocks/blocks.service';
@@ -225,15 +226,28 @@ export class ProfilesService {
         ? await this.blocks.isDirectBlock(viewerId, profileId)
         : false;
 
+    const db = getDb();
+    const [[{ followerCount }], [{ followingCount }]] = await Promise.all([
+      db
+        .select({ followerCount: count() })
+        .from(userFollows)
+        .where(eq(userFollows.followingId, profileId)),
+      db
+        .select({ followingCount: count() })
+        .from(userFollows)
+        .where(eq(userFollows.followerId, profileId)),
+    ]);
+
     return {
       id: row.id,
       displayName: row.displayName,
       description: row.description,
       avatarUrl: row.avatarUrl,
-      role: row.role,
       createdAt: row.createdAt,
       seeds: statsPublic ? seeds : null,
       growerLevel: statsPublic ? growerLevelFromSeeds(seeds) : null,
+      followerCount: Number(followerCount ?? 0),
+      followingCount: Number(followingCount ?? 0),
       viewerFollowing,
       viewerHasBlocked,
       ...(profileFeedHiddenFromViewer

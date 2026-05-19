@@ -260,7 +260,7 @@ export function NotebookSettingsModal({
             type="button"
             disabled={saving || deleting}
             onClick={() => void save()}
-            className="rounded-full bg-emerald-500 px-5 py-1.5 text-sm font-semibold text-neutral-950 hover:bg-emerald-400 disabled:opacity-45"
+            className="rounded-full bg-[var(--gn-accent)] px-5 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110 disabled:opacity-45"
           >
             {saving ? "Saving…" : "Save"}
           </button>

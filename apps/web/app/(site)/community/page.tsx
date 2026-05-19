@@ -34,20 +34,20 @@ function hashSeed(s: string): number {
 }
 
 const STRIP_GRADIENTS = [
-  "from-emerald-950 to-green-900",
   "from-teal-950 to-teal-900",
+  "from-cyan-950 to-sky-900",
   "from-blue-950 to-blue-900",
   "from-violet-950 to-violet-900",
   "from-amber-950 to-amber-900",
   "from-fuchsia-950 to-fuchsia-900",
-  "from-emerald-900 to-cyan-900",
-  "from-cyan-950 to-sky-900",
+  "from-teal-900 to-cyan-900",
+  "from-sky-950 to-blue-900",
   "from-stone-900 to-stone-800",
   "from-orange-950 to-amber-900",
 ];
 
 function stripGradient(slug: string): string {
-  return STRIP_GRADIENTS[hashSeed(slug) % STRIP_GRADIENTS.length] ?? "from-emerald-950 to-green-900";
+  return STRIP_GRADIENTS[hashSeed(slug) % STRIP_GRADIENTS.length] ?? "from-teal-950 to-teal-900";
 }
 
 function formatCount(n: number): string {
@@ -130,7 +130,7 @@ function CommunityCard({ community: c }: { community: Community }) {
         </p>
 
         {/* Join CTA — appears on hover */}
-        <div className="mt-3 w-full rounded-full bg-[var(--gn-accent)] py-1.5 text-center text-xs font-bold text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        <div className="mt-3 w-full rounded-full bg-[var(--gn-accent)] py-1.5 text-center text-xs font-bold text-[var(--gn-on-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           Join →
         </div>
       </div>
@@ -150,13 +150,19 @@ export default async function CommunityDirectoryPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl pb-16">
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] pb-16">
 
       {/* ── Hero banner ───────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-b-3xl bg-gradient-to-br from-emerald-950 via-green-900 to-teal-950 px-6 py-12 sm:px-10 sm:py-16">
+      <div
+        className="relative overflow-hidden rounded-b-3xl px-6 py-12 sm:px-10 sm:py-16"
+        style={{
+          background:
+            "linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 35%, #050a08 65%) 0%, color-mix(in srgb, var(--gn-accent) 12%, #070e06 88%) 50%, color-mix(in srgb, #0d9488 20%, #050a08 80%) 100%)",
+        }}
+      >
         {/* Decorative background glow */}
-        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-green-500/10 blur-3xl" />
-        <div className="absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-[var(--gn-accent)]/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
 
         <div className="relative text-center">
           <div className="mb-3 text-4xl">🌿</div>
@@ -178,7 +184,7 @@ export default async function CommunityDirectoryPage() {
             </Link>
             <Link
               href="/following"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-900/40 transition hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[var(--gn-on-accent)] shadow-lg shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--gn-accent)_45%,transparent)] transition hover:brightness-110"
             >
               My Feed →
             </Link>
@@ -213,7 +219,7 @@ export default async function CommunityDirectoryPage() {
             </p>
             <Link
               href="/community"
-              className="mt-5 inline-flex rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white hover:brightness-110"
+              className="mt-5 inline-flex rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110"
             >
               Try again
             </Link>

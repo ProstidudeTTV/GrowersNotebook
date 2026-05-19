@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { FollowCommunityButton } from "@/components/follow-buttons";
 import { RecentCommunitiesTracker } from "@/components/recent-communities-tracker";
 import { CommunityIcon } from "@/components/community-icon";
@@ -101,7 +103,7 @@ export default async function CommunityPage({
     community = await apiFetch<Community>(`/communities/${slug}`);
   } catch {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className="mx-auto w-full max-w-[var(--gn-container-max)] px-4 py-10">
         <p className="text-[var(--gn-text-muted)]">Community not found.</p>
         <Link href="/" className="mt-4 inline-block text-[var(--gn-accent)] hover:underline">
           ← Home
@@ -141,7 +143,16 @@ export default async function CommunityPage({
   const createdFormatted = formatDate(community.createdAt);
 
   return (
-    <main className="mx-auto max-w-5xl pb-12">
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] pb-12">
+      <div className="px-4 pt-4 sm:px-6">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Communities", href: "/community" },
+            { label: community.name },
+          ]}
+        />
+      </div>
       <RecentCommunitiesTracker
         slug={community.slug}
         name={community.name}
@@ -151,11 +162,14 @@ export default async function CommunityPage({
       {/* ── Full-bleed banner ────────────────────────────────────────── */}
       <div className="relative h-56 w-full overflow-hidden sm:h-72">
         {hasBanner ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={community.bannerUrl!}
             alt=""
-            className="h-full w-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            priority
+            unoptimized
           />
         ) : (
           <div className="h-full w-full relative overflow-hidden">
@@ -164,9 +178,13 @@ export default async function CommunityPage({
               background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 45%, #0a0a0a 55%) 0%, color-mix(in srgb, var(--gn-accent) 15%, #050505 85%) 100%)`
             }} />
             {/* Radial glow center-top */}
-            <div className="absolute inset-0" style={{
-              background: 'radial-gradient(ellipse 80% 60% at 30% 0%, rgba(74,222,128,0.18) 0%, transparent 70%)'
-            }} />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse 80% 60% at 30% 0%, color-mix(in srgb, var(--gn-accent) 18%, transparent) 0%, transparent 70%)",
+              }}
+            />
             {/* Dot matrix pattern */}
             <div className="absolute inset-0 opacity-[0.06]" style={{
               backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
@@ -234,7 +252,7 @@ export default async function CommunityPage({
             <FollowCommunityButton communityId={community.id} slug={slug} />
             <Link
               href={`/community/${slug}/new`}
-              className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110 active:scale-[0.98]"
+              className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 active:scale-[0.98]"
             >
               + New post
             </Link>
@@ -265,7 +283,7 @@ export default async function CommunityPage({
               href={sortLink("new")}
               className={
                 sort === "new"
-                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-white shadow-sm"
+                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm"
                   : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-sm font-medium text-[var(--gn-text)] transition hover:border-[var(--gn-text-muted)]"
               }
             >
@@ -275,7 +293,7 @@ export default async function CommunityPage({
               href={sortLink("top")}
               className={
                 sort === "top"
-                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-white shadow-sm"
+                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm"
                   : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-sm font-medium text-[var(--gn-text)] transition hover:border-[var(--gn-text-muted)]"
               }
             >
@@ -321,7 +339,7 @@ export default async function CommunityPage({
             {/* New Post CTA */}
             <Link
               href={`/community/${slug}/new`}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-4 py-3 text-sm font-bold text-white shadow transition hover:brightness-110 active:scale-[0.98]"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-4 py-3 text-sm font-bold text-[var(--gn-on-accent)] shadow transition hover:brightness-110 active:scale-[0.98]"
             >
               ✏️ New Post in r/{community.slug}
             </Link>

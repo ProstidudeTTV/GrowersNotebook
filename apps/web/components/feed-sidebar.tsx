@@ -1,6 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CommunityIcon } from "@/components/community-icon";
 import { apiFetch } from "@/lib/api-public";
+import { fetchGrowersOnlineCount } from "@/lib/growers-online";
+import { createClient } from "@/lib/supabase/server";
 
 type HotPost = {
   id: string;
@@ -40,12 +43,16 @@ async function fetchCommunities(): Promise<Community[]> {
 }
 
 export async function FeedSidebar({
-  growersOnline = 0,
+  growersOnline: growersOnlineProp,
   hideHotPosts = false,
 }: {
   growersOnline?: number;
   hideHotPosts?: boolean;
 }) {
+  const supabase = await createClient();
+  const growersOnline =
+    growersOnlineProp ??
+    (await fetchGrowersOnlineCount(supabase));
   const [hotPosts, communities] = await Promise.all([
     hideHotPosts ? Promise.resolve([]) : fetchHotPosts(),
     fetchCommunities(),
@@ -61,8 +68,8 @@ export async function FeedSidebar({
       <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
         <div className="flex items-center gap-3 px-4 py-3.5">
           <span className="relative flex h-3 w-3 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--gn-accent)] opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--gn-accent)]" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--gn-text)]">
@@ -80,7 +87,7 @@ export async function FeedSidebar({
       {!hideHotPosts && hotPosts.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
               🔥 Hot this week
             </h2>
             <Link
@@ -100,17 +107,18 @@ export async function FeedSidebar({
                   className="flex items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[var(--gn-surface-hover)]"
                 >
                   {/* Rank circle */}
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)]/15 text-[10px] font-bold text-[var(--gn-accent)]">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)]/15 text-xs font-bold text-[var(--gn-accent)]">
                     {i + 1}
                   </span>
                   {/* Thumbnail */}
                   {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={thumb.url}
                       alt=""
+                      width={56}
+                      height={56}
                       className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                      loading="lazy"
+                      sizes="56px"
                     />
                   ) : (
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-2xl">
@@ -122,11 +130,11 @@ export async function FeedSidebar({
                       {p.title}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] text-[var(--gn-text-muted)]">
+                      <span className="text-xs text-[var(--gn-text-muted)]">
                         {p.community?.name ?? "Community"}
                       </span>
                       {p.score != null ? (
-                        <span className="rounded-full bg-[var(--gn-accent)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gn-accent)]">
+                        <span className="rounded-full bg-[var(--gn-accent)]/10 px-1.5 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
                           {p.score} pts
                         </span>
                       ) : null}
@@ -143,7 +151,7 @@ export async function FeedSidebar({
       {spotlightCommunity ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--gn-accent)]/25 bg-[var(--gn-surface-muted)]">
           <div className="border-b border-[var(--gn-divide)] px-4 py-2.5">
-            <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-accent)]">
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--gn-accent)]">
               Community Spotlight
             </p>
           </div>
@@ -184,7 +192,7 @@ export async function FeedSidebar({
       {moreCommunities.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
               🌱 Communities
             </h2>
             <Link
@@ -212,7 +220,7 @@ export async function FeedSidebar({
                     {c.name}
                   </p>
                   {c.memberCount != null && c.memberCount > 0 ? (
-                    <p className="text-[10px] text-[var(--gn-text-muted)]">
+                    <p className="text-xs text-[var(--gn-text-muted)]">
                       {c.memberCount.toLocaleString()} members
                     </p>
                   ) : null}
@@ -227,7 +235,7 @@ export async function FeedSidebar({
       {!spotlightCommunity && communities.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
               🌱 Communities
             </h2>
             <Link
@@ -255,7 +263,7 @@ export async function FeedSidebar({
                     {c.name}
                   </p>
                   {c.memberCount != null && c.memberCount > 0 ? (
-                    <p className="text-[10px] text-[var(--gn-text-muted)]">
+                    <p className="text-xs text-[var(--gn-text-muted)]">
                       {c.memberCount.toLocaleString()} members
                     </p>
                   ) : null}
@@ -267,7 +275,7 @@ export async function FeedSidebar({
       ) : null}
 
       {/* Start a Grow Journal CTA */}
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-900/60 to-green-900/40 border border-emerald-700/20 p-4">
+      <div className="rounded-2xl border border-[var(--gn-accent)]/20 bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_22%,var(--gn-surface-muted))] to-[var(--gn-surface-muted)] p-4">
         <div className="mb-2 flex items-center gap-2">
           <svg
             width="18"
@@ -278,7 +286,7 @@ export async function FeedSidebar({
             strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="shrink-0 text-emerald-400"
+            className="shrink-0 text-[var(--gn-accent)]"
             aria-hidden
           >
             <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
@@ -294,7 +302,7 @@ export async function FeedSidebar({
         </p>
         <Link
           href="/notebooks/new"
-          className="flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-neutral-950 transition hover:bg-emerald-400"
+          className="flex w-full items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-xs font-bold text-[var(--gn-on-accent)] transition hover:brightness-110"
         >
           🌱 Start a notebook
         </Link>

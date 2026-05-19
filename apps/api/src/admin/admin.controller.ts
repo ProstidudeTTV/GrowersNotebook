@@ -368,4 +368,30 @@ export class AdminController {
       reportedWarning: body.reportedWarning,
     });
   }
+
+  @Get('post-reports')
+  @Roles('admin', 'moderator')
+  async listPostReports(
+    @Query('_start') _start: string,
+    @Query('_end') _end: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { skip, take } = range(_start, _end);
+    const { rows, total } = await this.posts.listPostReportsPaged(skip, take);
+    res.setHeader('X-Total-Count', String(total));
+    return rows;
+  }
+
+  @Patch('post-reports/:id/dismiss')
+  @Roles('admin', 'moderator')
+  async dismissPostReport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminDismissReportDto,
+  ) {
+    return this.posts.dismissPostReport(id, {
+      reporterNote: body.reporterNote,
+      notifyReported: body.notifyReported === true,
+      reportedWarning: body.reportedWarning,
+    });
+  }
 }

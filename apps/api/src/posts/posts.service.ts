@@ -20,6 +20,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
 import {
   COMMENT_VOTE_SEED_WEIGHT,
@@ -38,11 +39,13 @@ import {
   commentVotes,
   comments,
   communities,
+  communityFollows,
   communityPins,
   postReports,
   postVotes,
   posts,
   profiles,
+  userFollows,
   type PostMediaItem,
 } from '../db/schema';
 import { BlocksService } from '../blocks/blocks.service';
@@ -51,12 +54,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import type { CreatePostDto } from './dto/create-post.dto';
 import type { UpdatePostDto } from './dto/update-post.dto';
-
-const scoreExpr = sql<number>`coalesce((select sum(${postVotes.value}) from ${postVotes} where ${postVotes.postId} = ${posts.id}), 0)`;
-
-const upVotesExpr = sql<number>`coalesce((select count(*)::int from ${postVotes} where ${postVotes.postId} = ${posts.id} and ${postVotes.value} = 1), 0)`;
-
-const downVotesExpr = sql<number>`coalesce((select count(*)::int from ${postVotes} where ${postVotes.postId} = ${posts.id} and ${postVotes.value} = -1), 0)`;
 
 const commentCountExpr = sql<number>`coalesce((select count(*)::int from ${comments} where ${comments.postId} = ${posts.id}), 0)`;
 
@@ -196,7 +193,7 @@ export class PostsService {
         communitySlug: communities.slug,
         communityName: communities.name,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
+        score: posts.voteScore,
         viewerVote: viewerVoteSelect(query.viewerId),
       })
       .from(posts)
@@ -287,9 +284,9 @@ export class PostsService {
           name: communities.name,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
-        upvotes: upVotesExpr.as('upvotes'),
-        downvotes: downVotesExpr.as('downvotes'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
         commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
@@ -297,7 +294,7 @@ export class PostsService {
       .innerJoin(profiles, eq(posts.authorId, profiles.id))
       .leftJoin(communities, eq(posts.communityId, communities.id))
       .where(hotWhere)
-      .orderBy(desc(scoreExpr), desc(posts.createdAt))
+      .orderBy(desc(posts.voteScore), desc(posts.createdAt))
       .offset(offset)
       .limit(query.pageSize);
 
@@ -338,6 +335,17 @@ export class PostsService {
   }
 
   async create(authorId: string, dto: CreatePostDto) {
+    if (dto.communityId) {
+      const joined = await this.follows.getFollowingCommunityIds(authorId, [
+        dto.communityId,
+      ]);
+      if (!joined.has(dto.communityId)) {
+        throw new ForbiddenException(
+          'Join this community before posting there.',
+        );
+      }
+    }
+
     const db = getDb();
     const mediaItems = this.normalizePostMedia(dto.media);
     const bodyHtml = sanitizePostHtml(dto.bodyHtml);
@@ -465,6 +473,129 @@ export class PostsService {
     };
   }
 
+  async listPostReportsPaged(skip: number, take: number) {
+    const db = getDb();
+    const authorProfile = alias(profiles, 'post_author');
+    const reporterProfile = alias(profiles, 'post_reporter');
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(postReports)
+      .where(eq(postReports.status, 'open'));
+    const rows = await db
+      .select({
+        id: postReports.id,
+        createdAt: postReports.createdAt,
+        reason: postReports.reason,
+        postId: postReports.postId,
+        postTitle: posts.title,
+        postBody: posts.bodyHtml,
+        postExcerpt: posts.excerpt,
+        authorId: posts.authorId,
+        authorName: authorProfile.displayName,
+        reporterId: postReports.reporterId,
+        reporterName: reporterProfile.displayName,
+      })
+      .from(postReports)
+      .innerJoin(posts, eq(posts.id, postReports.postId))
+      .innerJoin(authorProfile, eq(authorProfile.id, posts.authorId))
+      .innerJoin(reporterProfile, eq(reporterProfile.id, postReports.reporterId))
+      .where(eq(postReports.status, 'open'))
+      .orderBy(desc(postReports.createdAt))
+      .limit(take)
+      .offset(skip);
+    return {
+      rows: rows.map((r) => {
+        const body = (r.postExcerpt?.trim() || r.postBody?.trim() || '').replace(
+          /<[^>]+>/g,
+          ' ',
+        );
+        const normalized = body.replace(/\s+/g, ' ').trim();
+        return {
+          id: r.id,
+          createdAt: r.createdAt,
+          reason: r.reason,
+          postId: r.postId,
+          postTitle: r.postTitle,
+          authorName: r.authorName,
+          reporterId: r.reporterId,
+          reporterName: r.reporterName,
+          postBody: normalized.length > 0 ? normalized : null,
+          postPreview:
+            normalized.length > 120
+              ? `${normalized.slice(0, 120)}…`
+              : normalized || null,
+        };
+      }),
+      total: Number(total),
+    };
+  }
+
+  async dismissPostReport(
+    reportId: string,
+    dto: {
+      reporterNote?: string;
+      notifyReported: boolean;
+      reportedWarning?: string;
+    },
+  ) {
+    if (dto.notifyReported === true && !dto.reportedWarning?.trim()) {
+      throw new BadRequestException(
+        'A warning message is required when notifying the reported user.',
+      );
+    }
+    const db = getDb();
+    const [report] = await db
+      .select()
+      .from(postReports)
+      .where(eq(postReports.id, reportId));
+    if (!report) throw new NotFoundException();
+    if (report.status !== 'open') {
+      throw new BadRequestException('This report is already resolved.');
+    }
+    const [postRow] = await db
+      .select({ authorId: posts.authorId, title: posts.title })
+      .from(posts)
+      .where(eq(posts.id, report.postId));
+    if (!postRow) throw new NotFoundException('Post not found.');
+    const note = dto.reporterNote?.trim() ?? '';
+    const reporterBody =
+      note.length > 0
+        ? note
+        : 'Moderators reviewed your report and closed it with no action taken against the reported post.';
+    await db
+      .update(postReports)
+      .set({
+        status: 'dismissed',
+        resolvedAt: new Date(),
+        reporterMessage: note.length > 0 ? note : null,
+        notifyReported: dto.notifyReported === true,
+        reportedWarning:
+          dto.notifyReported === true ? dto.reportedWarning!.trim() : null,
+      })
+      .where(eq(postReports.id, reportId));
+    await this.notifications.createForUser(
+      report.reporterId,
+      'Your report was reviewed',
+      reporterBody,
+      {
+        kind: 'report_resolved',
+        actionUrl: `/p/${report.postId}`,
+      },
+    );
+    if (dto.notifyReported === true && dto.reportedWarning?.trim()) {
+      await this.notifications.createForUser(
+        postRow.authorId,
+        'Moderation notice',
+        dto.reportedWarning.trim(),
+        {
+          kind: 'moderation_warning',
+          actionUrl: `/p/${report.postId}`,
+        },
+      );
+    }
+    return { ok: true as const };
+  }
+
   async getById(id: string, viewerId?: string) {
     const db = getDb();
     const [row] = await db
@@ -478,9 +609,9 @@ export class PostsService {
         communitySlug: communities.slug,
         communityName: communities.name,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
-        upvotes: upVotesExpr.as('upvotes'),
-        downvotes: downVotesExpr.as('downvotes'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
         commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(viewerId),
       })
@@ -568,7 +699,7 @@ export class PostsService {
         ? [
             pinThenExpr,
             asc(communityPins.pinnedAt),
-            desc(scoreExpr),
+            desc(posts.voteScore),
             desc(posts.createdAt),
           ]
         : [
@@ -587,9 +718,9 @@ export class PostsService {
         },
         pinnedAt: communityPins.pinnedAt,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
-        upvotes: upVotesExpr.as('upvotes'),
-        downvotes: downVotesExpr.as('downvotes'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
         commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
@@ -657,37 +788,22 @@ export class PostsService {
       };
     }
 
-    const authorIds = await this.follows.getAllFollowingUserIds(
-      query.viewerId,
-    );
-    const communityIds = await this.follows.getAllFollowingCommunityIds(
-      query.viewerId,
-    );
+    const viewerId = query.viewerId;
+    const followedUserPost = sql`exists (
+      select 1 from ${userFollows} uf
+      where uf.follower_id = ${viewerId}::uuid
+        and uf.following_id = ${posts.authorId}
+    )`;
+    const followedCommunityPost = sql`exists (
+      select 1 from ${communityFollows} cf
+      where cf.user_id = ${viewerId}::uuid
+        and cf.community_id = ${posts.communityId}
+    )`;
+    const feedMatch = or(followedUserPost, followedCommunityPost)!;
 
-    if (authorIds.length === 0 && communityIds.length === 0) {
-      return {
-        items: [],
-        total: 0,
-        page: query.page,
-        pageSize: query.pageSize,
-      };
-    }
-
-    let whereSql;
-    if (authorIds.length > 0 && communityIds.length > 0) {
-      whereSql = or(
-        inArray(posts.authorId, authorIds),
-        inArray(posts.communityId, communityIds),
-      )!;
-    } else if (authorIds.length > 0) {
-      whereSql = inArray(posts.authorId, authorIds);
-    } else {
-      whereSql = inArray(posts.communityId, communityIds);
-    }
-
-    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const blockAuthors = await this.authorNotBlockedClause(viewerId);
     const followingWhere =
-      blockAuthors != null ? and(whereSql, blockAuthors)! : whereSql;
+      blockAuthors != null ? and(feedMatch, blockAuthors)! : feedMatch;
 
     const db = getDb();
     const offset = (query.page - 1) * query.pageSize;
@@ -699,7 +815,7 @@ export class PostsService {
 
     const orderBy =
       query.sort === 'top'
-        ? [desc(scoreExpr), desc(posts.createdAt)]
+        ? [desc(posts.voteScore), desc(posts.createdAt)]
         : [desc(posts.createdAt)];
 
     const rows = await db
@@ -715,9 +831,9 @@ export class PostsService {
           name: communities.name,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
-        upvotes: upVotesExpr.as('upvotes'),
-        downvotes: downVotesExpr.as('downvotes'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
         commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })
@@ -731,7 +847,7 @@ export class PostsService {
 
     const rowAuthorIds = rows.map((r) => r.author.id);
     const followedAuthors = await this.follows.getFollowingUserIds(
-      query.viewerId,
+      viewerId,
       rowAuthorIds,
     );
 
@@ -783,7 +899,7 @@ export class PostsService {
 
     const orderBy =
       query.sort === 'top'
-        ? [desc(scoreExpr), desc(posts.createdAt)]
+        ? [desc(posts.voteScore), desc(posts.createdAt)]
         : [desc(posts.createdAt)];
 
     const rows = await db
@@ -799,9 +915,9 @@ export class PostsService {
           name: communities.name,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
-        score: scoreExpr.as('score'),
-        upvotes: upVotesExpr.as('upvotes'),
-        downvotes: downVotesExpr.as('downvotes'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
         commentCount: commentCountExpr.as('comment_count'),
         viewerVote: viewerVoteSelect(query.viewerId),
       })

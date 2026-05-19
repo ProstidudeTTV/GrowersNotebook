@@ -4,6 +4,7 @@ import { FollowingFeed } from "@/components/following-feed";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { PostComposerPrompt } from "@/components/post-composer-prompt";
 import { createClient } from "@/lib/supabase/server";
+import { fetchGrowersOnlineCount } from "@/lib/growers-online";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -16,17 +17,6 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalPath("/following") },
 };
 
-async function getGrowersOnline(): Promise<number> {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.rpc("growers_online_count");
-    const n = typeof data === "number" ? data : Number(data ?? 0);
-    return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : 0;
-  } catch {
-    return 0;
-  }
-}
-
 export default async function FollowingPage({
   searchParams,
 }: {
@@ -35,10 +25,11 @@ export default async function FollowingPage({
   const sp = await searchParams;
   const sort = sp.sort === "top" ? "top" : "new";
   const page = Number(sp.page ?? 1) || 1;
-  const growersOnline = await getGrowersOnline();
+  const supabase = await createClient();
+  const growersOnline = await fetchGrowersOnlineCount(supabase);
 
   return (
-    <main className="mx-auto max-w-5xl pb-16">
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] pb-16">
 
       {/* ── Hero header strip ─────────────────────────────────────────── */}
       <div className="relative overflow-hidden border-b border-[var(--gn-divide)] bg-gradient-to-r from-[var(--gn-surface-raised)] via-[var(--gn-surface-elevated)] to-[var(--gn-surface-raised)] px-5 py-6 sm:px-8 sm:py-8">

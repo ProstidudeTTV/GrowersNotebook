@@ -113,52 +113,23 @@ function IconStar({ className }: { className?: string }) {
   );
 }
 
-// ─── Mock preview card data ────────────────────────────────────────────────────
+/** Decorative hero-card gradients when a post has no hero image (not mock content). */
+const CARD_GRADIENTS = [
+  "from-[color-mix(in_srgb,var(--gn-accent)_45%,#0a1209)] to-[color-mix(in_srgb,var(--gn-accent)_20%,#070e06)]",
+  "from-violet-800 to-purple-600",
+  "from-amber-700 to-yellow-600",
+  "from-teal-800 to-cyan-600",
+  "from-rose-800 to-pink-600",
+  "from-blue-800 to-indigo-600",
+] as const;
 
-const MOCK_CARDS = [
-  {
-    gradient: "from-emerald-800 to-green-600",
-    title: "Week 8 Trichomes 🔬",
-    author: "u/trichome_tracker",
-    community: "r/Organics",
-    score: 94,
-  },
-  {
-    gradient: "from-violet-800 to-purple-600",
-    title: "First DWC Harvest 🏆",
-    author: "u/hydro_hero",
-    community: "r/Hydroponics",
-    score: 127,
-  },
-  {
-    gradient: "from-amber-700 to-yellow-600",
-    title: "Outdoor Monster Crop",
-    author: "u/sun_grower",
-    community: "r/Outdoor",
-    score: 61,
-  },
-  {
-    gradient: "from-teal-800 to-cyan-600",
-    title: "LED vs HPS Comparison",
-    author: "u/lightgeek",
-    community: "r/LEDGrowing",
-    score: 88,
-  },
-  {
-    gradient: "from-rose-800 to-pink-600",
-    title: "Autoflower Week 5",
-    author: "u/autogrower",
-    community: "r/Autoflowers",
-    score: 42,
-  },
-  {
-    gradient: "from-blue-800 to-indigo-600",
-    title: "Living Soil Results",
-    author: "u/soilscientist",
-    community: "r/LivingSoil",
-    score: 73,
-  },
-];
+function gradientForPost(postId: string): string {
+  let h = 0;
+  for (let i = 0; i < postId.length; i++) {
+    h = (Math.imul(31, h) + postId.charCodeAt(i)) | 0;
+  }
+  return CARD_GRADIENTS[Math.abs(h) % CARD_GRADIENTS.length];
+}
 
 // ─── Preview grid card ─────────────────────────────────────────────────────────
 
@@ -221,7 +192,7 @@ function PreviewCard({
 
 function AvatarStack() {
   const avatars = [
-    { letter: "G", bg: "bg-emerald-600" },
+    { letter: "G", bg: "bg-[var(--gn-accent)]" },
     { letter: "M", bg: "bg-violet-600" },
     { letter: "T", bg: "bg-amber-500" },
     { letter: "A", bg: "bg-teal-600" },
@@ -301,38 +272,21 @@ export function GuestLanding({
   heroBlurb?: string;
   /** Real "growers online now" count (last 15 min); rendered as `1.2k` when > 999. */
   growersOnline?: number;
-  /** Top hot posts (last 7 days) to render in the hero preview; empty array falls back to mock. */
+  /** Top hot posts (last 7 days) from `GET /posts/hot/week` for the hero preview grid. */
   hotPosts?: GuestLandingHotPost[];
 }) {
   const featured = communities.slice(0, 8);
 
-  // Build 6 preview card slots from real posts or mock data
-  const previewCards = Array.from({ length: 6 }, (_, i) => {
-    const post = hotPosts[i];
-    const mock = MOCK_CARDS[i];
-    if (post) {
-      return {
-        key: post.id,
-        gradient: mock.gradient,
-        title: post.title,
-        author: `u/${post.authorName}`,
-        community: post.communityName ? `r/${post.communityName}` : mock.community,
-        score: post.score,
-        imageUrl: post.imageUrl,
-        href: `/p/${post.id}`,
-      };
-    }
-    return {
-      key: `mock-${i}`,
-      gradient: mock.gradient,
-      title: mock.title,
-      author: mock.author,
-      community: mock.community,
-      score: mock.score,
-      imageUrl: null,
-      href: "/hot",
-    };
-  });
+  const previewCards = hotPosts.map((post) => ({
+    key: post.id,
+    gradient: gradientForPost(post.id),
+    title: post.title,
+    author: `u/${post.authorName}`,
+    community: post.communityName ? `r/${post.communityName}` : "r/growers",
+    score: post.score,
+    imageUrl: post.imageUrl,
+    href: `/p/${post.id}`,
+  }));
 
   return (
     <main className="relative min-w-0 overflow-x-hidden">
@@ -432,11 +386,28 @@ export function GuestLanding({
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {previewCards.map(({ key, ...card }) => (
-                  <PreviewCard key={key} {...card} />
-                ))}
-              </div>
+              {previewCards.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {previewCards.map(({ key, ...card }) => (
+                    <PreviewCard key={key} {...card} />
+                  ))}
+                </div>
+              ) : (
+                <Link
+                  href="/hot"
+                  className="flex min-h-[12rem] flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/60 p-6 text-center transition hover:border-[var(--gn-accent)]/35"
+                >
+                  <span className="text-3xl" aria-hidden>
+                    🔥
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-[var(--gn-text)]">
+                    Hot posts loading soon
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                    Browse what growers are sharing this week →
+                  </p>
+                </Link>
+              )}
             </div>
 
           </div>
@@ -478,8 +449,8 @@ export function GuestLanding({
               </Link>
             </article>
 
-            <article className="group flex flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-7 shadow-sm transition-all duration-200 hover:border-emerald-500/30 hover:shadow-lg hover:translate-y-[-2px]">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-600 transition group-hover:bg-emerald-500/20 dark:text-emerald-400">
+            <article className="group flex flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-7 shadow-sm transition-all duration-200 hover:border-[var(--gn-accent)]/30 hover:shadow-lg hover:translate-y-[-2px]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/12 text-[var(--gn-accent)] transition group-hover:bg-[var(--gn-accent)]/20">
                 <IconBook className="h-7 w-7" />
               </div>
               <h3 className="mt-5 text-lg font-bold text-[var(--gn-text)]">
@@ -491,7 +462,7 @@ export function GuestLanding({
               </p>
               <Link
                 href="/login"
-                className="mt-5 text-sm font-semibold text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100"
+                className="mt-5 text-sm font-semibold text-[var(--gn-accent)] opacity-0 transition-opacity group-hover:opacity-100"
               >
                 Start your notebook →
               </Link>

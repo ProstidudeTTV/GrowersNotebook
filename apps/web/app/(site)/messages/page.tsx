@@ -4,6 +4,7 @@ import { Suspense } from "react";
 export default function MessagesPage() {
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      <h1 className="sr-only">Messages</h1>
       <Suspense
         fallback={
           <div className="flex flex-1 items-center justify-center">

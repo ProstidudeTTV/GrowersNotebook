@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { apiFetch } from "@/lib/api-public";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import { createClient } from "@/lib/supabase/server";
@@ -242,15 +243,11 @@ export default async function SearchPage({
 
       {/* G3.5 — Empty / zero-query state */}
       {q.length === 0 ? (
-        <div className="text-center py-10">
-          <div className="text-4xl mb-3">🔍</div>
-          <h3 className="text-lg font-semibold text-[var(--gn-text)] mb-2">
-            Find your people
-          </h3>
-          <p className="text-sm text-[var(--gn-text-muted)]">
-            Search for growers, posts, strains, and notebooks.
-          </p>
-        </div>
+        <EmptyState
+          title="Find your people"
+          description="Search for growers, posts, strains, and notebooks."
+          icon="🔍"
+        />
       ) : q.length >= 2 ? (
         <>
           {/* Notebooks tab — coming soon */}

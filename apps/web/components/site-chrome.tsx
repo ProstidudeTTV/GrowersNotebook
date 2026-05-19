@@ -137,14 +137,18 @@ export function SiteChrome({
       ) : null}
 
       <div className="relative z-0 flex min-h-0 flex-1">
-        {mobileOpen ? (
-          <button
-            type="button"
-            className="fixed inset-0 z-40 bg-black/45 lg:hidden"
-            aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
-          />
-        ) : null}
+        <button
+          type="button"
+          className={`fixed inset-0 z-40 bg-black/45 transition-opacity duration-200 ease-out lg:hidden ${
+            mobileOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          aria-label="Close menu"
+          aria-hidden={!mobileOpen}
+          tabIndex={mobileOpen ? 0 : -1}
+          onClick={() => setMobileOpen(false)}
+        />
 
         <AppSidebar
           followedCommunities={followed}
@@ -152,7 +156,7 @@ export function SiteChrome({
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={
-            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-60 max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:w-56 lg:max-w-none lg:border-r lg:transition-none " +
+            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-[var(--gn-rail-width)] max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:max-w-none lg:border-r lg:transition-none " +
             (mobileOpen
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0")

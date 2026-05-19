@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -37,6 +37,102 @@ const KIND_LABELS: Record<Kind, string> = {
   edit_strain: "Fix / update a strain",
   edit_breeder: "Fix / update a breeder",
 };
+
+type CatalogSuggestion = { name: string; slug: string };
+
+function CatalogSlugAutocomplete({
+  value,
+  onChange,
+  catalog,
+  placeholder,
+  required,
+}: {
+  value: string;
+  onChange: (slug: string, name?: string) => void;
+  catalog: "strains" | "breeders";
+  placeholder: string;
+  required?: boolean;
+}) {
+  const [q, setQ] = useState(value);
+  const [suggestions, setSuggestions] = useState<CatalogSuggestion[]>([]);
+
+  useEffect(() => {
+    setQ(value);
+  }, [value]);
+
+  useEffect(() => {
+    const t = q.trim();
+    if (t.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await apiFetch<{
+            items: { name: string; slug: string }[];
+          }>(
+            `/${catalog}?q=${encodeURIComponent(t)}&pageSize=12&sort=name`,
+          );
+          setSuggestions(
+            (res.items ?? []).map((item) => ({
+              name: item.name,
+              slug: item.slug,
+            })),
+          );
+        } catch {
+          setSuggestions([]);
+        }
+      })();
+    }, 250);
+    return () => window.clearTimeout(id);
+  }, [q, catalog]);
+
+  const pick = useCallback(
+    (item: CatalogSuggestion) => {
+      onChange(item.slug, item.name);
+      setQ(item.slug);
+      setSuggestions([]);
+    },
+    [onChange],
+  );
+
+  return (
+    <div className="relative">
+      <input
+        value={q}
+        onChange={(e) => {
+          setQ(e.target.value);
+          onChange(e.target.value);
+        }}
+        required={required}
+        className={inputClass}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+      {suggestions.length > 0 ? (
+        <ul className="gn-scrollbar-themed absolute z-10 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-lg">
+          {suggestions.map((item) => (
+            <li key={item.slug}>
+              <button
+                type="button"
+                className="block w-full px-4 py-2.5 text-left text-sm transition hover:bg-[var(--gn-surface-hover)]"
+                onClick={() => pick(item)}
+              >
+                <span className="font-medium text-[var(--gn-text)]">
+                  {item.name}
+                </span>
+                <span className="ml-2 font-mono text-xs text-[var(--gn-text-muted)]">
+                  {item.slug}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 const KIND_DESCRIPTIONS: Record<Kind, string> = {
   new_strain: "Found a strain missing from the catalog? Tell us about it.",
@@ -148,8 +244,8 @@ export function CatalogSuggestClient() {
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-6 py-10 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-3xl">
+      <div className="rounded-2xl border border-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_10%,transparent)] px-6 py-10 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--gn-accent)_20%,transparent)] text-3xl">
           ✅
         </div>
         <h2 className="text-xl font-bold text-[var(--gn-text)]">Suggestion submitted!</h2>
@@ -159,7 +255,7 @@ export function CatalogSuggestClient() {
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             href="/strains"
-            className="rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-110"
+            className="rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[var(--gn-on-accent)] transition hover:brightness-110"
           >
             Browse Strains
           </Link>
@@ -215,11 +311,11 @@ export function CatalogSuggestClient() {
             <label className={labelClass}>
               Which {isBreeder ? "breeder" : "strain"} needs fixing?
             </label>
-            <input
+            <CatalogSlugAutocomplete
               value={targetSlug}
-              onChange={(e) => setTargetSlug(e.target.value)}
+              onChange={(slug) => setTargetSlug(slug)}
+              catalog={isBreeder ? "breeders" : "strains"}
               required
-              className={inputClass}
               placeholder={isBreeder ? "e.g. mephisto-genetics" : "e.g. sour-diesel"}
             />
             <p className={helpClass}>
@@ -277,10 +373,12 @@ export function CatalogSuggestClient() {
         {isStrain && (
           <div>
             <label className={labelClass}>Who made this strain? (optional)</label>
-            <input
+            <CatalogSlugAutocomplete
               value={breederName}
-              onChange={(e) => setBreederName(e.target.value)}
-              className={inputClass}
+              onChange={(slug, name) => {
+                setBreederName(name ?? slug);
+              }}
+              catalog="breeders"
               placeholder="e.g. Mephisto Genetics"
             />
             <p className={helpClass}>The seed company or breeder behind this strain.</p>
@@ -343,7 +441,7 @@ export function CatalogSuggestClient() {
                 type="checkbox"
                 checked={isAutoflower}
                 onChange={(e) => setIsAutoflower(e.target.checked)}
-                className="h-4 w-4 rounded accent-emerald-500"
+                className="h-4 w-4 rounded accent-[var(--gn-accent)]"
               />
               <div>
                 <p className="text-sm font-medium text-[var(--gn-text)]">Autoflower</p>
@@ -397,7 +495,7 @@ export function CatalogSuggestClient() {
           type="button"
           disabled={saving || (isNew && !name.trim())}
           onClick={() => void submit()}
-          className="w-full rounded-full bg-[var(--gn-accent)] py-3 text-sm font-bold text-black shadow-sm transition hover:brightness-110 disabled:opacity-50"
+          className="w-full rounded-full bg-[var(--gn-accent)] py-3 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-50"
         >
           {saving ? "Submitting…" : "Submit Suggestion →"}
         </button>

@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { JwtUser } from '../auth/jwt-user';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CommentsService } from '../comments/comments.service';
@@ -24,6 +25,7 @@ export class VotesController {
     private readonly comments: CommentsService,
   ) {}
 
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('post')
   @UseGuards(SupabaseAuthGuard)
   async votePost(@CurrentUser() user: JwtUser, @Body() dto: VotePostDto) {
@@ -38,12 +40,14 @@ export class VotesController {
     };
   }
 
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('notebook')
   @UseGuards(SupabaseAuthGuard)
   voteNotebook(@CurrentUser() user: JwtUser, @Body() dto: VoteNotebookDto) {
     return this.votes.voteNotebook(user.sub, dto.notebookId, dto.value);
   }
 
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('comment')
   @UseGuards(SupabaseAuthGuard)
   async voteComment(@CurrentUser() user: JwtUser, @Body() dto: VoteCommentDto) {

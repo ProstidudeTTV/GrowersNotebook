@@ -50,7 +50,7 @@ const RANGE_CONFIG: Record<ValidRange, { label: string; heading: string; subhead
 
 const MOCK_PREVIEW_CARDS = [
   {
-    gradient: "from-emerald-800 to-green-600",
+    gradient: "from-teal-900 to-cyan-800",
     emoji: "🌿",
     title: "Week 6 — Trichomes Coming In",
     author: "u/trichome_tracker",
@@ -106,7 +106,7 @@ function HotEmptyState({ range }: { range: ValidRange }) {
           </Link>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[#0a1209] shadow-[0_0_20px_-4px_rgba(74,222,128,0.4)] transition hover:brightness-110"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[var(--gn-on-accent)] shadow-[0_0_20px_-4px_color-mix(in_srgb,var(--gn-accent)_40%,transparent)] transition hover:brightness-110"
           >
             Share Your Grow →
           </Link>
@@ -191,7 +191,7 @@ export default async function HotWeekPage({
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pt-6 pb-12">
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] px-4 pt-6 pb-12">
       <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)]">
         {config.heading}
       </h1>
@@ -206,7 +206,7 @@ export default async function HotWeekPage({
               href={`/hot?range=${key}`}
               className={
                 range === key
-                  ? "bg-[var(--gn-accent)] text-[#0a1209] rounded-full px-5 py-1.5 text-sm font-bold shadow-sm transition-all"
+                  ? "bg-[var(--gn-accent)] text-[var(--gn-on-accent)] rounded-full px-5 py-1.5 text-sm font-bold shadow-sm transition-all"
                   : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:bg-[var(--gn-surface-elevated)] rounded-full px-5 py-1.5 text-sm font-medium transition-all"
               }
             >

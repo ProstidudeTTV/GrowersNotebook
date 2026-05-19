@@ -1,0 +1,196 @@
+---
+description: Growers Notebook design system, brand identity, and UI/UX principles. Read this before touching ANY frontend file.
+alwaysApply: true
+---
+
+# Growers Notebook — Design System & Brand Identity
+
+## What this product is
+
+Growers Notebook is a **cannabis community social media ENGINE** — not a blog, not a SaaS dashboard. Think: Reddit × GrowDiaries × Facebook Messenger, purpose-built for home cannabis growers. Every design decision should ask: "does this feel like a place people want to hang out and grow together?"
+
+---
+
+## Brand
+
+- **Name:** Growers Notebook  
+- **Tagline:** Grow · Share · Thrive  
+- **Logo:** Notebook with leaf/plant SVG glyph (`SiteLogoMark` component) — green gradient, notebook + leaf icon  
+- **Voice:** Warm, direct, grower-to-grower — never corporate or clinical
+
+---
+
+## Color System (CSS variables — ALWAYS use these, never hardcode hex)
+
+### Dark mode (default — site ships dark)
+```
+--gn-accent:           #4ade80   ← Forest green — primary brand, CTAs, links, active states
+--gn-hot:              #f97316   ← Orange — ONLY for fire/hot indicators, NOT general UI
+--gn-page-top/mid/bot: #0d1610 → #0a1209 → #070e06  (deep forest dark)
+--gn-surface:          #111a12
+--gn-surface-raised:   #162118
+--gn-surface-elevated: #1b2a1d
+--gn-surface-muted:    #0f1810
+--gn-text:             #e8f5ea
+--gn-text-muted:       #7fa887
+```
+
+### Light mode
+```
+--gn-accent:           #15803d   ← Forest green-700
+--gn-page-mid:         #f4f0ea   (warm cream)
+--gn-surface:          #ffffff
+--gn-text:             #111a14
+--gn-text-muted:       #4a6455
+```
+
+### Color rules
+- **`--gn-accent` (green)** = all primary buttons, active nav, links, vote upvote, badges, focus rings
+- **`--gn-hot` / `text-orange-500`** = fire icon, "Hot this week" — ONLY orange allowed on the site
+- **`text-violet-600/400`** = vote downvote — no other uses
+- **Never** use hardcoded hex colors. Never use `bg-orange-*` except fire icon
+- Community icon fallbacks use a 10-color hash palette (emerald, teal, sky, violet, amber, fuchsia, cyan, etc.) — these are baked into `community-icon.tsx`
+
+---
+
+## Layout Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  SiteHeader (sticky, h-14, glass blur)                 │
+├──────────────┬──────────────────────────────────────────┤
+│              │                                          │
+│  AppSidebar  │  Main content (max-w-5xl centered)      │
+│  (w-56       │  + optional right sidebar (w-72)        │
+│   sticky)    │                                          │
+│              │                                          │
+└──────────────┴──────────────────────────────────────────┘
+```
+
+- Page content: `mx-auto w-full max-w-5xl lg:max-w-[1100px]`
+- Feed pages: 70% main + 30% right sidebar at `lg:` breakpoint
+- Sidebar: `w-56` fixed, collapsible on mobile via drawer
+
+---
+
+## Component Design Rules
+
+### Cards
+- Border radius: `rounded-2xl` for content cards, `rounded-xl` for interactive items, `rounded-full` for pills/badges
+- Elevation: `shadow-[var(--gn-shadow-sm)]` default, `shadow-[var(--gn-shadow-md)]` on hover
+- Background: `bg-[var(--gn-surface-raised)]` — never solid white or black
+- No heavy borders — use shadows for elevation
+
+### Feed Post Cards (Reddit-style)
+```
+┌──────────────────────────────────────────┐
+│  [Full-width hero image, edge-to-edge]   │
+├────┬─────────────────────────────────────┤
+│ ▲  │  u/grower · r/community · 3h ago   │
+│ 14 │  Post title font-bold              │
+│ ▼  │  Excerpt line-clamp-2              │
+│    │  [💬 24]  [↗ Share]                │
+└────┴─────────────────────────────────────┘
+     ↑ Left vote rail: w-12 flex-col
+```
+- Images always first — GrowDiaries principle
+- Vote rail always on the left — Reddit principle
+- Community badge overlaid on hero image top-left
+
+### Post Detail Pages (GrowDiaries-style)
+- Hero image: `h-80 sm:h-96` — tall, dominant
+- Order: Hero → Author strip → Title → Body → Comments
+- Comments: avatar + name + time + body, depth-indented with left border lines
+- Composer: wrapped in `rounded-2xl bg-[var(--gn-surface-elevated)] p-4` — Facebook-style
+
+### Sidebar Navigation
+- Logo: `SiteLogoMark` glyph + "Growers Notebook" wordmark + "Grow · Share · Thrive" tagline
+- Nav icons: colored chip `h-7 w-7 rounded-lg` behind each icon (green for home, orange for fire, sky for messages, etc.)
+- Community list: colored letter avatars from hash palette (never plain gray)
+- User footer: avatar + name + settings icon + sign out
+
+### Messages (Facebook Messenger-style)
+- Two-column layout: conversation list left, chat thread right
+- Bubbles: sent = right-aligned `bg-[var(--gn-surface-elevated)]` with green left accent border; received = left-aligned `bg-[var(--gn-surface-raised)]`
+- Thread rows: avatar (36px circle) + name + preview + timestamp
+- Input: `rounded-2xl bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]`
+
+### Community Pages (Subreddit-style)
+- Full-bleed banner (`h-48 sm:h-56`) — real image or gradient fallback
+- Community icon overlapping banner bottom edge
+- Stats bar: members · posts · created date
+- Sticky About sidebar at `lg:` breakpoint
+- Sort controls sticky below banner
+
+### Profiles
+- Clean header card: avatar (`h-24 w-24`), name, tier badge, stats row
+- No background banner (profile isn't a community — keep it clean)
+- Pill tab navigation: Posts / Notebooks / Media
+
+### Notebooks (Grow Journal — unique killer feature)
+- Phase color pills: Seedling=emerald, Veg=green, Flower=amber, Harvest=orange
+- Metric values as rounded pill tags
+- Every input field needs: placeholder with example value + helper text explaining optimal ranges
+- Week navigation sticky on mobile
+
+---
+
+## Typography Scale
+```
+Page title:       text-2xl font-extrabold tracking-tight
+Section heading:  text-lg font-bold
+Card title:       text-base font-semibold
+Body text:        text-sm leading-relaxed
+Meta/captions:    text-xs text-[var(--gn-text-muted)]
+Section labels:   text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]
+Helper text:      text-[11px] text-[var(--gn-text-muted)] leading-relaxed
+```
+
+---
+
+## Interaction Patterns
+
+- Hover: `hover:bg-[var(--gn-surface-hover)]` — subtle green-tinted lift
+- Focus: `ring-2 ring-[var(--gn-ring-focus)]` — green ring
+- Active: `active:scale-[0.97]` — micro press
+- Transitions: `transition-all duration-150` — snappy, not sluggish
+- Empty states: friendly illustration-style with a plant emoji or leaf icon, never just "No items found"
+- Loading: shimmer skeleton, never blank white
+- Toasts: `sonner` — success=green, error=red, never orange
+
+---
+
+## What "sterile" means (what to avoid)
+
+- ❌ `divide-y` list rows — use spaced cards with hover states
+- ❌ Solid color backgrounds with no depth — use `surface-raised/elevated` layering
+- ❌ Text-only pages with no visual anchors — add community icons, user avatars, plant photos
+- ❌ Corporate gray palette — this is a GROW community, greens/ambers/natural tones
+- ❌ Orange as primary brand color — it's a fast-food color, not a grow community
+- ❌ Empty space with no CTAs or engagement prompts
+- ❌ Plain letter avatars on gray circles — use the hash-based color palette
+- ❌ Modals for everything — use inline actions where possible
+
+---
+
+## Admin Panel Rules
+
+- Admin = Refine.dev + Ant Design, dark mode via ConfigProvider `colorPrimary: "#4ade80"` (dark) / `"#15803d"` (light)
+- Dashboard must show live stat cards (open reports, communities, members) — never just redirect
+- All list pages: visible search, icon preview, direct "View Public" links, status badges
+- One-click moderation: approve/ban/pin/dismiss without drilling into sub-pages
+- Admin sees everything; moderators see scoped moderation queue only
+
+---
+
+## Agent Checklist (before writing any frontend code)
+
+1. Open the live site: `https://growersnotebook.com` — take a screenshot
+2. Read the component file you're about to change
+3. Ask: does this match the design system above?
+4. Use ONLY CSS variables — zero hardcoded hex colors
+5. Dark mode first — light mode must also work (use CSS vars)
+6. No orange except fire/hot indicators
+7. After changes: run `pnpm --filter @growers/web exec tsc --noEmit`
+8. Fix all TypeScript errors before committing
+9. Commit and push — changes that stay local are considered incomplete

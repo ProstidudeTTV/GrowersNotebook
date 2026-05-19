@@ -290,7 +290,7 @@ export function NewPostForm({
           type="button"
           onClick={() => void submit()}
           disabled={loading}
-          className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 hover:shadow-[0_0_24px_rgba(255,69,0,0.45)] disabled:opacity-50"
+          className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
         >
           {loading ? "Publishing…" : "Publish"}
         </button>

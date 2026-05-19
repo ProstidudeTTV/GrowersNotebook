@@ -97,7 +97,7 @@ export function InteractiveStarRating({
         aria-valuemax={5}
         aria-valuenow={Number(display.toFixed(2))}
         aria-label="Rating from 1 to 5 stars"
-        className="inline-flex min-h-10 min-w-[11rem] cursor-pointer select-none items-center gap-0.5 rounded-md py-0.5 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#ff6a38]"
+        className="inline-flex min-h-10 min-w-[11rem] cursor-pointer select-none items-center gap-0.5 rounded-md py-0.5 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[var(--gn-accent)]"
         onMouseMove={(e) => {
           if (e.buttons !== 0) return;
           setHover(fromX(e.clientX));

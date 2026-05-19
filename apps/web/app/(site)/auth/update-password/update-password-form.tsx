@@ -103,7 +103,7 @@ export function UpdatePasswordForm() {
           type="button"
           disabled={loading}
           onClick={submit}
-          className="w-full rounded-full bg-[var(--gn-accent)] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:brightness-110 disabled:opacity-50"
+          className="w-full rounded-full bg-[var(--gn-accent)] py-2 font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {loading ? "Saving…" : "Update password"}
         </button>

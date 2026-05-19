@@ -157,7 +157,7 @@ export function SiteHeaderSearch() {
           aria-expanded={panelOpen}
           aria-controls={listId}
           aria-autocomplete="list"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none focus:ring-1 focus:ring-[#ff6a38]"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--gn-ring-focus)]"
         />
         <button
           type="submit"

@@ -1,920 +1,16 @@
-"use client";
+import sys
 
-import Link from "next/link";
-import { DmImageLightbox } from "@/components/dm-image-lightbox";
-import { DmSharedPostEmbed } from "@/components/dm-shared-post-embed";
-import { apiFetch } from "@/lib/api-public";
-import { setMessagesUnreadAny } from "@/lib/messages-unread-store";
-import { createClient } from "@/lib/supabase/client";
-import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
-import {
-  buildPostShareDmBody,
-  captionWithoutShareUrl,
-  clientAbsolutePostUrl,
-  firstPostShareMatch,
-} from "@/lib/post-share";
-import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
-import { ComposerQuickReactionsToolbar } from "@/components/composer-quick-reactions-toolbar";
-import { dedupeUrlsPreserveOrder, isDmVideoUrl } from "@/lib/dm-media-url";
-import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
-import {
-  isProcessablePostImage,
-  isProcessablePostVideo,
-  uploadPostImage,
-  uploadPostVideo,
-} from "@/lib/upload-post-media";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from "react";
+with open('d:/GrowersNotebook/apps/web/components/messages-panel.tsx', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-/** Fallback when Realtime is unavailable; primary updates use dm_realtime_signals. */
-const POLL_MS = 25000;
-const DM_ATTACH_MAX = 8;
+idx_start = content.rfind('\n  return (')
+if idx_start == -1:
+    print("ERROR: Could not find return statement")
+    sys.exit(1)
 
-type PendingAttachment = {
-  id: string;
-  /** Local blob URL for instant preview; revoked after upload. */
-  localBlobUrl?: string;
-  remoteUrl?: string;
-  uploading: boolean;
-  error?: string;
-  /** Set after upload or for pasted GIF URLs. */
-  kind?: "image" | "video";
-  /** User upload vs Giphy/Tenor sticker (affects GIF button rules). */
-  source?: "upload" | "giphy";
-};
+print(f"Return block starts at index {idx_start}")
 
-function revokePendingLocal(a: PendingAttachment) {
-  if (a.localBlobUrl) URL.revokeObjectURL(a.localBlobUrl);
-}
-
-type OpenThreadResponse = {
-  threadId: string;
-  peer: { id: string; displayName: string | null };
-};
-
-type ProfileSearchItem = {
-  id: string;
-  displayName: string | null;
-  description?: string | null;
-  avatarUrl?: string | null;
-};
-
-type ProfileSearchResponse = {
-  items: ProfileSearchItem[];
-  total: number;
-};
-
-type ThreadSummary = {
-  id: string;
-  peer: { id: string; displayName: string | null };
-  lastMessage: {
-    id: string;
-    body: string;
-    imageUrls?: string[];
-    imageUrl?: string | null;
-    senderId: string;
-    createdAt: string;
-  } | null;
-  unread: boolean;
-  lastMessageAt: string | null;
-};
-
-type ListThreadsResponse = { items: ThreadSummary[] };
-
-type MessageRow = {
-  id: string;
-  senderId: string;
-  body: string;
-  imageUrls?: string[];
-  imageUrl?: string | null;
-  createdAt: string;
-};
-
-type ListMessagesResponse = {
-  items: MessageRow[];
-  oldestId: string | null;
-  hasMore: boolean;
-};
-
-function displayNameFor(
-  profileId: string | null | undefined,
-  selfId: string | null,
-  peer?: { id: string; displayName: string | null },
-): string {
-  if (profileId && selfId && profileId === selfId) return "You";
-  if (peer && profileId === peer.id) {
-    const n = peer.displayName?.trim();
-    if (n) return n;
-  }
-  return "Grower";
-}
-
-function messageImageUrls(
-  m: Pick<MessageRow, "imageUrls" | "imageUrl">,
-): string[] {
-  const fromApi = m.imageUrls?.filter(Boolean) ?? [];
-  const base = fromApi.length ? fromApi : m.imageUrl ? [m.imageUrl] : [];
-  return dedupeUrlsPreserveOrder(base);
-}
-
-/** Stable compare for poll refresh without resetting scroll. */
-function messagesListFingerprint(items: MessageRow[]): string {
-  if (items.length === 0) return "0";
-  const first = items[0];
-  const last = items[items.length - 1];
-  return `${items.length}:${first.id}:${last.id}`;
-}
-
-function dmAttachmentPileLabel(
-  urls: string[],
-  fromSelf: boolean,
-  peerDisplay: string,
-): string | null {
-  if (urls.length <= 1) return null;
-  const v = urls.filter(isDmVideoUrl).length;
-  const who = fromSelf ? "You" : peerDisplay;
-  if (v === urls.length) return `${who} sent ${urls.length} videos`;
-  if (v > 0) return `${who} sent ${urls.length} attachments`;
-  return `${who} sent ${urls.length} photos`;
-}
-
-function pendingAttachmentsHeadline(items: PendingAttachment[]): string {
-  const n = items.length;
-  if (n === 0) return "";
-  let v = 0;
-  for (const a of items) {
-    if (
-      a.kind === "video" ||
-      Boolean(a.remoteUrl && isDmVideoUrl(a.remoteUrl))
-    ) {
-      v += 1;
-    }
-  }
-  if (v === n) return n === 1 ? "1 video" : `${n} videos`;
-  if (v === 0) return n === 1 ? "1 photo" : `${n} photos`;
-  return `${n} attachments`;
-}
-
-function threadPreviewLine(
-  m: ThreadSummary["lastMessage"],
-): string | null {
-  if (!m) return null;
-  const t = m.body?.trim() ?? "";
-  if (t) return t.length > 72 ? `${t.slice(0, 70)}…` : t;
-  const urls = messageImageUrls(m);
-  const n = urls.length;
-  if (n === 0) return null;
-  const v = urls.filter(isDmVideoUrl).length;
-  if (v === n) return n === 1 ? "Video" : `${n} videos`;
-  if (v > 0) return `${n} attachments`;
-  if (n === 1) return "Photo";
-  return `${n} photos`;
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2)
-    return ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
-  return (parts[0]?.[0] ?? "G").toUpperCase();
-}
-
-const AVATAR_COLORS = [
-  "bg-orange-600",
-  "bg-emerald-700",
-  "bg-sky-700",
-  "bg-violet-700",
-  "bg-rose-700",
-];
-
-function MiniAvatar({ name, size }: { name: string; size: number }) {
-  const initials = getInitials(name);
-  const colorIdx =
-    name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) %
-    AVATAR_COLORS.length;
-  const bg = AVATAR_COLORS[colorIdx];
-  return (
-    <span
-      aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold uppercase text-white ${bg}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
-    >
-      {initials}
-    </span>
-  );
-}
-
-export function MessagesPanel() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createClient();
-  const [selfId, setSelfId] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "ready" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [threads, setThreads] = useState<ThreadSummary[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [pendingAttachments, setPendingAttachments] = useState<
-    PendingAttachment[]
-  >([]);
-  const [lightbox, setLightbox] = useState<{
-    urls: string[];
-    index: number;
-  } | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [messageDeletingId, setMessageDeletingId] = useState<string | null>(
-    null,
-  );
-  const dmAttachInputId = useId();
-  const [gifPickerOpen, setGifPickerOpen] = useState(false);
-  const [gifQuery, setGifQuery] = useState("");
-  const [gifItems, setGifItems] = useState<
-    { id?: string; url: string; preview: string; title: string }[]
-  >([]);
-  const [gifLoading, setGifLoading] = useState(false);
-  const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
-  const gifFetchSeq = useRef(0);
-  const lastGifPickMs = useRef(0);
-  const [openingFromQuery, setOpeningFromQuery] = useState(false);
-  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [userSearchResults, setUserSearchResults] = useState<ProfileSearchItem[]>([]);
-  const [userSearchLoading, setUserSearchLoading] = useState(false);
-  const debouncedUserSearch = useDebouncedValue(userSearchQuery.trim(), 320);
-  const deepLinkProcessedOk = useRef<string | null>(null);
-  const sharePostPrefillDone = useRef<string | null>(null);
-  const timelineRef = useRef<HTMLDivElement | null>(null);
-  const scrollStickBottom = useRef(true);
-  const pendingAttachmentsRef = useRef(pendingAttachments);
-  pendingAttachmentsRef.current = pendingAttachments;
-
-  useEffect(() => {
-    return () => {
-      for (const a of pendingAttachmentsRef.current) revokePendingLocal(a);
-    };
-  }, []);
-
-  const removePendingAttachment = useCallback((id: string) => {
-    setPendingAttachments((prev) => {
-      const found = prev.find((x) => x.id === id);
-      if (found) revokePendingLocal(found);
-      return prev.filter((x) => x.id !== id);
-    });
-  }, []);
-
-  const runGifSearch = useCallback(async (q: string) => {
-    const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setGifItems([]);
-      setGifLoading(false);
-      return;
-    }
-    const seq = ++gifFetchSeq.current;
-    setGifLoading(true);
-    try {
-      const items = await fetchGiphySearchItems(trimmed);
-      if (seq === gifFetchSeq.current) setGifItems(items);
-    } catch {
-      if (seq === gifFetchSeq.current) setGifItems([]);
-    } finally {
-      if (seq === gifFetchSeq.current) setGifLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!gifPickerOpen) {
-      gifFetchSeq.current += 1;
-      setGifLoading(false);
-      return;
-    }
-    void runGifSearch(debouncedGifQuery);
-  }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
-
-  const addGifAttachment = useCallback((url: string) => {
-    const now = Date.now();
-    if (now - lastGifPickMs.current < 480) return;
-    lastGifPickMs.current = now;
-    setPendingAttachments((prev) => {
-      if (prev.some((x) => x.source === "upload")) return prev;
-      const id =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      return [
-        {
-          id,
-          remoteUrl: url,
-          uploading: false,
-          kind: "image" as const,
-          source: "giphy" as const,
-        },
-      ];
-    });
-    setGifPickerOpen(false);
-    setGifQuery("");
-    setGifItems([]);
-  }, []);
-
-  useEffect(() => {
-    if (!showNewMessageModal || debouncedUserSearch.length < 2) {
-      setUserSearchResults([]);
-      setUserSearchLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setUserSearchLoading(true);
-    (async () => {
-      try {
-        const data = await apiFetch<ProfileSearchResponse>(
-          `/profiles/search?q=${encodeURIComponent(debouncedUserSearch)}&pageSize=8&page=1`,
-          { method: "GET" },
-        );
-        if (!cancelled) setUserSearchResults(data.items);
-      } catch {
-        if (!cancelled) setUserSearchResults([]);
-      } finally {
-        if (!cancelled) setUserSearchLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedUserSearch, showNewMessageModal]);
-
-  const startConversation = useCallback(
-    (user: ProfileSearchItem) => {
-      setShowNewMessageModal(false);
-      setUserSearchQuery("");
-      setUserSearchResults([]);
-      router.push(`/messages?with=${user.id}`);
-    },
-    [router],
-  );
-
-  const fetchToken = useCallback(async () => {
-    return getAccessTokenForApi(supabase);
-  }, [supabase]);
-
-  const loadThreads = useCallback(async () => {
-    const token = await fetchToken();
-    if (!token) return;
-    const data = await apiFetch<ListThreadsResponse>("/direct-messages/threads", {
-      method: "GET",
-      token,
-    });
-    setThreads(data.items);
-    const anyUnread = data.items.some((t) => t.unread);
-    setMessagesUnreadAny(anyUnread);
-  }, [fetchToken]);
-
-  const loadMessagesPage = useCallback(
-    async (
-      threadId: string,
-      before?: string,
-      appendOlder?: boolean,
-      opts?: { backgroundPoll?: boolean },
-    ) => {
-      const token = await fetchToken();
-      if (!token) return;
-      const q = new URLSearchParams();
-      q.set("limit", "50");
-      if (before) q.set("before", before);
-      const data = await apiFetch<ListMessagesResponse>(
-        `/direct-messages/threads/${threadId}/messages?${q.toString()}`,
-        { method: "GET", token },
-      );
-      if (appendOlder && before) {
-        setMessages((prev) => [...data.items, ...prev]);
-      } else if (opts?.backgroundPoll) {
-        setMessages((prev) => {
-          if (
-            messagesListFingerprint(prev) ===
-            messagesListFingerprint(data.items)
-          ) {
-            return prev;
-          }
-          return data.items;
-        });
-      } else {
-        setMessages(data.items);
-        scrollStickBottom.current = true;
-      }
-      setHasMore(data.hasMore);
-    },
-    [fetchToken],
-  );
-
-  const markRead = useCallback(
-    async (threadId: string) => {
-      const token = await fetchToken();
-      if (!token) return;
-      await apiFetch(`/direct-messages/threads/${threadId}/read`, {
-        method: "POST",
-        token,
-      });
-      void loadThreads();
-    },
-    [fetchToken, loadThreads],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session?.user?.id) {
-        setStatus("error");
-        setError("Sign in to view messages.");
-        return;
-      }
-      setSelfId(session.user.id);
-      setStatus("ready");
-      try {
-        await loadThreads();
-      } catch (e) {
-        if (!cancelled) {
-          setStatus("error");
-          setError(
-            e instanceof Error ? e.message : "Could not load conversations.",
-          );
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase, loadThreads]);
-
-  useEffect(() => {
-    if (status !== "ready") return;
-    const id = window.setInterval(() => {
-      void loadThreads();
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [status, loadThreads]);
-
-  useEffect(() => {
-    if (status !== "ready" || !activeThreadId) return;
-    const id = window.setInterval(() => {
-      void loadMessagesPage(activeThreadId, undefined, false, {
-        backgroundPoll: true,
-      });
-    }, POLL_MS);
-    return () => clearInterval(id);
-  }, [status, activeThreadId, loadMessagesPage]);
-
-  /** Supabase Realtime: new DM signal rows (RLS limits to threads the user participates in). */
-  useEffect(() => {
-    if (status !== "ready" || !selfId) return;
-    const channel = supabase
-      .channel("dm-realtime-signals")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "dm_realtime_signals",
-        },
-        (payload) => {
-          const row = payload.new as {
-            thread_id?: string;
-            message_id?: string;
-          };
-          const tid = row.thread_id;
-          if (!tid) return;
-          void loadThreads();
-          if (activeThreadId === tid) {
-            void loadMessagesPage(tid, undefined, false, {
-              backgroundPoll: true,
-            });
-          }
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [
-    status,
-    selfId,
-    supabase,
-    activeThreadId,
-    loadThreads,
-    loadMessagesPage,
-  ]);
-
-  useEffect(() => {
-    if (status !== "ready") return;
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      void loadThreads();
-      if (activeThreadId) {
-        void loadMessagesPage(activeThreadId, undefined, false, {
-          backgroundPoll: true,
-        });
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () =>
-      document.removeEventListener("visibilitychange", onVisible);
-  }, [status, activeThreadId, loadThreads, loadMessagesPage]);
-
-  useEffect(() => {
-    if (status !== "ready") return;
-    const onFocus = () => {
-      void loadThreads();
-      if (activeThreadId) {
-        void loadMessagesPage(activeThreadId, undefined, false, {
-          backgroundPoll: true,
-        });
-      }
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [status, activeThreadId, loadThreads, loadMessagesPage]);
-
-  useEffect(() => {
-    const withId = searchParams.get("with")?.trim();
-    if (!withId) {
-      deepLinkProcessedOk.current = null;
-      return;
-    }
-    if (status !== "ready" || !selfId) return;
-    if (deepLinkProcessedOk.current === withId) return;
-    let cancelled = false;
-    (async () => {
-      setOpeningFromQuery(true);
-      setActionError(null);
-      try {
-        const token = await fetchToken();
-        if (!token || cancelled) return;
-        const opened = await apiFetch<OpenThreadResponse>(
-          "/direct-messages/threads/open",
-          {
-            method: "POST",
-            token,
-            body: JSON.stringify({ peerProfileId: withId }),
-          },
-        );
-        if (cancelled) return;
-        deepLinkProcessedOk.current = withId;
-        setActiveThreadId(opened.threadId);
-        await loadMessagesPage(opened.threadId);
-        await markRead(opened.threadId);
-        await loadThreads();
-        router.replace("/messages", { scroll: false });
-      } catch (e) {
-        deepLinkProcessedOk.current = null;
-        if (!cancelled) {
-          setActionError(
-            e instanceof Error
-              ? e.message
-              : "Could not open a chat with that user.",
-          );
-        }
-      } finally {
-        if (!cancelled) setOpeningFromQuery(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    status,
-    selfId,
-    searchParams,
-    fetchToken,
-    loadMessagesPage,
-    markRead,
-    loadThreads,
-    router,
-  ]);
-
-  useEffect(() => {
-    const sid = searchParams.get("sharePost")?.trim();
-    if (!sid) {
-      sharePostPrefillDone.current = null;
-      return;
-    }
-    if (status !== "ready" || !selfId) return;
-    if (sharePostPrefillDone.current === sid) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const p = await apiFetch<{ title: string }>(`/posts/${sid}`, {
-          method: "GET",
-        });
-        if (cancelled) return;
-        setDraft(
-          buildPostShareDmBody(
-            p.title ?? "",
-            clientAbsolutePostUrl(sid),
-          ),
-        );
-        sharePostPrefillDone.current = sid;
-        router.replace("/messages", { scroll: false });
-      } catch {
-        if (!cancelled) {
-          sharePostPrefillDone.current = null;
-          setActionError("Could not load that post to share.");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [status, selfId, searchParams, router]);
-
-  useLayoutEffect(() => {
-    const el = timelineRef.current;
-    if (!el || !scrollStickBottom.current) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages]);
-
-  const onTimelineScroll = () => {
-    const el = timelineRef.current;
-    if (!el) return;
-    const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
-    scrollStickBottom.current = gap < 80;
-  };
-
-  const selectThread = async (threadId: string) => {
-    setActionError(null);
-    setGifPickerOpen(false);
-    setGifQuery("");
-    setGifItems([]);
-    if (threadId !== activeThreadId) {
-      setPendingAttachments((prev) => {
-        for (const a of prev) revokePendingLocal(a);
-        return [];
-      });
-    }
-    setActiveThreadId(threadId);
-    scrollStickBottom.current = true;
-    try {
-      await loadMessagesPage(threadId);
-      await markRead(threadId);
-    } catch (e) {
-      setActionError(
-        e instanceof Error ? e.message : "Could not load this conversation.",
-      );
-    }
-  };
-
-  const loadOlder = async () => {
-    if (!activeThreadId || !messages[0] || loadingOlder || !hasMore) return;
-    setLoadingOlder(true);
-    setActionError(null);
-    const prevHeight = timelineRef.current?.scrollHeight ?? 0;
-    try {
-      await loadMessagesPage(activeThreadId, messages[0].id, true);
-      requestAnimationFrame(() => {
-        const el = timelineRef.current;
-        if (el) {
-          el.scrollTop = el.scrollHeight - prevHeight;
-        }
-      });
-    } catch (e) {
-      setActionError(
-        e instanceof Error ? e.message : "Could not load older messages.",
-      );
-    } finally {
-      setLoadingOlder(false);
-    }
-  };
-
-  const sendMessage = async () => {
-    const text = draft.trim();
-    const uploading = pendingAttachments.some((a) => a.uploading);
-    const hasError = pendingAttachments.some((a) => a.error);
-    const remoteUrls = pendingAttachments
-      .map((a) => a.remoteUrl)
-      .filter(Boolean) as string[];
-    const allUploaded =
-      pendingAttachments.length === 0 ||
-      (remoteUrls.length === pendingAttachments.length &&
-        !uploading &&
-        !hasError);
-    if (!activeThreadId || (!text && remoteUrls.length === 0)) return;
-    if (pendingAttachments.length > 0 && !allUploaded) {
-      if (uploading) {
-        setActionError("Wait for uploads to finish.");
-      } else if (hasError) {
-        setActionError("Remove failed attachments, then try again.");
-      } else {
-        setActionError("Attachments are not ready to send yet.");
-      }
-      return;
-    }
-    setActionError(null);
-    try {
-      const token = await fetchToken();
-      if (!token) throw new Error("Not signed in.");
-      const payload: { body: string; imageUrls?: string[] } = {
-        body: text,
-      };
-      if (remoteUrls.length) payload.imageUrls = remoteUrls;
-      await apiFetch(`/direct-messages/threads/${activeThreadId}/messages`, {
-        method: "POST",
-        token,
-        body: JSON.stringify(payload),
-      });
-      setDraft("");
-      setPendingAttachments([]);
-      scrollStickBottom.current = true;
-      await loadMessagesPage(activeThreadId);
-      await loadThreads();
-    } catch (e) {
-      setActionError(
-        e instanceof Error ? e.message : "Could not send this message.",
-      );
-    }
-  };
-
-  const removeOwnMessage = async (messageId: string) => {
-    if (!activeThreadId) return;
-    if (!window.confirm("Remove this message from the chat?")) return;
-    setActionError(null);
-    setMessageDeletingId(messageId);
-    try {
-      const token = await fetchToken();
-      if (!token) throw new Error("Not signed in.");
-      await apiFetch(
-        `/direct-messages/threads/${activeThreadId}/messages/${messageId}`,
-        { method: "DELETE", token },
-      );
-      await loadMessagesPage(activeThreadId);
-      await loadThreads();
-    } catch (e) {
-      setActionError(
-        e instanceof Error ? e.message : "Could not delete message.",
-      );
-    } finally {
-      setMessageDeletingId(null);
-    }
-  };
-
-  const onMediaFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const input = e.target;
-    const files = input.files;
-    const resetInput = () => {
-      requestAnimationFrame(() => {
-        input.value = "";
-      });
-    };
-
-    if (!files?.length) {
-      resetInput();
-      return;
-    }
-    if (!selfId) {
-      setActionError("Sign in to attach media.");
-      resetInput();
-      return;
-    }
-
-    setActionError(null);
-    const room = DM_ATTACH_MAX - pendingAttachments.length;
-    if (room <= 0) {
-      resetInput();
-      return;
-    }
-    const rawList = Array.from(files);
-    const valid = rawList.filter(
-      (file) => isProcessablePostImage(file) || isProcessablePostVideo(file),
-    );
-    if (valid.length < rawList.length) {
-      setActionError(
-        "Some files were skipped. Use JPEG, PNG, WebP, GIF or MP4, WebM, MOV.",
-      );
-    }
-    const list = valid.slice(0, room);
-    if (list.length === 0) {
-      resetInput();
-      return;
-    }
-    resetInput();
-    const newItems: PendingAttachment[] = list.map((file) => ({
-      id:
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      localBlobUrl: URL.createObjectURL(file),
-      uploading: true,
-      kind: isProcessablePostVideo(file) ? "video" : "image",
-      source: "upload" as const,
-    }));
-
-    setPendingAttachments((prev) => {
-      for (const a of prev) {
-        if (a.source === "giphy") revokePendingLocal(a);
-      }
-      return [...prev.filter((x) => x.source !== "giphy"), ...newItems];
-    });
-
-    void Promise.all(
-      list.map(async (file, i) => {
-        const itemId = newItems[i]!.id;
-        const isVid = isProcessablePostVideo(file);
-        try {
-          const r = isVid
-            ? await uploadPostVideo(supabase, selfId, file)
-            : await uploadPostImage(supabase, selfId, file);
-          if (
-            r.ok &&
-            isVid &&
-            "storagePath" in r &&
-            r.storagePath &&
-            r.videoContentType
-          ) {
-            const t = await fetchToken();
-            if (t) {
-              void stripUploadedVideoMetadata(
-                t,
-                r.storagePath,
-                r.videoContentType,
-              ).catch(() => {});
-            }
-          }
-          setPendingAttachments((prev) => {
-            const cur = prev.find((x) => x.id === itemId);
-            if (!cur) return prev;
-            if (!r.ok) {
-              return prev.map((x) =>
-                x.id === itemId
-                  ? { ...x, uploading: false, error: r.message }
-                  : x,
-              );
-            }
-            revokePendingLocal(cur);
-            return prev.map((x) =>
-              x.id === itemId
-                ? {
-                    ...x,
-                    uploading: false,
-                    remoteUrl: r.publicUrl,
-                    localBlobUrl: undefined,
-                    error: undefined,
-                    kind: isVid ? ("video" as const) : ("image" as const),
-                    source: "upload" as const,
-                  }
-                : x,
-            );
-          });
-        } catch (err) {
-          const message =
-            err instanceof Error ? err.message : "Could not upload file.";
-          setPendingAttachments((prev) => {
-            const cur = prev.find((x) => x.id === itemId);
-            if (!cur) return prev;
-            return prev.map((x) =>
-              x.id === itemId
-                ? { ...x, uploading: false, error: message }
-                : x,
-            );
-          });
-        }
-      }),
-    );
-  };
-
-  if (status === "idle") {
-    return (
-      <p className="text-sm text-[var(--gn-text-muted)]">Loading…</p>
-    );
-  }
-
-  if (status === "error" && error) {
-    return (
-      <div
-        className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-4 text-sm text-[var(--gn-text)]"
-        role="alert"
-      >
-        {error}
-      </div>
-    );
-  }
-
-  const activePeer = threads.find((t) => t.id === activeThreadId)?.peer;
-  const hasNoThreads = threads.length === 0;
-  const pendingHasUploads = pendingAttachments.some(
-    (a) => a.source === "upload",
-  );
-
+new_return = '''
   return (
     <div className="space-y-3">
       {lightbox ? (
@@ -939,12 +35,12 @@ export function MessagesPanel() {
             <input
               value={userSearchQuery}
               onChange={(e) => setUserSearchQuery(e.target.value)}
-              placeholder="Search by username…"
+              placeholder="Search by username\u2026"
               className="gn-input mb-4 w-full"
               autoFocus
             />
             {userSearchLoading ? (
-              <p className="text-xs text-[var(--gn-text-muted)]">Searching…</p>
+              <p className="text-xs text-[var(--gn-text-muted)]">Searching\u2026</p>
             ) : userSearchQuery.trim().length > 0 &&
               userSearchQuery.trim().length < 2 ? (
               <p className="text-xs text-[var(--gn-text-muted)]">
@@ -1077,7 +173,7 @@ export function MessagesPanel() {
                           if (!preview) return null;
                           const short =
                             preview.length > 36
-                              ? `${preview.slice(0, 36)}…`
+                              ? `${preview.slice(0, 36)}\u2026`
                               : preview;
                           return (
                             <span
@@ -1101,7 +197,7 @@ export function MessagesPanel() {
             {/* Chat header */}
             <div className="flex min-h-[52px] items-center gap-3 border-b border-[var(--gn-divide)] px-4 py-3">
               {openingFromQuery ? (
-                <p className="text-sm text-[var(--gn-text-muted)]">Opening chat…</p>
+                <p className="text-sm text-[var(--gn-text-muted)]">Opening chat\u2026</p>
               ) : activePeer ? (
                 <>
                   <MiniAvatar
@@ -1154,7 +250,7 @@ export function MessagesPanel() {
                         disabled={loadingOlder}
                         onClick={() => void loadOlder()}
                       >
-                        {loadingOlder ? "Loading…" : "Load earlier messages"}
+                        {loadingOlder ? "Loading\u2026" : "Load earlier messages"}
                       </button>
                     </div>
                   ) : null}
@@ -1235,7 +331,7 @@ export function MessagesPanel() {
                                   className="text-[11px] font-normal text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline disabled:opacity-45"
                                 >
                                   {messageDeletingId === ln.id
-                                    ? "Removing…"
+                                    ? "Removing\u2026"
                                     : "Delete"}
                                 </button>
                               </div>
@@ -1266,7 +362,7 @@ export function MessagesPanel() {
                     <span className="text-[var(--gn-text)]">
                       {pendingAttachmentsHeadline(pendingAttachments)}{" "}
                       {pendingAttachments.some((a) => a.uploading)
-                        ? "(uploading…)"
+                        ? "(uploading\u2026)"
                         : pendingAttachments.every((a) => a.remoteUrl)
                           ? "ready"
                           : ""}
@@ -1318,7 +414,7 @@ export function MessagesPanel() {
                               className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
                               aria-hidden
                             >
-                              …
+                              \u2026
                             </div>
                           ) : null}
                           {att.error ? (
@@ -1335,7 +431,7 @@ export function MessagesPanel() {
                             aria-label={`Remove attachment ${i + 1}`}
                             onClick={() => removePendingAttachment(att.id)}
                           >
-                            ×
+                            \u00d7
                           </button>
                         </div>
                       );
@@ -1367,7 +463,7 @@ export function MessagesPanel() {
                   <div className="flex flex-wrap gap-2">
                     <input
                       className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
-                      placeholder="Search Giphy…"
+                      placeholder="Search Giphy\u2026"
                       value={gifQuery}
                       aria-busy={gifLoading}
                       onChange={(e) => setGifQuery(e.target.value)}
@@ -1383,7 +479,7 @@ export function MessagesPanel() {
                       className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
                       onClick={() => void runGifSearch(gifQuery)}
                     >
-                      {gifLoading ? "…" : "Search now"}
+                      {gifLoading ? "\u2026" : "Search now"}
                     </button>
                   </div>
                   <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
@@ -1406,7 +502,7 @@ export function MessagesPanel() {
                           <li key={g.id ?? `${g.url}-${gi}`}>
                             <button
                               type="button"
-                              className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
+                              className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff6a38]"
                               title={g.title}
                               onClick={() => addGifAttachment(g.url)}
                             >
@@ -1446,7 +542,7 @@ export function MessagesPanel() {
                   className="flex-1 border-0 bg-transparent text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Type a message…"
+                  placeholder="Type a message\u2026"
                   disabled={!activeThreadId}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -1487,7 +583,7 @@ export function MessagesPanel() {
                 <div className="absolute bottom-6 left-0 z-20 w-72 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-3 text-xs leading-relaxed text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-md)]">
                   Private between you and the other person on GrowersNotebook,
                   like typical app messages. Content is readable by the service
-                  when needed for safety and operations—not end-to-end encrypted
+                  when needed for safety and operations\u2014not end-to-end encrypted
                   from Growers (similar to default Messenger, not Signal-style
                   encryption).
                 </div>
@@ -1510,3 +606,11 @@ export function MessagesPanel() {
     </div>
   );
 }
+'''
+
+new_content = content[:idx_start] + new_return
+
+with open('d:/GrowersNotebook/apps/web/components/messages-panel.tsx', 'w', encoding='utf-8') as f:
+    f.write(new_content)
+
+print(f"Written {len(new_content)} chars. Done!")

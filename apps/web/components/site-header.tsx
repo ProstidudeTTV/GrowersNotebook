@@ -8,7 +8,7 @@ import { SiteHeaderSearch } from "@/components/site-header-search";
 import { SiteLogoMark } from "@/components/site-logo-mark";
 
 const brandClass =
-  "text-lg font-semibold tracking-tight text-[var(--gn-accent)] transition hover:drop-shadow-[0_0_10px_rgba(255,69,0,0.5)]";
+  "text-lg font-semibold tracking-tight text-[var(--gn-accent)] transition hover:opacity-80";
 
 const DISCORD_INVITE_URL = "https://discord.gg/qGvv9knhdA";
 

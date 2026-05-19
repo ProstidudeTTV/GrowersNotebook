@@ -37,7 +37,7 @@ export function CommentActionMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-lg leading-none text-[var(--gn-text-muted)] transition hover:bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))] hover:text-[var(--gn-text)] hover:shadow-[0_0_12px_rgba(255,69,0,0.12)]"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-lg leading-none text-[var(--gn-text-muted)] transition hover:bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))] hover:text-[var(--gn-text)]"
       >
         ⋮
       </button>

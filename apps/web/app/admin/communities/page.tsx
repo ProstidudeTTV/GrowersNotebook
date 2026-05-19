@@ -55,7 +55,7 @@ export default function AdminCommunitiesPage() {
             record.iconUrl ? (
               <Avatar src={record.iconUrl} size={32} alt={record.name} />
             ) : (
-              <Avatar size={32} style={{ backgroundColor: "#ff6b35", fontWeight: 600 }}>
+              <Avatar size={32} style={{ backgroundColor: "#15803d", fontWeight: 600 }}>
                 {record.name.charAt(0).toUpperCase()}
               </Avatar>
             )

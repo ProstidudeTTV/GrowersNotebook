@@ -344,7 +344,7 @@ export function GuestLanding({
               <h1 className="text-4xl font-black leading-[1.06] tracking-tight text-[var(--gn-text)] sm:text-5xl lg:text-[3.5rem]">
                 The grow journal{" "}
                 <span className="relative whitespace-nowrap">
-                  <span className="relative bg-gradient-to-r from-[var(--gn-accent)] via-[#ff6a38] to-[#ffa64d] bg-clip-text text-transparent">
+                  <span className="relative bg-gradient-to-r from-[var(--gn-accent)] via-[var(--gn-accent)] to-[#86efac] bg-clip-text text-transparent">
                     you&apos;ve been missing.
                   </span>
                 </span>
@@ -555,7 +555,7 @@ export function GuestLanding({
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-9 py-4 text-sm font-bold text-white shadow-[0_12px_40px_-12px_rgba(255,69,0,0.55)] transition hover:brightness-110"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-9 py-4 text-sm font-bold text-white transition hover:brightness-110"
             >
               Get started — it&apos;s free
             </Link>

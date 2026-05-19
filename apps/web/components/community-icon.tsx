@@ -1,6 +1,28 @@
 import type { CommunityIconKey } from "@/lib/community-icon-keys";
 import { isCommunityIconKey } from "@/lib/community-icon-keys";
 
+/** Deterministic color palette for community letter avatars. */
+const PALETTE = [
+  { bg: "#14532d", color: "#86efac" },  // emerald-900 / green-300
+  { bg: "#134e4a", color: "#5eead4" },  // teal-900 / teal-300
+  { bg: "#1e3a5f", color: "#93c5fd" },  // blue-950 / blue-300
+  { bg: "#2e1065", color: "#c4b5fd" },  // violet-950 / violet-300
+  { bg: "#451a03", color: "#fde68a" },  // amber-950 / amber-200
+  { bg: "#3b0764", color: "#f0abfc" },  // fuchsia-950 / fuchsia-300
+  { bg: "#064e3b", color: "#6ee7b7" },  // emerald-900 alt / emerald-300
+  { bg: "#164e63", color: "#a5f3fc" },  // cyan-900 / cyan-300
+  { bg: "#1c1917", color: "#d6d3d1" },  // stone-900 / stone-300
+  { bg: "#2d1b00", color: "#fdba74" },  // amber warm / orange-300
+];
+
+function hashSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
 const stroke = {
   fill: "none" as const,
   stroke: "currentColor",
@@ -147,9 +169,11 @@ export function CommunityIcon({
   const initial = label.charAt(0).toUpperCase() || "?";
 
   if (!key) {
+    const { bg, color } = PALETTE[hashSeed(label) % PALETTE.length];
     return (
       <span
-        className={`${frameClassName} text-xs font-semibold`}
+        className={`${frameClassName} text-xs font-bold`}
+        style={{ backgroundColor: bg, color, borderColor: `${color}30` }}
         aria-hidden
       >
         {initial}

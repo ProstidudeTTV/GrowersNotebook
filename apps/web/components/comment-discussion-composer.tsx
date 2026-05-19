@@ -458,7 +458,7 @@ export function CommentDiscussionComposer({
         type="button"
         onClick={() => void submit()}
         disabled={!viewerId || busy || !canSend}
-        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:brightness-110 hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50"
+        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
       >
         {submitting ? "Posting…" : submitLabel}
       </button>

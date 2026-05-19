@@ -93,7 +93,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
         algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           ...RefineThemes.Blue.token,
-          colorPrimary: dark ? "#ff6b35" : "#c2410c",
+          colorPrimary: dark ? "#4ade80" : "#15803d",
           borderRadiusLG: 12,
           fontFamily: `var(--font-geist-sans), system-ui, sans-serif`,
         },
@@ -126,7 +126,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
             <div className="flex min-w-0 flex-col gap-0.5">
               <Link
                 href="/"
-                className="text-[0.7rem] font-semibold text-[#ff6b35] hover:underline dark:text-[#ff8f5a]"
+                className="text-[0.7rem] font-semibold text-[#15803d] hover:underline dark:text-[#4ade80]"
               >
                 ← Back to site
               </Link>

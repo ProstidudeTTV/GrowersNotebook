@@ -400,7 +400,7 @@ function CommentTree({
               ) : null}
               <button
                 type="button"
-                className="mt-2 text-xs font-medium text-[var(--gn-accent)] transition hover:underline hover:drop-shadow-[0_0_8px_rgba(255,69,0,0.35)]"
+                className="mt-2 text-xs font-medium text-[var(--gn-accent)] transition hover:underline"
                 onClick={() => onReply(c.id)}
               >
                 Reply

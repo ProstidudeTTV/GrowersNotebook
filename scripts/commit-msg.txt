@@ -1,0 +1,5 @@
+Visual redesign: messages panel, feed sidebar, and post view
+
+- Messages panel: fix unreadable orange bubbles (now surface-elevated with accent left border), iMessage-style layout with avatar list on left, chat header with peer name, improved compose area
+- Feed sidebar: add pulse growing-right-now counter, community spotlight card, hot posts with numbered rank and thumbnails, forest-green start-a-notebook CTA
+- Post view: taller hero image (h-80/96), larger bold post title, bigger body prose, improved comment cards with depth indentation lines, larger comment composer avatar

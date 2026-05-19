@@ -685,7 +685,7 @@ export function NotebookWeekWizard({
             </ul>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <p className="sm:col-span-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
-                Water readings — log what you can, skip what you don't measure.
+                Water readings — log what you can, skip what you don&apos;t measure.
               </p>
               <div>
                 <label className={labelClass}>pH</label>

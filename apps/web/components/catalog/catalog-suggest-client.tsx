@@ -223,7 +223,7 @@ export function CatalogSuggestClient() {
               placeholder={isBreeder ? "e.g. mephisto-genetics" : "e.g. sour-diesel"}
             />
             <p className={helpClass}>
-              Find the page on the site and copy the last part of the URL — that's the slug.
+              Find the page on the site and copy the last part of the URL &mdash; that&apos;s the slug.
             </p>
           </div>
         )}

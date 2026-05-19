@@ -281,7 +281,7 @@ export function FeedPostCard({
         />
         <Link
           href={`/community/${community.slug}`}
-          className="font-semibold text-[var(--gn-text)] hover:underline"
+          className="font-semibold text-[var(--gn-accent)] hover:underline"
           data-interactive
           onClick={(e) => e.stopPropagation()}
         >
@@ -320,7 +320,7 @@ export function FeedPostCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-all duration-200 hover:border-[var(--gn-accent)]/40 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
     >
       {rank != null && rank >= 1 && rank <= 5 && (
         <span className="absolute top-3 left-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gn-accent)]/90 text-xs font-bold text-white pointer-events-none">
@@ -342,7 +342,7 @@ export function FeedPostCard({
           <img
             src={heroImage.url}
             alt=""
-            className="h-52 w-full object-cover sm:h-64"
+            className="h-56 w-full object-cover sm:h-72 md:h-80"
             loading="lazy"
           />
         </div>
@@ -363,7 +363,7 @@ export function FeedPostCard({
       <div className="flex">
         {/* Left vote rail — Reddit-style */}
         <div
-          className="flex w-12 shrink-0 flex-col items-center justify-start border-r border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_55%,transparent)] py-3"
+          className="flex w-12 shrink-0 flex-col items-center justify-start border-r border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] py-3"
           data-interactive
           onClick={(e) => e.stopPropagation()}
         >
@@ -420,7 +420,7 @@ export function FeedPostCard({
           </div>
 
           {/* Title */}
-          <h2 className="mt-1.5 text-[15px] font-bold leading-snug text-[var(--gn-text)] sm:text-base">
+          <h2 className="mt-1.5 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-[17px]">
             {local.title}
           </h2>
 
@@ -460,7 +460,7 @@ export function FeedPostCard({
               href={`/p/${local.id}#comments`}
               prefetch={false}
               data-interactive
-              className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+              className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)] sm:text-sm"
               onClick={(e) => e.stopPropagation()}
             >
               <svg
@@ -489,6 +489,7 @@ export function FeedPostCard({
                 viewerId={viewerId}
               />
             </span>
+            <button className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]">Save</button>
           </div>
         </div>
       </div>

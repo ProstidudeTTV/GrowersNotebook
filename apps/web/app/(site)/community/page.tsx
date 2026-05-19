@@ -187,7 +187,7 @@ export default async function CommunityDirectoryPage() {
       </div>
 
       {/* ── Community grid ────────────────────────────────────────────── */}
-      <div className="px-4 pt-8">
+      <div className="px-4 py-6">
         {loadError ? (
           <div className="rounded-2xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-8 py-12 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-surface-elevated)]">
@@ -238,7 +238,7 @@ export default async function CommunityDirectoryPage() {
                 {communities.length === 1 ? "community" : "communities"}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
               {communities.map((c) => (
                 <CommunityCard key={c.id} community={c} />
               ))}

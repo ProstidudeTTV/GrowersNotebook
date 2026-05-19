@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FollowingFeed } from "@/components/following-feed";
 import { FeedSidebar } from "@/components/feed-sidebar";
+import { PostComposerPrompt } from "@/components/post-composer-prompt";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 
@@ -68,6 +69,7 @@ export default async function FollowingPage({
 
       <div className="mt-6 flex flex-col gap-6 px-4 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
+          <PostComposerPrompt />
           <FollowingFeed sort={sort} page={page} />
         </div>
         <div className="w-full shrink-0 lg:w-72">

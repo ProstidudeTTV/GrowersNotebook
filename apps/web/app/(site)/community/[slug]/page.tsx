@@ -9,6 +9,7 @@ import {
   CommunityPostList,
   type FeedPost,
 } from "./community-post-list";
+import { PostComposerPrompt } from "@/components/post-composer-prompt";
 
 type Community = {
   id: string;
@@ -148,7 +149,7 @@ export default async function CommunityPage({
       />
 
       {/* ── Full-bleed banner ────────────────────────────────────────── */}
-      <div className="relative h-48 w-full overflow-hidden sm:h-64">
+      <div className="relative h-56 w-full overflow-hidden sm:h-72">
         {hasBanner ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -157,12 +158,21 @@ export default async function CommunityPage({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div
-            className="h-full w-full"
-            style={{
-              background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 60%, #1a1a2e 40%) 0%, color-mix(in srgb, var(--gn-accent) 25%, #0f0f1a 75%) 100%)`,
-            }}
-          />
+          <div className="h-full w-full relative overflow-hidden">
+            {/* Base gradient */}
+            <div className="absolute inset-0" style={{
+              background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 45%, #0a0a0a 55%) 0%, color-mix(in srgb, var(--gn-accent) 15%, #050505 85%) 100%)`
+            }} />
+            {/* Radial glow center-top */}
+            <div className="absolute inset-0" style={{
+              background: 'radial-gradient(ellipse 80% 60% at 30% 0%, rgba(74,222,128,0.18) 0%, transparent 70%)'
+            }} />
+            {/* Dot matrix pattern */}
+            <div className="absolute inset-0 opacity-[0.06]" style={{
+              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }} />
+          </div>
         )}
         {/* Gradient overlay — bottom fade for text readability */}
         <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 to-transparent" />
@@ -198,7 +208,7 @@ export default async function CommunityPage({
       {/* ── Stats + action bar ───────────────────────────────────────── */}
       <div className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-5 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--gn-text-muted)]">
+          <div className="flex flex-wrap items-center gap-6 text-sm text-[var(--gn-text-muted)]">
             {hasMemberCount && (
               <span className="flex items-center gap-1.5">
                 <span className="text-base">👥</span>
@@ -240,9 +250,12 @@ export default async function CommunityPage({
       )}
 
       {/* ── Two-column layout ────────────────────────────────────────── */}
-      <div className="px-4 pt-5 lg:grid lg:grid-cols-[1fr_300px] lg:gap-6">
+      <div className="px-4 pt-6 lg:grid lg:grid-cols-[1fr_300px] lg:gap-6">
         {/* Main content column */}
         <div className="min-w-0">
+          {/* Post composer */}
+          <PostComposerPrompt communitySlug={slug} />
+
           {/* Sort controls */}
           <div className="mb-4 flex items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">

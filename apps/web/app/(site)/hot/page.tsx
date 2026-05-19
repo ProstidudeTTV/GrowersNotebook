@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { FeedSidebar } from "@/components/feed-sidebar";
+import { PostComposerPrompt } from "@/components/post-composer-prompt";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
@@ -190,11 +191,11 @@ export default async function HotWeekPage({
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
+    <main className="mx-auto max-w-5xl px-4 pt-6 pb-12">
+      <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)]">
         {config.heading}
       </h1>
-      <p className="mt-1 text-sm text-[var(--gn-text-muted)]">{config.subheading}</p>
+      <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">{config.subheading}</p>
 
       {/* Time-range tab pills */}
       <div className="flex gap-2 mt-5 mb-6 p-1 rounded-full bg-[var(--gn-surface-raised)] border border-[var(--gn-divide)] w-fit">
@@ -217,6 +218,7 @@ export default async function HotWeekPage({
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1">
+          <PostComposerPrompt />
           {feed.items.length === 0 ? (
             <HotEmptyState range={range} />
           ) : (

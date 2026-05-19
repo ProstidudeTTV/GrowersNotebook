@@ -69,9 +69,9 @@ export function VoteScoreRail({
 
   const s = sizes[size];
   const upActive =
-    "bg-emerald-500/18 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.35)] dark:bg-emerald-500/22 dark:text-emerald-300";
+    "bg-orange-500/15 text-[#ff4500] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)] dark:bg-orange-500/20 dark:text-[#ff8b60]";
   const upIdle =
-    "text-[var(--gn-text-muted)] hover:bg-emerald-500/12 hover:text-emerald-700 dark:hover:text-emerald-400";
+    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[#ff4500] dark:hover:text-[#ff8b60]";
   const downActive =
     "bg-violet-500/15 text-violet-600 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:bg-violet-500/20 dark:text-violet-300";
   const downIdle =

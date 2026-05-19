@@ -6,45 +6,43 @@
  * Default `html.dark`. Light: remove `dark` from `<html>`.
  */
 
-/* ----- Light (warm cream / forest accents) ----- */
+/* ----- Light ----- */
 html:not(.dark) {
   color-scheme: light;
   --gn-accent: #c2410c;
-  --gn-forest: #1b4332;
-  --gn-amber: #b45309;
-  --gn-page-top: #faf6ef;
-  --gn-page-mid: #f4efe6;
-  --gn-page-bottom: #e8e0d4;
-  --gn-surface: #fffdf9;
-  --gn-surface-raised: #fffcf7;
-  --gn-surface-elevated: #f7f2ea;
-  --gn-surface-muted: #f0ebe3;
-  --gn-surface-hover: rgba(27, 67, 50, 0.06);
-  --gn-ring: rgba(45, 58, 48, 0.08);
-  --gn-ring-focus: color-mix(in srgb, var(--gn-forest) 55%, var(--gn-amber) 45%);
-  --gn-divide: rgba(45, 58, 48, 0.06);
+  --gn-page-top: #f4f6fb;
+  --gn-page-mid: #eef1f8;
+  --gn-page-bottom: #e2e7f0;
+  --gn-surface: #ffffff;
+  --gn-surface-raised: #fcfcfd;
+  --gn-surface-elevated: #f5f7fb;
+  --gn-surface-muted: #f0f2f7;
+  --gn-surface-hover: rgba(30, 41, 59, 0.055);
+  --gn-ring: rgba(30, 41, 59, 0.09);
+  --gn-ring-focus: rgba(194, 65, 12, 0.4);
+  --gn-divide: rgba(30, 41, 59, 0.08);
   /** Alias for one-pixel UI chrome (matches ring strength) */
-  --gn-border: rgba(45, 58, 48, 0.09);
-  --gn-text: #1a2118;
-  --gn-text-muted: #5c6356;
-  --gn-text-excerpt: #6b7364;
-  --gn-shadow-sm:
-    0 1px 2px rgb(45 58 48 / 0.04),
-    0 2px 8px -2px rgb(45 58 48 / 0.06);
+  --gn-border: rgba(30, 41, 59, 0.11);
+  --gn-text: #0c1222;
+  --gn-text-muted: #5c6578;
+  --gn-text-excerpt: #6b7287;
+  --gn-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05),
+    0 1px 3px rgb(15 23 42 / 0.04);
   --gn-shadow-md:
-    0 8px 24px -6px rgb(45 58 48 / 0.1),
-    0 2px 8px -2px rgb(45 58 48 / 0.05);
+    0 6px 16px -4px rgb(15 23 42 / 0.08),
+    0 2px 6px -2px rgb(15 23 42 / 0.05),
+    0 0 0 1px rgb(15 23 42 / 0.035);
   --gn-shadow-lg:
-    0 20px 48px -14px rgb(45 58 48 / 0.14),
-    0 8px 24px -8px rgb(45 58 48 / 0.08);
+    0 18px 48px -12px rgb(15 23 42 / 0.14),
+    0 6px 20px -6px rgb(15 23 42 / 0.07),
+    0 0 0 1px rgb(15 23 42 / 0.04);
   --gn-shadow-hover:
-    0 12px 32px -10px rgb(45 58 48 / 0.12),
-    0 0 0 1px rgb(180 83 9 / 0.08);
-  --gn-header-bg: rgba(255, 253, 249, 0.88);
-  --gn-menu-bg: rgba(255, 253, 249, 0.97);
+    0 10px 28px -8px rgb(15 23 42 / 0.1),
+    0 0 0 1px rgb(15 23 42 / 0.07);
+  --gn-header-bg: rgba(252, 252, 253, 0.82);
+  --gn-menu-bg: rgba(255, 255, 255, 0.96);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
-  --gn-rail-sticky-top: calc(4.5rem + env(safe-area-inset-top, 0px));
   /**
    * Mobile: SiteHeader is two rows (nav + search). Drawer/sidebar must start below
    * the full stack, not a single `top-14`, or the first nav items sit under the header.
@@ -64,13 +62,8 @@ html:not(.dark) .gn-app-canvas {
     ),
     radial-gradient(
       ellipse 90% 55% at 100% 0%,
-      rgb(27 67 50 / 0.05) 0%,
+      rgb(194 65 12 / 0.04) 0%,
       transparent 45%
-    ),
-    radial-gradient(
-      ellipse 70% 50% at 0% 100%,
-      rgb(180 83 9 / 0.04) 0%,
-      transparent 50%
     ),
     linear-gradient(
       180deg,
@@ -89,44 +82,41 @@ html:not(.dark) body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* ----- Dark (warm charcoal / amber spine) ----- */
+/* ----- Dark (default) ----- */
 html.dark {
   color-scheme: dark;
   --gn-accent: #ff6b35;
-  --gn-forest: #52b788;
-  --gn-amber: #fbbf24;
-  --gn-page-top: #1c1916;
-  --gn-page-mid: #161412;
-  --gn-page-bottom: #110f0d;
-  --gn-surface: #1a1816;
-  --gn-surface-raised: #211e1b;
-  --gn-surface-elevated: #282421;
-  --gn-surface-muted: #1e1b18;
-  --gn-surface-hover: rgba(251, 191, 36, 0.07);
-  --gn-ring: rgba(244, 236, 220, 0.09);
-  --gn-ring-focus: color-mix(in srgb, var(--gn-forest) 50%, var(--gn-accent) 50%);
-  --gn-divide: rgba(244, 236, 220, 0.06);
-  --gn-border: rgba(244, 236, 220, 0.09);
-  --gn-text: #f4ece0;
-  --gn-text-muted: #a89f92;
-  --gn-text-excerpt: #bfb5a6;
-  --gn-shadow-sm:
-    0 1px 0 rgb(255 255 255 / 0.04) inset,
-    0 2px 10px rgb(0 0 0 / 0.35);
+  /* Lifted from near-black so the page reads as a gradient, not #000 voids */
+  --gn-page-top: #1a1e2a;
+  --gn-page-mid: #131823;
+  --gn-page-bottom: #0f121c;
+  --gn-surface: #13151b;
+  --gn-surface-raised: #191c24;
+  --gn-surface-elevated: #1e222b;
+  --gn-surface-muted: #161820;
+  --gn-surface-hover: rgba(255, 255, 255, 0.06);
+  --gn-ring: rgba(230, 235, 255, 0.09);
+  --gn-ring-focus: rgba(255, 107, 53, 0.5);
+  --gn-divide: rgba(230, 235, 255, 0.07);
+  --gn-border: rgba(230, 235, 255, 0.11);
+  --gn-text: #eceef3;
+  --gn-text-muted: #9aa3b5;
+  --gn-text-excerpt: #aeb5c4;
+  --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.06) inset,
+    0 1px 3px rgb(0 0 0 / 0.4);
   --gn-shadow-md:
-    0 10px 32px -8px rgb(0 0 0 / 0.45),
-    0 0 0 1px rgb(244 236 220 / 0.04);
+    0 6px 28px rgb(0 0 0 / 0.42),
+    0 0 0 1px rgb(230 235 255 / 0.05);
   --gn-shadow-lg:
-    0 28px 56px -18px rgb(0 0 0 / 0.55),
-    0 0 0 1px rgb(244 236 220 / 0.05);
+    0 28px 56px -22px rgb(0 0 0 / 0.58),
+    0 0 0 1px rgb(230 235 255 / 0.06);
   --gn-shadow-hover:
-    0 14px 36px -12px rgb(0 0 0 / 0.48),
-    0 0 0 1px rgb(255 107 53 / 0.14);
-  --gn-header-bg: rgba(26, 24, 22, 0.92);
-  --gn-menu-bg: rgba(33, 30, 27, 0.96);
+    0 12px 32px -12px rgb(0 0 0 / 0.42),
+    0 0 0 1px rgb(255 107 53 / 0.12);
+  --gn-header-bg: rgba(19, 21, 27, 0.78);
+  --gn-menu-bg: rgba(25, 28, 36, 0.95);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
-  --gn-rail-sticky-top: calc(4.5rem + env(safe-area-inset-top, 0px));
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
 }
 
@@ -136,7 +126,7 @@ html.dark .gn-app-canvas {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23e6ebff' stroke-opacity='0.07' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%23e6ebff' stroke-opacity='0.05' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
     radial-gradient(
       ellipse 110% 85% at 50% -25%,
-      rgb(82 183 136 / 0.1) 0%,
+      rgb(130 155 220 / 0.14) 0%,
       transparent 55%
     ),
     radial-gradient(
@@ -146,7 +136,7 @@ html.dark .gn-app-canvas {
     ),
     radial-gradient(
       ellipse 60% 45% at 100% 85%,
-      rgb(251 191 36 / 0.06) 0%,
+      rgb(90 110 180 / 0.06) 0%,
       transparent 45%
     ),
     linear-gradient(
@@ -362,7 +352,7 @@ html.dark body {
   /** One soft shell: lists, modals, grouped content */
   .gn-panel {
     border-radius: var(--gn-radius-lg);
-    border: 1px solid transparent;
+    border: 1px solid var(--gn-ring);
     background: var(--gn-surface-elevated);
     box-shadow: var(--gn-shadow-md);
   }
@@ -370,7 +360,7 @@ html.dark body {
   /** Standalone clickable tile */
   .gn-card {
     border-radius: var(--gn-radius-lg);
-    border: 1px solid transparent;
+    border: 1px solid var(--gn-ring);
     background: var(--gn-surface-elevated);
     box-shadow: var(--gn-shadow-md);
     transition:
@@ -689,17 +679,8 @@ html.dark body {
     background: color-mix(in srgb, var(--gn-accent) 6%, var(--gn-surface-hover));
   }
 
-  /** Sticky community rail (desktop) */
-  .gn-warm-rail-card {
-    border-radius: var(--gn-radius-lg);
-    border: 1px solid transparent;
-    background: color-mix(in srgb, var(--gn-surface-raised) 94%, transparent);
-    box-shadow: var(--gn-shadow-md);
-    padding: 1rem 1.125rem;
-  }
-
   .gn-vote-rail {
-    border: 1px solid transparent;
+    border: 1px solid var(--gn-ring);
     border-radius: var(--gn-radius-lg);
     background: color-mix(in srgb, var(--gn-surface-muted) 92%, transparent);
     box-shadow: var(--gn-shadow-sm);

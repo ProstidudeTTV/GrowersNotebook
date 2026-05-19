@@ -8,7 +8,6 @@ import {
 } from "@/components/app-sidebar";
 import { AppVersionRefresh } from "@/components/app-version-refresh";
 import { MailingListPrompt } from "@/components/mailing-list-prompt";
-import { CommunityWarmRail } from "@/components/community-warm-rail";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { clientApiJson } from "@/lib/client-api";
@@ -153,7 +152,7 @@ export function SiteChrome({
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={
-            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-60 max-w-[85vw] transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:w-56 lg:max-w-none lg:transition-none " +
+            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-60 max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:w-56 lg:max-w-none lg:border-r lg:transition-none " +
             (mobileOpen
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0")
@@ -161,13 +160,7 @@ export function SiteChrome({
         />
 
         <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-clip">
-          <div className="flex min-h-0 min-w-0 flex-1">
-            <div className="min-h-0 min-w-0 flex-1">{children}</div>
-            <CommunityWarmRail
-              hotWeekPosts={initialHotWeekPosts}
-              authed={authed}
-            />
-          </div>
+          <div className="min-h-0 flex-1">{children}</div>
           <SiteFooter />
         </div>
       </div>

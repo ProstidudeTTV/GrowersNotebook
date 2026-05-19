@@ -894,17 +894,21 @@ export function MessagesPanel() {
 
   if (status === "idle") {
     return (
-      <p className="text-sm text-[var(--gn-text-muted)]">Loading…</p>
+      <div className="flex flex-1 items-center justify-center p-8">
+        <p className="text-sm text-[var(--gn-text-muted)]">Loading…</p>
+      </div>
     );
   }
 
   if (status === "error" && error) {
     return (
-      <div
-        className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-4 text-sm text-[var(--gn-text)]"
-        role="alert"
-      >
-        {error}
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div
+          className="w-full max-w-sm rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-5 text-center text-sm text-[var(--gn-text)]"
+          role="alert"
+        >
+          {error}
+        </div>
       </div>
     );
   }
@@ -916,7 +920,7 @@ export function MessagesPanel() {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-full flex-col overflow-hidden">
       {lightbox ? (
         <DmImageLightbox
           urls={lightbox.urls}
@@ -924,16 +928,17 @@ export function MessagesPanel() {
           onClose={() => setLightbox(null)}
         />
       ) : null}
+
       {showNewMessageModal ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setShowNewMessageModal(false)}
         >
           <div
-            className="mx-4 w-full max-w-sm rounded-2xl bg-[var(--gn-surface-1,var(--gn-surface-elevated))] p-6 shadow-xl"
+            className="mx-4 w-full max-w-sm rounded-2xl bg-[var(--gn-surface-elevated)] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="mb-4 font-semibold text-[var(--gn-text)]">
+            <h2 className="mb-4 text-base font-semibold text-[var(--gn-text)]">
               New Message
             </h2>
             <input
@@ -956,17 +961,17 @@ export function MessagesPanel() {
                 No users found.
               </p>
             ) : null}
-            <div className="max-h-48 space-y-1 overflow-y-auto">
+            <div className="max-h-52 space-y-1 overflow-y-auto">
               {userSearchResults.map((user) => (
                 <button
                   key={user.id}
                   type="button"
                   onClick={() => startConversation(user)}
-                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--gn-surface-hover)]"
+                  className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-[var(--gn-surface-hover)]"
                 >
                   <MiniAvatar
                     name={user.displayName?.trim() || "Grower"}
-                    size={32}
+                    size={36}
                   />
                   <span className="text-sm font-medium text-[var(--gn-text)]">
                     {user.displayName?.trim() || "Grower"}
@@ -977,16 +982,16 @@ export function MessagesPanel() {
           </div>
         </div>
       ) : null}
+
       {actionError ? (
         <div
-          className="rounded-lg border border-red-300/50 bg-red-500/10 px-4 py-3 text-sm text-[var(--gn-text)]"
+          className="flex shrink-0 items-center gap-3 border-b border-red-500/20 bg-red-500/10 px-4 py-2 text-sm"
           role="alert"
         >
-          <p className="font-medium text-red-700 dark:text-red-400">Messaging</p>
-          <p className="mt-1 text-[var(--gn-text-muted)]">{actionError}</p>
+          <p className="flex-1 text-red-400">{actionError}</p>
           <button
             type="button"
-            className="mt-2 text-xs font-semibold text-[var(--gn-accent)] hover:underline"
+            className="shrink-0 text-xs font-semibold text-[var(--gn-accent)] hover:underline"
             onClick={() => setActionError(null)}
           >
             Dismiss
@@ -994,73 +999,113 @@ export function MessagesPanel() {
         </div>
       ) : null}
 
-      {/* Main messaging panel */}
-      <div className="overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-md)]">
-        <div className="flex min-h-[540px] flex-col lg:flex-row">
+      {/* Two-panel layout */}
+      <div className="flex flex-1 overflow-hidden">
 
-          {/* Left: conversation list */}
-          <div className="flex w-full shrink-0 flex-col border-b border-[var(--gn-divide)] lg:w-72 lg:border-b-0 lg:border-r">
-            <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-              <h2 className="text-sm font-bold text-[var(--gn-text)]">Messages</h2>
-              <button
-                type="button"
-                onClick={() => setShowNewMessageModal(true)}
-                className="flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white transition hover:brightness-110"
+        {/* Left: conversation list */}
+        <div
+          className={`flex shrink-0 flex-col border-[var(--gn-divide)] ${
+            activeThreadId
+              ? "hidden lg:flex lg:w-80 lg:border-r"
+              : "w-full lg:w-80 lg:border-r"
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
+            <h2 className="text-lg font-bold text-[var(--gn-text)]">Messages</h2>
+            <button
+              type="button"
+              onClick={() => setShowNewMessageModal(true)}
+              title="New message"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-accent)]"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
               >
-                + New
-              </button>
-            </div>
-            <ul className="flex-1 overflow-y-auto py-2 space-y-0.5">
-              {threads.length === 0 ? (
-                <li className="px-4 py-8 text-center">
-                  <p className="text-sm font-medium text-[var(--gn-text)]">No conversations</p>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span className="sr-only">New message</span>
+            </button>
+          </div>
+
+          <ul className="flex-1 overflow-y-auto">
+            {threads.length === 0 ? (
+              <li className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
+                <span
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-2xl"
+                  aria-hidden
+                >
+                  💬
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--gn-text)]">No messages yet</p>
                   <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                    Message someone from their profile page.
+                    Start a conversation with a fellow grower
                   </p>
-                </li>
-              ) : (
-              threads.map((t) => (
-                <li key={t.id}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    className={`mx-2 cursor-pointer rounded-xl px-3 py-2.5 transition-colors ${
-                      t.id === activeThreadId
-                        ? "bg-[var(--gn-surface-elevated)]"
-                        : "hover:bg-[var(--gn-surface-hover)]"
-                    }`}
-                    onClick={() => void selectThread(t.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        void selectThread(t.id);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="relative mt-0.5 shrink-0">
-                        <MiniAvatar
-                          name={displayNameFor(t.peer.id, selfId, t.peer)}
-                          size={36}
-                        />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewMessageModal(true)}
+                  className="mt-1 rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-xs font-semibold text-black transition hover:brightness-110"
+                >
+                  Find Growers →
+                </button>
+              </li>
+            ) : (
+              threads.map((t) => {
+                const isActive = t.id === activeThreadId;
+                const peerName = displayNameFor(t.peer.id, selfId, t.peer);
+                const preview = threadPreviewLine(t.lastMessage);
+                return (
+                  <li key={t.id}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className={`relative flex cursor-pointer items-center gap-3 py-3 pr-4 transition-colors ${
+                        isActive
+                          ? "border-l-2 border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] pl-[14px]"
+                          : "border-l-2 border-transparent pl-[14px] hover:bg-[var(--gn-surface-hover)]"
+                      }`}
+                      onClick={() => void selectThread(t.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          void selectThread(t.id);
+                        }
+                      }}
+                    >
+                      <span className="relative shrink-0">
+                        <MiniAvatar name={peerName} size={40} />
                         {t.unread ? (
                           <span
-                            className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--gn-surface-raised)] bg-[var(--gn-accent)]"
+                            className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-accent)]"
                             aria-label="Unread messages"
                           />
                         ) : null}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-baseline justify-between gap-1">
                           <span
-                            className={`truncate text-sm font-semibold ${t.unread ? "text-[var(--gn-text)]" : "text-[var(--gn-text-muted)]"}`}
+                            className={`truncate text-sm ${
+                              t.unread
+                                ? "font-semibold text-[var(--gn-text)]"
+                                : "font-medium text-[var(--gn-text)]"
+                            }`}
                           >
                             <Link
                               href={`/u/${t.peer.id}`}
                               className="hover:text-[var(--gn-accent)] hover:underline"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {displayNameFor(t.peer.id, selfId, t.peer)}
+                              {peerName}
                             </Link>
                           </span>
                           {t.lastMessageAt ? (
@@ -1072,441 +1117,536 @@ export function MessagesPanel() {
                             </span>
                           ) : null}
                         </div>
-                        {(() => {
-                          const preview = threadPreviewLine(t.lastMessage);
-                          if (!preview) return null;
-                          const short =
-                            preview.length > 36
-                              ? `${preview.slice(0, 36)}…`
-                              : preview;
-                          return (
-                            <span
-                              className={`mt-0.5 block truncate text-xs ${t.unread ? "font-medium text-[var(--gn-text)]" : "text-[var(--gn-text-muted)]"}`}
-                            >
-                              {short}
-                            </span>
-                          );
-                        })()}
+                        {preview ? (
+                          <p
+                            className={`mt-0.5 truncate text-xs ${
+                              t.unread
+                                ? "font-medium text-[var(--gn-text)]"
+                                : "text-[var(--gn-text-muted)]"
+                            }`}
+                          >
+                            {preview}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))
-              )}
-            </ul>
-          </div>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
 
-          {/* Right: active conversation */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            {/* Chat header */}
-            <div className="flex min-h-[52px] items-center gap-3 border-b border-[var(--gn-divide)] px-4 py-3">
-              {openingFromQuery ? (
-                <p className="text-sm text-[var(--gn-text-muted)]">Opening chat…</p>
-              ) : activePeer ? (
-                <>
-                  <MiniAvatar
-                    name={displayNameFor(activePeer.id, selfId, activePeer)}
-                    size={36}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/u/${activePeer.id}`}
-                      className="block truncate text-sm font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
-                    >
-                      {displayNameFor(activePeer.id, selfId, activePeer)}
-                    </Link>
-                    <span className="flex items-center gap-1.5 text-[10px] text-[var(--gn-text-muted)]">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Direct message
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-[var(--gn-text-muted)]">
-                  {hasNoThreads
-                    ? "Start a conversation from a profile page"
-                    : "Select a conversation"}
-                </p>
-              )}
-            </div>
-
-            {/* Message timeline */}
-            <div
-              ref={timelineRef}
-              onScroll={onTimelineScroll}
-              className="gn-messages-timeline flex flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
-              style={{ minHeight: "260px", maxHeight: "clamp(260px, 60vh, 520px)" }}
+        {/* Right: active conversation */}
+        <div
+          className={`flex flex-1 flex-col overflow-hidden ${
+            activeThreadId ? "flex" : "hidden lg:flex"
+          }`}
+        >
+          {/* Chat header */}
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4">
+            {/* Back button — mobile only */}
+            <button
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] lg:hidden"
+              onClick={() => setActiveThreadId(null)}
+              aria-label="Back to conversations"
             >
-              {!activeThreadId ? (
-                <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                  <span className="text-4xl" aria-hidden>&#128172;</span>
-                  <p className="text-sm text-[var(--gn-text-muted)]">
-                    Select a conversation to read and reply
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+
+            {openingFromQuery ? (
+              <p className="text-sm text-[var(--gn-text-muted)]">Opening chat…</p>
+            ) : activePeer ? (
+              <>
+                <MiniAvatar
+                  name={displayNameFor(activePeer.id, selfId, activePeer)}
+                  size={32}
+                />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/u/${activePeer.id}`}
+                    className="block truncate text-sm font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
+                  >
+                    {displayNameFor(activePeer.id, selfId, activePeer)}
+                  </Link>
+                  <p className="flex items-center gap-1.5 text-[10px] text-[var(--gn-text-muted)]">
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
+                      aria-hidden
+                    />
+                    Direct message
                   </p>
                 </div>
-              ) : (
-                <>
-                  {hasMore ? (
-                    <div className="flex justify-center pb-1">
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-[var(--gn-accent)] hover:underline disabled:opacity-50"
-                        disabled={loadingOlder}
-                        onClick={() => void loadOlder()}
+                <Link
+                  href={`/u/${activePeer.id}`}
+                  className="shrink-0 text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
+                >
+                  View profile
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                {hasNoThreads
+                  ? "Start a conversation from a profile page"
+                  : "Select a conversation"}
+              </p>
+            )}
+          </div>
+
+          {/* Message timeline */}
+          <div
+            ref={timelineRef}
+            onScroll={onTimelineScroll}
+            className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
+          >
+            {!activeThreadId ? (
+              <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-4xl"
+                  aria-hidden
+                >
+                  💬
+                </div>
+                <div>
+                  <p className="text-base font-bold text-[var(--gn-text)]">Your Messages</p>
+                  <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+                    Select a conversation to start chatting,
+                    <br />
+                    or find a grower to message.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewMessageModal(true)}
+                  className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+                >
+                  Find a Grower →
+                </button>
+              </div>
+            ) : (
+              <>
+                {hasMore ? (
+                  <div className="flex justify-center pb-1">
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[var(--gn-accent)] hover:underline disabled:opacity-50"
+                      disabled={loadingOlder}
+                      onClick={() => void loadOlder()}
+                    >
+                      {loadingOlder ? "Loading…" : "Load earlier messages"}
+                    </button>
+                  </div>
+                ) : null}
+                {messages.length === 0 ? (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-sm text-[var(--gn-text-muted)]">
+                      No messages yet. Say hello! 👋
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((ln) => {
+                    const imgs = messageImageUrls(ln);
+                    const share = firstPostShareMatch(ln.body);
+                    const caption = share
+                      ? captionWithoutShareUrl(ln.body, share.fullUrl).trim()
+                      : ln.body.trim();
+                    const showPostEmbed = Boolean(share);
+                    const hasText = caption.length > 0;
+                    const hasMedia = imgs.length > 0;
+                    const isSelf = Boolean(selfId && ln.senderId === selfId);
+                    const peerDisplay = displayNameFor(
+                      ln.senderId,
+                      selfId,
+                      activePeer,
+                    );
+                    return (
+                      <div
+                        key={ln.id}
+                        className={`flex items-end gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
                       >
-                        {loadingOlder ? "Loading…" : "Load earlier messages"}
-                      </button>
-                    </div>
-                  ) : null}
-                  {messages.length === 0 ? (
-                    <div className="flex h-full items-center justify-center">
-                      <p className="text-sm text-[var(--gn-text-muted)]">
-                        No messages yet. Say hello!
-                      </p>
-                    </div>
-                  ) : (
-                    messages.map((ln) => {
-                      const imgs = messageImageUrls(ln);
-                      const share = firstPostShareMatch(ln.body);
-                      const caption = share
-                        ? captionWithoutShareUrl(ln.body, share.fullUrl).trim()
-                        : ln.body.trim();
-                      const showPostEmbed = Boolean(share);
-                      const hasText = caption.length > 0;
-                      const hasMedia = imgs.length > 0;
-                      const isSelf = Boolean(selfId && ln.senderId === selfId);
-                      const peerDisplay = displayNameFor(
-                        ln.senderId,
-                        selfId,
-                        activePeer,
-                      );
-                      return (
+                        {!isSelf && (
+                          <MiniAvatar name={peerDisplay} size={26} />
+                        )}
                         <div
-                          key={ln.id}
-                          className={`flex items-end gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
+                          className={`max-w-[75%] text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                            isSelf
+                              ? "rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-4 py-2.5 text-black shadow-sm"
+                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-[var(--gn-text)]"
+                          }`}
                         >
-                          {!isSelf && (
-                            <MiniAvatar name={peerDisplay} size={26} />
-                          )}
-                          <div
-                            className={`text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
-                              isSelf
-                                ? "ml-auto max-w-[72%] rounded-2xl rounded-br-sm bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)]"
-                                : "mr-auto max-w-[72%] rounded-2xl rounded-bl-sm border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-2.5 text-[var(--gn-text)]"
-                            }`}
-                            style={isSelf ? { borderLeft: "3px solid var(--gn-accent)" } : undefined}
-                          >
-                            {hasText ? (
-                              <p className="whitespace-pre-wrap break-words">
-                                {caption}
-                              </p>
-                            ) : null}
-                            {showPostEmbed && share ? (
-                              <DmSharedPostEmbed postId={share.postId} />
-                            ) : null}
-                            {(hasText || showPostEmbed) && hasMedia ? (
-                              <div
-                                className="my-2 border-t border-[var(--gn-divide)]"
-                                role="separator"
+                          {hasText ? (
+                            <p className="whitespace-pre-wrap break-words">
+                              {caption}
+                            </p>
+                          ) : null}
+                          {showPostEmbed && share ? (
+                            <DmSharedPostEmbed postId={share.postId} />
+                          ) : null}
+                          {(hasText || showPostEmbed) && hasMedia ? (
+                            <div
+                              className={`my-2 border-t ${isSelf ? "border-black/20" : "border-[var(--gn-divide)]"}`}
+                              role="separator"
+                            />
+                          ) : null}
+                          {hasMedia ? (
+                            <div className="overflow-visible">
+                              <StackedDmStyleImages
+                                urls={imgs}
+                                stackKey={ln.id}
+                                pileLabel={dmAttachmentPileLabel(
+                                  imgs,
+                                  isSelf,
+                                  peerDisplay,
+                                )}
+                                onOpen={(index) =>
+                                  setLightbox({ urls: imgs, index })
+                                }
                               />
-                            ) : null}
-                            {hasMedia ? (
-                              <div className="overflow-visible">
-                                <StackedDmStyleImages
-                                  urls={imgs}
-                                  stackKey={ln.id}
-                                  pileLabel={dmAttachmentPileLabel(
-                                    imgs,
-                                    isSelf,
-                                    peerDisplay,
-                                  )}
-                                  onOpen={(index) =>
-                                    setLightbox({ urls: imgs, index })
-                                  }
-                                />
-                              </div>
-                            ) : null}
+                            </div>
+                          ) : null}
+                          <div
+                            className={`mt-1 flex items-center gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
+                          >
+                            <span
+                              className={`text-[10px] ${isSelf ? "text-black/60" : "text-[var(--gn-text-muted)]"}`}
+                            >
+                              {new Date(ln.createdAt).toLocaleTimeString(
+                                undefined,
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
                             {isSelf ? (
-                              <div className="mt-1 flex justify-end">
-                                <button
-                                  type="button"
-                                  disabled={messageDeletingId === ln.id}
-                                  onClick={() => void removeOwnMessage(ln.id)}
-                                  className="text-[11px] font-normal text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline disabled:opacity-45"
-                                >
-                                  {messageDeletingId === ln.id
-                                    ? "Removing…"
-                                    : "Delete"}
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                disabled={messageDeletingId === ln.id}
+                                onClick={() => void removeOwnMessage(ln.id)}
+                                className="text-[10px] text-black/50 hover:text-black hover:underline disabled:opacity-45"
+                              >
+                                {messageDeletingId === ln.id
+                                  ? "Removing…"
+                                  : "Delete"}
+                              </button>
                             ) : null}
                           </div>
                         </div>
-                      );
-                    })
-                  )}
-                </>
-              )}
-            </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
+            )}
+          </div>
 
-            {/* Compose area */}
-            <div className="space-y-2 border-t border-[var(--gn-divide)] p-3">
-              <input
-                id={dmAttachInputId}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-                multiple
-                className="sr-only"
-                tabIndex={-1}
-                onChange={(e) => void onMediaFileChange(e)}
-              />
-              {pendingAttachments.length > 0 ? (
-                <div className="rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-xs text-[var(--gn-text-muted)]">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[var(--gn-text)]">
-                      {pendingAttachmentsHeadline(pendingAttachments)}{" "}
-                      {pendingAttachments.some((a) => a.uploading)
-                        ? "(uploading…)"
-                        : pendingAttachments.every((a) => a.remoteUrl)
-                          ? "ready"
-                          : ""}
-                    </span>
-                    <button
-                      type="button"
-                      className="font-semibold text-[var(--gn-accent)] hover:underline"
-                      onClick={() => {
-                        setPendingAttachments((prev) => {
-                          for (const a of prev) revokePendingLocal(a);
-                          return [];
-                        });
-                      }}
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {pendingAttachments.map((att, i) => {
-                      const src = att.remoteUrl ?? att.localBlobUrl ?? "";
-                      const showVideo =
-                        Boolean(src) &&
-                        (att.kind === "video" ||
-                          isDmVideoUrl(att.remoteUrl ?? ""));
-                      return (
-                        <div
-                          key={att.id}
-                          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
-                        >
-                          {showVideo ? (
-                            <video
-                              src={src}
-                              muted
-                              playsInline
-                              preload="metadata"
-                              className="h-full w-full object-contain"
-                              aria-label="Video preview"
-                            />
-                          ) : src ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={src}
-                              alt=""
-                              className="h-full w-full object-contain"
-                            />
-                          ) : null}
-                          {att.uploading ? (
-                            <div
-                              className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
-                              aria-hidden
-                            >
-                              …
-                            </div>
-                          ) : null}
-                          {att.error ? (
-                            <div
-                              className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-[9px] font-medium leading-tight text-white"
-                              title={att.error}
-                            >
-                              Failed
-                            </div>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-text)] text-sm font-light leading-none text-[var(--gn-surface)] shadow-md hover:bg-[var(--gn-text-muted)]"
-                            aria-label={`Remove attachment ${i + 1}`}
-                            onClick={() => removePendingAttachment(att.id)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-              <ComposerQuickReactionsToolbar
-                disabled={!activeThreadId}
-                onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
-                gifSlot={
+          {/* Compose area */}
+          <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-4">
+            <input
+              id={dmAttachInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+              multiple
+              className="sr-only"
+              tabIndex={-1}
+              onChange={(e) => void onMediaFileChange(e)}
+            />
+            {pendingAttachments.length > 0 ? (
+              <div className="mb-3 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-xs text-[var(--gn-text-muted)]">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[var(--gn-text)]">
+                    {pendingAttachmentsHeadline(pendingAttachments)}{" "}
+                    {pendingAttachments.some((a) => a.uploading)
+                      ? "(uploading…)"
+                      : pendingAttachments.every((a) => a.remoteUrl)
+                        ? "ready"
+                        : ""}
+                  </span>
                   <button
                     type="button"
-                    disabled={
-                      !selfId ||
-                      !activeThreadId ||
-                      pendingAttachments.length >= DM_ATTACH_MAX ||
-                      pendingHasUploads
-                    }
-                    className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
-                    onClick={() => setGifPickerOpen((o) => !o)}
+                    className="font-semibold text-[var(--gn-accent)] hover:underline"
+                    onClick={() => {
+                      setPendingAttachments((prev) => {
+                        for (const a of prev) revokePendingLocal(a);
+                        return [];
+                      });
+                    }}
                   >
-                    GIF
+                    Clear all
                   </button>
-                }
-              />
-              {gifPickerOpen && selfId && activeThreadId ? (
-                <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
-                      placeholder="Search Giphy…"
-                      value={gifQuery}
-                      aria-busy={gifLoading}
-                      onChange={(e) => setGifQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void runGifSearch(gifQuery);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
-                      onClick={() => void runGifSearch(gifQuery)}
-                    >
-                      {gifLoading ? "…" : "Search now"}
-                    </button>
-                  </div>
-                  <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-                    One GIF per message, and not with photos or videos. Powered by
-                    Giphy. Results update as you type (after a short pause).
-                  </p>
-                  {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
-                    <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
-                      Type at least 2 characters.
-                    </p>
-                  ) : null}
-                  {gifItems.length > 0 ? (
-                    <div
-                      className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-[min(52vh,440px)] overflow-y-scroll overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
-                      role="region"
-                      aria-label="Giphy search results"
-                    >
-                      <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                        {gifItems.map((g, gi) => (
-                          <li key={g.id ?? `${g.url}-${gi}`}>
-                            <button
-                              type="button"
-                              className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
-                              title={g.title}
-                              onClick={() => addGifAttachment(g.url)}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={g.preview}
-                                alt=""
-                                className="h-16 w-full object-cover sm:h-20"
-                                loading="lazy"
-                              />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
                 </div>
-              ) : null}
-              <div className="flex items-center gap-2 rounded-2xl bg-[var(--gn-surface-elevated)] px-4 py-2.5 ring-1 ring-[var(--gn-ring,var(--gn-border))] transition-shadow focus-within:ring-2 focus-within:ring-[var(--gn-accent)]/50">
-                {!activeThreadId ||
-                pendingAttachments.length >= DM_ATTACH_MAX ? (
-                  <span
-                    className="shrink-0 cursor-not-allowed text-sm font-medium text-[var(--gn-text-muted)] opacity-50"
-                    aria-disabled
-                  >
-                    Media
-                  </span>
-                ) : (
-                  <label
-                    htmlFor={dmAttachInputId}
-                    className="shrink-0 cursor-pointer touch-manipulation select-none text-sm font-medium text-[var(--gn-text-muted)] transition-colors hover:text-[var(--gn-text)]"
-                  >
-                    Media
-                  </label>
-                )}
-                <input
-                  className="flex-1 border-0 bg-transparent text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Type a message…"
-                  disabled={!activeThreadId}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendMessage();
-                    }
-                  }}
-                />
+                <div className="flex flex-wrap gap-2">
+                  {pendingAttachments.map((att, i) => {
+                    const src = att.remoteUrl ?? att.localBlobUrl ?? "";
+                    const showVideo =
+                      Boolean(src) &&
+                      (att.kind === "video" ||
+                        isDmVideoUrl(att.remoteUrl ?? ""));
+                    return (
+                      <div
+                        key={att.id}
+                        className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
+                      >
+                        {showVideo ? (
+                          <video
+                            src={src}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="h-full w-full object-contain"
+                            aria-label="Video preview"
+                          />
+                        ) : src ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={src}
+                            alt=""
+                            className="h-full w-full object-contain"
+                          />
+                        ) : null}
+                        {att.uploading ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-black/35 text-[10px] font-medium text-white"
+                            aria-hidden
+                          >
+                            …
+                          </div>
+                        ) : null}
+                        {att.error ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-red-600/85 p-1 text-center text-[9px] font-medium leading-tight text-white"
+                            title={att.error}
+                          >
+                            Failed
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-text)] text-sm font-light leading-none text-[var(--gn-surface)] shadow-md hover:bg-[var(--gn-text-muted)]"
+                          aria-label={`Remove attachment ${i + 1}`}
+                          onClick={() => removePendingAttachment(att.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            <ComposerQuickReactionsToolbar
+              disabled={!activeThreadId}
+              onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
+              gifSlot={
                 <button
                   type="button"
-                  className="shrink-0 rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
-                  disabled={(() => {
-                    if (!activeThreadId) return true;
-                    const uploading = pendingAttachments.some((a) => a.uploading);
-                    const hasErr = pendingAttachments.some((a) => a.error);
-                    const remotes = pendingAttachments.filter((a) => a.remoteUrl);
-                    const incomplete =
-                      pendingAttachments.length > 0 &&
-                      remotes.length !== pendingAttachments.length;
-                    if (uploading || hasErr || incomplete) return true;
-                    return !draft.trim() && remotes.length === 0;
-                  })()}
-                  onClick={() => void sendMessage()}
+                  disabled={
+                    !selfId ||
+                    !activeThreadId ||
+                    pendingAttachments.length >= DM_ATTACH_MAX ||
+                    pendingHasUploads
+                  }
+                  className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
+                  onClick={() => setGifPickerOpen((o) => !o)}
                 >
-                  Send
+                  GIF
                 </button>
+              }
+            />
+            {gifPickerOpen && selfId && activeThreadId ? (
+              <div className="mt-2 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
+                    placeholder="Search Giphy…"
+                    value={gifQuery}
+                    aria-busy={gifLoading}
+                    onChange={(e) => setGifQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void runGifSearch(gifQuery);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
+                    onClick={() => void runGifSearch(gifQuery)}
+                  >
+                    {gifLoading ? "…" : "Search now"}
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
+                  One GIF per message, and not with photos or videos. Powered by
+                  Giphy. Results update as you type (after a short pause).
+                </p>
+                {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
+                  <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
+                    Type at least 2 characters.
+                  </p>
+                ) : null}
+                {gifItems.length > 0 ? (
+                  <div
+                    className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-[min(52vh,440px)] overflow-y-scroll overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
+                    role="region"
+                    aria-label="Giphy search results"
+                  >
+                    <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                      {gifItems.map((g, gi) => (
+                        <li key={g.id ?? `${g.url}-${gi}`}>
+                          <button
+                            type="button"
+                            className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
+                            title={g.title}
+                            onClick={() => addGifAttachment(g.url)}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={g.preview}
+                              alt=""
+                              className="h-16 w-full object-cover sm:h-20"
+                              loading="lazy"
+                            />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
-              <details className="relative inline-block">
-                <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] [&::-webkit-details-marker]:hidden">
-                  <span
-                    className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gn-divide)] text-[10px] font-bold leading-none"
+            ) : null}
+            <div className="mt-2 flex items-center gap-2">
+              {/* Media attach button */}
+              {!activeThreadId ||
+              pendingAttachments.length >= DM_ATTACH_MAX ? (
+                <span
+                  className="flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-full text-[var(--gn-text-muted)] opacity-40"
+                  aria-disabled
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     aria-hidden
                   >
-                    i
-                  </span>
-                  Privacy info
-                </summary>
-                <div className="absolute bottom-6 left-0 z-20 w-72 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-3 text-xs leading-relaxed text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-md)]">
-                  Private between you and the other person on GrowersNotebook,
-                  like typical app messages. Content is readable by the service
-                  when needed for safety and operations—not end-to-end encrypted
-                  from Growers (similar to default Messenger, not Signal-style
-                  encryption).
-                </div>
-              </details>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </span>
+              ) : (
+                <label
+                  htmlFor={dmAttachInputId}
+                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                  title="Attach media"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span className="sr-only">Attach media</span>
+                </label>
+              )}
+              {/* Pill text input */}
+              <input
+                className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={
+                  activePeer
+                    ? `Message ${displayNameFor(activePeer.id, selfId, activePeer)}…`
+                    : "Select a conversation…"
+                }
+                disabled={!activeThreadId}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendMessage();
+                  }
+                }}
+              />
+              {/* Circle send button */}
+              <button
+                type="button"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)] text-black shadow-sm transition hover:brightness-110 disabled:opacity-40"
+                disabled={(() => {
+                  if (!activeThreadId) return true;
+                  const uploading = pendingAttachments.some((a) => a.uploading);
+                  const hasErr = pendingAttachments.some((a) => a.error);
+                  const remotes = pendingAttachments.filter((a) => a.remoteUrl);
+                  const incomplete =
+                    pendingAttachments.length > 0 &&
+                    remotes.length !== pendingAttachments.length;
+                  if (uploading || hasErr || incomplete) return true;
+                  return !draft.trim() && remotes.length === 0;
+                })()}
+                onClick={() => void sendMessage()}
+                aria-label="Send message"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
             </div>
+            <details className="relative mt-2 inline-block">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] [&::-webkit-details-marker]:hidden">
+                <span
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gn-divide)] text-[10px] font-bold leading-none"
+                  aria-hidden
+                >
+                  i
+                </span>
+                Privacy info
+              </summary>
+              <div className="absolute bottom-6 left-0 z-20 w-72 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-3 text-xs leading-relaxed text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-md)]">
+                Private between you and the other person on GrowersNotebook,
+                like typical app messages. Content is readable by the service
+                when needed for safety and operations—not end-to-end encrypted
+                from Growers (similar to default Messenger, not Signal-style
+                encryption).
+              </div>
+            </details>
           </div>
         </div>
       </div>
-
-      {hasNoThreads ? (
-        <div className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3 text-sm">
-          <p className="font-medium text-[var(--gn-text)]">No conversations yet</p>
-          <p className="mt-1.5 leading-relaxed text-[var(--gn-text-muted)]">
-            New chats start from a profile: follow someone, then use{" "}
-            <span className="font-medium text-[var(--gn-text)]">Message</span> on
-            their page. Open chats will show in the list here.
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }

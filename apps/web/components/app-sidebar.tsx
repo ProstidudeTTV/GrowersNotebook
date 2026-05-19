@@ -10,6 +10,7 @@ import {
 } from "@/lib/recent-communities";
 import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
+import { createClient } from "@/lib/supabase/client";
 
 export type SidebarCommunity = {
   id: string;
@@ -28,8 +29,8 @@ function IconFlame({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -53,8 +54,8 @@ function IconHome({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -73,8 +74,8 @@ function IconMessage({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -92,8 +93,8 @@ function IconNotebookNav({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -113,8 +114,8 @@ function IconUsers({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -130,11 +131,52 @@ function IconUsers({ className }: { className?: string }) {
   );
 }
 
+function IconSeedling({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 22V12" />
+      <path d="M5 12c0-3.87 3.13-7 7-7s7 3.13 7 7H5Z" />
+    </svg>
+  );
+}
+
+function IconLogOut({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
-      width="16"
-      height="16"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -149,19 +191,16 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-const navItem =
-  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-hover)]";
-
 function IconPlus({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -170,6 +209,12 @@ function IconPlus({ className }: { className?: string }) {
     </svg>
   );
 }
+
+const navItem =
+  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-hover)] active:scale-[0.98]";
+
+const sectionLabel =
+  "px-3 pb-1 pt-3 text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]";
 
 export function AppSidebar({
   followedCommunities,
@@ -186,9 +231,10 @@ export function AppSidebar({
   className?: string;
 }) {
   const [communitiesOpen, setCommunitiesOpen] = useState(true);
-  const [recentCommunities, setRecentCommunities] = useState<
-    RecentCommunity[]
-  >([]);
+  const [recentCommunities, setRecentCommunities] = useState<RecentCommunity[]>([]);
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const afterNav = useCallback(() => {
     onNavigate?.();
@@ -199,12 +245,7 @@ export function AppSidebar({
     sync();
     window.addEventListener(RECENT_COMMUNITIES_EVENT, sync);
     const onStorage = (e: StorageEvent) => {
-      if (
-        e.key === RECENT_COMMUNITIES_STORAGE_KEY ||
-        e.key === null
-      ) {
-        sync();
-      }
+      if (e.key === RECENT_COMMUNITIES_STORAGE_KEY || e.key === null) sync();
     };
     window.addEventListener("storage", onStorage);
     return () => {
@@ -213,151 +254,186 @@ export function AppSidebar({
     };
   }, []);
 
-  const sectionHeading =
-    "flex w-full items-center justify-between px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]";
+  useEffect(() => {
+    if (!authed) return;
+    const supabase = createClient();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      setUserId(session.user.id);
+      const meta = session.user.user_metadata as Record<string, string> | undefined;
+      setUserDisplayName(
+        meta?.display_name?.trim() ||
+        meta?.full_name?.trim() ||
+        session.user.email?.split("@")[0] ||
+        "Grower",
+      );
+      setUserAvatarUrl(meta?.avatar_url ?? null);
+    });
+  }, [authed]);
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }, []);
 
   return (
     <aside
       className={`flex min-h-0 flex-col border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] ${className}`}
       aria-label="Site"
     >
-      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-6 pt-3">
+      {/* ── Logo ────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2.5 border-b border-[var(--gn-divide)] px-4 py-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-accent)] text-white">
+          <IconSeedling />
+        </span>
+        <span className="text-base font-bold leading-tight text-[var(--gn-text)]">
+          Growers<br />
+          <span className="text-[var(--gn-accent)]">Notebook</span>
+        </span>
+      </div>
+
+      {/* ── Create Post ─────────────────────────────────────────────── */}
+      {authed ? (
+        <div className="px-3 pt-3">
+          <Link
+            href="/"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-bold text-white shadow transition hover:brightness-110 active:scale-[0.98]"
+            onClick={afterNav}
+            title="Pick a community to post in"
+          >
+            <IconPlus />
+            Create Post
+          </Link>
+        </div>
+      ) : null}
+
+      {/* ── Scrollable nav ──────────────────────────────────────────── */}
+      <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2 pb-3 pt-2">
+
+        {/* Primary nav */}
         <Link
           href={authed ? "/following" : "/"}
           className={navItem}
           onClick={afterNav}
         >
-          <IconHome className="shrink-0 opacity-90" />
+          <IconHome className="shrink-0 text-[var(--gn-accent)]" />
           {authed ? "Your feed" : "Home"}
         </Link>
 
         {authed ? (
           <Link href="/messages" className={navItem} onClick={afterNav}>
-            <IconMessage className="shrink-0 opacity-90" />
+            <IconMessage className="shrink-0 opacity-75" />
             Messages
           </Link>
         ) : null}
-        <Link
-          href="/notebooks?status=active"
-          className={navItem}
-          onClick={afterNav}
-        >
-          <IconNotebookNav className="shrink-0 opacity-90" />
-          Notebooks
-        </Link>
-        <Link href="/" className={navItem} onClick={afterNav}>
-          <IconUsers className="shrink-0 opacity-90" />
-          Communities
-        </Link>
 
-        {authed ? (
-          <Link
-            href="/"
-            className="mx-2 mt-1 flex items-center justify-center gap-2 rounded-lg bg-[var(--gn-accent)] px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
-            onClick={afterNav}
-            title="Pick a community to post in"
-          >
-            <IconPlus className="shrink-0" />
-            Create Post
-          </Link>
-        ) : null}
+        <div className="my-2 border-t border-[var(--gn-divide)]" />
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        {/* Explore section */}
+        <p className={sectionLabel}>Explore</p>
 
-        <Link
-          href="/hot"
-          className={navItem}
-          onClick={afterNav}
-        >
-          <IconFlame className="shrink-0 text-[var(--gn-accent)]" />
+        <Link href="/hot" className={navItem} onClick={afterNav}>
+          <IconFlame className="shrink-0 text-orange-500" />
           Hot this week
         </Link>
+
         {hotWeekPosts.length > 0 ? (
-          <ul className="mx-1.5 -mt-0.5 mb-1 space-y-0.5">
+          <ul className="mx-1 mb-1 space-y-0.5">
             {hotWeekPosts.map((p, i) => (
               <li key={p.id}>
                 <Link
                   href={`/p/${p.id}`}
                   onClick={afterNav}
-                  className="block rounded-lg px-2 py-1.5 text-left text-xs leading-snug text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                  className="block rounded-lg px-3 py-1.5 text-left text-xs leading-snug text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
                 >
-                  <span className="font-medium text-[var(--gn-text)]">
-                    #{i + 1}:
-                  </span>{" "}
-                  <span className="text-[var(--gn-text)]/90">
-                    {truncateTitle(p.title, 42)}
-                  </span>
-                  <span className="text-[var(--gn-text-muted)]">
-                    {" "}
-                    · {formatVoteScore(p.score)}
-                  </span>
+                  <span className="font-semibold text-[var(--gn-text)]">#{i + 1}</span>{" "}
+                  {truncateTitle(p.title, 40)}{" "}
+                  <span className="opacity-60">· {formatVoteScore(p.score)}</span>
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mx-3 -mt-0.5 mb-1 text-xs text-[var(--gn-text-muted)]">
-            No posts in the last week yet.
+          <p className="mx-3 mb-1 text-xs text-[var(--gn-text-muted)]">
+            No posts yet this week.
           </p>
         )}
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        <Link
+          href="/notebooks?status=active"
+          className={navItem}
+          onClick={afterNav}
+        >
+          <IconNotebookNav className="shrink-0 opacity-75" />
+          Notebooks
+        </Link>
 
-        <p className="px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-          Cultivars &amp; strains
-        </p>
         <Link href="/strains" className={navItem} onClick={afterNav}>
+          <IconSeedling className="shrink-0 text-emerald-500" />
           Strains
         </Link>
+
         <Link href="/breeders" className={navItem} onClick={afterNav}>
+          <IconUsers className="shrink-0 opacity-75" />
           Breeders
         </Link>
+
         <Link href="/catalog/suggest" className={navItem} onClick={afterNav}>
-          Suggest an entry
+          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-base leading-none">
+            ➕
+          </span>
+          Suggest a strain
         </Link>
 
-        <div className="my-3 border-t border-[var(--gn-divide)]" />
+        <div className="my-2 border-t border-[var(--gn-divide)]" />
 
-        <div className="mt-1">
+        {/* Communities section */}
+        <div>
           <button
             type="button"
-            className={sectionHeading}
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-[var(--gn-surface-hover)]"
             onClick={() => setCommunitiesOpen((o) => !o)}
             aria-expanded={communitiesOpen}
           >
-            <span>Communities</span>
+            <span className={`${sectionLabel} !px-0 !pb-0 !pt-0`}>
+              {authed ? "Your Communities" : "Communities"}
+            </span>
             <Chevron open={communitiesOpen} />
           </button>
+
           {communitiesOpen ? (
-            <ul className="mt-1 space-y-0.5">
+            <ul className="mt-0.5 space-y-0.5">
               <li>
                 <Link
                   href="/"
                   className={`${navItem} text-[var(--gn-text-muted)]`}
                   onClick={afterNav}
                 >
-                  <IconUsers className="shrink-0 opacity-90" />
+                  <IconUsers className="shrink-0 opacity-60" />
                   Browse communities
                 </Link>
               </li>
+
               {authed && followedCommunities.length === 0 ? (
                 <li className="px-3 py-2 text-xs leading-snug text-[var(--gn-text-muted)]">
-                  Join communities from the directory. They&apos;ll show up
-                  here.
+                  Join communities from the directory. They&apos;ll appear here.
                 </li>
               ) : null}
+
               {!authed ? (
                 <li className="px-3 py-2 text-xs leading-snug text-[var(--gn-text-muted)]">
                   <Link
                     href="/login"
-                    className="font-medium text-[var(--gn-accent)] hover:underline"
+                    className="font-semibold text-[var(--gn-accent)] hover:underline"
                     onClick={afterNav}
                   >
                     Sign in
                   </Link>{" "}
-                  to see communities you&apos;ve joined.
+                  to see your communities.
                 </li>
               ) : null}
+
               {followedCommunities.map((c) => (
                 <li key={c.id}>
                   <Link
@@ -375,12 +451,11 @@ export function AppSidebar({
                   </Link>
                 </li>
               ))}
+
               {recentCommunities.length > 0 ? (
                 <>
-                  <li className="mt-3 list-none border-t border-[var(--gn-divide)] pt-3">
-                    <h3 className="px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
-                      Recent
-                    </h3>
+                  <li className="mt-2 list-none border-t border-[var(--gn-divide)] pt-2">
+                    <p className={`${sectionLabel} !pt-0`}>Recent</p>
                   </li>
                   {recentCommunities.slice(0, 8).map((c) => (
                     <li key={`recent-${c.slug}`}>
@@ -405,6 +480,60 @@ export function AppSidebar({
           ) : null}
         </div>
       </nav>
+
+      {/* ── User footer ─────────────────────────────────────────────── */}
+      {authed ? (
+        <div className="shrink-0 border-t border-[var(--gn-divide)] px-3 py-2">
+          <div className="flex items-center gap-2.5">
+            <Link
+              href={userId ? `/u/${userId}` : "/settings/profile"}
+              onClick={afterNav}
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-[var(--gn-surface-hover)]"
+            >
+              <span className="flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-raised)] ring-2 ring-[var(--gn-divide)]">
+                {userAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={userAvatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-sm font-bold text-[var(--gn-text-muted)]">
+                    {(userDisplayName ?? "G").charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-[var(--gn-text)]">
+                  {userDisplayName ?? "Grower"}
+                </span>
+                <span className="block text-[0.65rem] text-[var(--gn-text-muted)]">View profile</span>
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <IconLogOut />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="shrink-0 border-t border-[var(--gn-divide)] px-3 py-3">
+          <Link
+            href="/login"
+            onClick={afterNav}
+            className="flex w-full items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+          >
+            Sign in
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

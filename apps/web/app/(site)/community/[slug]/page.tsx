@@ -140,92 +140,120 @@ export default async function CommunityPage({
   const createdFormatted = formatDate(community.createdAt);
 
   return (
-    <main className="mx-auto max-w-5xl pb-8">
+    <main className="mx-auto max-w-5xl pb-12">
       <RecentCommunitiesTracker
         slug={community.slug}
         name={community.name}
         iconKey={community.iconKey ?? null}
       />
 
-      {/* ── Banner ──────────────────────────────────────────────────── */}
-      <div className="relative w-full h-48 overflow-hidden rounded-b-2xl sm:h-56">
+      {/* ── Full-bleed banner ────────────────────────────────────────── */}
+      <div className="relative h-48 w-full overflow-hidden sm:h-64">
         {hasBanner ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={community.bannerUrl!}
             alt=""
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         ) : (
           <div
-            className="w-full h-full"
+            className="h-full w-full"
             style={{
-              background: `linear-gradient(to bottom right, color-mix(in srgb, var(--gn-accent) 30%, transparent), var(--gn-surface-muted))`,
+              background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 60%, #1a1a2e 40%) 0%, color-mix(in srgb, var(--gn-accent) 25%, #0f0f1a 75%) 100%)`,
             }}
           />
         )}
+        {/* Gradient overlay — bottom fade for text readability */}
+        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 to-transparent" />
 
-        {/* Community icon — overlaps banner bottom-left */}
-        <div className="absolute bottom-0 left-6 translate-y-1/2 z-10">
+        {/* Community identity at bottom of banner */}
+        <div className="absolute bottom-0 left-0 flex items-end gap-4 px-5 pb-5">
           {community.iconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={community.iconUrl}
               alt={community.name}
-              className="h-14 w-14 rounded-2xl border-4 border-[var(--gn-page-mid)] bg-[var(--gn-surface-elevated)] object-cover"
+              className="h-16 w-16 shrink-0 rounded-2xl border-4 border-white/20 bg-black/30 object-cover shadow-xl sm:h-20 sm:w-20"
             />
           ) : (
             <CommunityIcon
               iconKey={community.iconKey}
               nameFallback={community.name}
               slugFallback={community.slug}
-              frameClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-4 border-[var(--gn-page-mid)] bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] text-xl font-bold"
+              frameClassName="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-4 border-white/20 bg-black/40 text-white text-2xl font-bold shadow-xl sm:h-20 sm:w-20"
             />
           )}
-        </div>
-      </div>
-
-      {/* ── Community header ────────────────────────────────────────── */}
-      <div className="px-4 pt-11 pb-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-            {community.name}
-          </h1>
-          <p className="mt-0.5 text-sm text-[var(--gn-text-muted)]">
-            r/{community.slug}
-          </p>
-          {community.description && (
-            <p className="mt-1 text-[var(--gn-text-muted)]">
-              {community.description}
+          <div className="min-w-0 pb-0.5">
+            <h1 className="text-2xl font-bold leading-tight text-white drop-shadow-md sm:text-3xl">
+              {community.name}
+            </h1>
+            <p className="text-sm font-medium text-white/70">
+              r/{community.slug}
             </p>
-          )}
-          {hasMemberCount && (
-            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[var(--gn-surface-muted)] px-3 py-0.5 text-sm text-[var(--gn-text-muted)]">
-              👥 {formatMemberCount(community.memberCount!)} members
-            </span>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <FollowCommunityButton communityId={community.id} slug={slug} />
-          <Link
-            href={`/community/${slug}/new`}
-            className="rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
-          >
-            New post
-          </Link>
+          </div>
         </div>
       </div>
 
-      {/* ── Two-column layout (posts + sidebar) ─────────────────────── */}
-      <div className="px-4 lg:grid lg:grid-cols-3 lg:gap-6">
+      {/* ── Stats + action bar ───────────────────────────────────────── */}
+      <div className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--gn-text-muted)]">
+            {hasMemberCount && (
+              <span className="flex items-center gap-1.5">
+                <span className="text-base">👥</span>
+                <strong className="text-[var(--gn-text)]">
+                  {formatMemberCount(community.memberCount!)}
+                </strong>{" "}
+                members
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <span className="text-base">📝</span>
+              <strong className="text-[var(--gn-text)]">{feed.total}</strong>{" "}
+              posts
+            </span>
+            {createdFormatted && (
+              <span className="hidden items-center gap-1.5 sm:flex">
+                <span className="text-base">📅</span>
+                Since {createdFormatted}
+              </span>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <FollowCommunityButton communityId={community.id} slug={slug} />
+            <Link
+              href={`/community/${slug}/new`}
+              className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110 active:scale-[0.98]"
+            >
+              + New post
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Description (below stats on mobile) ─────────────────────── */}
+      {community.description && (
+        <div className="px-5 py-3 text-sm text-[var(--gn-text-muted)] lg:hidden">
+          {community.description}
+        </div>
+      )}
+
+      {/* ── Two-column layout ────────────────────────────────────────── */}
+      <div className="px-4 pt-5 lg:grid lg:grid-cols-[1fr_300px] lg:gap-6">
         {/* Main content column */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0">
           {/* Sort controls */}
-          <div className="mb-4 flex gap-2 text-sm font-medium">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
+              Sort:
+            </span>
             <Link
               href={sortLink("new")}
               className={
                 sort === "new"
-                  ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white shadow-sm"
-                  : "rounded-full border-2 border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-hover)]"
+                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-white shadow-sm"
+                  : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-sm font-medium text-[var(--gn-text)] transition hover:border-[var(--gn-text-muted)]"
               }
             >
               New
@@ -234,8 +262,8 @@ export default async function CommunityPage({
               href={sortLink("top")}
               className={
                 sort === "top"
-                  ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white shadow-sm"
-                  : "rounded-full border-2 border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-hover)]"
+                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-white shadow-sm"
+                  : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-sm font-medium text-[var(--gn-text)] transition hover:border-[var(--gn-text-muted)]"
               }
             >
               Top
@@ -256,65 +284,102 @@ export default async function CommunityPage({
             <div className="mt-6 flex justify-center gap-4 text-sm">
               {page > 1 ? (
                 <Link
-                  className="text-[var(--gn-accent)] hover:underline"
+                  className="rounded-full border border-[var(--gn-border)] px-4 py-2 text-[var(--gn-accent)] transition hover:bg-[var(--gn-surface-muted)]"
                   href={`/community/${slug}?sort=${sort}&page=${page - 1}`}
                 >
-                  Previous
+                  ← Previous
                 </Link>
               ) : null}
               {page * feed.pageSize < feed.total ? (
                 <Link
-                  className="text-[var(--gn-accent)] hover:underline"
+                  className="rounded-full border border-[var(--gn-border)] px-4 py-2 text-[var(--gn-accent)] transition hover:bg-[var(--gn-surface-muted)]"
                   href={`/community/${slug}?sort=${sort}&page=${page + 1}`}
                 >
-                  Next
+                  Next →
                 </Link>
               ) : null}
             </div>
           ) : null}
         </div>
 
-        {/* Sidebar — lg+ */}
-        <div className="hidden lg:block lg:col-span-1">
-          <div className="sticky top-20">
-            <div className="gn-card p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-[var(--gn-text)]">
-                About r/{community.slug}
-              </h3>
-              {community.description && (
-                <p className="text-sm text-[var(--gn-text-muted)]">
-                  {community.description}
-                </p>
-              )}
-              {hasMemberCount && (
-                <div className="flex items-center gap-2 text-sm text-[var(--gn-text-muted)]">
-                  <span>👥</span>
-                  <span>
-                    <strong>{formatMemberCount(community.memberCount!)}</strong>{" "}
-                    members
-                  </span>
+        {/* About sidebar — lg+ */}
+        <div className="hidden lg:block">
+          <div className="sticky top-20 space-y-4">
+            {/* New Post CTA */}
+            <Link
+              href={`/community/${slug}/new`}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-4 py-3 text-sm font-bold text-white shadow transition hover:brightness-110 active:scale-[0.98]"
+            >
+              ✏️ New Post in r/{community.slug}
+            </Link>
+
+            {/* About card */}
+            <div className="gn-card overflow-hidden">
+              <div
+                className="h-10 w-full"
+                style={{
+                  background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 60%, #1a1a2e 40%), color-mix(in srgb, var(--gn-accent) 25%, #0f0f1a 75%))`,
+                }}
+              />
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-bold text-[var(--gn-text)]">
+                  About r/{community.slug}
+                </h3>
+                {community.description && (
+                  <p className="text-sm leading-relaxed text-[var(--gn-text-muted)]">
+                    {community.description}
+                  </p>
+                )}
+                <div className="space-y-2 border-t border-[var(--gn-divide)] pt-3">
+                  {hasMemberCount && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--gn-text-muted)]">Members</span>
+                      <strong className="text-[var(--gn-text)]">
+                        {formatMemberCount(community.memberCount!)}
+                      </strong>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--gn-text-muted)]">Posts</span>
+                    <strong className="text-[var(--gn-text)]">{feed.total}</strong>
+                  </div>
+                  {createdFormatted && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--gn-text-muted)]">Created</span>
+                      <span className="text-[var(--gn-text)]">{createdFormatted}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {createdFormatted && (
-                <div className="flex items-center gap-2 text-sm text-[var(--gn-text-muted)]">
-                  <span>📅</span>
-                  <span>Created {createdFormatted}</span>
-                </div>
-              )}
-              {hasRules && (
-                <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-excerpt)] mt-3 mb-2">
-                    Rules
-                  </h4>
-                  <ol className="space-y-1">
-                    {community.rules!.map((rule, i) => (
-                      <li key={i} className="text-xs text-[var(--gn-text-muted)]">
-                        {i + 1}. {rule}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+              </div>
+            </div>
+
+            {/* Rules card */}
+            {hasRules && (
+              <div className="gn-card p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--gn-text-muted)]">
+                  Community Rules
+                </h4>
+                <ol className="space-y-2">
+                  {community.rules!.map((rule, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-[var(--gn-text-muted)]">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-muted)] text-[0.65rem] font-bold text-[var(--gn-text)]">
+                        {i + 1}
+                      </span>
+                      {rule}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Placeholder: Moderators */}
+            <div className="gn-card p-4 space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--gn-text-muted)]">
+                Moderators
+              </h4>
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                This community is moderated by the Growers Notebook team.
+              </p>
             </div>
           </div>
         </div>

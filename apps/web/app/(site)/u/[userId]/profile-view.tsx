@@ -66,45 +66,20 @@ type NotebooksResponse = {
   pageSize: number;
 };
 
-function getTierInfo(tier: string | null): { gradient: string; emoji: string } {
-  if (!tier) {
-    return {
-      gradient:
-        "bg-gradient-to-r from-[var(--gn-surface-muted)] to-[var(--gn-surface-elevated)]",
-      emoji: "🌱",
-    };
-  }
+function getTierInfo(tier: string | null): { emoji: string; label: string } {
+  if (!tier) return { emoji: "🌱", label: "Seedling" };
   const t = tier.toLowerCase();
-  if (t.includes("master")) {
-    return {
-      gradient: "bg-gradient-to-r from-purple-900 to-indigo-700",
-      emoji: "👑",
-    };
-  }
-  if (t.includes("expert")) {
-    return {
-      gradient: "bg-gradient-to-r from-amber-900 to-orange-700",
-      emoji: "⭐",
-    };
-  }
-  if (t.includes("grower") && !t.includes("rookie")) {
-    return {
-      gradient: "bg-gradient-to-r from-emerald-900 to-teal-700",
-      emoji: "🌿",
-    };
-  }
-  // Seedling / Rookie / default tier 1
-  return {
-    gradient: "bg-gradient-to-r from-green-900 to-green-700",
-    emoji: "🌱",
-  };
+  if (t.includes("master")) return { emoji: "👑", label: tier };
+  if (t.includes("expert")) return { emoji: "⭐", label: tier };
+  if (t.includes("grower") && !t.includes("rookie")) return { emoji: "🌿", label: tier };
+  return { emoji: "🌱", label: tier };
 }
 
 const tabClass = (active: boolean) =>
-  `rounded-full px-5 py-2 text-sm transition ${
+  `rounded-full px-5 py-2 text-sm font-semibold transition ${
     active
-      ? "font-semibold bg-[var(--gn-accent)] text-white"
-      : "font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
+      ? "bg-[var(--gn-accent)] text-white shadow-sm"
+      : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:bg-[var(--gn-surface-muted)]"
   }`;
 
 export function ProfileView({
@@ -262,16 +237,19 @@ export function ProfileView({
   };
 
   const feedHidden = !!profile.profileFeedHiddenFromViewer;
-  const { emoji: tierEmoji } = getTierInfo(tier);
+  const { emoji: tierEmoji, label: tierLabel } = getTierInfo(tier);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      {/* Profile info card */}
-      <div className="gn-card-subtle px-4 py-5 sm:px-6">
-        <div className="flex items-start gap-4 sm:gap-6">
-          {/* Avatar */}
-          <span className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-4 ring-[var(--gn-surface)] sm:h-28 sm:w-28">
+
+      {/* ── Profile header card ──────────────────────────────────────── */}
+      <div className="gn-card overflow-hidden">
+        {/* Top: avatar + name + actions row */}
+        <div className="flex flex-wrap items-start gap-5 p-6">
+          {/* Large avatar */}
+          <span className="flex h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-4 ring-[var(--gn-divide)] sm:h-28 sm:w-28">
             {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.avatarUrl}
                 alt=""
@@ -279,82 +257,107 @@ export function ProfileView({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--gn-text-muted)] sm:text-3xl">
+              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-text-muted)] sm:text-4xl">
                 {profileLabel.charAt(0).toUpperCase() || "?"}
               </span>
             )}
           </span>
-          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-[var(--gn-text)]">
-              {profileLabel}
-            </h1>
-            {/* E3: Tier + seed pill badges */}
-            {statsHidden ? (
-              <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                Grower stats are private
-              </p>
-            ) : (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/20 px-3 py-1 text-xs font-semibold text-[var(--gn-accent)]">
-                  {tierEmoji} {tier}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)]">
-                  🌰 {formatSeeds(profile.seeds)} seeds
-                </span>
+
+          {/* Name + tier + bio */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-[var(--gn-text)] sm:text-3xl">
+                  {profileLabel}
+                </h1>
+                {!statsHidden && (
+                  <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
+                    {tierEmoji} {tierLabel}
+                  </span>
+                )}
               </div>
-            )}
-            {/* G4.1: Follower / following counts */}
-            <div className="flex items-center gap-4 text-sm mt-1">
-              <span>
-                <strong className="text-[var(--gn-text-1)]">{profile.followerCount ?? 0}</strong>
-                <span className="text-[var(--gn-text-3)] ml-1">followers</span>
-              </span>
-              <span>
-                <strong className="text-[var(--gn-text-1)]">{profile.followingCount ?? 0}</strong>
-                <span className="text-[var(--gn-text-3)] ml-1">following</span>
-              </span>
+              {viewerId ? (
+                <CommentActionMenu ariaLabel="Profile actions">
+                  {isOwn ? (
+                    <MenuRow onClick={() => router.push("/settings/profile")}>
+                      Edit profile
+                    </MenuRow>
+                  ) : (
+                    <>
+                      <MenuRow
+                        danger
+                        disabled={blockBusy}
+                        onClick={() => {
+                          setReportNotice(null);
+                          void toggleBlock();
+                        }}
+                      >
+                        {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
+                      </MenuRow>
+                      <MenuRow
+                        danger
+                        onClick={() => {
+                          setReportNotice(null);
+                          setReportOpen(true);
+                        }}
+                      >
+                        Report user
+                      </MenuRow>
+                    </>
+                  )}
+                </CommentActionMenu>
+              ) : null}
             </div>
+
+            {bio ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
+                {bio}
+              </p>
+            ) : null}
           </div>
-          {viewerId ? (
-            <CommentActionMenu ariaLabel="Profile actions">
-              {isOwn ? (
-                <MenuRow onClick={() => router.push("/settings/profile")}>
-                  Edit profile
-                </MenuRow>
-              ) : (
-                <>
-                  <MenuRow
-                    danger
-                    disabled={blockBusy}
-                    onClick={() => {
-                      setReportNotice(null);
-                      void toggleBlock();
-                    }}
-                  >
-                    {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
-                  </MenuRow>
-                  <MenuRow
-                    danger
-                    onClick={() => {
-                      setReportNotice(null);
-                      setReportOpen(true);
-                    }}
-                  >
-                    Report user
-                  </MenuRow>
-                </>
-              )}
-            </CommentActionMenu>
-          ) : null}
+        </div>
+
+        {/* Stats bar */}
+        <div className="border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-6 py-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+            <span>
+              <strong className="font-semibold text-[var(--gn-text)]">
+                {postsTotal}
+              </strong>{" "}
+              <span className="text-[var(--gn-text-muted)]">posts</span>
+            </span>
+            <span>
+              <strong className="font-semibold text-[var(--gn-text)]">
+                {commentsTotal}
+              </strong>{" "}
+              <span className="text-[var(--gn-text-muted)]">comments</span>
+            </span>
+            <span>
+              <strong className="font-semibold text-[var(--gn-text)]">
+                {profile.followerCount ?? 0}
+              </strong>{" "}
+              <span className="text-[var(--gn-text-muted)]">followers</span>
+            </span>
+            <span>
+              <strong className="font-semibold text-[var(--gn-text)]">
+                {profile.followingCount ?? 0}
+              </strong>{" "}
+              <span className="text-[var(--gn-text-muted)]">following</span>
+            </span>
+            {!statsHidden && (
+              <span className="flex items-center gap-1">
+                <span>🌰</span>
+                <strong className="font-semibold text-[var(--gn-text)]">
+                  {formatSeeds(profile.seeds)}
+                </strong>{" "}
+                <span className="text-[var(--gn-text-muted)]">seeds</span>
+              </span>
+            )}
           </div>
-          </div>
-        {bio ? (
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
-            {bio}
-          </p>
-        ) : null}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-3 px-6 py-4">
           {!isOwn ? (
             <>
               {viewerId && profile.viewerHasBlocked !== true ? (
@@ -384,25 +387,29 @@ export function ProfileView({
                 href="/new-post"
                 className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
               >
-                New post on profile
+                ✏️ New post
+              </Link>
+              <Link
+                href="/settings/profile"
+                className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+              >
+                Edit profile
               </Link>
               <Link
                 href={buildPostsHref({ tab: "notebooks", page: 1 })}
                 className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface)] px-4 py-2 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
               >
-                Notebooks
+                📔 Notebooks
               </Link>
-              <span className="text-xs text-[var(--gn-text-muted)]">
-                (visible on your profile and followers&apos; feeds)
-              </span>
             </>
           )}
         </div>
+
+        {/* Report form */}
         {!isOwn && reportOpen ? (
-          <div className="mt-4 rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
+          <div className="mx-6 mb-4 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4">
             <p className="text-xs text-[var(--gn-text-muted)]">
-              Moderators review reports in the admin area. Add context
-              (optional).
+              Moderators review reports in the admin area. Add context (optional).
             </p>
             <textarea
               value={reportDraft}
@@ -436,22 +443,28 @@ export function ProfileView({
             </div>
           </div>
         ) : null}
+
         {reportNotice ? (
           <p
-            className={`mt-3 text-sm ${reportNotice.tone === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
+            className={`mx-6 mb-4 text-sm ${reportNotice.tone === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
           >
             {reportNotice.text}
           </p>
         ) : null}
       </div>
 
-      {/* E4: Pill-style tabs — no underline border */}
-      <div className="mt-6 flex flex-wrap items-center gap-2 pt-4">
+      {/* ── Pill tab bar ─────────────────────────────────────────────── */}
+      <div className="mt-6 flex items-center gap-1 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1.5">
         <Link
           href={buildPostsHref({ tab: "posts", sort: activeSort })}
           className={tabClass(activeTab === "posts")}
         >
           Posts
+          {postsTotal > 0 && (
+            <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold ${activeTab === "posts" ? "bg-white/20 text-white" : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]"}`}>
+              {postsTotal}
+            </span>
+          )}
         </Link>
         <Link
           href={buildPostsHref({ tab: "comments" })}
@@ -473,51 +486,45 @@ export function ProfileView({
         </Link>
       </div>
 
+      {/* ── Tab content ──────────────────────────────────────────────── */}
       {activeTab === "posts" ? (
-        <div className="mt-6 space-y-4">
+        <div className="mt-5 space-y-4">
           {feedHidden ? (
-            <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
-              No post here to see!
-            </p>
+            <div className="py-16 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <p className="text-[var(--gn-text-muted)]">No posts here to see!</p>
+            </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm text-[var(--gn-text-muted)]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]">
                   Sort:
                 </span>
                 <Link
-                  href={buildPostsHref({
-                    tab: "posts",
-                    sort: "new",
-                    page: 1,
-                  })}
+                  href={buildPostsHref({ tab: "posts", sort: "new", page: 1 })}
                   className={
                     activeSort === "new"
-                      ? "text-sm font-semibold text-[var(--gn-accent)]"
-                      : "text-sm text-[var(--gn-text-muted)] hover:underline"
+                      ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                      : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
                   }
                 >
                   New
                 </Link>
                 <Link
-                  href={buildPostsHref({
-                    tab: "posts",
-                    sort: "top",
-                    page: 1,
-                  })}
+                  href={buildPostsHref({ tab: "posts", sort: "top", page: 1 })}
                   className={
                     activeSort === "top"
-                      ? "text-sm font-semibold text-[var(--gn-accent)]"
-                      : "text-sm text-[var(--gn-text-muted)] hover:underline"
+                      ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white"
+                      : "rounded-full border border-[var(--gn-border)] px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
                   }
                 >
                   Top
                 </Link>
               </div>
               {posts.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="py-16 text-center">
                   <div className="text-4xl mb-3">✍️</div>
-                  <p className="text-[var(--gn-text-2)] text-sm">No posts shared yet.</p>
+                  <p className="text-sm text-[var(--gn-text-muted)]">No posts shared yet.</p>
                 </div>
               ) : (
                 <FeedPostCardList items={posts} />
@@ -526,26 +533,18 @@ export function ProfileView({
                 <div className="flex gap-4 text-sm">
                   {postsPage > 1 ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "posts",
-                        sort: activeSort,
-                        page: postsPage - 1,
-                      })}
+                      href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage - 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Previous
+                      ← Previous
                     </Link>
                   ) : null}
                   {postsPage * postsPageSize < postsTotal ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "posts",
-                        sort: activeSort,
-                        page: postsPage + 1,
-                      })}
+                      href={buildPostsHref({ tab: "posts", sort: activeSort, page: postsPage + 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Next
+                      Next →
                     </Link>
                   ) : null}
                 </div>
@@ -565,25 +564,27 @@ export function ProfileView({
                 .map((m) => ({ url: m.url, postId: p.id, title: p.title })),
           );
           return (
-            <div className="mt-6">
+            <div className="mt-5">
               {feedHidden ? (
-                <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
-                  Nothing to see here!
-                </p>
+                <div className="py-16 text-center">
+                  <div className="text-4xl mb-3">🔒</div>
+                  <p className="text-sm text-[var(--gn-text-muted)]">Nothing to see here!</p>
+                </div>
               ) : imageItems.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="py-16 text-center">
                   <div className="text-4xl mb-3">🌿</div>
-                  <p className="text-[var(--gn-text-2)] text-sm">No photos shared yet.</p>
+                  <p className="text-sm text-[var(--gn-text-muted)]">No photos shared yet.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {imageItems.map((item, i) => (
                     <Link
                       key={`${item.postId}-${i}`}
                       href={`/p/${item.postId}`}
-                      className="block aspect-square overflow-hidden rounded-lg bg-[var(--gn-surface-muted)] hover:opacity-90 transition-opacity"
+                      className="block aspect-square overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] transition hover:opacity-90"
                       title={item.title}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.url}
                         alt={item.title}
@@ -598,17 +599,18 @@ export function ProfileView({
           );
         })()
       ) : activeTab === "comments" ? (
-        <div className="mt-6 space-y-4">
+        <div className="mt-5 space-y-3">
           {feedHidden ? (
-            <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
-              No comments here to see!
-            </p>
+            <div className="py-16 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <p className="text-sm text-[var(--gn-text-muted)]">No comments here to see!</p>
+            </div>
           ) : (
             <>
               {commentItems.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="py-16 text-center">
                   <div className="text-4xl mb-3">💬</div>
-                  <p className="text-[var(--gn-text-2)] text-sm">No comments yet.</p>
+                  <p className="text-sm text-[var(--gn-text-muted)]">No comments yet.</p>
                 </div>
               ) : (
                 <ProfileCommentsList
@@ -621,24 +623,18 @@ export function ProfileView({
                 <div className="flex gap-4 text-sm">
                   {commentsPage > 1 ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "comments",
-                        page: commentsPage - 1,
-                      })}
+                      href={buildPostsHref({ tab: "comments", page: commentsPage - 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Previous
+                      ← Previous
                     </Link>
                   ) : null}
                   {commentsPage * commentsPageSize < commentsTotal ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "comments",
-                        page: commentsPage + 1,
-                      })}
+                      href={buildPostsHref({ tab: "comments", page: commentsPage + 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Next
+                      Next →
                     </Link>
                   ) : null}
                 </div>
@@ -647,11 +643,13 @@ export function ProfileView({
           )}
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
+        /* Notebooks tab */
+        <div className="mt-5 space-y-4">
           {feedHidden ? (
-            <p className="py-8 text-center text-lg font-medium text-[var(--gn-text)]">
-              Nothing to see here!
-            </p>
+            <div className="py-16 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <p className="text-sm text-[var(--gn-text-muted)]">Nothing to see here!</p>
+            </div>
           ) : (
             <>
               {isOwn ? (
@@ -660,14 +658,14 @@ export function ProfileView({
                     href="/notebooks/new"
                     className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
                   >
-                    Set up your notebook
+                    📔 Set up a grow journal
                   </Link>
                 </div>
               ) : null}
               {notebookItems.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="py-16 text-center">
                   <div className="text-4xl mb-3">📔</div>
-                  <p className="text-[var(--gn-text-2)] text-sm">No grow journals yet.</p>
+                  <p className="text-sm text-[var(--gn-text-muted)]">No grow journals yet.</p>
                 </div>
               ) : (
                 <ul className="space-y-3">
@@ -680,18 +678,23 @@ export function ProfileView({
                       <li key={n.id}>
                         <Link
                           href={`/notebooks/${encodeURIComponent(n.id)}`}
-                          className="block rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 transition hover:border-[var(--gn-text-muted)]"
+                          className="block rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 transition hover:border-[var(--gn-text-muted)] hover:shadow-sm"
                         >
-                          <p className="font-semibold text-[var(--gn-text)]">
-                            {n.title}
-                          </p>
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="font-semibold text-[var(--gn-text)]">
+                              {n.title}
+                            </p>
+                            <span className="shrink-0 rounded-full border border-[var(--gn-border)] px-2 py-0.5 text-[0.65rem] font-medium capitalize text-[var(--gn-text-muted)]">
+                              {n.status}
+                            </span>
+                          </div>
                           {strainLabel ? (
                             <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                              {strainLabel}
+                              🌿 {strainLabel}
                             </p>
                           ) : null}
                           <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-                            Score {n.score} · {n.status} · updated{" "}
+                            Score {n.score} · updated{" "}
                             {new Date(n.updatedAt).toLocaleDateString()}
                           </p>
                         </Link>
@@ -704,24 +707,18 @@ export function ProfileView({
                 <div className="flex gap-4 text-sm">
                   {notebooksPage > 1 ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "notebooks",
-                        page: notebooksPage - 1,
-                      })}
+                      href={buildPostsHref({ tab: "notebooks", page: notebooksPage - 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Previous
+                      ← Previous
                     </Link>
                   ) : null}
                   {notebooksPage * notebooksPageSize < notebooksTotal ? (
                     <Link
-                      href={buildPostsHref({
-                        tab: "notebooks",
-                        page: notebooksPage + 1,
-                      })}
+                      href={buildPostsHref({ tab: "notebooks", page: notebooksPage + 1 })}
                       className="text-[var(--gn-accent)] hover:underline"
                     >
-                      Next
+                      Next →
                     </Link>
                   ) : null}
                 </div>

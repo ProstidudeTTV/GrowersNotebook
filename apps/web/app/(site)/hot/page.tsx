@@ -109,8 +109,8 @@ export default async function HotWeekPage({
       </div>
 
       {feed.items.length === 0 ? (
-        <div className="text-center py-16 gn-panel rounded-2xl">
-          <div className="text-5xl mb-4">🌿</div>
+        <div className="text-center py-10 gn-panel rounded-2xl">
+          <div className="text-4xl mb-3">🌿</div>
           <h3 className="text-lg font-semibold text-[var(--gn-text-1)] mb-2">
             No hot posts yet
           </h3>

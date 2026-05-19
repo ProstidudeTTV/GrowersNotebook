@@ -48,6 +48,12 @@ html:not(.dark) {
    * the full stack, not a single `top-14`, or the first nav items sit under the header.
    */
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
+  /* Semantic aliases used in components */
+  --gn-text-1: var(--gn-text);
+  --gn-text-2: var(--gn-text-muted);
+  --gn-text-3: var(--gn-text-muted);
+  --gn-surface-2: var(--gn-surface-muted);
+  --gn-surface-3: var(--gn-surface-elevated);
 }
 
 /** Page backdrop: on `html`, main column, etc. Solid fallback + gradients so flex never shows as empty black. */
@@ -118,6 +124,12 @@ html.dark {
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
+  /* Semantic aliases used in components */
+  --gn-text-1: var(--gn-text);
+  --gn-text-2: var(--gn-text-muted);
+  --gn-text-3: var(--gn-text-muted);
+  --gn-surface-2: var(--gn-surface-muted);
+  --gn-surface-3: var(--gn-surface-elevated);
 }
 
 html.dark .gn-app-canvas {
@@ -469,7 +481,19 @@ html.dark body {
   .ProseMirror.gn-post-editor-prose ul,
   .ProseMirror.gn-post-editor-prose ol {
     margin: 0.5rem 0;
-    padding-left: 1.35rem;
+    padding-left: 1.5rem;
+  }
+  .gn-post-editor-prose .ProseMirror ul,
+  .ProseMirror.gn-post-editor-prose ul {
+    list-style-type: disc;
+  }
+  .gn-post-editor-prose .ProseMirror ol,
+  .ProseMirror.gn-post-editor-prose ol {
+    list-style-type: decimal;
+  }
+  .gn-post-editor-prose .ProseMirror li,
+  .ProseMirror.gn-post-editor-prose li {
+    display: list-item;
   }
 
   .gn-post-editor-prose .ProseMirror blockquote,

@@ -209,26 +209,26 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#ff6a38]">
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
           Communities
         </h1>
-        <p className="mt-2 text-[var(--gn-text-muted)]">
-          A space for home growers to share their knowledge and experiences. Growers Notebook is a community-driven platform for sharing tips, tricks, and experiences with other home growers.
+        <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
+          Your home grow communities.
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {loadError ? (
-          <div className="col-span-full text-center py-12 gn-panel rounded-2xl">
-            <div className="text-4xl mb-3">🌿</div>
-            <h3 className="font-semibold text-[var(--gn-text)] mb-2">Something went sideways</h3>
-            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Could not load your communities right now.</p>
+          <div className="col-span-full text-center py-8 gn-panel rounded-2xl">
+            <div className="text-3xl mb-2">🌿</div>
+            <h3 className="font-semibold text-[var(--gn-text)] mb-1">Something went sideways</h3>
+            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Could not load communities right now.</p>
             <Link href="/" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Try again</Link>
           </div>
         ) : communities.length === 0 ? (
-          <div className="col-span-full text-center py-12 gn-panel rounded-2xl">
-            <div className="text-4xl mb-3">🌱</div>
-            <h3 className="font-semibold text-[var(--gn-text)] mb-2">Plant your first seed</h3>
+          <div className="col-span-full text-center py-8 gn-panel rounded-2xl">
+            <div className="text-3xl mb-2">🌱</div>
+            <h3 className="font-semibold text-[var(--gn-text)] mb-1">Plant your first seed</h3>
             <p className="text-sm text-[var(--gn-text-muted)] mb-4">Join a community to see their posts in your feed.</p>
             <Link href="/community" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Browse Communities</Link>
           </div>

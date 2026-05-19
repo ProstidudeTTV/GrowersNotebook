@@ -843,9 +843,26 @@ export function NotebookDetailClient({
       <section className="mt-5">
         <SectionHeading>Weeks</SectionHeading>
         {nb.weeks.length === 0 ? (
-          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-            No weekly entries yet.
-          </p>
+          <div className="mt-3 rounded-xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-5 py-8 text-center">
+            <div className="text-3xl">🌱</div>
+            <p className="mt-2 text-sm font-medium text-[var(--gn-text)]">No log entries yet</p>
+            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              Start tracking your grow — add photos, measurements, and notes week by week.
+            </p>
+            {isOwner ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setWeekWizardMode("create");
+                  setWeekEditTarget(null);
+                  setWeekWizardOpen(true);
+                }}
+                className="mt-4 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-neutral-950 shadow-sm hover:bg-emerald-400"
+              >
+                Log week 1
+              </button>
+            ) : null}
+          </div>
         ) : (
           <ul className="mt-3 space-y-2.5">
             {nb.weeks.map((w) => {

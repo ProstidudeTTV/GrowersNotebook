@@ -242,8 +242,8 @@ export default async function SearchPage({
 
       {/* G3.5 — Empty / zero-query state */}
       {q.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-5xl mb-4">🔍</div>
+        <div className="text-center py-10">
+          <div className="text-4xl mb-3">🔍</div>
           <h3 className="text-lg font-semibold text-[var(--gn-text)] mb-2">
             Find your people
           </h3>

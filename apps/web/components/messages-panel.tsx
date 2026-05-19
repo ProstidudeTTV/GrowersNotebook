@@ -1012,7 +1012,7 @@ export function MessagesPanel() {
           <button
             type="button"
             onClick={() => setShowNewMessageModal(true)}
-            className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border border-[var(--gn-divide)] bg-transparent py-1.5 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-muted)]"
           >
             <span aria-hidden>+</span> New Message
           </button>
@@ -1163,7 +1163,7 @@ export function MessagesPanel() {
                         <div
                           className={`text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "ml-auto max-w-[70%] rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-4 py-2 text-white"
+                              ? "ml-auto max-w-[70%] rounded-2xl rounded-br-sm bg-[var(--gn-surface-raised)] px-4 py-2 text-[var(--gn-text)]"
                               : "mr-auto max-w-[70%] rounded-2xl rounded-bl-sm border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-4 py-2 text-[var(--gn-text)]"
                           }`}
                         >

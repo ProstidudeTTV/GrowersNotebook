@@ -262,27 +262,15 @@ export function ProfileView({
   };
 
   const feedHidden = !!profile.profileFeedHiddenFromViewer;
-  const { gradient: tierGradient, emoji: tierEmoji } = getTierInfo(tier);
+  const { emoji: tierEmoji } = getTierInfo(tier);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      {/* E2: Tier gradient banner — avatar overlaps the bottom edge */}
-      <div className="relative">
-        <div
-          className={`h-24 w-full overflow-hidden rounded-xl ${tierGradient}`}
-          style={
-            profile.bannerUrl
-              ? {
-                  backgroundImage: `url(${profile.bannerUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : undefined
-          }
-        />
-        {/* E1: Avatar — h-20 w-20, ring, sitting half-over banner bottom */}
-        <div className="absolute -bottom-10 left-5 sm:left-6">
-          <span className="flex h-20 w-20 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-4 ring-[var(--gn-surface)]">
+      {/* Profile info card */}
+      <div className="gn-card-subtle px-5 py-5">
+        <div className="flex items-start gap-4">
+          {/* Avatar */}
+          <span className="flex h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)]">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
@@ -291,17 +279,12 @@ export function ProfileView({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-text-muted)]">
+              <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--gn-text-muted)]">
                 {profileLabel.charAt(0).toUpperCase() || "?"}
               </span>
             )}
           </span>
-        </div>
-      </div>
-
-      {/* Profile info card — pt-14 clears the overlapping avatar */}
-      <div className="gn-card-subtle px-5 pb-5 pt-14">
-        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-[var(--gn-text)]">
               {profileLabel}
@@ -364,6 +347,8 @@ export function ProfileView({
               )}
             </CommentActionMenu>
           ) : null}
+          </div>
+          </div>
         </div>
         {bio ? (
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">

@@ -61,8 +61,35 @@ function compactCount(n: number): string {
   return String(n);
 }
 
-const headerIconFrame =
-  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-2 ring-[var(--gn-ring)] sm:h-12 sm:w-12";
+const COMMENT_AVATAR_COLORS = [
+  "bg-emerald-800",
+  "bg-teal-800",
+  "bg-sky-800",
+  "bg-violet-800",
+  "bg-amber-800",
+] as const;
+
+function nameColorClass(name: string | null | undefined): string {
+  if (!name) return COMMENT_AVATAR_COLORS[0];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) {
+    h = ((h * 31) + name.charCodeAt(i)) >>> 0;
+  }
+  return COMMENT_AVATAR_COLORS[h % COMMENT_AVATAR_COLORS.length];
+}
+
+function CommentAvatar({ displayName }: { displayName?: string | null }) {
+  const initial = (displayName ?? "").trim().charAt(0).toUpperCase() || "?";
+  const colorClass = nameColorClass(displayName);
+  return (
+    <span
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${colorClass} text-[11px] font-semibold text-white`}
+      aria-hidden
+    >
+      {initial}
+    </span>
+  );
+}
 
 function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
   const html = displayPostBodyHtml(rawHtml);
@@ -264,7 +291,7 @@ function CommentTree({
             <div className={`min-w-0 flex-1 rounded-xl border p-4 ${depth === 0 ? "border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]" : "border-[var(--gn-divide)]/60 bg-[var(--gn-surface-elevated)]/40"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-start gap-2">
-                  <AvatarChip displayName={c.author.displayName} sizePx={32} />
+                  <CommentAvatar displayName={c.author.displayName} />
                   <div className="text-xs text-[var(--gn-text-muted)]">
                     <UserProfileLink
                       userId={c.author.id}
@@ -993,191 +1020,189 @@ export function PostView({
           )
         ) : null}
         <div className="p-4 sm:p-6">
-          <div className="flex items-start gap-3 sm:gap-4">
+          {/* Context breadcrumb */}
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
             {post.community ? (
-              <CommunityIcon
-                iconKey={null}
-                nameFallback={post.community.name}
-                slugFallback={post.community.slug}
-                frameClassName={`${headerIconFrame} text-xs font-semibold`}
-              />
-            ) : post.author.avatarUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
+              <>
+                <Link
+                  href={`/community/${post.community.slug}`}
+                  className="font-semibold text-[var(--gn-text)] hover:underline"
+                >
+                  {post.community.name.trim() || post.community.slug}
+                </Link>
+                <span aria-hidden>·</span>
+                <span>Community post</span>
+              </>
+            ) : (
+              <span className="font-medium text-[var(--gn-text)]">Profile post</span>
+            )}
+          </div>
+
+          {/* Title */}
+          {editingPost ? (
+            <input
+              className="gn-input mt-1 w-full text-xl font-bold text-[var(--gn-text)] sm:text-2xl"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              maxLength={TITLE_MAX_LEN}
+              aria-label="Post title"
+            />
+          ) : (
+            <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-[var(--gn-text)] sm:text-3xl">
+              {post.title}
+            </h1>
+          )}
+
+          {/* Author strip */}
+          <div className="mt-3 flex items-center gap-2.5">
+            {post.author.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={post.author.avatarUrl}
                 alt=""
-                className={`${headerIconFrame} object-cover text-xs font-semibold`}
+                className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-[var(--gn-ring)]"
               />
             ) : (
               <span
-                className={`${headerIconFrame} text-xs font-semibold`}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
                 aria-hidden
               >
                 {authorInitial}
               </span>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
-                {post.community ? (
-                  <>
-                    <Link
-                      href={`/community/${post.community.slug}`}
-                      className="font-semibold text-[var(--gn-text)] hover:underline"
-                    >
-                      {post.community.name.trim() || post.community.slug}
-                    </Link>
-                    <span aria-hidden>·</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-medium text-[var(--gn-text)]">
-                      Profile post
-                    </span>
-                    <span aria-hidden>·</span>
-                  </>
-                )}
-                <UserProfileLink
-                  userId={post.author.id}
-                  className="font-medium text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
-                >
-                  {post.author.displayName ?? "member"}
-                </UserProfileLink>
-                <span aria-hidden>·</span>
-                <span title="Tier based on seeds">{authorTier}</span>
-                <span aria-hidden>·</span>
-                <span title="Net seeds from this grower">
-                  {formatSeeds(post.author.seeds)} seeds
-                </span>
-                <span aria-hidden>·</span>
-                <span title={new Date(post.createdAt).toLocaleString()}>
-                  {new Date(post.createdAt).toLocaleString()}
-                </span>
-              </div>
-              {editingPost ? (
-                <input
-                  className="gn-input mt-2 w-full text-xl font-bold text-[var(--gn-text)] sm:text-2xl"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  maxLength={TITLE_MAX_LEN}
-                  aria-label="Post title"
-                />
-              ) : (
-                <h1 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-[var(--gn-text)] sm:text-3xl">
-                  {post.title}
-                </h1>
-              )}
-              {/* Author action row — follow + edit/delete/report */}
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <FollowUserButton
-                  userId={post.author.id}
-                  following={post.author.viewerFollowing ?? false}
-                  viewerId={viewerId}
-                  onFollowingChange={(v) =>
-                    setPost((p) => ({
-                      ...p,
-                      author: { ...p.author, viewerFollowing: v },
-                    }))
-                  }
-                  onFollowComplete={refreshPost}
-                />
-                {isOp && !editingPost ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={startEditPost}
-                      disabled={busy || editBusy}
-                      className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void deletePost()}
-                      disabled={busy || editBusy}
-                      className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200 dark:hover:bg-red-950"
-                    >
-                      Delete
-                    </button>
-                  </>
-                ) : null}
-                {isOp && editingPost ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => void saveEditPost()}
-                      disabled={editBusy}
-                      className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                    >
-                      {editBusy ? "Saving…" : "Save changes"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEditPost}
-                      disabled={editBusy}
-                      className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : null}
-                {viewerId && !isOp && !editingPost ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPostReportOpen((o) => !o);
-                      setPostReportMsg(null);
-                    }}
-                    className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
-                  >
-                    {postReportOpen ? "Close report" : "Report post"}
-                  </button>
-                ) : null}
-              </div>
-              {viewerId && !isOp && postReportMsg ? (
-                <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-                  {postReportMsg}
-                </p>
-              ) : null}
-              {viewerId && !isOp && postReportOpen && !editingPost ? (
-                <div
-                  className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3"
-                  data-interactive
-                >
-                  <p className="text-xs text-[var(--gn-text-muted)]">
-                    Report this post to moderators (optional note).
-                  </p>
-                  <textarea
-                    className="gn-input mt-2 w-full p-2 text-sm"
-                    rows={2}
-                    placeholder="Reason (optional)"
-                    value={postReportDraft}
-                    onChange={(e) => setPostReportDraft(e.target.value)}
-                  />
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={postReportBusy}
-                      className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                      onClick={() => void submitPostReport()}
-                    >
-                      {postReportBusy ? "Sending…" : "Submit report"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={postReportBusy}
-                      className="rounded-full border border-[var(--gn-ring)] px-3 py-1.5 text-xs text-[var(--gn-text)] disabled:opacity-50"
-                      onClick={() => {
-                        setPostReportOpen(false);
-                        setPostReportDraft("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+              <UserProfileLink
+                userId={post.author.id}
+                className="font-semibold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
+              >
+                {post.author.displayName ?? "member"}
+              </UserProfileLink>
+              <span className="rounded-full bg-emerald-950/40 px-2 py-0.5 text-[10px] text-emerald-400">
+                {authorTier}
+              </span>
+              <span className="text-[var(--gn-text-muted)]" title="Net seeds from this grower">
+                {formatSeeds(post.author.seeds)} seeds
+              </span>
+              <span aria-hidden className="text-[var(--gn-text-muted)]">·</span>
+              <span
+                className="text-[var(--gn-text-muted)]"
+                title={new Date(post.createdAt).toLocaleString()}
+              >
+                {new Date(post.createdAt).toLocaleString()}
+              </span>
             </div>
           </div>
+
+          {/* Action row */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <FollowUserButton
+              userId={post.author.id}
+              following={post.author.viewerFollowing ?? false}
+              viewerId={viewerId}
+              onFollowingChange={(v) =>
+                setPost((p) => ({
+                  ...p,
+                  author: { ...p.author, viewerFollowing: v },
+                }))
+              }
+              onFollowComplete={refreshPost}
+            />
+            {isOp && !editingPost ? (
+              <>
+                <button
+                  type="button"
+                  onClick={startEditPost}
+                  disabled={busy || editBusy}
+                  className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deletePost()}
+                  disabled={busy || editBusy}
+                  className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200 dark:hover:bg-red-950"
+                >
+                  Delete
+                </button>
+              </>
+            ) : null}
+            {isOp && editingPost ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void saveEditPost()}
+                  disabled={editBusy}
+                  className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {editBusy ? "Saving…" : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditPost}
+                  disabled={editBusy}
+                  className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : null}
+            {viewerId && !isOp && !editingPost ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPostReportOpen((o) => !o);
+                  setPostReportMsg(null);
+                }}
+                className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+              >
+                {postReportOpen ? "Close report" : "Report post"}
+              </button>
+            ) : null}
+          </div>
+          {viewerId && !isOp && postReportMsg ? (
+            <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+              {postReportMsg}
+            </p>
+          ) : null}
+          {viewerId && !isOp && postReportOpen && !editingPost ? (
+            <div
+              className="mt-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3"
+              data-interactive
+            >
+              <p className="text-xs text-[var(--gn-text-muted)]">
+                Report this post to moderators (optional note).
+              </p>
+              <textarea
+                className="gn-input mt-2 w-full p-2 text-sm"
+                rows={2}
+                placeholder="Reason (optional)"
+                value={postReportDraft}
+                onChange={(e) => setPostReportDraft(e.target.value)}
+              />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={postReportBusy}
+                  className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  onClick={() => void submitPostReport()}
+                >
+                  {postReportBusy ? "Sending…" : "Submit report"}
+                </button>
+                <button
+                  type="button"
+                  disabled={postReportBusy}
+                  className="rounded-full border border-[var(--gn-ring)] px-3 py-1.5 text-xs text-[var(--gn-text)] disabled:opacity-50"
+                  onClick={() => {
+                    setPostReportOpen(false);
+                    setPostReportDraft("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {editingPost ? (
@@ -1236,6 +1261,9 @@ export function PostView({
           </div>
         ) : showPostBody || showPostMedia ? (
           <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
+            {showPostMedia ? (
+              <PostMediaCarousel items={carouselMedia} embedded />
+            ) : null}
             {showPostBody ? (
               <div
                 className="gn-post-body prose prose-zinc max-w-none px-4 py-5 text-base prose-p:text-base prose-p:leading-relaxed dark:prose-invert sm:px-6 sm:py-6"
@@ -1255,9 +1283,6 @@ export function PostView({
                   );
                 }}
               />
-            ) : null}
-            {showPostMedia ? (
-              <PostMediaCarousel items={carouselMedia} embedded />
             ) : null}
           </div>
         ) : null}
@@ -1342,45 +1367,49 @@ export function PostView({
             </button>
           </div>
         ) : null}
-        <div className="mt-5 flex items-start gap-3 border-t border-[var(--gn-divide)] pt-5">
-          {/* Viewer avatar placeholder — profile data isn't loaded here */}
-          <span
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] ring-2 ring-[var(--gn-ring)]"
-            aria-hidden
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="text-[var(--gn-text-muted)]"
-            >
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-            </svg>
-          </span>
-          <div className="min-w-0 flex-1">
-            <CommentDiscussionComposer
-              viewerId={viewerId}
-              disabled={busy}
-              placeholder="Join the discussion…"
-              submitLabel="Comment"
-              onSubmit={submitCommentFromComposer}
-              onSubmitError={(msg) => setError(msg)}
-              replyBanner={
-                replyTo ? (
-                  <div className="text-xs text-[var(--gn-text-muted)]">
-                    Replying to a thread.{" "}
-                    <button
-                      type="button"
-                      className="font-medium text-[var(--gn-accent)] underline"
-                      onClick={() => setReplyTo(null)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : null
-              }
-            />
+        <div className="mt-5 border-t border-[var(--gn-divide)] pt-5">
+          <div className="rounded-2xl bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-sm)]">
+            <div className="flex items-start gap-3">
+              {/* Viewer avatar placeholder — profile data isn't loaded here */}
+              <span
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-muted)] ring-2 ring-[var(--gn-ring)]"
+                aria-hidden
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-[var(--gn-text-muted)]"
+                >
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1">
+                <CommentDiscussionComposer
+                  viewerId={viewerId}
+                  disabled={busy}
+                  placeholder="Join the discussion…"
+                  submitLabel="Comment"
+                  onSubmit={submitCommentFromComposer}
+                  onSubmitError={(msg) => setError(msg)}
+                  replyBanner={
+                    replyTo ? (
+                      <div className="text-xs text-[var(--gn-text-muted)]">
+                        Replying to a thread.{" "}
+                        <button
+                          type="button"
+                          className="font-medium text-[var(--gn-accent)] underline"
+                          onClick={() => setReplyTo(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : null
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-6">

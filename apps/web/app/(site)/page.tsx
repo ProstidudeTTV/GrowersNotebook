@@ -129,19 +129,24 @@ function CommunityCard({ community: c }: { community: Community }) {
   return (
     <Link
       href={`/community/${c.slug}`}
-      className="gn-card block p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      className="gn-card block p-4 hover:shadow-[var(--gn-shadow-md)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
     >
       <div className="flex items-start gap-3">
         <CommunityIcon
           iconKey={c.iconKey}
           nameFallback={c.name}
           slugFallback={c.slug}
-          frameClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+          frameClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
         />
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-[var(--gn-text)] truncate">
-            {c.name}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-[var(--gn-text)] truncate flex-1">
+              {c.name}
+            </h2>
+            <span className="shrink-0 text-sm text-[var(--gn-text-muted)]" aria-hidden>
+              →
+            </span>
+          </div>
           {c.description?.trim() ? (
             <p className="text-sm text-[var(--gn-text-muted)] line-clamp-2 mt-1">
               {c.description.trim()}
@@ -152,9 +157,11 @@ function CommunityCard({ community: c }: { community: Community }) {
             </p>
           )}
           {c.memberCount != null && c.memberCount > 0 ? (
-            <p className="text-xs text-[var(--gn-text-excerpt)] mt-2">
-              {c.memberCount.toLocaleString()} members
-            </p>
+            <div className="mt-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--gn-accent)]">
+                {c.memberCount.toLocaleString()} members
+              </span>
+            </div>
           ) : null}
         </div>
       </div>
@@ -209,28 +216,45 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
-          Communities
-        </h1>
-        <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-          Your home grow communities.
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl" aria-hidden>🌿</span>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
+            Find Your Grow Tribe
+          </h1>
+        </div>
+        <p className="mt-1.5 text-sm text-[var(--gn-text-muted)]">
+          Connect with growers who share your passion. Join a community to get started.
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {loadError ? (
-          <div className="col-span-full text-center py-8 gn-panel rounded-2xl">
-            <div className="text-3xl mb-2">🌿</div>
-            <h3 className="font-semibold text-[var(--gn-text)] mb-1">Something went sideways</h3>
-            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Could not load communities right now.</p>
-            <Link href="/" className="inline-block bg-[var(--gn-accent)] text-white hover:brightness-110 font-medium px-4 py-2 rounded-full text-sm transition-colors">Try again</Link>
+          <div className="col-span-full rounded-2xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-8 py-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]">
+              <svg className="h-7 w-7 text-[var(--gn-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-[var(--gn-text)] mb-1">Something went sideways</h3>
+            <p className="text-sm text-[var(--gn-text-muted)] mb-5 max-w-xs mx-auto">Could not load communities right now. Please try again in a moment.</p>
+            <Link href="/" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110">
+              Try again
+            </Link>
           </div>
         ) : communities.length === 0 ? (
-          <div className="col-span-full text-center py-8 gn-panel rounded-2xl">
-            <div className="text-3xl mb-2">🌱</div>
-            <h3 className="font-semibold text-[var(--gn-text)] mb-1">Plant your first seed</h3>
-            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Join a community to see their posts in your feed.</p>
-            <Link href="/community" className="inline-block bg-[var(--gn-accent)] text-white hover:brightness-110 font-medium px-4 py-2 rounded-full text-sm transition-colors">Browse Communities</Link>
+          <div className="col-span-full rounded-2xl border border-dashed border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-8 py-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/10 ring-1 ring-[var(--gn-accent)]/20">
+              <svg className="h-7 w-7 text-[var(--gn-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-[var(--gn-text)] mb-1">Plant your first seed</h3>
+            <p className="text-sm text-[var(--gn-text-muted)] mb-5 max-w-xs mx-auto">
+              No communities are set up yet. Join one to connect with fellow growers and share your journey.
+            </p>
+            <Link href="/community" className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110">
+              Browse Communities
+            </Link>
           </div>
         ) : (
           communities.map((c) => (

@@ -139,6 +139,21 @@ type WeekRow = NotebookDetailPayload["weeks"][number];
 const sectionCapsClass =
   "text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)]";
 
+function weekPhaseBadgeClass(phase: string): string {
+  switch (phase) {
+    case "germination":
+      return "bg-emerald-900/50 text-emerald-300 border border-emerald-700/30";
+    case "vegetation":
+      return "bg-green-900/50 text-green-300 border border-green-700/30";
+    case "flower":
+      return "bg-amber-900/50 text-amber-300 border border-amber-700/30";
+    case "harvest":
+      return "bg-orange-900/50 text-orange-300 border border-orange-700/30";
+    default:
+      return "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-ring)]";
+  }
+}
+
 /** Short rule only under the heading text (not full card width). */
 function SectionCapsTitle({
   children,
@@ -652,7 +667,7 @@ export function NotebookDetailClient({
                             </span>
                           ) : null}
                           {nb.growthStage ? (
-                            <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-px text-[11px] font-medium text-emerald-400">
+                            <span className={`rounded-full px-2 py-px text-[11px] font-medium ${weekPhaseBadgeClass(nb.growthStage)}`}>
                               {GROWTH_STAGE_LABEL[nb.growthStage] ??
                                 nb.growthStage}
                             </span>
@@ -1033,7 +1048,7 @@ export function NotebookDetailClient({
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-sm font-bold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)]">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-sm font-bold text-[var(--gn-accent)] shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-accent)]/30">
                       {w.weekIndex}
                     </span>
                     <div>
@@ -1041,7 +1056,7 @@ export function NotebookDetailClient({
                         <p className="text-sm font-bold tracking-tight text-[var(--gn-text)]">
                           Week {w.weekIndex}
                         </p>
-                        <span className="rounded-full bg-[var(--gn-surface-elevated)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-ring)]">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${weekPhaseBadgeClass(phase)}`}>
                           {GROWTH_STAGE_LABEL[phase] ?? phase}
                         </span>
                       </div>

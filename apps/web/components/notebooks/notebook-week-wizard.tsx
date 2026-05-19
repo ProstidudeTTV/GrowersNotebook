@@ -466,18 +466,18 @@ export function NotebookWeekWizard({
       onClose={() => (!saving ? onClose() : undefined)}
     >
       <div className="px-5 py-5 sm:px-6 sm:py-6">
-        <div className="mb-5">
+        <div className="mb-4 border-b border-[var(--gn-divide)] pb-4">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
               <div
                 key={i}
                 className={`h-1.5 min-w-0 flex-1 rounded-full transition ${
-                  step >= i + 1 ? "bg-emerald-500" : "bg-neutral-600/50"
+                  step >= i + 1 ? "bg-emerald-500" : "bg-[var(--gn-divide)]"
                 }`}
               />
             ))}
           </div>
-          <p className="mt-3 text-xs font-medium leading-relaxed text-[var(--gn-text-muted)]">
+          <p className="mt-3 text-[11px] font-medium leading-relaxed text-[var(--gn-text-muted)]">
             Step {step} of {STEPS}: {stepTitle}
           </p>
         </div>
@@ -500,7 +500,11 @@ export function NotebookWeekWizard({
                   className={`${inputClass} mt-1`}
                   value={weekIndex}
                   onChange={(e) => setWeekIndex(Number(e.target.value))}
+                  placeholder="e.g. 1"
                 />
+                <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
+                  Week number in your grow log — starts at 1 and counts up each week.
+                </p>
               </div>
             ) : null}
             {noteSlots.map((slot, i) => {
@@ -583,10 +587,10 @@ export function NotebookWeekWizard({
                 value={tempInput}
                 onChange={(e) => setTempInput(e.target.value)}
                 inputMode="decimal"
-                placeholder={preferredTempUnit === "F" ? "e.g. 77" : "e.g. 25"}
+                placeholder="e.g. 75°F / 24°C"
               />
-              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                Ideal lights-on: {preferredTempUnit === "F" ? "75–82°F" : "24–28°C"}
+              <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                Ideal range: 70–85°F (21–29°C) during lights-on
               </p>
             </div>
             <div>
@@ -596,9 +600,9 @@ export function NotebookWeekWizard({
                 value={humidityPct}
                 onChange={(e) => setHumidityPct(e.target.value)}
                 inputMode="decimal"
-                placeholder="e.g. 55"
+                placeholder="e.g. 55%"
               />
-              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+              <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
                 Veg: 50–70% · Flower: 40–55% · Late flower: 35–45%
               </p>
             </div>
@@ -643,6 +647,7 @@ export function NotebookWeekWizard({
                         ),
                       )
                     }
+                    placeholder="e.g. Slight runoff, topsoil was dry before watering, plain water this round"
                     className={`${textareaClass} mt-2`}
                   />
                   <label
@@ -665,6 +670,9 @@ export function NotebookWeekWizard({
                     inputMode="decimal"
                     placeholder="e.g. 2.5"
                   />
+                  <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
+                    Total volume given to all plants combined this session.
+                  </p>
                   {waterLines.length > 1 ? (
                     <button
                       type="button"
@@ -690,8 +698,8 @@ export function NotebookWeekWizard({
                   inputMode="decimal"
                   placeholder="e.g. 6.2"
                 />
-                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                  Soil: 6.0–6.8 · Coco/Hydro: 5.5–6.2
+                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                  Soil: 6.0–7.0 · Hydro/coco: 5.5–6.5
                 </p>
               </div>
               <div>
@@ -706,10 +714,10 @@ export function NotebookWeekWizard({
                   value={ec}
                   onChange={(e) => setEc(e.target.value)}
                   inputMode="decimal"
-                  placeholder="e.g. 1.8"
+                  placeholder="e.g. 1.2 EC"
                 />
-                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                  Seedling: 0.5–1.0 · Veg: 1.0–2.0 · Flower: 1.5–2.5
+                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                  EC 0.8–1.4 seedling · 1.4–2.0 veg · 1.6–2.2 flower
                 </p>
               </div>
               <div>
@@ -719,10 +727,10 @@ export function NotebookWeekWizard({
                   value={ppm}
                   onChange={(e) => setPpm(e.target.value)}
                   inputMode="decimal"
-                  placeholder="e.g. 900"
+                  placeholder="e.g. 840 ppm"
                 />
-                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                  EC × 500 (Hanna) or EC × 700 (Truncheon)
+                <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
+                  EC × 500 (Hanna/500 scale) or EC × 700 (Truncheon/700 scale)
                 </p>
               </div>
             </div>

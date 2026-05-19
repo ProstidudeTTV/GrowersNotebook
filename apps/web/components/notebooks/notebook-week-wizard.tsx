@@ -300,11 +300,11 @@ export function NotebookWeekWizard({
   ]);
 
   const stepTitle = [
-    "Week & notes",
-    "Environment",
-    "Water & nutrients",
-    "Photos",
-    "Review",
+    "📝 What happened this week?",
+    "🌡️ Room conditions",
+    "💧 Watering & feeding",
+    "📷 Add photos",
+    "✅ Looks good?",
   ][step - 1];
 
   const canContinue = useMemo(() => {
@@ -485,13 +485,12 @@ export function NotebookWeekWizard({
         {step === 1 ? (
           <div className="space-y-5">
             <p className="text-sm leading-relaxed text-[var(--gn-text-muted)]">
-              Add up to three dated notes for this week—main log plus mid-week
-              updates if something changes.
+              Write your main update for the week. You can also add a mid-week note if something important changed.
             </p>
             {mode === "create" ? (
               <div>
                 <label className={labelClass} htmlFor="nw-week-index">
-                  Week number
+                  Which week is this?
                 </label>
                 <input
                   id="nw-week-index"
@@ -503,7 +502,7 @@ export function NotebookWeekWizard({
                   placeholder="e.g. 1"
                 />
                 <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
-                  Week number in your grow log — starts at 1 and counts up each week.
+                  Week 1 = first week of your grow. Just add 1 each week.
                 </p>
               </div>
             ) : null}
@@ -521,8 +520,8 @@ export function NotebookWeekWizard({
                 <div key={i}>
                   <label className={labelClass} htmlFor={`nw-notes-${i}`}>
                     {i === 0
-                      ? "Weekly journal entry"
-                      : `Mid-week update ${i} (optional)`}
+                      ? "Your weekly update"
+                      : `Mid-week note ${i} (optional)`}
                   </label>
                   {i === 0 && slot.body.length === 0 ? (
                     <div className="mt-1 mb-1 flex flex-wrap gap-1.5">
@@ -562,8 +561,8 @@ export function NotebookWeekWizard({
                     }
                     placeholder={
                       i === 0
-                        ? "What happened this week? Growth progress, observations, any issues, feeding notes..."
-                        : "Anything that changed later in the week?"
+                        ? "How did the plants look this week? Any changes in growth, smell, color? Any problems or wins? What did you feed them?"
+                        : "Did anything change later in the week?"
                     }
                     className={`${textareaClass} mt-1`}
                   />
@@ -576,11 +575,11 @@ export function NotebookWeekWizard({
         {step === 2 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <p className="sm:col-span-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
-              Room / canopy readings — all optional, but they help you spot trends.
+              What were the conditions in your grow space? All optional — even one reading helps you spot trends over time.
             </p>
             <div>
               <label className={labelClass}>
-                Temp ({tempSuffix(preferredTempUnit)})
+                Temperature ({tempSuffix(preferredTempUnit)})
               </label>
               <input
                 className={`${inputClass} mt-1`}
@@ -611,12 +610,11 @@ export function NotebookWeekWizard({
 
         {step === 3 ? (
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span className={labelClass}>Watering & feed</span>
+                <span className={labelClass}>Watering sessions this week</span>
                 <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                  Add one or more entries (volume, timing, runoff, feed batch,
-                  etc.).
+                  Add each watering separately if amounts or notes differ.
                 </p>
               </div>
               <button
@@ -624,7 +622,7 @@ export function NotebookWeekWizard({
                 onClick={addWaterLine}
                 className="text-xs font-medium text-emerald-500 hover:underline"
               >
-                Add watering
+                + Add watering
               </button>
             </div>
             <ul className="space-y-4">
@@ -634,7 +632,7 @@ export function NotebookWeekWizard({
                   className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-4"
                 >
                   <label className={labelClass} htmlFor={`nw-water-${i}`}>
-                    Notes
+                    What happened? (optional)
                   </label>
                   <textarea
                     id={`nw-water-${i}`}
@@ -647,14 +645,14 @@ export function NotebookWeekWizard({
                         ),
                       )
                     }
-                    placeholder="e.g. Slight runoff, topsoil was dry before watering, plain water this round"
+                    placeholder="e.g. Slight runoff, soil was dry before watering, plain water this time"
                     className={`${textareaClass} mt-2`}
                   />
                   <label
                     className={`${labelClass} mt-3 block`}
                     htmlFor={`nw-water-vol-${i}`}
                   >
-                    Volume ({volumeSuffix(preferredVolumeUnit)})
+                    How much water? ({volumeSuffix(preferredVolumeUnit)})
                   </label>
                   <input
                     id={`nw-water-vol-${i}`}
@@ -671,7 +669,7 @@ export function NotebookWeekWizard({
                     placeholder="e.g. 2.5"
                   />
                   <p className="text-[11px] text-[var(--gn-text-muted)] mt-1 leading-relaxed">
-                    Total volume given to all plants combined this session.
+                    Total for all plants this session — or leave blank.
                   </p>
                   {waterLines.length > 1 ? (
                     <button
@@ -687,7 +685,7 @@ export function NotebookWeekWizard({
             </ul>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <p className="sm:col-span-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
-                Water / solution readings — pH and EC/PPM help track nutrient uptake.
+                Water readings — log what you can, skip what you don't measure.
               </p>
               <div>
                 <label className={labelClass}>pH</label>
@@ -705,61 +703,60 @@ export function NotebookWeekWizard({
               <div>
                 <label className={labelClass}>
                   EC{" "}
-                  <span className="font-normal text-[var(--gn-text-muted)]">
-                    (mS/cm)
-                  </span>
+                  <span className="font-normal text-[var(--gn-text-muted)] text-xs">(nutrient strength in mS/cm)</span>
                 </label>
                 <input
                   className={`${inputClass} mt-1`}
                   value={ec}
                   onChange={(e) => setEc(e.target.value)}
                   inputMode="decimal"
-                  placeholder="e.g. 1.2 EC"
+                  placeholder="e.g. 1.4"
                 />
                 <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
-                  EC 0.8–1.4 seedling · 1.4–2.0 veg · 1.6–2.2 flower
+                  Low = weak feed · High = strong feed. Seedling ≈ 0.8–1.4
                 </p>
               </div>
               <div>
-                <label className={labelClass}>PPM / TDS</label>
+                <label className={labelClass}>PPM <span className="font-normal text-[var(--gn-text-muted)] text-xs">(nutrient strength in parts per million)</span></label>
                 <input
                   className={`${inputClass} mt-1`}
                   value={ppm}
                   onChange={(e) => setPpm(e.target.value)}
                   inputMode="decimal"
-                  placeholder="e.g. 840 ppm"
+                  placeholder="e.g. 840"
                 />
                 <p className="mt-1 text-[11px] text-[var(--gn-text-muted)] leading-relaxed">
-                  EC × 500 (Hanna/500 scale) or EC × 700 (Truncheon/700 scale)
+                  Only fill this OR EC — same reading, different scale.
                 </p>
               </div>
             </div>
             {mode === "create" ? (
-              <label className="flex cursor-pointer items-start gap-2 text-sm text-[var(--gn-text)]">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3 text-sm text-[var(--gn-text)]">
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-0.5 h-4 w-4 accent-emerald-500"
                   checked={copyNutrientsFromPreviousWeek}
                   onChange={(e) => setCopyNutrients(e.target.checked)}
                 />
-                <span>Copy nutrient lines from the previous week at save</span>
+                <div>
+                  <p className="font-medium">Same nutrients as last week</p>
+                  <p className="text-xs text-[var(--gn-text-muted)]">Check this to reuse the same products and amounts — saves time.</p>
+                </div>
               </label>
             ) : null}
-            {mode === "create" && copyNutrientsFromPreviousWeek ? (
-              <p className="text-sm text-[var(--gn-text-muted)]">
-                Nutrient lines will be copied from the previous week when you
-                save.
-              </p>
-            ) : (
+            {mode === "create" && copyNutrientsFromPreviousWeek ? null : (
               <>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={labelClass}>Nutrient lines</span>
+                  <div>
+                    <span className={labelClass}>What did you feed them?</span>
+                    <p className="text-xs text-[var(--gn-text-muted)]">List each product separately.</p>
+                  </div>
                   <button
                     type="button"
                     onClick={addNutrientLine}
                     className="text-xs font-medium text-emerald-500 hover:underline"
                   >
-                    Add line
+                    + Add product
                   </button>
                 </div>
                 <ul className="space-y-4">
@@ -771,7 +768,7 @@ export function NotebookWeekWizard({
                       <div className="grid gap-2 sm:grid-cols-3">
                         <div className="sm:col-span-2">
                           <label className="text-xs text-[var(--gn-text-muted)]">
-                            Product label
+                            Product name
                           </label>
                           <input
                             className={`${inputClass} mt-0.5`}
@@ -790,7 +787,7 @@ export function NotebookWeekWizard({
                         </div>
                         <div>
                           <label className="text-xs text-[var(--gn-text-muted)]">
-                            Amount (1–25)
+                            How much?
                           </label>
                           <select
                             className={`${inputClass} mt-0.5`}
@@ -815,7 +812,7 @@ export function NotebookWeekWizard({
                         </div>
                         <div className="sm:col-span-3">
                           <label className="text-xs text-[var(--gn-text-muted)]">
-                            Dosage unit
+                            Unit (ml, g, tsp…)
                           </label>
                           <select
                             className={`${inputClass} mt-0.5`}
@@ -860,11 +857,9 @@ export function NotebookWeekWizard({
 
         {step === 4 ? (
           <div>
-            <label className={labelClass}>Photos</label>
+            <label className={labelClass}>Add photos</label>
             <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Add images the same way as forum posts (tap or drag). You can also
-              paste up to {MAX_IMAGES} https image URLs below. Videos are not
-              stored on weekly entries.
+              Drag and drop, click to browse, or paste image links below. Up to {MAX_IMAGES} photos per week.
             </p>
             <div className="mt-4">
               <PostMediaDropzone

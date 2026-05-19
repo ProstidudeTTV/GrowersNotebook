@@ -21,7 +21,7 @@ import {
 } from "@/lib/notifications-unread-store";
 
 const triggerClass =
-  "relative inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[#ff6a38] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff6a38]";
+  "relative inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff6a38]";
 
 type NavNotification = {
   id: string;
@@ -234,7 +234,7 @@ export function NotificationsNavLink() {
           <IconBell className="h-[1.125rem] w-[1.125rem]" />
           {unread > 0 ? (
             <span
-              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#ff4500] ring-2 ring-[var(--gn-surface)]"
+              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--gn-accent)] ring-2 ring-[var(--gn-surface)]"
               aria-hidden
             />
           ) : null}
@@ -310,7 +310,7 @@ export function NotificationsNavLink() {
             <Link
               href="/notifications"
               role="menuitem"
-              className="block rounded-md px-2 py-2 text-center text-sm font-semibold text-[#ff4500] hover:bg-[var(--gn-surface-hover)]"
+              className="block rounded-md px-2 py-2 text-center text-sm font-semibold text-[var(--gn-accent)] hover:bg-[var(--gn-surface-hover)]"
               onClick={() => setOpen(false)}
             >
               Show more

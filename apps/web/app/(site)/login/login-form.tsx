@@ -169,7 +169,7 @@ export function LoginForm() {
           <div className="text-right text-sm">
             <button
               type="button"
-              className="font-medium text-[#ff4500] hover:underline"
+              className="font-medium text-[var(--gn-accent)] hover:underline"
               onClick={() => {
                 setMessage(null);
                 setMode("forgot");
@@ -189,7 +189,7 @@ export function LoginForm() {
               }}
               className={
                 mode === "signin"
-                  ? "font-semibold text-[#ff4500]"
+                  ? "font-semibold text-[var(--gn-accent)]"
                   : "text-[var(--gn-text-muted)]"
               }
             >
@@ -204,7 +204,7 @@ export function LoginForm() {
               }}
               className={
                 mode === "signup"
-                  ? "font-semibold text-[#ff4500]"
+                  ? "font-semibold text-[var(--gn-accent)]"
                   : "text-[var(--gn-text-muted)]"
               }
             >
@@ -214,7 +214,7 @@ export function LoginForm() {
         ) : (
           <button
             type="button"
-            className="text-sm text-[#ff4500] hover:underline"
+            className="text-sm text-[var(--gn-accent)] hover:underline"
             onClick={() => {
               setMessage(null);
               setMode("signin");
@@ -226,7 +226,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-[#ff4500] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] hover:shadow-[0_0_28px_rgba(255,69,0,0.45)] disabled:opacity-50"
+          className="w-full rounded-full bg-[var(--gn-accent)] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:brightness-110 hover:shadow-[0_0_28px_rgba(255,69,0,0.45)] disabled:opacity-50"
         >
           {loading
             ? "Working…"
@@ -242,7 +242,7 @@ export function LoginForm() {
       </form>
       <Link
         href="/"
-        className="mt-8 inline-block text-sm text-[#ff4500] hover:underline"
+        className="mt-8 inline-block text-sm text-[var(--gn-accent)] hover:underline"
       >
         ← Home
       </Link>

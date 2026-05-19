@@ -17,7 +17,7 @@ export default async function NewProfilePostPage() {
       <div className="mb-6">
         <Link
           href={`/u/${user.id}`}
-          className="text-sm text-[#ff4500] hover:underline"
+          className="text-sm text-[var(--gn-accent)] hover:underline"
         >
           ← back to your profile
         </Link>

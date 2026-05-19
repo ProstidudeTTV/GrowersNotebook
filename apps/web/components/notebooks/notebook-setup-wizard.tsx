@@ -219,7 +219,7 @@ export function NotebookSetupWizard({
                 This notebook is linked to the catalog strain{" "}
                 <Link
                   href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
-                  className="font-medium text-[#ff4500] hover:underline"
+                  className="font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   {notebook.strain.name?.trim() || notebook.strain.slug}
                 </Link>
@@ -229,7 +229,7 @@ export function NotebookSetupWizard({
                 browse the{" "}
                 <Link
                   href="/strains"
-                  className="font-medium text-[#ff4500] hover:underline"
+                  className="font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   Strains
                 </Link>{" "}
@@ -241,7 +241,7 @@ export function NotebookSetupWizard({
                 link a{" "}
                 <Link
                   href="/strains"
-                  className="font-medium text-[#ff4500] hover:underline"
+                  className="font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   catalog strain
                 </Link>{" "}
@@ -350,7 +350,7 @@ export function NotebookSetupWizard({
               page—including linking a cultivar from the{" "}
               <Link
                 href="/strains"
-                className="font-medium text-[#ff4500] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 Strains
               </Link>{" "}

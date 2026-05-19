@@ -95,10 +95,11 @@ export async function FeedSidebar({
                       <img
                         src={thumb.url}
                         alt=""
-                        className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                        loading="lazy"
                       />
                     ) : (
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-lg">
+                      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-2xl">
                         🌿
                       </span>
                     )}

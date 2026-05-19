@@ -117,7 +117,7 @@ export function FollowingFeed({
         </p>
         <Link
           href="/login"
-          className="mt-4 inline-block rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ff5414]"
+          className="mt-4 inline-block rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
         >
           Sign in
         </Link>
@@ -158,7 +158,7 @@ export function FollowingFeed({
           href={sortLink("new")}
           className={
             sort === "new"
-              ? "rounded-full bg-[#ff4500] px-3 py-1 text-white"
+              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white"
               : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-sm)]"
           }
         >
@@ -168,7 +168,7 @@ export function FollowingFeed({
           href={sortLink("top")}
           className={
             sort === "top"
-              ? "rounded-full bg-[#ff4500] px-3 py-1 text-white"
+              ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white"
               : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-sm)]"
           }
         >
@@ -215,7 +215,7 @@ export function FollowingFeed({
         <div className="mt-6 flex justify-center gap-4 text-sm">
           {page > 1 ? (
             <Link
-              className="text-[#ff4500] hover:underline"
+              className="text-[var(--gn-accent)] hover:underline"
               href={`/following?sort=${sort}&page=${page - 1}`}
             >
               Previous
@@ -223,7 +223,7 @@ export function FollowingFeed({
           ) : null}
           {page * PAGE_SIZE < total ? (
             <Link
-              className="text-[#ff4500] hover:underline"
+              className="text-[var(--gn-accent)] hover:underline"
               href={`/following?sort=${sort}&page=${page + 1}`}
             >
               Next

@@ -226,7 +226,7 @@ export function NotificationsPanel() {
       <p className="text-sm text-[var(--gn-text-muted)]">
         <Link
           href="/login"
-          className="font-medium text-[#ff4500] hover:underline"
+          className="font-medium text-[var(--gn-accent)] hover:underline"
         >
           Sign in
         </Link>{" "}
@@ -273,7 +273,7 @@ export function NotificationsPanel() {
             {unread > 0 ? (
               <button
                 type="button"
-                className="text-sm font-semibold text-[#ff4500] hover:underline"
+                className="text-sm font-semibold text-[var(--gn-accent)] hover:underline"
                 onClick={() => void markAllRead()}
               >
                 Mark all read

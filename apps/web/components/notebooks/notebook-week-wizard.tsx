@@ -572,7 +572,7 @@ export function NotebookWeekWizard({
         {step === 2 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <p className="sm:col-span-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
-              Room readings if you track them—all optional.
+              Room / canopy readings — all optional, but they help you spot trends.
             </p>
             <div>
               <label className={labelClass}>
@@ -583,7 +583,11 @@ export function NotebookWeekWizard({
                 value={tempInput}
                 onChange={(e) => setTempInput(e.target.value)}
                 inputMode="decimal"
+                placeholder={preferredTempUnit === "F" ? "e.g. 77" : "e.g. 25"}
               />
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                Ideal lights-on: {preferredTempUnit === "F" ? "75–82°F" : "24–28°C"}
+              </p>
             </div>
             <div>
               <label className={labelClass}>Humidity %</label>
@@ -591,7 +595,12 @@ export function NotebookWeekWizard({
                 className={`${inputClass} mt-1`}
                 value={humidityPct}
                 onChange={(e) => setHumidityPct(e.target.value)}
+                inputMode="decimal"
+                placeholder="e.g. 55"
               />
+              <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                Veg: 50–70% · Flower: 40–55% · Late flower: 35–45%
+              </p>
             </div>
           </div>
         ) : null}
@@ -670,7 +679,7 @@ export function NotebookWeekWizard({
             </ul>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <p className="sm:col-span-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
-                Solution or runoff readings (optional)—not room air stats.
+                Water / solution readings — pH and EC/PPM help track nutrient uptake.
               </p>
               <div>
                 <label className={labelClass}>pH</label>
@@ -679,16 +688,29 @@ export function NotebookWeekWizard({
                   value={ph}
                   onChange={(e) => setPh(e.target.value)}
                   inputMode="decimal"
+                  placeholder="e.g. 6.2"
                 />
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  Soil: 6.0–6.8 · Coco/Hydro: 5.5–6.2
+                </p>
               </div>
               <div>
-                <label className={labelClass}>EC</label>
+                <label className={labelClass}>
+                  EC{" "}
+                  <span className="font-normal text-[var(--gn-text-muted)]">
+                    (mS/cm)
+                  </span>
+                </label>
                 <input
                   className={`${inputClass} mt-1`}
                   value={ec}
                   onChange={(e) => setEc(e.target.value)}
                   inputMode="decimal"
+                  placeholder="e.g. 1.8"
                 />
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  Seedling: 0.5–1.0 · Veg: 1.0–2.0 · Flower: 1.5–2.5
+                </p>
               </div>
               <div>
                 <label className={labelClass}>PPM / TDS</label>
@@ -697,7 +719,11 @@ export function NotebookWeekWizard({
                   value={ppm}
                   onChange={(e) => setPpm(e.target.value)}
                   inputMode="decimal"
+                  placeholder="e.g. 900"
                 />
+                <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
+                  EC × 500 (Hanna) or EC × 700 (Truncheon)
+                </p>
               </div>
             </div>
             {mode === "create" ? (

@@ -10,37 +10,38 @@
 html:not(.dark) {
   color-scheme: light;
   --gn-accent: #c2410c;
-  --gn-page-top: #f4f6fb;
-  --gn-page-mid: #eef1f8;
-  --gn-page-bottom: #e2e7f0;
+  /* Warm cream palette — earthy, inviting, not clinical */
+  --gn-page-top: #faf9f7;
+  --gn-page-mid: #f4f0ea;
+  --gn-page-bottom: #ece7de;
   --gn-surface: #ffffff;
-  --gn-surface-raised: #fcfcfd;
-  --gn-surface-elevated: #f5f7fb;
-  --gn-surface-muted: #f0f2f7;
-  --gn-surface-hover: rgba(30, 41, 59, 0.055);
-  --gn-ring: rgba(30, 41, 59, 0.09);
+  --gn-surface-raised: #fdfcfa;
+  --gn-surface-elevated: #f7f4f0;
+  --gn-surface-muted: #f0ece6;
+  --gn-surface-hover: rgba(60, 40, 20, 0.055);
+  --gn-ring: rgba(60, 40, 20, 0.09);
   --gn-ring-focus: rgba(194, 65, 12, 0.4);
-  --gn-divide: rgba(30, 41, 59, 0.08);
-  /** Alias for one-pixel UI chrome (matches ring strength) */
-  --gn-border: rgba(30, 41, 59, 0.11);
-  --gn-text: #0c1222;
-  --gn-text-muted: #5c6578;
-  --gn-text-excerpt: #6b7287;
-  --gn-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05),
-    0 1px 3px rgb(15 23 42 / 0.04);
+  --gn-divide: rgba(60, 40, 20, 0.08);
+  /** Alias for one-pixel UI chrome */
+  --gn-border: rgba(60, 40, 20, 0.11);
+  --gn-text: #1a120a;
+  --gn-text-muted: #6b5c4a;
+  --gn-text-excerpt: #7a6a57;
+  --gn-shadow-sm: 0 1px 2px rgb(60 30 10 / 0.06),
+    0 1px 3px rgb(60 30 10 / 0.04);
   --gn-shadow-md:
-    0 6px 16px -4px rgb(15 23 42 / 0.08),
-    0 2px 6px -2px rgb(15 23 42 / 0.05),
-    0 0 0 1px rgb(15 23 42 / 0.035);
+    0 6px 16px -4px rgb(60 30 10 / 0.09),
+    0 2px 6px -2px rgb(60 30 10 / 0.05),
+    0 0 0 1px rgb(60 30 10 / 0.04);
   --gn-shadow-lg:
-    0 18px 48px -12px rgb(15 23 42 / 0.14),
-    0 6px 20px -6px rgb(15 23 42 / 0.07),
-    0 0 0 1px rgb(15 23 42 / 0.04);
+    0 18px 48px -12px rgb(60 30 10 / 0.15),
+    0 6px 20px -6px rgb(60 30 10 / 0.07),
+    0 0 0 1px rgb(60 30 10 / 0.04);
   --gn-shadow-hover:
-    0 10px 28px -8px rgb(15 23 42 / 0.1),
-    0 0 0 1px rgb(15 23 42 / 0.07);
-  --gn-header-bg: rgba(252, 252, 253, 0.82);
-  --gn-menu-bg: rgba(255, 255, 255, 0.96);
+    0 10px 28px -8px rgb(60 30 10 / 0.12),
+    0 0 0 1px rgb(60 30 10 / 0.07);
+  --gn-header-bg: rgba(253, 252, 250, 0.88);
+  --gn-menu-bg: rgba(255, 255, 255, 0.97);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
   /**
@@ -60,15 +61,15 @@ html:not(.dark) {
 html:not(.dark) .gn-app-canvas {
   background-color: var(--gn-page-mid);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%230c1222' stroke-opacity='0.06' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%230c1222' stroke-opacity='0.04' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%231a120a' stroke-opacity='0.04' stroke-width='0.65' d='M0 55 C28 18 72 18 100 55'/%3E%3Cpath fill='none' stroke='%231a120a' stroke-opacity='0.03' stroke-width='0.5' d='M0 78 C35 42 65 42 100 78'/%3E%3C/svg%3E"),
     radial-gradient(
       ellipse 120% 85% at 50% -35%,
-      rgb(255 255 255 / 0.92) 0%,
+      rgb(255 252 248 / 0.92) 0%,
       transparent 58%
     ),
     radial-gradient(
       ellipse 90% 55% at 100% 0%,
-      rgb(194 65 12 / 0.04) 0%,
+      rgb(194 100 12 / 0.05) 0%,
       transparent 45%
     ),
     linear-gradient(
@@ -86,6 +87,25 @@ html:not(.dark) body {
   color: var(--gn-text);
   min-height: 100vh;
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Light mode prose tokens — use warm text on cream surfaces */
+html:not(.dark) .prose.gn-card-subtle,
+html:not(.dark) .gn-post-content-flow .prose {
+  --tw-prose-body: var(--gn-text);
+  --tw-prose-headings: var(--gn-text);
+  --tw-prose-lead: var(--gn-text-muted);
+  --tw-prose-links: var(--gn-accent);
+  --tw-prose-bold: var(--gn-text);
+  --tw-prose-counters: var(--gn-text-muted);
+  --tw-prose-bullets: var(--gn-text-muted);
+  --tw-prose-hr: var(--gn-divide);
+  --tw-prose-quotes: var(--gn-text-muted);
+  --tw-prose-quote-borders: var(--gn-divide);
+  --tw-prose-captions: var(--gn-text-muted);
+  --tw-prose-code: var(--gn-text);
+  --tw-prose-th-borders: var(--gn-divide);
+  --tw-prose-td-borders: var(--gn-divide);
 }
 
 /* ----- Dark (default) ----- */

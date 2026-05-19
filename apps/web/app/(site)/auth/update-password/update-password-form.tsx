@@ -58,7 +58,7 @@ export function UpdatePasswordForm() {
         </p>
         <Link
           href="/login"
-          className="mt-6 inline-block text-sm font-semibold text-[#ff4500] hover:underline"
+          className="mt-6 inline-block text-sm font-semibold text-[var(--gn-accent)] hover:underline"
         >
           Back to sign in
         </Link>
@@ -103,7 +103,7 @@ export function UpdatePasswordForm() {
           type="button"
           disabled={loading}
           onClick={submit}
-          className="w-full rounded-full bg-[#ff4500] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] disabled:opacity-50"
+          className="w-full rounded-full bg-[var(--gn-accent)] py-2 font-semibold text-white shadow-[0_0_18px_rgba(255,69,0,0.35)] transition hover:brightness-110 disabled:opacity-50"
         >
           {loading ? "Saving…" : "Update password"}
         </button>
@@ -113,7 +113,7 @@ export function UpdatePasswordForm() {
       </div>
       <Link
         href="/login"
-        className="mt-8 inline-block text-sm text-[#ff4500] hover:underline"
+        className="mt-8 inline-block text-sm text-[var(--gn-accent)] hover:underline"
       >
         ← Sign in
       </Link>

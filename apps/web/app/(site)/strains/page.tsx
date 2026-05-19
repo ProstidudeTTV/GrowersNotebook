@@ -215,7 +215,7 @@ export default async function StrainsPage({
           Showing autoflowering strains only.{" "}
           <Link
             href={clearAutoflowerFilterHref}
-            className="text-[#ff6a38] hover:underline"
+            className="text-[var(--gn-accent)] hover:underline"
           >
             Clear filter
           </Link>
@@ -230,7 +230,7 @@ export default async function StrainsPage({
               <StrainsBreederFilterLink
                 breederSlug={breederSlug}
                 returnHref={strainsReturnHrefForBreederModal}
-                className="font-medium text-[#ff6a38] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 {filterBreederName}
               </StrainsBreederFilterLink>
@@ -239,7 +239,7 @@ export default async function StrainsPage({
           ) : (
             <>Filtered by breeder. </>
           )}
-          <Link href="/strains" className="text-[#ff6a38] hover:underline">
+          <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
             Clear filter
           </Link>
         </p>
@@ -259,7 +259,7 @@ export default async function StrainsPage({
                 className="block h-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] p-3 shadow-sm transition hover:border-[color-mix(in_srgb,var(--gn-text-muted)_35%,var(--gn-divide))] hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_55%,var(--gn-surface-muted))] sm:p-4"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#ff6a38] sm:text-base">
+                  <h2 className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[var(--gn-accent)] sm:text-base">
                     {s.name}
                   </h2>
                   <div className="flex shrink-0 flex-col items-end gap-1">
@@ -294,7 +294,7 @@ export default async function StrainsPage({
           {page > 1 ? (
             <Link
               href={buildLink(page - 1)}
-              className="text-[#ff6a38] hover:underline"
+              className="text-[var(--gn-accent)] hover:underline"
             >
               Previous
             </Link>
@@ -307,7 +307,7 @@ export default async function StrainsPage({
           {page < totalPages ? (
             <Link
               href={buildLink(page + 1)}
-              className="text-[#ff6a38] hover:underline"
+              className="text-[var(--gn-accent)] hover:underline"
             >
               Next
             </Link>
@@ -318,11 +318,11 @@ export default async function StrainsPage({
       ) : null}
 
       <p className="mt-8 text-center text-sm text-[var(--gn-text-muted)]">
-        <Link href="/breeders" className="text-[#ff6a38] hover:underline">
+        <Link href="/breeders" className="text-[var(--gn-accent)] hover:underline">
           Breeders
         </Link>
         {" · "}
-        <Link href="/catalog/suggest" className="text-[#ff6a38] hover:underline">
+        <Link href="/catalog/suggest" className="text-[var(--gn-accent)] hover:underline">
           Suggest an entry
         </Link>
       </p>

@@ -98,11 +98,11 @@ export function ProfileCommentsList({
                 <span className="font-medium text-[var(--gn-text)]">
                   on{" "}
                   {c.notebookId ? (
-                    <span className="text-[#ff4500] underline-offset-2 hover:underline">
+                    <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
                       {c.notebookTitle?.trim() || "Grow diary"}
                     </span>
                   ) : (
-                    <span className="text-[#ff4500] underline-offset-2 hover:underline">
+                    <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
                       {c.postTitle}
                     </span>
                   )}

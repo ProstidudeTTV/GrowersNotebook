@@ -990,7 +990,7 @@ export function MessagesPanel() {
           <p className="mt-1 text-[var(--gn-text-muted)]">{actionError}</p>
           <button
             type="button"
-            className="mt-2 text-xs font-semibold text-[#ff6a38] hover:underline"
+            className="mt-2 text-xs font-semibold text-[var(--gn-accent)] hover:underline"
             onClick={() => setActionError(null)}
           >
             Dismiss
@@ -1051,7 +1051,7 @@ export function MessagesPanel() {
                         />
                         {t.unread ? (
                           <span
-                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[#ff6a38]"
+                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[var(--gn-accent)]"
                             aria-label="Unread messages"
                           />
                         ) : null}
@@ -1062,7 +1062,7 @@ export function MessagesPanel() {
                         >
                           <Link
                             href={`/u/${t.peer.id}`}
-                            className="hover:text-[#ff6a38] hover:underline"
+                            className="hover:text-[var(--gn-accent)] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {displayNameFor(t.peer.id, selfId, t.peer)}
@@ -1100,7 +1100,7 @@ export function MessagesPanel() {
               Chat with{" "}
               <Link
                 href={`/u/${activePeer.id}`}
-                className="font-medium text-[var(--gn-text)] hover:text-[#ff6a38] hover:underline"
+                className="font-medium text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
               >
                 {displayNameFor(activePeer.id, selfId, activePeer)}
               </Link>
@@ -1123,7 +1123,7 @@ export function MessagesPanel() {
                   <div className="flex justify-center pb-1">
                     <button
                       type="button"
-                      className="text-xs font-medium text-[#ff6a38] hover:underline disabled:opacity-50"
+                      className="text-xs font-medium text-[var(--gn-accent)] hover:underline disabled:opacity-50"
                       disabled={loadingOlder}
                       onClick={() => void loadOlder()}
                     >
@@ -1242,7 +1242,7 @@ export function MessagesPanel() {
                   </span>
                   <button
                     type="button"
-                    className="font-semibold text-[#ff6a38] hover:underline"
+                    className="font-semibold text-[var(--gn-accent)] hover:underline"
                     onClick={() => {
                       setPendingAttachments((prev) => {
                         for (const a of prev) revokePendingLocal(a);
@@ -1426,7 +1426,7 @@ export function MessagesPanel() {
               )}
               <button
                 type="button"
-                className="shrink-0 rounded-full bg-[#ff6a38] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
+                className="shrink-0 rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-50"
                 disabled={(() => {
                   if (!activeThreadId) return true;
                   const uploading = pendingAttachments.some((a) => a.uploading);

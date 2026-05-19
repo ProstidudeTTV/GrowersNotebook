@@ -70,7 +70,7 @@ export default function PrivacyPage() {
               href="https://www.torproject.org/download/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#ff6a38] hover:underline"
+              className="text-[var(--gn-accent)] hover:underline"
             >
               Tor Browser
             </a>
@@ -128,7 +128,7 @@ export default function PrivacyPage() {
       </section>
 
       <p className="mt-10 text-sm text-[var(--gn-text-muted)]">
-        <Link href="/" className="text-[#ff6a38] hover:underline">
+        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
           ← Home
         </Link>
       </p>

@@ -223,14 +223,14 @@ export default async function Home() {
             <div className="text-3xl mb-2">🌿</div>
             <h3 className="font-semibold text-[var(--gn-text)] mb-1">Something went sideways</h3>
             <p className="text-sm text-[var(--gn-text-muted)] mb-4">Could not load communities right now.</p>
-            <Link href="/" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Try again</Link>
+            <Link href="/" className="inline-block bg-[var(--gn-accent)] text-white hover:brightness-110 font-medium px-4 py-2 rounded-full text-sm transition-colors">Try again</Link>
           </div>
         ) : communities.length === 0 ? (
           <div className="col-span-full text-center py-8 gn-panel rounded-2xl">
             <div className="text-3xl mb-2">🌱</div>
             <h3 className="font-semibold text-[var(--gn-text)] mb-1">Plant your first seed</h3>
             <p className="text-sm text-[var(--gn-text-muted)] mb-4">Join a community to see their posts in your feed.</p>
-            <Link href="/community" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Browse Communities</Link>
+            <Link href="/community" className="inline-block bg-[var(--gn-accent)] text-white hover:brightness-110 font-medium px-4 py-2 rounded-full text-sm transition-colors">Browse Communities</Link>
           </div>
         ) : (
           communities.map((c) => (

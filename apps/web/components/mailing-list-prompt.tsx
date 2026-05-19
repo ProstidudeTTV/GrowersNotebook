@@ -123,7 +123,7 @@ export function MailingListPrompt({
         <button
           type="button"
           disabled={busy}
-          className="rounded-lg bg-[#ff6a38] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
+          className="rounded-lg bg-[var(--gn-accent)] px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
           onClick={() => void optIn()}
         >
           {busy ? "Saving…" : "Yes, email me"}

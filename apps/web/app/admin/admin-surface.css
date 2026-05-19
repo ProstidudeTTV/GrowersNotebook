@@ -6,7 +6,7 @@
   margin-right: auto;
 }
 
-/* Softer page backdrop aligned with main site neutrals */
+/* Warm page backdrop — matches the main site's cream palette */
 html.dark .admin-refine-surface {
   min-height: calc(100vh - 4rem);
 }
@@ -14,9 +14,62 @@ html.dark .admin-refine-surface {
 html:not(.dark) .admin-refine-surface {
   background: linear-gradient(
     180deg,
-    rgba(244, 246, 251, 0.5) 0%,
+    rgba(250, 249, 247, 0.7) 0%,
     transparent 40%
   );
+}
+
+/* Match Ant Design table to warm palette in light mode */
+html:not(.dark) .ant-table-wrapper .ant-table {
+  background: #fff !important;
+}
+
+html:not(.dark) .ant-table-wrapper .ant-table-thead > tr > th {
+  background: #f7f4f0 !important;
+  border-bottom-color: rgba(60, 40, 20, 0.1) !important;
+  color: #1a120a !important;
+}
+
+html:not(.dark) .ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom-color: rgba(60, 40, 20, 0.06) !important;
+}
+
+html:not(.dark) .ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: #f4f0ea !important;
+}
+
+/* Warm card panels in admin */
+html:not(.dark) .ant-card {
+  background: #fff !important;
+  border-color: rgba(60, 40, 20, 0.1) !important;
+}
+
+html:not(.dark) .ant-card-head {
+  background: #faf9f7 !important;
+  border-bottom-color: rgba(60, 40, 20, 0.08) !important;
+}
+
+/* Ant Design form inputs to warm palette */
+html:not(.dark) .ant-input,
+html:not(.dark) .ant-input-affix-wrapper,
+html:not(.dark) .ant-select-selector,
+html:not(.dark) .ant-picker {
+  background: #fdfcfa !important;
+  border-color: rgba(60, 40, 20, 0.18) !important;
+  color: #1a120a !important;
+}
+
+html:not(.dark) .ant-layout {
+  background: var(--gn-page-mid, #f4f0ea) !important;
+}
+
+html:not(.dark) .ant-layout-sider {
+  background: #fdfcfa !important;
+  border-right: 1px solid rgba(60, 40, 20, 0.1) !important;
+}
+
+html:not(.dark) .ant-menu-light {
+  background: transparent !important;
 }
 
 .admin-table-row-clickable {

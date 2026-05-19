@@ -199,7 +199,7 @@ export default async function NotebooksDirectoryPage({
                   >
                     <Link
                       href={href}
-                      className="absolute inset-0 z-10 rounded-xl outline-none ring-[#ff4500] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
+                      className="absolute inset-0 z-10 rounded-xl outline-none ring-[var(--gn-accent)] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
                       aria-label={`Open notebook: ${n.title}`}
                     />
                     <div className="relative z-20 flex gap-2.5 pointer-events-none">
@@ -211,7 +211,7 @@ export default async function NotebooksDirectoryPage({
                         <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
                           #{i + 1}
                         </p>
-                        <p className="text-sm font-semibold leading-snug text-[var(--gn-text)] transition-colors group-hover:text-[#ff5414] line-clamp-2">
+                        <p className="text-sm font-semibold leading-snug text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)] line-clamp-2">
                           {n.title}
                         </p>
                         <p className="mt-1 text-xs text-[var(--gn-text-muted)] truncate">
@@ -252,7 +252,7 @@ export default async function NotebooksDirectoryPage({
           </p>
           <Link
             href="/notebooks/new"
-            className="mt-6 inline-flex rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] hover:bg-[#ff5414]"
+            className="mt-6 inline-flex rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
           >
             Set up your notebook
           </Link>
@@ -271,7 +271,7 @@ export default async function NotebooksDirectoryPage({
                   {strainSlug}
                 </span>
                 .{" "}
-                <Link href="/notebooks" className="text-[#ff4500] hover:underline">
+                <Link href="/notebooks" className="text-[var(--gn-accent)] hover:underline">
                   Clear strain filter
                 </Link>
               </p>
@@ -359,7 +359,7 @@ export default async function NotebooksDirectoryPage({
                   <article className="group relative rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-4 shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
                     <Link
                       href={notebookHref}
-                      className="absolute inset-0 z-10 rounded-2xl outline-none ring-[#ff4500] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
+                      className="absolute inset-0 z-10 rounded-2xl outline-none ring-[var(--gn-accent)] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
                       aria-label={`Open notebook: ${n.title}`}
                     />
                     <div className="pointer-events-none relative z-20 flex gap-3 sm:gap-4">
@@ -369,7 +369,7 @@ export default async function NotebooksDirectoryPage({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="text-base font-semibold text-[var(--gn-text)] transition-colors group-hover:text-[#ff5414]">
+                          <p className="text-base font-semibold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
                             {n.title}
                           </p>
                           <span
@@ -381,7 +381,7 @@ export default async function NotebooksDirectoryPage({
                         <p className="mt-1.5 text-sm text-[var(--gn-text-muted)]">
                           <Link
                             href={`/u/${encodeURIComponent(n.owner.id)}`}
-                            className="relative z-30 inline pointer-events-auto font-medium text-[var(--gn-text)] hover:text-[#ff5414] hover:underline"
+                            className="relative z-30 inline pointer-events-auto font-medium text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
                           >
                             {growerName}
                           </Link>
@@ -391,7 +391,7 @@ export default async function NotebooksDirectoryPage({
                               {n.strain?.slug ? (
                                 <Link
                                   href={`/strains/${encodeURIComponent(n.strain.slug)}`}
-                                  className="relative z-30 inline pointer-events-auto hover:text-[#ff5414] hover:underline"
+                                  className="relative z-30 inline pointer-events-auto hover:text-[var(--gn-accent)] hover:underline"
                                 >
                                   {strainLabel}
                                 </Link>
@@ -405,7 +405,7 @@ export default async function NotebooksDirectoryPage({
                               {" · "}
                               <Link
                                 href={`/breeders/${encodeURIComponent(n.breeder.slug)}`}
-                                className="relative z-30 inline pointer-events-auto hover:text-[#ff5414] hover:underline"
+                                className="relative z-30 inline pointer-events-auto hover:text-[var(--gn-accent)] hover:underline"
                               >
                                 {n.breeder.name}
                               </Link>
@@ -439,7 +439,7 @@ export default async function NotebooksDirectoryPage({
                     pageSize: data.pageSize,
                     ...filterBase,
                   })}`}
-                  className="text-[#ff4500] hover:underline"
+                  className="text-[var(--gn-accent)] hover:underline"
                 >
                   Previous
                 </Link>
@@ -451,7 +451,7 @@ export default async function NotebooksDirectoryPage({
                     pageSize: data.pageSize,
                     ...filterBase,
                   })}`}
-                  className="text-[#ff4500] hover:underline"
+                  className="text-[var(--gn-accent)] hover:underline"
                 >
                   Next
                 </Link>
@@ -462,7 +462,7 @@ export default async function NotebooksDirectoryPage({
           {data.items.length === 0 ? (
             <p className="mt-8 text-sm text-[var(--gn-text-muted)]">
               No notebooks match these filters. Try widening search or{" "}
-              <Link href="/notebooks" className="text-[#ff4500] hover:underline">
+              <Link href="/notebooks" className="text-[var(--gn-accent)] hover:underline">
                 clear filters
               </Link>
               .
@@ -491,7 +491,7 @@ export default async function NotebooksDirectoryPage({
                 Sign in, then open{" "}
                 <Link
                   href="/notebooks/new"
-                  className="text-[#ff4500] hover:underline"
+                  className="text-[var(--gn-accent)] hover:underline"
                 >
                   Set up your notebook
                 </Link>
@@ -499,7 +499,7 @@ export default async function NotebooksDirectoryPage({
               </li>
               <li>
                 Add title and your first week. Link a cultivar from the{" "}
-                <Link href="/strains" className="text-[#ff4500] hover:underline">
+                <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
                   Strains
                 </Link>{" "}
                 catalog (or a custom label) under{" "}

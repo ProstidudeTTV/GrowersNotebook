@@ -363,7 +363,7 @@ export function AuthNav() {
             <UserAvatarChip avatarUrl={me?.avatarUrl} label={username} />
             {unreadBadge > 0 ? (
               <span
-                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#ff4500] ring-2 ring-[var(--gn-menu-bg)]"
+                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[var(--gn-accent)] ring-2 ring-[var(--gn-menu-bg)]"
                 aria-label={`${unreadBadge} unread notifications`}
               />
             ) : null}
@@ -451,7 +451,7 @@ export function AuthNav() {
                 {unreadBadge > 0 ? (
                   <button
                     type="button"
-                    className="text-[10px] font-semibold text-[#ff4500] hover:underline"
+                    className="text-[10px] font-semibold text-[var(--gn-accent)] hover:underline"
                     onClick={() => void markAllNotificationsRead()}
                   >
                     Mark all read
@@ -501,7 +501,7 @@ export function AuthNav() {
               <Link
                 href="/notifications"
                 role="menuitem"
-                className="block px-3 py-2 text-xs font-semibold text-[#ff4500] hover:bg-[var(--gn-surface-hover)]"
+                className="block px-3 py-2 text-xs font-semibold text-[var(--gn-accent)] hover:bg-[var(--gn-surface-hover)]"
                 onClick={() => setMenuOpen(false)}
               >
                 All notifications →

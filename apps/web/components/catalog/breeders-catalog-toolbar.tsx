@@ -174,7 +174,7 @@ export function BreedersCatalogToolbar() {
       <p className="text-xs text-[var(--gn-text-muted)]">
         Breeder name updates when you press Enter. Country applies on Enter or
         when you leave the field. Live suggestions stay on the header search.{" "}
-        <Link href="/breeders" className="text-[#ff6a38] hover:underline">
+        <Link href="/breeders" className="text-[var(--gn-accent)] hover:underline">
           Reset all filters
         </Link>
       </p>

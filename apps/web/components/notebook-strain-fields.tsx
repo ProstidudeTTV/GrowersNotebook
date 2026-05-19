@@ -73,7 +73,7 @@ export function NotebookStrainFields({ displaySeed }: NotebookStrainFieldsProps)
           Strain (catalog search)
         </span>
         <p className="mt-1 text-xs leading-relaxed text-[var(--gn-text-muted)]">
-          <Link href="/strains" className="text-[#ff4500] hover:underline">
+          <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
             Open Strains directory
           </Link>{" "}
           to browse the full catalog.

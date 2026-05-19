@@ -125,7 +125,7 @@ function BreederFilterCombobox({
       {breederSlug ? (
         <button
           type="button"
-          className="mt-1 text-xs text-[#ff6a38] hover:underline"
+          className="mt-1 text-xs text-[var(--gn-accent)] hover:underline"
           onClick={() => {
             setInput("");
             onCommittedSlug("", "");
@@ -436,7 +436,7 @@ export function StrainsCatalogToolbar({
       <p className="text-xs text-[var(--gn-text-muted)]">
         Strain name applies when you press Enter (same row as Page). Header search
         is for growers & posts only.{" "}
-        <Link href="/strains" className="text-[#ff6a38] hover:underline">
+        <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
           Reset all filters
         </Link>
       </p>

@@ -267,10 +267,10 @@ export function ProfileView({
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       {/* Profile info card */}
-      <div className="gn-card-subtle px-5 py-5">
-        <div className="flex items-start gap-4">
+      <div className="gn-card-subtle px-4 py-5 sm:px-6">
+        <div className="flex items-start gap-4 sm:gap-6">
           {/* Avatar */}
-          <span className="flex h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)]">
+          <span className="flex h-20 w-20 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-4 ring-[var(--gn-surface)] sm:h-28 sm:w-28">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
@@ -279,7 +279,7 @@ export function ProfileView({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--gn-text-muted)]">
+              <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--gn-text-muted)] sm:text-3xl">
                 {profileLabel.charAt(0).toUpperCase() || "?"}
               </span>
             )}
@@ -382,7 +382,7 @@ export function ProfileView({
             <>
               <Link
                 href="/new-post"
-                className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414]"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
               >
                 New post on profile
               </Link>
@@ -418,7 +418,7 @@ export function ProfileView({
                 type="button"
                 disabled={reportBusy}
                 onClick={() => void submitReport()}
-                className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ff5414] disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
               >
                 {reportBusy ? "Submitting…" : "Submit report"}
               </button>
@@ -493,7 +493,7 @@ export function ProfileView({
                   })}
                   className={
                     activeSort === "new"
-                      ? "text-sm font-semibold text-[#ff4500]"
+                      ? "text-sm font-semibold text-[var(--gn-accent)]"
                       : "text-sm text-[var(--gn-text-muted)] hover:underline"
                   }
                 >
@@ -507,7 +507,7 @@ export function ProfileView({
                   })}
                   className={
                     activeSort === "top"
-                      ? "text-sm font-semibold text-[#ff4500]"
+                      ? "text-sm font-semibold text-[var(--gn-accent)]"
                       : "text-sm text-[var(--gn-text-muted)] hover:underline"
                   }
                 >
@@ -531,7 +531,7 @@ export function ProfileView({
                         sort: activeSort,
                         page: postsPage - 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Previous
                     </Link>
@@ -543,7 +543,7 @@ export function ProfileView({
                         sort: activeSort,
                         page: postsPage + 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Next
                     </Link>
@@ -625,7 +625,7 @@ export function ProfileView({
                         tab: "comments",
                         page: commentsPage - 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Previous
                     </Link>
@@ -636,7 +636,7 @@ export function ProfileView({
                         tab: "comments",
                         page: commentsPage + 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Next
                     </Link>
@@ -658,7 +658,7 @@ export function ProfileView({
                 <div className="flex flex-wrap gap-3">
                   <Link
                     href="/notebooks/new"
-                    className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414]"
+                    className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
                   >
                     Set up your notebook
                   </Link>
@@ -708,7 +708,7 @@ export function ProfileView({
                         tab: "notebooks",
                         page: notebooksPage - 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Previous
                     </Link>
@@ -719,7 +719,7 @@ export function ProfileView({
                         tab: "notebooks",
                         page: notebooksPage + 1,
                       })}
-                      className="text-[#ff4500] hover:underline"
+                      className="text-[var(--gn-accent)] hover:underline"
                     >
                       Next
                     </Link>

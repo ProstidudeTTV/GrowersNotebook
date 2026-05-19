@@ -344,7 +344,7 @@ export function CommentDiscussionComposer({
                   <li key={g.id ?? `${g.url}-${gi}`}>
                     <button
                       type="button"
-                      className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[#ff4500]"
+                      className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
                       title={g.title}
                       onClick={() => addGifToComment(g.url)}
                     >
@@ -393,7 +393,7 @@ export function CommentDiscussionComposer({
                 return [];
               })
             }
-            className="text-xs font-semibold text-[#ff4500] hover:underline disabled:opacity-50"
+            className="text-xs font-semibold text-[var(--gn-accent)] hover:underline disabled:opacity-50"
           >
             Clear photos
           </button>
@@ -458,7 +458,7 @@ export function CommentDiscussionComposer({
         type="button"
         onClick={() => void submit()}
         disabled={!viewerId || busy || !canSend}
-        className="self-end rounded-full bg-[#ff4500] px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:bg-[#ff5414] hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50"
+        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_16px_rgba(255,69,0,0.3)] transition hover:brightness-110 hover:shadow-[0_0_24px_rgba(255,69,0,0.4)] disabled:opacity-50"
       >
         {submitting ? "Posting…" : submitLabel}
       </button>

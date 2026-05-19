@@ -70,7 +70,7 @@ export function CommunityPostList({
             No posts in this community yet.{" "}
             <Link
               href={`/community/${communitySlug}/new`}
-              className="font-medium text-[#ff4500] hover:underline"
+              className="font-medium text-[var(--gn-accent)] hover:underline"
             >
               Start the first one
             </Link>

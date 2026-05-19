@@ -52,7 +52,7 @@ export default function AuthCompletePage() {
       </p>
       <Link
         href="/"
-        className="mt-6 inline-block text-sm font-semibold text-[#ff4500] hover:underline"
+        className="mt-6 inline-block text-sm font-semibold text-[var(--gn-accent)] hover:underline"
       >
         Go home now
       </Link>

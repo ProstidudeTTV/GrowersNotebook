@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { marked } from "marked";
+import { toast } from "sonner";
 import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import { PostEditor } from "@/components/post-editor";
 import { apiFetch } from "@/lib/api-public";
@@ -120,6 +121,7 @@ export function NewPostForm({
           ...(media.length ? { media } : {}),
         }),
       });
+      toast.success("Post published!");
       router.push(`/p/${post.id}`);
       router.refresh();
     } catch (e) {
@@ -131,41 +133,34 @@ export function NewPostForm({
 
   return (
     <div className="space-y-5">
+      {/* Posting tips */}
+      <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3 text-sm text-[var(--gn-text-muted)]">
+        <p className="font-medium text-[var(--gn-text)] mb-1">💡 Good posts include:</p>
+        <ul className="list-disc list-inside space-y-0.5 text-xs">
+          <li>A clear title that describes what you&apos;re sharing</li>
+          <li>A photo or video of your grow (growers love to see plants!)</li>
+          <li>Details in the body — strain, week, any issues you&apos;re facing</li>
+        </ul>
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-[var(--gn-text)]">
-          Title <span className="text-[#ff4500]">*</span>
+          Title <span className="text-[var(--gn-accent)]">*</span>
         </label>
         <input
           className="gn-input mt-1 w-full"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={TITLE_MAX_LEN}
-          placeholder="Title"
+          placeholder="e.g. Week 6 update — Northern Lights looking bushy!"
           autoComplete="off"
         />
-        <p className="mt-1 text-right text-xs text-[var(--gn-text-muted)]">
-          {title.length}/{TITLE_MAX_LEN}
-        </p>
-      </div>
-
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowTags((v) => !v)}
-          className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
-        >
-          Add tags
-        </button>
-        {showTags ? (
-          <div className="mt-2">
-            <input
-              className="gn-input w-full"
-              value={tagDraft}
-              onChange={(e) => setTagDraft(e.target.value)}
-              placeholder="Tags (comma-separated) — coming soon, not saved yet"
-            />
-          </div>
-        ) : null}
+        <div className="mt-1 flex justify-between text-xs text-[var(--gn-text-muted)]">
+          <span>Make it descriptive — people decide to click based on this.</span>
+          <span className={title.length > TITLE_MAX_LEN * 0.9 ? "text-amber-600" : ""}>
+            {title.length}/{TITLE_MAX_LEN}
+          </span>
+        </div>
       </div>
 
       <div>
@@ -239,7 +234,7 @@ export function NewPostForm({
                     setError(null);
                     setMarkdownMode(true);
                   }}
-                  className="text-xs font-medium text-[#ff4500] hover:underline disabled:opacity-50"
+                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline disabled:opacity-50"
                 >
                   Switch to Markdown
                 </button>
@@ -255,7 +250,7 @@ export function NewPostForm({
                   setError(null);
                   setMarkdownMode(false);
                 }}
-                className="text-xs font-medium text-[#ff4500] hover:underline disabled:opacity-50"
+                className="text-xs font-medium text-[var(--gn-accent)] hover:underline disabled:opacity-50"
               >
                 Switch to rich text
               </button>
@@ -295,7 +290,7 @@ export function NewPostForm({
           type="button"
           onClick={() => void submit()}
           disabled={loading}
-          className="rounded-full bg-[#ff4500] px-5 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] hover:shadow-[0_0_24px_rgba(255,69,0,0.45)] disabled:opacity-50"
+          className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 hover:shadow-[0_0_24px_rgba(255,69,0,0.45)] disabled:opacity-50"
         >
           {loading ? "Publishing…" : "Publish"}
         </button>

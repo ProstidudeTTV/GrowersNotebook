@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "sonner";
 import { AuthHashRecoveryHandler } from "@/components/auth-hash-recovery-handler";
 import { RecoverySessionRedirect } from "@/components/recovery-session-redirect";
 import { PlausibleAnalytics } from "@/components/plausible-analytics";
@@ -58,6 +59,16 @@ export default function RootLayout({
         <AuthHashRecoveryHandler />
         <RecoverySessionRedirect />
         {children}
+        <Toaster
+          position="bottom-right"
+          richColors
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast: "font-sans",
+            },
+          }}
+        />
       </body>
     </html>
   );

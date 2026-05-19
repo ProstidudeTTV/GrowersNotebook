@@ -81,7 +81,7 @@ export function CatalogDetailModal({
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--gn-divide)] px-4 py-3">
           <a
             href={fullPageHref}
-            className="text-xs font-medium text-[var(--gn-text-muted)] transition hover:text-[#ff6a38]"
+            className="text-xs font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-accent)]"
             onClick={openFullPage}
           >
             Open full page

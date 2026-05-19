@@ -135,7 +135,7 @@ export function PostMediaDropzone({
       className={[
         "relative flex min-h-[168px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 transition select-none",
         dragOver
-          ? "border-[#ff4500] bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))]"
+          ? "border-[var(--gn-accent)] bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))]"
           : "border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-ring))]",
         disabled || busy ? "pointer-events-none opacity-60" : "",
       ].join(" ")}

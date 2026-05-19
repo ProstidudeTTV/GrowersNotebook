@@ -41,7 +41,7 @@ export function DmSharedPostEmbed({ postId }: { postId: string }) {
       <p className="mt-1 line-clamp-3 text-sm font-medium leading-snug text-[var(--gn-text)]">
         {loading ? "Loading…" : title ?? "View post"}
       </p>
-      <p className="mt-1.5 text-xs font-medium text-[#ff6a38]">Open →</p>
+      <p className="mt-1.5 text-xs font-medium text-[var(--gn-accent)]">Open →</p>
     </Link>
   );
 }

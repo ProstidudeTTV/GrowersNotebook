@@ -102,7 +102,7 @@ export default async function CommunityPage({
     return (
       <main className="mx-auto max-w-5xl px-4 py-10">
         <p className="text-[var(--gn-text-muted)]">Community not found.</p>
-        <Link href="/" className="mt-4 inline-block text-[#ff4500] hover:underline">
+        <Link href="/" className="mt-4 inline-block text-[var(--gn-accent)] hover:underline">
           ← Home
         </Link>
       </main>
@@ -148,7 +148,7 @@ export default async function CommunityPage({
       />
 
       {/* ── Banner ──────────────────────────────────────────────────── */}
-      <div className="relative w-full h-40 overflow-hidden rounded-b-2xl">
+      <div className="relative w-full h-48 overflow-hidden rounded-b-2xl sm:h-56">
         {hasBanner ? (
           <img
             src={community.bannerUrl!}
@@ -207,7 +207,7 @@ export default async function CommunityPage({
           <FollowCommunityButton communityId={community.id} slug={slug} />
           <Link
             href={`/community/${slug}/new`}
-            className="rounded-full bg-[#ff4500] px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_14px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] hover:shadow-[0_4px_28px_rgba(255,69,0,0.45)]"
+            className="rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
           >
             New post
           </Link>
@@ -215,16 +215,16 @@ export default async function CommunityPage({
       </div>
 
       {/* ── Two-column layout (posts + sidebar) ─────────────────────── */}
-      <div className="px-4 xl:grid xl:grid-cols-3 xl:gap-6">
+      <div className="px-4 lg:grid lg:grid-cols-3 lg:gap-6">
         {/* Main content column */}
-        <div className="xl:col-span-2">
+        <div className="lg:col-span-2">
           {/* Sort controls */}
           <div className="mb-4 flex gap-2 text-sm font-medium">
             <Link
               href={sortLink("new")}
               className={
                 sort === "new"
-                  ? "rounded-full bg-[#ff4500] px-3 py-1 text-white shadow-[0_0_16px_rgba(255,69,0,0.35)]"
+                  ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white shadow-sm"
                   : "rounded-full border-2 border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-hover)]"
               }
             >
@@ -234,7 +234,7 @@ export default async function CommunityPage({
               href={sortLink("top")}
               className={
                 sort === "top"
-                  ? "rounded-full bg-[#ff4500] px-3 py-1 text-white shadow-[0_0_16px_rgba(255,69,0,0.35)]"
+                  ? "rounded-full bg-[var(--gn-accent)] px-3 py-1 text-white shadow-sm"
                   : "rounded-full border-2 border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-1 text-[var(--gn-text)] transition hover:shadow-[var(--gn-shadow-hover)]"
               }
             >
@@ -256,7 +256,7 @@ export default async function CommunityPage({
             <div className="mt-6 flex justify-center gap-4 text-sm">
               {page > 1 ? (
                 <Link
-                  className="text-[#ff4500] hover:underline"
+                  className="text-[var(--gn-accent)] hover:underline"
                   href={`/community/${slug}?sort=${sort}&page=${page - 1}`}
                 >
                   Previous
@@ -264,7 +264,7 @@ export default async function CommunityPage({
               ) : null}
               {page * feed.pageSize < feed.total ? (
                 <Link
-                  className="text-[#ff4500] hover:underline"
+                  className="text-[var(--gn-accent)] hover:underline"
                   href={`/community/${slug}?sort=${sort}&page=${page + 1}`}
                 >
                   Next
@@ -274,8 +274,8 @@ export default async function CommunityPage({
           ) : null}
         </div>
 
-        {/* Sidebar — xl+ only */}
-        <div className="hidden xl:block xl:col-span-1">
+        {/* Sidebar — lg+ */}
+        <div className="hidden lg:block lg:col-span-1">
           <div className="sticky top-20">
             <div className="gn-card p-4 space-y-3">
               <h3 className="text-sm font-semibold text-[var(--gn-text)]">

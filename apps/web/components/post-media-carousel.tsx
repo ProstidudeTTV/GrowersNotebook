@@ -36,7 +36,7 @@ export function PostMediaCarousel({
   const hasMany = n > 1;
 
   const btnClass =
-    "absolute top-1/2 z-[2] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)]/95 text-[var(--gn-text)] shadow-md backdrop-blur-sm transition hover:bg-[var(--gn-surface-hover)] focus:outline-none focus:ring-2 focus:ring-[#ff4500]";
+    "absolute top-1/2 z-[2] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)]/95 text-[var(--gn-text)] shadow-md backdrop-blur-sm transition hover:bg-[var(--gn-surface-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--gn-accent)]";
 
   const shell = embedded
     ? "gn-post-media-attachments gn-post-media-attachments--embedded relative overflow-hidden p-3 sm:p-4"

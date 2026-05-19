@@ -157,11 +157,11 @@ export function SiteHeaderSearch() {
           aria-expanded={panelOpen}
           aria-controls={listId}
           aria-autocomplete="list"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[#ff6a38] focus:outline-none focus:ring-1 focus:ring-[#ff6a38]"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none focus:ring-1 focus:ring-[#ff6a38]"
         />
         <button
           type="submit"
-          className="shrink-0 rounded-lg bg-[#ff6a38] px-3 py-2 text-sm font-semibold text-white hover:bg-[#ff7d4c]"
+          className="shrink-0 rounded-lg bg-[var(--gn-accent)] px-3 py-2 text-sm font-semibold text-white hover:brightness-110"
         >
           Search
         </button>
@@ -190,7 +190,7 @@ export function SiteHeaderSearch() {
                       className="block rounded-lg px-2 py-2 text-left transition hover:bg-[var(--gn-surface-hover)]"
                       onClick={() => setOpen(false)}
                     >
-                      <span className="block text-sm font-medium text-[#ff6a38]">
+                      <span className="block text-sm font-medium text-[var(--gn-accent)]">
                         {p.displayName?.trim() || "Grower"}
                       </span>
                       {p.description?.trim() ? (
@@ -239,7 +239,7 @@ export function SiteHeaderSearch() {
           <div className="border-t border-[var(--gn-divide)] px-2 pt-2">
             <button
               type="button"
-              className="w-full rounded-lg px-2 py-2 text-left text-sm font-medium text-[#ff6a38] transition hover:bg-[var(--gn-surface-hover)]"
+              className="w-full rounded-lg px-2 py-2 text-left text-sm font-medium text-[var(--gn-accent)] transition hover:bg-[var(--gn-surface-hover)]"
               onClick={() => {
                 setOpen(false);
                 router.push(

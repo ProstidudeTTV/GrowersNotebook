@@ -182,7 +182,7 @@ export function ProfileSettingsForm() {
         <p className="text-sm text-[var(--gn-text-muted)]">
           <Link
             href={`/u/${userId}`}
-            className="text-[#ff4500] hover:underline"
+            className="text-[var(--gn-accent)] hover:underline"
           >
             View your profile
           </Link>
@@ -406,7 +406,7 @@ export function ProfileSettingsForm() {
           type="button"
           disabled={saving || avatarUploading}
           onClick={() => void save()}
-          className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-5 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(255,69,0,0.35)] transition hover:bg-[#ff5414] disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>

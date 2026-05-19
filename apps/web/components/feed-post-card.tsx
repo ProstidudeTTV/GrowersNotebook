@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   CommentActionMenu,
   MenuRow,
@@ -216,10 +217,11 @@ export function FeedPostCard({
         }
         await refreshPost();
       }
-    } catch {
+    } catch (err) {
       voteOverlay.current = undefined;
       setLocal(post);
       onPatch(post.id, post);
+      toast.error(err instanceof Error ? err.message : "Could not record vote.");
       await refreshPost();
     } finally {
       setVoteBusy(false);
@@ -421,13 +423,13 @@ export function FeedPostCard({
             </div>
           </div>
 
-          {/* A1.2 — Hero image: full-width, above excerpt */}
+          {/* Hero image: full-width, tall and photo-first */}
           {heroImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={heroImage.url}
               alt=""
-              className="mt-3 h-48 w-full rounded-xl object-cover"
+              className="mt-3 h-56 w-full rounded-xl object-cover sm:h-64"
               loading="lazy"
             />
           ) : null}
@@ -549,7 +551,7 @@ export function FeedPostCard({
             <button
               type="button"
               disabled={reportBusy}
-              className="rounded-full bg-[#ff4500] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
               onClick={() => void submitReport()}
             >
               {reportBusy ? "Sending…" : "Submit report"}

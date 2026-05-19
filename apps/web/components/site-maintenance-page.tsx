@@ -20,7 +20,7 @@ export function SiteMaintenancePage({
         <p className="mt-6 text-sm">
           <Link
             href="/login"
-            className="font-semibold text-[#ff4500] hover:underline"
+            className="font-semibold text-[var(--gn-accent)] hover:underline"
           >
             Staff sign in
           </Link>

@@ -158,14 +158,14 @@ export function NotebookSettingsModal({
               Catalog strain:{" "}
               <Link
                 href={`/strains/${encodeURIComponent(notebook.strain.slug)}`}
-                className="font-medium text-[#ff4500] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 {notebook.strain.name?.trim() || notebook.strain.slug}
               </Link>
               . Browse all cultivars in the{" "}
               <Link
                 href="/strains"
-                className="font-medium text-[#ff4500] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 Strains
               </Link>{" "}
@@ -177,7 +177,7 @@ export function NotebookSettingsModal({
               the{" "}
               <Link
                 href="/strains"
-                className="font-medium text-[#ff4500] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 Strains
               </Link>{" "}

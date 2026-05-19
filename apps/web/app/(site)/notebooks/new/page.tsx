@@ -43,7 +43,7 @@ export default function NewNotebookPage() {
             after setup and pick from the{" "}
             <Link
               href="/strains"
-              className="font-medium text-[#ff4500] hover:underline"
+              className="font-medium text-[var(--gn-accent)] hover:underline"
             >
               Strains
             </Link>{" "}
@@ -51,7 +51,7 @@ export default function NewNotebookPage() {
           </p>
           <Link
             href="/notebooks"
-            className="mt-4 inline-block text-sm text-[#ff4500] hover:underline"
+            className="mt-4 inline-block text-sm text-[var(--gn-accent)] hover:underline"
           >
             ← All notebooks
           </Link>
@@ -60,7 +60,7 @@ export default function NewNotebookPage() {
             <button
               type="button"
               onClick={() => void start()}
-              className="rounded-full bg-[#ff4500] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               Continue
             </button>

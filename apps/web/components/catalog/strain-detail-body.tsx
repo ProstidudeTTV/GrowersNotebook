@@ -179,14 +179,14 @@ export async function StrainDetailBody({
 
   const strainsCrumb =
     variant === "page" ? (
-      <Link href="/strains" className="text-[#ff6a38] hover:underline">
+      <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
         Strains
       </Link>
     ) : listPreview ? (
       <Link
         href={strainsListPath(listPreview)}
         scroll={false}
-        className="text-[#ff6a38] hover:underline"
+        className="text-[var(--gn-accent)] hover:underline"
       >
         Strains
       </Link>
@@ -243,7 +243,7 @@ export async function StrainDetailBody({
               <Link
                 href={breederHref}
                 scroll={false}
-                className="font-medium text-[#ff6a38] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 {s.breeder.name}
               </Link>
@@ -252,7 +252,7 @@ export async function StrainDetailBody({
                 href={breederHref}
                 strainSlug={s.slug}
                 breederSlug={s.breeder.slug}
-                className="font-medium text-[#ff6a38] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 {s.breeder.name}
               </CatalogStrainBreederLink>
@@ -361,7 +361,7 @@ export async function StrainDetailBody({
               <p className="mt-4">
                 <Link
                   href={`/notebooks?strainSlug=${encodeURIComponent(s.slug)}`}
-                  className="text-sm font-semibold text-[#ff6a38] hover:underline"
+                  className="text-sm font-semibold text-[var(--gn-accent)] hover:underline"
                 >
                   View all {growDiariesTotal} grow diaries
                 </Link>
@@ -421,7 +421,7 @@ export async function StrainDetailBody({
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <Link
                   href={`/u/${r.author.id}`}
-                  className="font-medium text-[#ff6a38] hover:underline"
+                  className="font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   {r.author.displayName?.trim() || "Grower"}
                 </Link>
@@ -444,7 +444,7 @@ export async function StrainDetailBody({
               <Link
                 href={reviewListHref(reviewsPage - 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Newer reviews
               </Link>
@@ -453,7 +453,7 @@ export async function StrainDetailBody({
               <Link
                 href={reviewListHref(reviewsPage + 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Older reviews
               </Link>

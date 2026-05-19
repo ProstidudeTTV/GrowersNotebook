@@ -91,40 +91,55 @@ function IconBook({ className }: { className?: string }) {
   );
 }
 
-function HotPostCard({ post }: { post: GuestLandingHotPost }) {
+function HotPostCard({ post, tall = false }: { post: GuestLandingHotPost; tall?: boolean }) {
   return (
-    <article className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 p-4 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
+    <article className="overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
       {post.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={post.imageUrl}
           alt=""
-          className="mb-3 h-32 w-full rounded-xl object-cover"
+          className={`w-full object-cover ${tall ? "h-56" : "h-44"}`}
           loading="lazy"
           decoding="async"
         />
       ) : (
-        <div className="mb-3 h-32 w-full rounded-xl bg-gradient-to-br from-[#ff4500]/20 via-[#ff6a38]/15 to-emerald-500/15" />
+        <div className={`w-full bg-gradient-to-br from-[var(--gn-accent)]/20 via-orange-400/10 to-emerald-500/15 ${tall ? "h-56" : "h-44"} flex items-center justify-center text-4xl`}>
+          🌿
+        </div>
       )}
-      <p className="line-clamp-2 text-sm font-semibold text-[var(--gn-text)]">
-        {post.title}
-      </p>
-      <div className="mt-1 flex items-center justify-between gap-3">
-        <p className="line-clamp-1 text-xs text-[var(--gn-text-muted)]">
-          {post.authorName}
-          {post.communityName ? (
-            <>
-              {" · "}
-              <span className="text-[#ff6a38]">{post.communityName}</span>
-            </>
-          ) : null}
+      <div className="p-3">
+        <p className="line-clamp-2 text-sm font-semibold text-[var(--gn-text)]">
+          {post.title}
         </p>
-        <p className="shrink-0 text-xs font-medium text-[var(--gn-accent)]">
-          {post.score >= 0 ? "+" : ""}
-          {post.score}
-        </p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-xs text-[var(--gn-text-muted)]">
+            {post.authorName}
+            {post.communityName ? (
+              <span className="text-[var(--gn-accent)]"> · {post.communityName}</span>
+            ) : null}
+          </p>
+          <p className="shrink-0 text-xs font-medium text-[var(--gn-accent)]">
+            +{post.score}
+          </p>
+        </div>
       </div>
     </article>
+  );
+}
+
+function PhotoMosaicPlaceholder({ index }: { index: number }) {
+  const gradients = [
+    "from-emerald-800/40 to-emerald-500/20",
+    "from-orange-800/30 to-amber-500/20",
+    "from-green-700/30 to-lime-500/20",
+    "from-teal-800/40 to-cyan-500/20",
+  ];
+  const emojis = ["🌿", "🍁", "🌱", "🌾"];
+  return (
+    <div className={`flex h-full min-h-[140px] items-center justify-center rounded-xl bg-gradient-to-br ${gradients[index % 4]} text-3xl`}>
+      {emojis[index % 4]}
+    </div>
   );
 }
 
@@ -133,7 +148,7 @@ function HeroPreviewMockCards() {
     <>
       <div className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 p-4 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff4500]/25 to-emerald-500/20 text-[#ff4500]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gn-accent)]/25 to-emerald-500/20 text-[var(--gn-accent)]">
             <IconLeaf className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
@@ -141,7 +156,7 @@ function HeroPreviewMockCards() {
               Week 6 flower — frost coming in
             </p>
             <p className="text-xs text-[var(--gn-text-muted)]">
-              in <span className="text-[#ff6a38]">LED &amp; living soil</span> ·
+              in <span className="text-[var(--gn-accent)]">LED &amp; living soil</span> ·
               128 votes
             </p>
           </div>
@@ -176,17 +191,19 @@ function HeroPreview({
   growersOnline: number;
   hotPosts: GuestLandingHotPost[];
 }) {
-  const showRealPosts = hotPosts.length > 0;
+  const withImages = hotPosts.filter((p) => p.imageUrl);
+  const showMosaic = withImages.length >= 3;
   const visiblePosts = hotPosts.slice(0, 2);
 
   return (
     <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-      <div className="absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.12),transparent_70%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(34,197,94,0.15),transparent_70%)]" />
-      <div className="absolute -bottom-10 -right-6 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(255,69,0,0.12),transparent_68%)] blur-2xl" />
+      <div className="absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.12),transparent_70%)] blur-2xl" />
+      <div className="absolute -bottom-10 -right-6 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(255,107,53,0.12),transparent_68%)] blur-2xl" />
 
       <div className="relative space-y-4">
+        {/* Live growers badge */}
         <div className="flex justify-end">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/80 px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-sm)] backdrop-blur-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-sm)] backdrop-blur-sm">
             <span className="relative flex h-2 w-2" aria-hidden>
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -198,25 +215,34 @@ function HeroPreview({
           </span>
         </div>
 
-        {showRealPosts ? (
+        {/* Photo mosaic — 2×2 grid when enough images */}
+        {showMosaic ? (
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: 4 }, (_, i) => {
+              const post = withImages[i];
+              return post ? (
+                <Link key={post.id} href={`/p/${post.id}`} className="block overflow-hidden rounded-xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.imageUrl!}
+                    alt={post.title}
+                    className="h-36 w-full object-cover transition-transform duration-300 hover:scale-105 sm:h-44"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </Link>
+              ) : (
+                <PhotoMosaicPlaceholder key={i} index={i} />
+              );
+            })}
+          </div>
+        ) : hotPosts.length > 0 ? (
           <>
             {visiblePosts.map((p, idx) => (
-              <div key={p.id} className={idx === 1 ? "ml-4 sm:ml-12" : ""}>
-                <HotPostCard post={p} />
+              <div key={p.id} className={idx === 1 ? "ml-4 sm:ml-8" : ""}>
+                <HotPostCard post={p} tall={idx === 0} />
               </div>
             ))}
-            {visiblePosts.length < 2 ? (
-              <div className="ml-4 mr-0 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]/60 p-4 shadow-[var(--gn-shadow-md)] backdrop-blur-sm sm:ml-12">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-lg bg-[var(--gn-surface-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-border)]">
-                    Strain library
-                  </span>
-                  <span className="text-xs text-[var(--gn-text-muted)]">
-                    breeder &amp; review data
-                  </span>
-                </div>
-              </div>
-            ) : null}
           </>
         ) : (
           <HeroPreviewMockCards />
@@ -270,7 +296,7 @@ export function GuestLanding({
             </p>
             <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-[var(--gn-text)] sm:text-5xl lg:text-[3.35rem]">
               Grow smarter{" "}
-              <span className="bg-gradient-to-r from-[#ff4500] via-[#ff6a38] to-[#ffa64d] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[var(--gn-accent)] via-[#ff6a38] to-[#ffa64d] bg-clip-text text-transparent">
                 together
               </span>
               .
@@ -281,7 +307,7 @@ export function GuestLanding({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-7 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_-12px_rgba(255,69,0,0.55)] transition hover:bg-[#ff5724] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff4500]"
+                className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
               >
                 Sign in to join
               </Link>
@@ -312,7 +338,7 @@ export function GuestLanding({
           </h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             <article className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/70 p-6 shadow-[var(--gn-shadow-sm)]">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#ff4500]/12 text-[#ff4500]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--gn-accent)]/12 text-[var(--gn-accent)]">
                 <IconUsers className="h-6 w-6" />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-[var(--gn-text)]">
@@ -364,7 +390,7 @@ export function GuestLanding({
           </div>
           <Link
             href="/login"
-            className="shrink-0 text-sm font-semibold text-[#ff6a38] transition hover:text-[#ff7d4c]"
+            className="shrink-0 text-sm font-semibold text-[var(--gn-accent)] transition hover:text-[#ff7d4c]"
           >
             Create an account →
           </Link>
@@ -417,7 +443,7 @@ export function GuestLanding({
                       frameClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--gn-surface-muted)_85%,transparent)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
                     />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-[#ff6a38] transition group-hover:text-[#ff7d4c]">
+                      <h3 className="font-semibold text-[var(--gn-accent)] transition group-hover:text-[#ff7d4c]">
                         {c.name}
                       </h3>
                       {c.description?.trim() ? (
@@ -450,7 +476,7 @@ export function GuestLanding({
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[#ff4500] px-8 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_-12px_rgba(255,69,0,0.5)] transition hover:bg-[#ff5724]"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-8 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_-12px_rgba(255,69,0,0.5)] transition hover:brightness-110"
             >
               Get started
             </Link>

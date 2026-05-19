@@ -154,11 +154,11 @@ export function CatalogSuggestClient() {
       <div className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-6 text-center text-sm text-[var(--gn-text)]">
         <p>Thanks — your suggestion was submitted for staff review.</p>
         <p className="mt-3">
-          <Link href="/strains" className="text-[#ff6a38] hover:underline">
+          <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
             Strains
           </Link>
           {" · "}
-          <Link href="/breeders" className="text-[#ff6a38] hover:underline">
+          <Link href="/breeders" className="text-[var(--gn-accent)] hover:underline">
             Breeders
           </Link>
         </p>
@@ -453,7 +453,7 @@ export function CatalogSuggestClient() {
         type="button"
         disabled={saving}
         onClick={() => void submit()}
-        className="rounded-lg bg-[#ff6a38] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ff7d4c] disabled:opacity-50"
+        className="rounded-lg bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
       >
         {saving ? "Sending…" : "Submit suggestion"}
       </button>

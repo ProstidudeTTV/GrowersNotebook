@@ -26,7 +26,7 @@ export function CatalogModalCrumb({
     <button
       type="button"
       onClick={onBack}
-      className="text-[#ff6a38] hover:underline"
+      className="text-[var(--gn-accent)] hover:underline"
     >
       {children}
     </button>

@@ -152,6 +152,25 @@ function Chevron({ open }: { open: boolean }) {
 const navItem =
   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[var(--gn-text)] transition-colors hover:bg-[var(--gn-surface-hover)]";
 
+function IconPlus({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export function AppSidebar({
   followedCommunities,
   hotWeekPosts,
@@ -231,6 +250,18 @@ export function AppSidebar({
           Communities
         </Link>
 
+        {authed ? (
+          <Link
+            href="/"
+            className="mx-2 mt-1 flex items-center justify-center gap-2 rounded-lg bg-[var(--gn-accent)] px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+            onClick={afterNav}
+            title="Pick a community to post in"
+          >
+            <IconPlus className="shrink-0" />
+            Create Post
+          </Link>
+        ) : null}
+
         <div className="my-3 border-t border-[var(--gn-divide)]" />
 
         <Link
@@ -238,7 +269,7 @@ export function AppSidebar({
           className={navItem}
           onClick={afterNav}
         >
-          <IconFlame className="shrink-0 text-[#ff4500]" />
+          <IconFlame className="shrink-0 text-[var(--gn-accent)]" />
           Hot this week
         </Link>
         {hotWeekPosts.length > 0 ? (
@@ -319,7 +350,7 @@ export function AppSidebar({
                 <li className="px-3 py-2 text-xs leading-snug text-[var(--gn-text-muted)]">
                   <Link
                     href="/login"
-                    className="font-medium text-[#ff4500] hover:underline"
+                    className="font-medium text-[var(--gn-accent)] hover:underline"
                     onClick={afterNav}
                   >
                     Sign in

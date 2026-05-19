@@ -162,14 +162,14 @@ export async function BreederDetailBody({
 
   const breedersCrumb =
     variant === "page" ? (
-      <Link href="/breeders" className="text-[#ff6a38] hover:underline">
+      <Link href="/breeders" className="text-[var(--gn-accent)] hover:underline">
         Breeders
       </Link>
     ) : listPreview ? (
       <Link
         href={breedersListPath(listPreview)}
         scroll={false}
-        className="text-[#ff6a38] hover:underline"
+        className="text-[var(--gn-accent)] hover:underline"
       >
         Breeders
       </Link>
@@ -226,7 +226,7 @@ export async function BreederDetailBody({
                 }
                 target="_blank"
                 rel="noreferrer noopener"
-                className="font-medium text-[#ff6a38] hover:underline"
+                className="font-medium text-[var(--gn-accent)] hover:underline"
               >
                 Website
               </a>
@@ -235,7 +235,7 @@ export async function BreederDetailBody({
           <p className="text-sm">
             <BreederStrainsCatalogLink
               breederSlug={b.slug}
-              className="font-medium text-[#ff6a38] hover:underline"
+              className="font-medium text-[var(--gn-accent)] hover:underline"
             >
               Strains from this breeder
             </BreederStrainsCatalogLink>
@@ -266,7 +266,7 @@ export async function BreederDetailBody({
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <Link
                       href={`/u/${r.author.id}`}
-                      className="font-medium text-[#ff6a38] hover:underline"
+                      className="font-medium text-[var(--gn-accent)] hover:underline"
                     >
                       {r.author.displayName?.trim() || "Grower"}
                     </Link>
@@ -274,7 +274,7 @@ export async function BreederDetailBody({
                     <Link
                       href={`/strains/${encodeURIComponent(r.strain.slug)}`}
                       scroll={false}
-                      className="min-w-0 truncate font-medium text-[#ff6a38] hover:underline"
+                      className="min-w-0 truncate font-medium text-[var(--gn-accent)] hover:underline"
                     >
                       {r.strain.name}
                     </Link>
@@ -301,7 +301,7 @@ export async function BreederDetailBody({
               <Link
                 href={strainReviewListHref(strainReviewsPage - 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Newer strain reviews
               </Link>
@@ -310,7 +310,7 @@ export async function BreederDetailBody({
               <Link
                 href={strainReviewListHref(strainReviewsPage + 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Older strain reviews
               </Link>
@@ -364,7 +364,7 @@ export async function BreederDetailBody({
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <Link
                   href={`/u/${r.author.id}`}
-                  className="font-medium text-[#ff6a38] hover:underline"
+                  className="font-medium text-[var(--gn-accent)] hover:underline"
                 >
                   {r.author.displayName?.trim() || "Grower"}
                 </Link>
@@ -386,7 +386,7 @@ export async function BreederDetailBody({
               <Link
                 href={reviewListHref(reviewsPage - 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Newer reviews
               </Link>
@@ -395,7 +395,7 @@ export async function BreederDetailBody({
               <Link
                 href={reviewListHref(reviewsPage + 1)}
                 scroll={false}
-                className="text-[#ff6a38] hover:underline"
+                className="text-[var(--gn-accent)] hover:underline"
               >
                 Older reviews
               </Link>

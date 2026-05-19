@@ -18,7 +18,7 @@ export function SiteLogoMark({ className }: { className?: string }) {
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="#059669" />
-          <stop offset="1" stopColor="#ff4500" />
+          <stop offset="1" stopColor="var(--gn-accent)" />
         </linearGradient>
       </defs>
       {/* Notebook / journal */}

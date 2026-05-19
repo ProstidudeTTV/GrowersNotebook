@@ -33,7 +33,7 @@ export default function TermsPage() {
         </p>
         <p>
           For how we handle data and security practices, see{" "}
-          <Link href="/privacy" className="text-[#ff6a38] hover:underline">
+          <Link href="/privacy" className="text-[var(--gn-accent)] hover:underline">
             Privacy &amp; security
           </Link>
           .
@@ -41,7 +41,7 @@ export default function TermsPage() {
       </div>
 
       <p className="mt-10 text-sm text-[var(--gn-text-muted)]">
-        <Link href="/" className="text-[#ff6a38] hover:underline">
+        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
           ← Home
         </Link>
       </p>

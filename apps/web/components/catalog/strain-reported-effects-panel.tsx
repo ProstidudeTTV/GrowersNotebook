@@ -51,7 +51,7 @@ export function StrainReportedEffectsPanel({
               </div>
               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--gn-surface-elevated)]">
                 <div
-                  className="h-full rounded-full bg-[#ff6a38]/85"
+                  className="h-full rounded-full bg-[var(--gn-accent)]/85"
                   style={{ width: `${pct}%` }}
                 />
               </div>

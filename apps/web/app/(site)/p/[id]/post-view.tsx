@@ -268,7 +268,7 @@ function CommentTree({
                   <div className="text-xs text-[var(--gn-text-muted)]">
                     <UserProfileLink
                       userId={c.author.id}
-                      className="font-semibold text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
+                      className="font-semibold text-[var(--gn-text)] transition hover:text-[var(--gn-accent)] hover:underline"
                     >
                       {c.author.displayName ?? "member"}
                     </UserProfileLink>
@@ -334,7 +334,7 @@ function CommentTree({
                   <button
                     type="button"
                     disabled={!draft.trim() || busy}
-                    className="rounded-full bg-[#ff4500] px-3 py-1 text-xs font-medium text-white shadow-[0_0_12px_rgba(255,69,0,0.3)] transition hover:bg-[#ff5414] disabled:opacity-50"
+                    className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
                     onClick={() => void saveEdit(c)}
                   >
                     Save
@@ -400,7 +400,7 @@ function CommentTree({
               ) : null}
               <button
                 type="button"
-                className="mt-2 text-xs font-medium text-[#ff4500] transition hover:underline hover:drop-shadow-[0_0_8px_rgba(255,69,0,0.35)]"
+                className="mt-2 text-xs font-medium text-[var(--gn-accent)] transition hover:underline hover:drop-shadow-[0_0_8px_rgba(255,69,0,0.35)]"
                 onClick={() => onReply(c.id)}
               >
                 Reply
@@ -1036,7 +1036,7 @@ export function PostView({
                 )}
                 <UserProfileLink
                   userId={post.author.id}
-                  className="font-medium text-[var(--gn-text)] hover:text-[#ff4500] hover:underline"
+                  className="font-medium text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
                 >
                   {post.author.displayName ?? "member"}
                 </UserProfileLink>
@@ -1064,48 +1064,7 @@ export function PostView({
                   {post.title}
                 </h1>
               )}
-              {!editingPost && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--gn-divide)] pb-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <AvatarChip
-                      avatarUrl={post.author.avatarUrl}
-                      displayName={post.author.displayName}
-                      sizePx={48}
-                    />
-                    <div className="min-w-0">
-                      <UserProfileLink
-                        userId={post.author.id}
-                        className="block font-semibold text-[var(--gn-text)] hover:text-[#ff4500] hover:underline"
-                      >
-                        {post.author.displayName ?? "member"}
-                      </UserProfileLink>
-                      {post.community ? (
-                        <p className="text-xs text-[var(--gn-text-muted)]">
-                          Posted in{" "}
-                          <Link
-                            href={`/community/${post.community.slug}`}
-                            className="hover:underline"
-                          >
-                            {post.community.name.trim() || post.community.slug}
-                          </Link>
-                        </p>
-                      ) : (
-                        <p className="text-xs text-[var(--gn-text-muted)]">
-                          Profile post
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="inline-flex items-center rounded-full bg-[var(--gn-accent)]/20 px-3 py-1 text-xs font-semibold text-[var(--gn-accent)]">
-                      🌱 {authorTier}
-                    </span>
-                    <span className="text-xs text-[var(--gn-text-muted)]">
-                      Grower since {new Date(post.createdAt).getFullYear()}
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* Author action row — follow + edit/delete/report */}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <FollowUserButton
                   userId={post.author.id}
@@ -1145,7 +1104,7 @@ export function PostView({
                       type="button"
                       onClick={() => void saveEditPost()}
                       disabled={editBusy}
-                      className="rounded-full bg-[#ff4500] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                      className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                     >
                       {editBusy ? "Saving…" : "Save changes"}
                     </button>
@@ -1196,7 +1155,7 @@ export function PostView({
                     <button
                       type="button"
                       disabled={postReportBusy}
-                      className="rounded-full bg-[#ff4500] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                      className="rounded-full bg-[var(--gn-accent)] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                       onClick={() => void submitPostReport()}
                     >
                       {postReportBusy ? "Sending…" : "Submit report"}
@@ -1374,7 +1333,7 @@ export function PostView({
             </p>
             <button
               type="button"
-              className="mt-2 text-xs font-semibold text-[#ff4500] underline"
+              className="mt-2 text-xs font-semibold text-[var(--gn-accent)] underline"
               onClick={() => void refreshCommentsRef.current()}
             >
               Retry loading comments
@@ -1411,7 +1370,7 @@ export function PostView({
                     Replying to a thread.{" "}
                     <button
                       type="button"
-                      className="font-medium text-[#ff4500] underline"
+                      className="font-medium text-[var(--gn-accent)] underline"
                       onClick={() => setReplyTo(null)}
                     >
                       Cancel

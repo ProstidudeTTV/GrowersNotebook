@@ -98,7 +98,7 @@ export default async function PostPage({
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <p className="text-[var(--gn-text-muted)]">Post not found.</p>
-        <Link href="/" className="text-[#ff4500] hover:underline">
+        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
           Home
         </Link>
       </main>

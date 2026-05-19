@@ -608,7 +608,7 @@ export function NotebookDetailClient({
                       <p className="mt-1 text-xs text-[var(--gn-text-muted)] sm:text-sm">
                         <Link
                           href={`/u/${encodeURIComponent(nb.ownerId)}`}
-                          className="font-medium text-[#ff4500] hover:underline"
+                          className="font-medium text-[var(--gn-accent)] hover:underline"
                         >
                           {nb.owner.displayName?.trim() || "Grower"}
                         </Link>
@@ -618,7 +618,7 @@ export function NotebookDetailClient({
                             ·{" "}
                             <Link
                               href={`/strains/${encodeURIComponent(nb.strain.slug)}`}
-                              className="text-[#ff4500] hover:underline"
+                              className="text-[var(--gn-accent)] hover:underline"
                             >
                               {nb.strain.name?.trim() ||
                                 strainLabel ||
@@ -637,7 +637,7 @@ export function NotebookDetailClient({
                             ·{" "}
                             <Link
                               href={`/breeders/${encodeURIComponent(nb.breeder.slug)}`}
-                              className="text-[#ff4500] hover:underline"
+                              className="text-[var(--gn-accent)] hover:underline"
                             >
                               {nb.breeder.name}
                             </Link>
@@ -1190,7 +1190,7 @@ export function NotebookDetailClient({
                   <div className="text-xs text-[var(--gn-text-muted)]">
                     <UserProfileLink
                       userId={c.author.id}
-                      className="font-medium text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
+                      className="font-medium text-[var(--gn-text)] transition hover:text-[var(--gn-accent)] hover:underline"
                     >
                       {c.author.displayName?.trim() || "Member"}
                     </UserProfileLink>

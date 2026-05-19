@@ -15,13 +15,13 @@ export function SiteFooter() {
         >
           <Link
             href="/privacy"
-            className="text-[var(--gn-text)] underline-offset-2 transition hover:text-[#ff6a38] hover:underline"
+            className="text-[var(--gn-text)] underline-offset-2 transition hover:text-[var(--gn-accent)] hover:underline"
           >
             Privacy &amp; security
           </Link>
           <Link
             href="/terms"
-            className="text-[var(--gn-text)] underline-offset-2 transition hover:text-[#ff6a38] hover:underline"
+            className="text-[var(--gn-text)] underline-offset-2 transition hover:text-[var(--gn-accent)] hover:underline"
           >
             Terms
           </Link>

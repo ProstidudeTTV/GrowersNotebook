@@ -12,15 +12,15 @@ export default function CatalogSuggestPage() {
         all submissions before anything goes live.
       </p>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        <Link href="/login" className="text-[#ff6a38] hover:underline">
+        <Link href="/login" className="text-[var(--gn-accent)] hover:underline">
           Sign in
         </Link>{" "}
         to submit. Read the{" "}
-        <Link href="/strains" className="text-[#ff6a38] hover:underline">
+        <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
           strains
         </Link>{" "}
         and{" "}
-        <Link href="/breeders" className="text-[#ff6a38] hover:underline">
+        <Link href="/breeders" className="text-[var(--gn-accent)] hover:underline">
           breeders
         </Link>{" "}
         first to avoid duplicates.

@@ -69,9 +69,9 @@ export function VoteScoreRail({
 
   const s = sizes[size];
   const upActive =
-    "bg-orange-500/15 text-[#ff4500] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)] dark:bg-orange-500/20 dark:text-[#ff8b60]";
+    "bg-orange-500/15 text-[var(--gn-accent)] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)] dark:bg-orange-500/20 dark:text-[#ff8b60]";
   const upIdle =
-    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[#ff4500] dark:hover:text-[#ff8b60]";
+    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[var(--gn-accent)] dark:hover:text-[#ff8b60]";
   const downActive =
     "bg-violet-500/15 text-violet-600 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:bg-violet-500/20 dark:text-violet-300";
   const downIdle =
@@ -230,9 +230,9 @@ export function VoteFeedPill({
     : upvotes - downvotes;
   const vv = normalizedViewerVote(viewerVote);
   const upActive =
-    "bg-orange-500/18 text-[#ff6a38] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)]";
+    "bg-orange-500/18 text-[var(--gn-accent)] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.35)]";
   const upIdle =
-    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[#ff6a38]";
+    "text-[var(--gn-text-muted)] hover:bg-orange-500/12 hover:text-[var(--gn-accent)]";
   const downActive =
     "bg-violet-500/18 text-violet-500 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.35)] dark:text-violet-300";
   const downIdle =

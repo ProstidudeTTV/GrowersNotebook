@@ -21,7 +21,7 @@ export default async function NewPostPage({
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <p>Community not found.</p>
-        <Link href="/" className="text-[#ff4500] hover:underline">
+        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
           Home
         </Link>
       </main>
@@ -33,7 +33,7 @@ export default async function NewPostPage({
       <div className="mb-6">
         <Link
           href={`/community/${slug}`}
-          className="text-sm text-[#ff4500] hover:underline"
+          className="text-sm text-[var(--gn-accent)] hover:underline"
         >
           ← Back to {community.name}
         </Link>

@@ -16,7 +16,7 @@ export default function ProfileSettingsPage() {
       <p className="mt-2 max-w-2xl text-sm text-[var(--gn-text-muted)]">
         Choose how your name and photo appear across GrowersNotebook and who
         can view your profile. Read{" "}
-        <Link href="/privacy" className="text-[#ff6a38] hover:underline">
+        <Link href="/privacy" className="text-[var(--gn-accent)] hover:underline">
           Privacy &amp; security
         </Link>{" "}
         for our mission, photo metadata handling, and data overview.

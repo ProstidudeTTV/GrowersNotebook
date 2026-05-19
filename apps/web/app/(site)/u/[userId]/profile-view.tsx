@@ -349,7 +349,6 @@ export function ProfileView({
           ) : null}
           </div>
           </div>
-        </div>
         {bio ? (
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
             {bio}

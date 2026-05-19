@@ -113,178 +113,169 @@ function IconStar({ className }: { className?: string }) {
   );
 }
 
-// ─── Photo grid cell ──────────────────────────────────────────────────────────
+// ─── Mock preview card data ────────────────────────────────────────────────────
 
-const PLACEHOLDER_GRADIENTS = [
-  "from-emerald-900/70 via-emerald-700/40 to-emerald-500/20",
-  "from-orange-900/60 via-amber-700/40 to-yellow-500/20",
-  "from-green-900/70 via-green-700/40 to-lime-400/20",
-  "from-teal-900/70 via-teal-700/40 to-cyan-400/20",
-  "from-stone-900/80 via-stone-700/50 to-amber-600/20",
-  "from-emerald-950/80 via-green-800/50 to-emerald-500/20",
+const MOCK_CARDS = [
+  {
+    gradient: "from-emerald-800 to-green-600",
+    title: "Week 8 Trichomes 🔬",
+    author: "u/trichome_tracker",
+    community: "r/Organics",
+    score: 94,
+  },
+  {
+    gradient: "from-violet-800 to-purple-600",
+    title: "First DWC Harvest 🏆",
+    author: "u/hydro_hero",
+    community: "r/Hydroponics",
+    score: 127,
+  },
+  {
+    gradient: "from-amber-700 to-yellow-600",
+    title: "Outdoor Monster Crop",
+    author: "u/sun_grower",
+    community: "r/Outdoor",
+    score: 61,
+  },
+  {
+    gradient: "from-teal-800 to-cyan-600",
+    title: "LED vs HPS Comparison",
+    author: "u/lightgeek",
+    community: "r/LEDGrowing",
+    score: 88,
+  },
+  {
+    gradient: "from-rose-800 to-pink-600",
+    title: "Autoflower Week 5",
+    author: "u/autogrower",
+    community: "r/Autoflowers",
+    score: 42,
+  },
+  {
+    gradient: "from-blue-800 to-indigo-600",
+    title: "Living Soil Results",
+    author: "u/soilscientist",
+    community: "r/LivingSoil",
+    score: 73,
+  },
 ];
 
-const PLACEHOLDER_LABELS = [
-  { emoji: "🌿", title: "Week 6 frost incoming", author: "A grower" },
-  { emoji: "🍁", title: "Harvest day finally arrived", author: "A grower" },
-  { emoji: "🌱", title: "Seedlings under LED", author: "A grower" },
-  { emoji: "🌾", title: "Living soil first run", author: "A grower" },
-  { emoji: "🌿", title: "Outdoor monster crop", author: "A grower" },
-  { emoji: "🍀", title: "Terpene deep dive notes", author: "A grower" },
-];
+// ─── Preview grid card ─────────────────────────────────────────────────────────
 
-type PhotoCardData = {
-  id: string;
-  href: string;
-  imageUrl: string | null;
+function PreviewCard({
+  gradient,
+  title,
+  author,
+  community,
+  score,
+  imageUrl,
+  href,
+}: {
+  gradient: string;
   title: string;
   author: string;
-  community: string | null;
-  placeholderIndex: number;
-};
-
-function PhotoCard({ card, tall = false }: { card: PhotoCardData; tall?: boolean }) {
-  const ph = PLACEHOLDER_LABELS[card.placeholderIndex % PLACEHOLDER_LABELS.length];
-  const grad = PLACEHOLDER_GRADIENTS[card.placeholderIndex % PLACEHOLDER_GRADIENTS.length];
-
-  return (
-    <Link
-      href={card.href}
-      className={`group relative block overflow-hidden rounded-2xl shadow-lg ${tall ? "row-span-2" : ""}`}
-    >
-      {card.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={card.imageUrl}
-          alt={card.title}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${grad} flex items-center justify-center text-5xl`}
-        >
-          {ph.emoji}
+  community: string;
+  score: number;
+  imageUrl?: string | null;
+  href?: string;
+}) {
+  const inner = (
+    <div className="group relative overflow-hidden rounded-2xl border border-white/5 shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:border-[var(--gn-accent)]/30">
+      {/* Gradient / image top */}
+      <div className={`relative h-28 bg-gradient-to-br ${gradient} overflow-hidden`}>
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={title}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : null}
+        {/* Score badge */}
+        <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+          <span className="text-[var(--gn-accent)]">↑</span>
+          {score}
         </div>
-      )}
-
-      {/* Bottom overlay */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-8">
-        <p className="line-clamp-2 text-xs font-semibold leading-snug text-white drop-shadow">
-          {card.title || ph.title}
+      </div>
+      {/* Text bottom */}
+      <div className="bg-[var(--gn-surface-raised)] p-3">
+        <p className="line-clamp-1 text-xs font-semibold text-[var(--gn-text)] leading-snug">
+          {title}
         </p>
-        <p className="mt-0.5 truncate text-[10px] text-white/70">
-          {card.author}
-          {card.community ? (
-            <span className="text-[var(--gn-accent)]/90"> · {card.community}</span>
-          ) : null}
+        <p className="mt-0.5 text-[10px] text-[var(--gn-text-muted)] truncate">
+          {author} · <span className="text-[var(--gn-accent)]/80">{community}</span>
         </p>
       </div>
-
-      {/* Hover ring */}
-      <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/10 transition group-hover:ring-[var(--gn-accent)]/50" />
-    </Link>
+    </div>
   );
+
+  if (href) {
+    return <Link href={href}>{inner}</Link>;
+  }
+  return inner;
 }
 
-// ─── Hero photo mosaic ────────────────────────────────────────────────────────
+// ─── Social proof avatars ──────────────────────────────────────────────────────
 
-function HeroPhotoMosaic({
-  hotPosts,
-  growersOnline,
-}: {
-  hotPosts: GuestLandingHotPost[];
-  growersOnline: number;
-}) {
-  // Build 6 card slots — fill with real posts where we have them
-  const cards: PhotoCardData[] = Array.from({ length: 6 }, (_, i) => {
-    const post = hotPosts[i];
-    if (post) {
-      return {
-        id: post.id,
-        href: `/p/${post.id}`,
-        imageUrl: post.imageUrl,
-        title: post.title,
-        author: post.authorName,
-        community: post.communityName,
-        placeholderIndex: i,
-      };
-    }
-    return {
-      id: `placeholder-${i}`,
-      href: "/hot",
-      imageUrl: null,
-      title: PLACEHOLDER_LABELS[i % PLACEHOLDER_LABELS.length].title,
-      author: PLACEHOLDER_LABELS[i % PLACEHOLDER_LABELS.length].author,
-      community: null,
-      placeholderIndex: i,
-    };
-  });
-
+function AvatarStack() {
+  const avatars = [
+    { letter: "G", bg: "bg-emerald-600" },
+    { letter: "M", bg: "bg-violet-600" },
+    { letter: "T", bg: "bg-amber-500" },
+    { letter: "A", bg: "bg-teal-600" },
+  ];
   return (
-    <div className="relative">
-      {/* LIVE badge */}
-      <div className="mb-3 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-400">
-          <span className="relative flex h-2 w-2" aria-hidden>
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-          </span>
-          Live
-        </span>
-        {growersOnline > 0 ? (
-          <span className="text-xs text-[var(--gn-text-muted)]">
-            <span className="font-semibold text-[var(--gn-text)]">
-              {formatCount(growersOnline)}
-            </span>{" "}
-            growers online now
-          </span>
-        ) : null}
+    <div className="flex items-center gap-3">
+      <div className="flex -space-x-2">
+        {avatars.map((a) => (
+          <div
+            key={a.letter}
+            className={`flex h-8 w-8 items-center justify-center rounded-full ${a.bg} text-xs font-bold text-white ring-2 ring-[var(--gn-surface)]`}
+          >
+            {a.letter}
+          </div>
+        ))}
       </div>
-
-      {/* Mosaic grid: first card is tall (row-span-2), then 4 regular, then 1 more */}
-      {/* Layout: [tall | r1c1 | r1c2] [tall | r2c1 | r2c2] */}
-      <div className="grid grid-cols-3 grid-rows-2 gap-2" style={{ height: "420px" }}>
-        <PhotoCard card={cards[0]} tall />
-        <PhotoCard card={cards[1]} />
-        <PhotoCard card={cards[2]} />
-        <PhotoCard card={cards[3]} />
-        <PhotoCard card={cards[4]} />
-        <PhotoCard card={cards[5]} />
-      </div>
+      <p className="text-sm text-[var(--gn-text-muted)]">
+        Join <span className="font-semibold text-[var(--gn-text)]">1,000+</span> home growers
+      </p>
     </div>
   );
 }
 
-// ─── Stat bar ────────────────────────────────────────────────────────────────
+// ─── Stats band ────────────────────────────────────────────────────────────────
 
-function StatBar({
+function StatsBand({
   growersOnline,
   communityCount,
 }: {
   growersOnline: number;
   communityCount: number;
 }) {
+  const stats = [
+    { value: "10,000+", label: "Posts Tracked" },
+    { value: communityCount > 0 ? `${communityCount}+` : "30+", label: "Communities" },
+    { value: "100%", label: "Free to Join" },
+    { value: growersOnline > 0 ? formatCount(growersOnline) : "Active", label: "Growers Online" },
+  ];
+
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold tabular-nums text-[var(--gn-accent)]">
-          {formatCount(growersOnline)}
-        </span>
-        <span className="text-sm text-[var(--gn-text-muted)]">growers online</span>
-      </div>
-      <div className="h-4 w-px bg-[var(--gn-divide)]" aria-hidden />
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
-          {communityCount > 0 ? `${communityCount}+` : "30+"}
-        </span>
-        <span className="text-sm text-[var(--gn-text-muted)]">communities</span>
-      </div>
-      <div className="h-4 w-px bg-[var(--gn-divide)]" aria-hidden />
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold tabular-nums text-[var(--gn-text)]">100%</span>
-        <span className="text-sm text-[var(--gn-text-muted)]">free to join</span>
+    <div className="border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="grid grid-cols-2 divide-x divide-[var(--gn-divide)] sm:grid-cols-4">
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col items-center py-6 px-4 text-center">
+              <span className="text-2xl font-black tabular-nums text-[var(--gn-accent)] sm:text-3xl">
+                {s.value}
+              </span>
+              <span className="mt-1 text-xs text-[var(--gn-text-muted)] uppercase tracking-wider font-medium">
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -315,253 +306,355 @@ export function GuestLanding({
 }) {
   const featured = communities.slice(0, 8);
 
+  // Build 6 preview card slots from real posts or mock data
+  const previewCards = Array.from({ length: 6 }, (_, i) => {
+    const post = hotPosts[i];
+    const mock = MOCK_CARDS[i];
+    if (post) {
+      return {
+        key: post.id,
+        gradient: mock.gradient,
+        title: post.title,
+        author: `u/${post.authorName}`,
+        community: post.communityName ? `r/${post.communityName}` : mock.community,
+        score: post.score,
+        imageUrl: post.imageUrl,
+        href: `/p/${post.id}`,
+      };
+    }
+    return {
+      key: `mock-${i}`,
+      gradient: mock.gradient,
+      title: mock.title,
+      author: mock.author,
+      community: mock.community,
+      score: mock.score,
+      imageUrl: null,
+      href: "/hot",
+    };
+  });
+
   return (
     <main className="relative min-w-0 overflow-x-hidden">
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex min-h-[85vh] items-center">
-        {/* Warm amber glow top-right, green accent bottom-left */}
+      <section className="relative flex min-h-screen items-center">
+        {/* Ambient glows */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -right-20 -top-20 h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle,rgba(251,146,60,0.18),transparent_65%)] blur-3xl" />
-          <div className="absolute -bottom-24 left-0 h-[400px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.10),transparent_65%)] blur-3xl" />
+          <div className="absolute -right-20 -top-20 h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.08),transparent_60%)] blur-3xl" />
+          <div className="absolute -bottom-32 -left-20 h-[500px] w-[600px] rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.06),transparent_65%)] blur-3xl" />
+          {/* Subtle dot grid */}
           <div
-            className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+            className="absolute inset-0 opacity-[0.025]"
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23ffffff'/%3E%3C/svg%3E")`,
             }}
           />
         </div>
 
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:py-20 lg:py-24">
-          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:py-24 lg:py-28">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
-            {/* Left: Headline + CTAs + Stat bar */}
-            <div className="min-w-0">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gn-text-muted)]">
-                Welcome to {SITE_NAME}
-              </p>
+            {/* Left: Headline + CTAs + Social proof */}
+            <div className="min-w-0 space-y-6">
+              {/* Tag */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-accent)]/25 bg-[var(--gn-accent)]/8 px-4 py-2 text-sm font-semibold text-[var(--gn-accent)]">
+                <span>🌿</span>
+                <span>The #1 Cannabis Grow Community</span>
+              </div>
 
-              <h1 className="text-4xl font-black leading-[1.06] tracking-tight text-[var(--gn-text)] sm:text-5xl lg:text-[3.5rem]">
-                The grow journal{" "}
-                <span className="relative whitespace-nowrap">
-                  <span className="relative bg-gradient-to-r from-[var(--gn-accent)] via-[var(--gn-accent)] to-[#86efac] bg-clip-text text-transparent">
-                    you&apos;ve been missing.
-                  </span>
+              {/* Headline */}
+              <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-[var(--gn-text)] sm:text-5xl lg:text-6xl">
+                Grow.{" "}
+                <span className="text-[var(--gn-text-muted)]">Share.</span>{" "}
+                <span className="bg-gradient-to-r from-[var(--gn-accent)] to-[#86efac] bg-clip-text text-transparent">
+                  Thrive.
                 </span>
               </h1>
 
-              <p className="mt-5 max-w-[480px] text-lg leading-relaxed text-[var(--gn-text-muted)]">
-                {heroBlurb}
+              {/* Description */}
+              <p className="max-w-[500px] text-lg leading-relaxed text-[var(--gn-text-muted)]">
+                Join a thriving community of home cannabis growers. Document every week of your grow
+                in detailed notebooks, share harvests, and learn from experienced cultivators around
+                the world.
               </p>
 
               {/* CTAs */}
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-7 py-3.5 text-sm font-bold text-white shadow-[0_8px_30px_-8px_rgba(255,90,40,0.5)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-7 py-3.5 text-sm font-bold text-[#0a1209] shadow-[0_0_30px_-4px_rgba(74,222,128,0.5)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
                 >
-                  Join the community
+                  Start Growing Free →
                 </Link>
                 <Link
                   href="/hot"
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/60 px-7 py-3.5 text-sm font-semibold text-[var(--gn-text)] backdrop-blur-sm transition hover:border-[var(--gn-accent)]/30 hover:bg-[var(--gn-surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
+                  className="inline-flex items-center justify-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-7 py-3.5 text-sm font-semibold text-[var(--gn-text)] transition hover:border-[var(--gn-accent)]/30 hover:bg-[var(--gn-surface-elevated)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
                 >
-                  Browse posts
+                  Browse the Community
                 </Link>
-                <a
-                  href={DISCORD_INVITE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-3.5 text-sm font-medium text-[var(--gn-text-muted)] transition hover:text-[#5865F2]"
-                >
-                  Discord ↗
-                </a>
               </div>
 
-              {/* Stat bar */}
-              <StatBar growersOnline={growersOnline} communityCount={communities.length} />
+              {/* Social proof */}
+              <AvatarStack />
+
+              {/* Discord subtle link */}
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--gn-text-muted)] transition hover:text-[#5865F2]"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.001.02.01.04.028.052a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .028-.053c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
+                </svg>
+                Chat with us on Discord ↗
+              </a>
             </div>
 
-            {/* Right: Photo mosaic */}
+            {/* Right: 2×3 preview card grid */}
             <div className="min-w-0">
-              <HeroPhotoMosaic hotPosts={hotPosts} growersOnline={0} />
+              {/* LIVE badge */}
+              <div className="mb-4 flex items-center justify-between">
+                <span className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/8 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--gn-accent)]">
+                  <span className="relative flex h-2 w-2" aria-hidden>
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--gn-accent)] opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--gn-accent)]" />
+                  </span>
+                  Live Grows
+                </span>
+                {growersOnline > 0 && (
+                  <span className="text-xs text-[var(--gn-text-muted)]">
+                    <span className="font-semibold text-[var(--gn-text)]">
+                      {formatCount(growersOnline)}
+                    </span>{" "}
+                    online now
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {previewCards.map(({ key, ...card }) => (
+                  <PreviewCard key={key} {...card} />
+                ))}
+              </div>
             </div>
+
           </div>
         </div>
       </section>
 
+      {/* ── Stats Band ────────────────────────────────────────────────────────── */}
+      <StatsBand growersOnline={growersOnline} communityCount={communities.length} />
+
       {/* ── Why Growers Notebook ─────────────────────────────────────────────── */}
-      <section className="border-y border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_60%,transparent)] py-16 backdrop-blur-[2px]">
+      <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="mb-10 text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--gn-text)] sm:text-3xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
               Why Growers Notebook?
             </h2>
-            <p className="mt-2 text-[var(--gn-text-muted)]">
+            <p className="mt-3 text-[var(--gn-text-muted)]">
               Built by growers, for growers. No ads. No fluff.
             </p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-3">
-            <article className="group rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/70 p-7 shadow-sm transition hover:border-[var(--gn-accent)]/25 hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/12 text-[var(--gn-accent)] transition group-hover:bg-[var(--gn-accent)]/20">
-                <IconUsers className="h-6 w-6" />
+            <article className="group flex flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-7 shadow-sm transition-all duration-200 hover:border-[var(--gn-accent)]/30 hover:shadow-lg hover:translate-y-[-2px]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/12 text-[var(--gn-accent)] transition group-hover:bg-[var(--gn-accent)]/20">
+                <IconUsers className="h-7 w-7" />
               </div>
               <h3 className="mt-5 text-lg font-bold text-[var(--gn-text)]">
                 Real communities
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--gn-text-muted)]">
                 Topic-focused rooms for organics, LEDs, outdoor, breeders, and
                 everything in between — with growers who actually run gardens.
               </p>
+              <Link
+                href="/community"
+                className="mt-5 text-sm font-semibold text-[var(--gn-accent)] opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                Explore communities →
+              </Link>
             </article>
 
-            <article className="group rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/70 p-7 shadow-sm transition hover:border-emerald-500/25 hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-600 transition group-hover:bg-emerald-500/20 dark:text-emerald-400">
-                <IconBook className="h-6 w-6" />
+            <article className="group flex flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-7 shadow-sm transition-all duration-200 hover:border-emerald-500/30 hover:shadow-lg hover:translate-y-[-2px]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-600 transition group-hover:bg-emerald-500/20 dark:text-emerald-400">
+                <IconBook className="h-7 w-7" />
               </div>
               <h3 className="mt-5 text-lg font-bold text-[var(--gn-text)]">
                 Grow notebooks
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--gn-text-muted)]">
                 Log every week of your run — photos, notes, nutrients, VPD.
                 Searchable, shareable, and readable years later.
               </p>
+              <Link
+                href="/login"
+                className="mt-5 text-sm font-semibold text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                Start your notebook →
+              </Link>
             </article>
 
-            <article className="group rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/70 p-7 shadow-sm transition hover:border-violet-500/25 hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-600 transition group-hover:bg-violet-500/20 dark:text-violet-400">
-                <IconStar className="h-6 w-6" />
+            <article className="group flex flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-7 shadow-sm transition-all duration-200 hover:border-violet-500/30 hover:shadow-lg hover:translate-y-[-2px]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-600 transition group-hover:bg-violet-500/20 dark:text-violet-400">
+                <IconStar className="h-7 w-7" />
               </div>
               <h3 className="mt-5 text-lg font-bold text-[var(--gn-text)]">
                 Strain &amp; breeder intel
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--gn-text-muted)]">
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--gn-text-muted)]">
                 Explore the catalog, compare genetics, and read grow reviews
                 from people who actually ran the phenos — not seed-shop copy.
               </p>
+              <Link
+                href="/strains"
+                className="mt-5 text-sm font-semibold text-violet-400 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                Browse strains →
+              </Link>
             </article>
           </div>
         </div>
       </section>
 
       {/* ── Explore communities ──────────────────────────────────────────────── */}
-      <section id="explore" className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--gn-text)] sm:text-3xl">
-              Explore communities
-            </h2>
-            <p className="mt-2 max-w-md text-[var(--gn-text-muted)]">
-              Peek at public rooms — sign in to subscribe, post, and message other growers.
-            </p>
-          </div>
-          <Link
-            href="/login"
-            className="shrink-0 text-sm font-semibold text-[var(--gn-accent)] transition hover:opacity-80"
-          >
-            Create an account →
-          </Link>
-        </div>
-
-        {loadError ? (
-          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-6 text-amber-950 dark:border-amber-900/80 dark:bg-amber-950/35 dark:text-amber-100">
-            <p className="font-semibold">Could not load communities</p>
-            <p className="mt-2 text-sm opacity-90">{loadError}</p>
-            {apiBase ? (
-              <p className="mt-3 text-sm opacity-90">
-                API base:{" "}
-                <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                  {apiBase}
-                </code>
+      <section id="explore" className="border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]/40 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
+                Explore communities
+              </h2>
+              <p className="mt-2 max-w-md text-[var(--gn-text-muted)]">
+                Peek at public rooms — sign in to subscribe, post, and message other growers.
               </p>
-            ) : null}
-            {hostedDeploy ? (
-              <ul className="mt-4 list-inside list-disc text-sm opacity-90">
-                <li>
-                  On your <strong>hosted API</strong> service, open Logs and confirm the latest deploy
-                  is live. Try{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                    {apiBase}/health
-                  </code>
-                  .
-                </li>
-                <li>
-                  If the API recently added catalog columns, run the migration on your hosted
-                  Postgres database (e.g.{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">icon_key</code> on{" "}
-                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">communities</code>).
-                </li>
-              </ul>
-            ) : null}
+            </div>
+            <Link
+              href="/login"
+              className="shrink-0 text-sm font-semibold text-[var(--gn-accent)] transition hover:opacity-80"
+            >
+              Create an account →
+            </Link>
           </div>
-        ) : featured.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[var(--gn-divide)] py-14 text-center text-sm text-[var(--gn-text-muted)]">
-            No communities yet — check back soon.
-          </p>
-        ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/community/${c.slug}`}
-                  className="group relative flex h-full flex-col rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/55 p-5 shadow-sm transition-all duration-200 hover:border-[var(--gn-accent)]/35 hover:bg-[var(--gn-surface-muted)] hover:shadow-md"
-                >
-                  {/* Community icon */}
-                  <CommunityIcon
-                    iconKey={c.iconKey}
-                    nameFallback={c.name}
-                    slugFallback={c.slug}
-                    frameClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--gn-surface-muted)_85%,transparent)] text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]"
-                  />
 
-                  <h3 className="mt-4 font-bold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
-                    {c.name}
-                  </h3>
+          {loadError ? (
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-6 text-amber-950 dark:border-amber-900/80 dark:bg-amber-950/35 dark:text-amber-100">
+              <p className="font-semibold">Could not load communities</p>
+              <p className="mt-2 text-sm opacity-90">{loadError}</p>
+              {apiBase ? (
+                <p className="mt-3 text-sm opacity-90">
+                  API base:{" "}
+                  <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                    {apiBase}
+                  </code>
+                </p>
+              ) : null}
+              {hostedDeploy ? (
+                <ul className="mt-4 list-inside list-disc text-sm opacity-90">
+                  <li>
+                    On your <strong>hosted API</strong> service, open Logs and confirm the latest deploy
+                    is live. Try{" "}
+                    <code className="rounded bg-black/10 px-1 dark:bg-white/10">
+                      {apiBase}/health
+                    </code>
+                    .
+                  </li>
+                  <li>
+                    If the API recently added catalog columns, run the migration on your hosted
+                    Postgres database (e.g.{" "}
+                    <code className="rounded bg-black/10 px-1 dark:bg-white/10">icon_key</code> on{" "}
+                    <code className="rounded bg-black/10 px-1 dark:bg-white/10">communities</code>).
+                  </li>
+                </ul>
+              ) : null}
+            </div>
+          ) : featured.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--gn-divide)] py-20 text-center">
+              <div className="text-5xl mb-4">🌱</div>
+              <p className="text-lg font-semibold text-[var(--gn-text)] mb-2">
+                Communities are growing...
+              </p>
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                Check back soon — or be the first to start one.
+              </p>
+            </div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {featured.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/community/${c.slug}`}
+                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-sm transition-all duration-200 hover:border-[var(--gn-accent)]/35 hover:shadow-lg hover:translate-y-[-2px]"
+                  >
+                    {/* Top accent strip */}
+                    <div className="h-2 w-full bg-gradient-to-r from-[var(--gn-accent)]/40 to-[var(--gn-accent)]/10 group-hover:from-[var(--gn-accent)]/70 transition-all duration-200" />
 
-                  {c.description?.trim() ? (
-                    <p className="mt-1.5 line-clamp-3 flex-1 text-sm leading-snug text-[var(--gn-text-muted)]">
-                      {c.description.trim()}
-                    </p>
-                  ) : (
-                    <p className="mt-1.5 flex-1 text-sm italic text-[var(--gn-text-muted)]/60">
-                      Open the room →
-                    </p>
-                  )}
+                    <div className="flex flex-col flex-1 p-5">
+                      {/* Community icon */}
+                      <CommunityIcon
+                        iconKey={c.iconKey}
+                        nameFallback={c.name}
+                        slugFallback={c.slug}
+                        frameClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]"
+                      />
 
-                  {/* Join pill — appears on hover */}
-                  <span className="mt-4 inline-flex w-fit items-center rounded-full border border-[var(--gn-accent)]/30 px-3 py-1 text-xs font-semibold text-[var(--gn-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                    Join →
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+                      <h3 className="mt-4 font-bold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
+                        {c.name}
+                      </h3>
+
+                      {c.description?.trim() ? (
+                        <p className="mt-1.5 line-clamp-3 flex-1 text-sm leading-snug text-[var(--gn-text-muted)]">
+                          {c.description.trim()}
+                        </p>
+                      ) : (
+                        <p className="mt-1.5 flex-1 text-sm italic text-[var(--gn-text-muted)]/60">
+                          Open the room →
+                        </p>
+                      )}
+
+                      {/* Join button */}
+                      <span className="mt-4 inline-flex w-fit items-center rounded-full bg-[var(--gn-accent)]/10 border border-[var(--gn-accent)]/25 px-3 py-1 text-xs font-semibold text-[var(--gn-accent)] opacity-0 transition-all duration-150 group-hover:opacity-100 group-hover:bg-[var(--gn-accent)]/15">
+                        Join →
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       {/* ── Bottom CTA ──────────────────────────────────────────────────────── */}
-      <section className="border-t border-[var(--gn-divide)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--gn-surface-muted)_60%,transparent),transparent)] py-20">
+      <section className="relative overflow-hidden py-24 sm:py-28">
+        {/* Background gradient */}
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--gn-surface-raised)]/60 to-transparent" />
+          <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.07),transparent_70%)] blur-3xl" />
+        </div>
+
         <div className="mx-auto max-w-3xl px-4 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/12 text-[var(--gn-accent)]">
-            <IconLeaf className="h-7 w-7" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/15 text-[var(--gn-accent)] ring-1 ring-[var(--gn-accent)]/20">
+            <IconLeaf className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-black tracking-tight text-[var(--gn-text)] sm:text-3xl">
-            Ready to grow together?
+          <h2 className="text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
+            Ready to document your best grow?
           </h2>
-          <p className="mt-3 text-[var(--gn-text-muted)]">
+          <p className="mt-4 text-lg text-[var(--gn-text-muted)]">
             Free to join. Bring your garden, your questions, and your harvest photos.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-9 py-4 text-sm font-bold text-white transition hover:brightness-110"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-10 py-4 text-sm font-bold text-[#0a1209] shadow-[0_0_40px_-8px_rgba(74,222,128,0.6)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gn-accent)]"
             >
               Get started — it&apos;s free
             </Link>
             <Link
               href="/strains"
-              className="inline-flex items-center justify-center rounded-full border border-[var(--gn-divide)] px-9 py-4 text-sm font-semibold text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-muted)]"
+              className="inline-flex items-center justify-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-10 py-4 text-sm font-semibold text-[var(--gn-text)] transition hover:border-[var(--gn-accent)]/30 hover:bg-[var(--gn-surface-elevated)]"
             >
               Browse strains
             </Link>

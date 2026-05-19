@@ -62,7 +62,6 @@ export default function AdminSiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [sendingBulk, setSendingBulk] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  /** Snapshot from last successful load (for maintenance email transition checks). */
   const [loadedSite, setLoadedSite] = useState<{
     maintenanceEnabled: boolean;
     maintenanceEmailConfigured: boolean;
@@ -141,7 +140,9 @@ export default function AdminSiteSettingsPage() {
     } = await supabase.auth.getSession();
     if (!session?.access_token) return;
 
-    const starts = datetimeLocalToIso(String(values.announcementStartsAt ?? ""));
+    const starts = datetimeLocalToIso(
+      String(values.announcementStartsAt ?? ""),
+    );
     const ends = datetimeLocalToIso(String(values.announcementEndsAt ?? ""));
 
     if (values.announcementEnabled) {
@@ -198,7 +199,7 @@ export default function AdminSiteSettingsPage() {
     Modal.confirm({
       title: "Send maintenance email to all registered users?",
       content:
-        "This sends one plain-text email per Supabase auth account using the subject and body fields below (including text not yet saved — click Send to use current form values).",
+        "This sends one plain-text email per Supabase auth account using the subject and body fields below (including text not yet saved).",
       okText: "Send",
       cancelText: "Cancel",
       onOk: async () => {
@@ -256,7 +257,7 @@ export default function AdminSiteSettingsPage() {
   if (loadError) {
     return (
       <div>
-        <Typography.Title level={3}>Site settings</Typography.Title>
+        <Typography.Title level={3}>Site Settings</Typography.Title>
         <p className="mt-2 text-red-400">{loadError}</p>
         <Button type="primary" className="mt-4" onClick={() => void load()}>
           Retry
@@ -267,16 +268,18 @@ export default function AdminSiteSettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <Typography.Title level={3}>Site banners & maintenance</Typography.Title>
-      <p className="mt-1 text-[var(--gn-text-muted)]">
-        These controls affect the public site. Only admins can open this page;
-        the API also rejects non-admins.
-      </p>
+      <div className="mb-6 flex items-center justify-between">
+        <Typography.Title level={3} className="!mb-0">
+          Site Settings
+        </Typography.Title>
+        <Typography.Text type="secondary" className="text-sm">
+          Admin-only &mdash; changes take effect immediately on the public site.
+        </Typography.Text>
+      </div>
 
       <Form
         form={form}
         layout="vertical"
-        className="mt-8"
         onFinish={(v) => void onFinish(v)}
         initialValues={{
           announcementStyle: "info",
@@ -286,343 +289,394 @@ export default function AdminSiteSettingsPage() {
           clearEmailOutreachFailure: false,
         }}
       >
-        <Typography.Title level={5}>Message of the day</Typography.Title>
-        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          A short line shown just below the site header on the public app. Use
-          for seasonal notes or links; leave empty to hide it.
-        </p>
-        <Form.Item name="motdText" label="MOTD text">
-          <Input placeholder="Optional header strip…" maxLength={500} />
-        </Form.Item>
-
-        <Typography.Title level={5} className="!mt-8">
-          Announcement
-        </Typography.Title>
-        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          A highlighted banner below the MOTD (if any) with title and body.
-          Start/end use your browser&apos;s local timezone. Leave both times
-          empty to show whenever enabled. You must enter at least a title or
-          body when the announcement is on.
-        </p>
-        <Form.Item name="announcementEnabled" valuePropName="checked">
-          <Checkbox>Enable announcement (respects start/end window)</Checkbox>
-        </Form.Item>
-        <Form.Item name="announcementStyle" label="Style">
-          <Radio.Group>
-            <Radio value="info">Info</Radio>
-            <Radio value="warning">Warning</Radio>
-          </Radio.Group>
-        </Form.Item>
-        <Form.Item name="announcementTitle" label="Title">
-          <Input maxLength={200} />
-        </Form.Item>
-        <Form.Item name="announcementBody" label="Body">
-          <Input.TextArea rows={4} maxLength={4000} />
-        </Form.Item>
-        <Form.Item name="announcementStartsAt" label="Starts at (local)">
-          <Input type="datetime-local" />
-        </Form.Item>
-        <Form.Item name="announcementEndsAt" label="Ends at (local)">
-          <Input type="datetime-local" />
-        </Form.Item>
-
-        <Typography.Title level={5} className="!mt-8">
-          Maintenance
-        </Typography.Title>
-        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          When enabled, visitors see a maintenance screen instead of the main
-          app. Moderators and admins still get the normal site; login and auth
-          routes stay available so staff can sign in.
-        </p>
-        {loadedSite?.emailOutreachFailureAt ? (
-          <Alert
-            type="warning"
-            showIcon
-            className="mb-4"
-            message="Bulk email reported failures"
-            description={`Last flagged: ${new Date(loadedSite.emailOutreachFailureAt).toLocaleString()}. Signed-in users may see a bottom-right prompt to join the mailing list until you clear the flag below (e.g. after fixing SMTP).`}
-          />
-        ) : null}
-        <Form.Item name="maintenanceEnabled" valuePropName="checked">
-          <Checkbox>Maintenance mode (public site)</Checkbox>
-        </Form.Item>
-        <Form.Item
-          name="notifyUsersOnMaintenance"
-          valuePropName="checked"
-          extra="When you save with maintenance turning on (was off, now on), sends one email per user using the bulk email subject and body below (or their defaults)."
+        {/* ── Message of the day ── */}
+        <Card
+          className="mb-4"
+          title={
+            <span className="flex items-center gap-2">
+              <span>📢</span> Message of the Day
+            </span>
+          }
         >
-          <Checkbox>Email all registered users when enabling maintenance</Checkbox>
-        </Form.Item>
-        <Form.Item
-          name="maintenanceMessage"
-          label="Public maintenance page message"
-          extra="Shown on the maintenance screen for visitors. Also included in the default email template when the bulk email body below is left empty."
-        >
-          <Input.TextArea rows={3} maxLength={2000} />
-        </Form.Item>
-        <Typography.Text strong className="block !mt-6">
-          Bulk email (maintenance notice)
-        </Typography.Text>
-        <p className="mb-4 mt-1 text-sm text-[var(--gn-text-muted)]">
-          Optional subject and full message body for emails to all registered
-          users. Leave the body empty to use the default notice plus the public
-          message above. The site URL is always appended to the email. Use
-          &quot;Send email…&quot; to send without turning maintenance mode on.
-        </p>
-        <Form.Item
-          name="maintenanceEmailSubject"
-          label="Email subject"
-          extra="Leave empty to use the default subject."
-        >
-          <Input
-            maxLength={300}
-            placeholder="Growers Notebook — maintenance notice"
-          />
-        </Form.Item>
-        <Form.Item name="maintenanceEmailBody" label="Email body">
-          <Input.TextArea rows={6} maxLength={8000} />
-        </Form.Item>
-        <Form.Item>
-          <Space wrap>
-            <Button
-              type="default"
-              disabled={!loadedSite?.maintenanceEmailConfigured}
-              loading={sendingBulk}
-              onClick={() => sendBulkMaintenanceEmail()}
-            >
-              Send email to all users now
-            </Button>
-            {!loadedSite?.maintenanceEmailConfigured ? (
-              <Typography.Text type="secondary" className="text-sm">
-                Bulk email needs SMTP and auth admin credentials on the API.
-              </Typography.Text>
-            ) : null}
-          </Space>
-        </Form.Item>
-        <Form.Item
-          name="clearEmailOutreachFailure"
-          valuePropName="checked"
-          extra="Clears the public “mailing list” recovery prompt for everyone after SMTP is working again."
-        >
-          <Checkbox>Clear mailing-list nudge flag</Checkbox>
-        </Form.Item>
-
-        <Typography.Title level={5} className="!mt-8">
-          SEO & social preview
-        </Typography.Title>
-        <p className="mb-4 text-[var(--gn-text-muted)] text-sm">
-          These fields override the app&apos;s built-in SEO text when saved.
-          Leave a field empty and save to use the built-in value again (nothing
-          stored in the database for that field). Inner pages usually set their
-          own title in code; the home page and any page without a custom title
-          use the default below. The signed-out home hero subtitle uses the meta
-          description when set. Google search snippets can lag by days—use
-          Search Console → URL Inspection → Request indexing after changes.
-        </p>
-
-        <Card size="small" className="mb-6 bg-[var(--gn-admin-surface-2,#141414)] border-[var(--gn-border)]">
-          <Typography.Text strong className="block mb-2">
-            Built-in defaults (from app code)
-          </Typography.Text>
-          <p className="text-[var(--gn-text-muted)] text-sm mb-3">
-            Shown for reference. Use &quot;Fill with built-in&quot; on a field to
-            copy text here into the form so you can tweak it, or leave overrides
-            empty to keep using these without duplicating them in the database.
+          <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
+            A short strip shown just below the site header on the public app.
+            Use for seasonal notes or links; leave empty to hide it.
           </p>
-          <dl className="text-sm space-y-3 m-0">
-            <div>
-              <dt className="text-[var(--gn-text-muted)] font-medium">
-                Home / fallback{" "}
-                <code className="text-xs">&lt;title&gt;</code>
-              </dt>
-              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
-                {BUILTIN_SEO_REFERENCE.homeTitle}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[var(--gn-text-muted)] font-medium">
-                Typical inner page title pattern
-              </dt>
-              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
-                {BUILTIN_SEO_REFERENCE.innerTitleExample}
-              </dd>
-              <dd className="mt-1 m-0 text-[var(--gn-text-muted)] text-xs">
-                The part before &quot;·&quot; is set per page; the suffix is
-                fixed in code.
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[var(--gn-text-muted)] font-medium">
-                Meta description (search snippets & previews)
-              </dt>
-              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
-                {BUILTIN_SEO_REFERENCE.metaDescription}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[var(--gn-text-muted)] font-medium">
-                Meta keywords (comma-separated, from code)
-              </dt>
-              <dd className="mt-1 m-0 whitespace-pre-wrap break-words font-mono text-[13px]">
-                {BUILTIN_SEO_REFERENCE.keywordsCommaSeparated}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[var(--gn-text-muted)] font-medium">
-                Open Graph / Twitter image
-              </dt>
-              <dd className="mt-1 m-0 text-[var(--gn-text-muted)]">
-                No default image in code. Set a URL below so shares show a chosen
-                image (~1200×630, <code className="text-xs">https://</code>{" "}
-                only).
-              </dd>
-            </div>
-          </dl>
-          <Button
-            type="default"
-            size="small"
-            className="mt-4"
-            onClick={() =>
-              form.setFieldsValue({
-                seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
-                seoDefaultDescription: BUILTIN_SEO_REFERENCE.metaDescription,
-                seoKeywords: BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
-              })
-            }
-          >
-            Fill title, description & keywords from built-in
-          </Button>
+          <Form.Item name="motdText" label="MOTD text" className="!mb-0">
+            <Input placeholder="Optional header strip…" maxLength={500} />
+          </Form.Item>
         </Card>
 
-        <Form.Item
-          name="seoDefaultTitle"
-          label="Override: default meta title (home & fallback)"
-          rules={[{ max: 200, message: "Max 200 characters" }]}
-          extra={
-            <span>
-              The HTML <code className="text-xs">&lt;title&gt;</code> for the
-              home page and for any route that does not set its own title. This
-              is the browser tab label and the main clickable headline in Google.
-              Leave empty to use the built-in home title above.
-              <Space size="middle" className="mt-1 block">
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() =>
-                    form.setFieldsValue({
-                      seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
-                    })
-                  }
-                >
-                  Fill with built-in
-                </Typography.Link>
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() => form.setFieldsValue({ seoDefaultTitle: "" })}
-                >
-                  Clear override
-                </Typography.Link>
-              </Space>
+        {/* ── Announcement ── */}
+        <Card
+          className="mb-4"
+          title={
+            <span className="flex items-center gap-2">
+              <span>📣</span> Announcement Banner
             </span>
           }
         >
-          <Input maxLength={200} />
-        </Form.Item>
-        <Form.Item
-          name="seoDefaultDescription"
-          label="Override: meta description"
-          rules={[{ max: 500, message: "Max 500 characters" }]}
-          extra={
-            <span>
-              Short summary shown under the title in search results and in many
-              link previews; also the paragraph under the big headline on the
-              signed-out home page. Aim for one or two clear sentences. Leave
-              empty to use the built-in description in the card above.
-              <Space size="middle" className="mt-1 block">
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() =>
-                    form.setFieldsValue({
-                      seoDefaultDescription:
-                        BUILTIN_SEO_REFERENCE.metaDescription,
-                    })
-                  }
-                >
-                  Fill with built-in
-                </Typography.Link>
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() =>
-                    form.setFieldsValue({ seoDefaultDescription: "" })
-                  }
-                >
-                  Clear override
-                </Typography.Link>
-              </Space>
-            </span>
-          }
-        >
-          <Input.TextArea rows={4} maxLength={500} />
-        </Form.Item>
-        <Form.Item
-          name="seoKeywords"
-          label="Override: meta keywords"
-          rules={[{ max: 2000, message: "Max 2000 characters" }]}
-          extra={
-            <span>
-              Comma-separated phrases output in the{" "}
-              <code className="text-xs">keywords</code> meta tag. Many search
-              engines ignore it; it is optional. Leave empty to use the built-in
-              keyword list above.
-              <Space size="middle" className="mt-1 block">
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() =>
-                    form.setFieldsValue({
-                      seoKeywords:
-                        BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
-                    })
-                  }
-                >
-                  Fill with built-in
-                </Typography.Link>
-                <Typography.Link
-                  className="text-sm"
-                  onClick={() => form.setFieldsValue({ seoKeywords: "" })}
-                >
-                  Clear override
-                </Typography.Link>
-              </Space>
-            </span>
-          }
-        >
-          <Input maxLength={2000} />
-        </Form.Item>
-        <Form.Item
-          name="ogImageUrl"
-          label="Open Graph / Twitter share image URL"
-          rules={[{ max: 2000, message: "Max 2000 characters" }]}
-          extra={
-            <span>
-              Image used when someone shares a link to the site (Discord, X,
-              iMessage, etc.). Must be a full <code className="text-xs">https://</code>{" "}
-              URL. Suggested size about 1200×630. There is no built-in image; if
-              this is empty, platforms may pick another image from the page or
-              show none. Invalid URLs are rejected when saving.
-              <Typography.Link
-                className="text-sm mt-1 block"
-                onClick={() => form.setFieldsValue({ ogImageUrl: "" })}
-              >
-                Clear URL
-              </Typography.Link>
-            </span>
-          }
-        >
-          <Input placeholder="https://…" maxLength={2000} />
-        </Form.Item>
+          <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
+            A highlighted banner below the MOTD with title and body. Start/end
+            use your browser&apos;s local timezone. Leave both times empty to
+            show whenever enabled. At least a title or body is required when
+            enabled.
+          </p>
+          <Form.Item name="announcementEnabled" valuePropName="checked">
+            <Checkbox>Enable announcement (respects start/end window)</Checkbox>
+          </Form.Item>
+          <Form.Item name="announcementStyle" label="Style">
+            <Radio.Group>
+              <Radio value="info">Info (blue)</Radio>
+              <Radio value="warning">Warning (yellow)</Radio>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item name="announcementTitle" label="Title">
+            <Input maxLength={200} placeholder="Announcement headline" />
+          </Form.Item>
+          <Form.Item name="announcementBody" label="Body">
+            <Input.TextArea
+              rows={4}
+              maxLength={4000}
+              placeholder="Full announcement text…"
+            />
+          </Form.Item>
+          <Divider dashed className="!my-3" />
+          <Form.Item name="announcementStartsAt" label="Starts at (local time)">
+            <Input type="datetime-local" />
+          </Form.Item>
+          <Form.Item
+            name="announcementEndsAt"
+            label="Ends at (local time)"
+            className="!mb-0"
+          >
+            <Input type="datetime-local" />
+          </Form.Item>
+        </Card>
 
-        <Form.Item className="!mt-8">
-          <Button type="primary" htmlType="submit" loading={saving}>
-            Save
+        {/* ── Maintenance ── */}
+        <Card
+          className="mb-4"
+          title={
+            <span className="flex items-center gap-2">
+              <span>🔧</span> Maintenance Mode
+            </span>
+          }
+        >
+          <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
+            When enabled, visitors see a maintenance screen instead of the app.
+            Moderators and admins still see the normal site; login routes stay
+            available so staff can sign in.
+          </p>
+          {loadedSite?.emailOutreachFailureAt ? (
+            <Alert
+              type="warning"
+              showIcon
+              className="mb-4"
+              message="Bulk email reported failures"
+              description={`Last flagged: ${new Date(loadedSite.emailOutreachFailureAt).toLocaleString()}. Signed-in users may see a bottom-right prompt to join the mailing list until you clear the flag below (e.g. after fixing SMTP).`}
+            />
+          ) : null}
+          <Form.Item name="maintenanceEnabled" valuePropName="checked">
+            <Checkbox>Enable maintenance mode (public site)</Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="notifyUsersOnMaintenance"
+            valuePropName="checked"
+            extra="When you save with maintenance turning on (was off, now on), sends one email per registered user using the subject and body below (or their defaults)."
+          >
+            <Checkbox>
+              Email all registered users when enabling maintenance
+            </Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="maintenanceMessage"
+            label="Public maintenance page message"
+            extra="Shown on the maintenance screen for visitors. Also used in the default email template when the bulk email body below is left empty."
+          >
+            <Input.TextArea
+              rows={3}
+              maxLength={2000}
+              placeholder="We're doing some upgrades — back shortly!"
+            />
+          </Form.Item>
+          <Divider dashed className="!my-3" />
+          <Typography.Text strong className="!mb-1 block">
+            Bulk email (maintenance notice)
+          </Typography.Text>
+          <p className="mb-4 mt-1 text-sm text-[var(--gn-text-muted)]">
+            Optional subject and full message body for the maintenance email
+            blast. Leave the body empty to use the default notice plus the
+            message above. Use &ldquo;Send email now&rdquo; to send without
+            turning maintenance on.
+          </p>
+          <Form.Item
+            name="maintenanceEmailSubject"
+            label="Email subject"
+            extra="Leave empty to use the default subject."
+          >
+            <Input
+              maxLength={300}
+              placeholder="Growers Notebook — maintenance notice"
+            />
+          </Form.Item>
+          <Form.Item name="maintenanceEmailBody" label="Email body">
+            <Input.TextArea rows={6} maxLength={8000} />
+          </Form.Item>
+          <Form.Item>
+            <Space wrap>
+              <Button
+                type="default"
+                disabled={!loadedSite?.maintenanceEmailConfigured}
+                loading={sendingBulk}
+                onClick={() => sendBulkMaintenanceEmail()}
+              >
+                Send email to all users now
+              </Button>
+              {!loadedSite?.maintenanceEmailConfigured ? (
+                <Typography.Text type="secondary" className="text-sm">
+                  Bulk email needs SMTP and auth admin credentials on the API.
+                </Typography.Text>
+              ) : null}
+            </Space>
+          </Form.Item>
+          <Form.Item
+            name="clearEmailOutreachFailure"
+            valuePropName="checked"
+            extra="Clears the public mailing-list recovery prompt for everyone after SMTP is working again."
+            className="!mb-0"
+          >
+            <Checkbox>Clear mailing-list nudge flag</Checkbox>
+          </Form.Item>
+        </Card>
+
+        {/* ── SEO ── */}
+        <Card
+          className="mb-6"
+          title={
+            <span className="flex items-center gap-2">
+              <span>🔍</span> SEO &amp; Social Preview
+            </span>
+          }
+        >
+          <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
+            These fields override the app&apos;s built-in SEO text. Leave a
+            field empty and save to revert to the built-in value. Google search
+            snippets can lag by days &mdash; use Search Console &rarr; URL
+            Inspection &rarr; Request indexing after changes.
+          </p>
+
+          <Card
+            size="small"
+            className="mb-6 border-[var(--gn-border)] bg-[var(--gn-admin-surface-2,#141414)]"
+          >
+            <Typography.Text strong className="mb-2 block">
+              Built-in defaults (from app code &mdash; for reference)
+            </Typography.Text>
+            <p className="mb-3 text-sm text-[var(--gn-text-muted)]">
+              Use &ldquo;Fill with built-in&rdquo; to copy these into the form
+              so you can tweak them, or leave overrides empty to use these
+              automatically.
+            </p>
+            <dl className="m-0 space-y-3 text-sm">
+              <div>
+                <dt className="font-medium text-[var(--gn-text-muted)]">
+                  Home / fallback{" "}
+                  <code className="text-xs">&lt;title&gt;</code>
+                </dt>
+                <dd className="m-0 mt-1 whitespace-pre-wrap break-words font-mono text-[13px]">
+                  {BUILTIN_SEO_REFERENCE.homeTitle}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-[var(--gn-text-muted)]">
+                  Typical inner page title pattern
+                </dt>
+                <dd className="m-0 mt-1 whitespace-pre-wrap break-words font-mono text-[13px]">
+                  {BUILTIN_SEO_REFERENCE.innerTitleExample}
+                </dd>
+                <dd className="m-0 mt-1 text-xs text-[var(--gn-text-muted)]">
+                  The part before &ldquo;&middot;&rdquo; is set per page; the
+                  suffix is fixed in code.
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-[var(--gn-text-muted)]">
+                  Meta description (search snippets &amp; previews)
+                </dt>
+                <dd className="m-0 mt-1 whitespace-pre-wrap break-words font-mono text-[13px]">
+                  {BUILTIN_SEO_REFERENCE.metaDescription}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-[var(--gn-text-muted)]">
+                  Meta keywords (comma-separated, from code)
+                </dt>
+                <dd className="m-0 mt-1 whitespace-pre-wrap break-words font-mono text-[13px]">
+                  {BUILTIN_SEO_REFERENCE.keywordsCommaSeparated}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-[var(--gn-text-muted)]">
+                  Open Graph / Twitter image
+                </dt>
+                <dd className="m-0 mt-1 text-[var(--gn-text-muted)]">
+                  No default in code. Set a URL below so shares show a chosen
+                  image (~1200&times;630,{" "}
+                  <code className="text-xs">https://</code> only).
+                </dd>
+              </div>
+            </dl>
+            <Button
+              type="default"
+              size="small"
+              className="mt-4"
+              onClick={() =>
+                form.setFieldsValue({
+                  seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
+                  seoDefaultDescription: BUILTIN_SEO_REFERENCE.metaDescription,
+                  seoKeywords: BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
+                })
+              }
+            >
+              Fill title, description &amp; keywords from built-in
+            </Button>
+          </Card>
+
+          <Form.Item
+            name="seoDefaultTitle"
+            label="Override: default meta title (home & fallback)"
+            rules={[{ max: 200, message: "Max 200 characters" }]}
+            extra={
+              <span>
+                The HTML <code className="text-xs">&lt;title&gt;</code> for the
+                home page and any route without its own title (browser tab label
+                + Google headline). Leave empty to use the built-in.
+                <Space size="middle" className="mt-1 block">
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() =>
+                      form.setFieldsValue({
+                        seoDefaultTitle: BUILTIN_SEO_REFERENCE.homeTitle,
+                      })
+                    }
+                  >
+                    Fill with built-in
+                  </Typography.Link>
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() =>
+                      form.setFieldsValue({ seoDefaultTitle: "" })
+                    }
+                  >
+                    Clear override
+                  </Typography.Link>
+                </Space>
+              </span>
+            }
+          >
+            <Input maxLength={200} />
+          </Form.Item>
+          <Form.Item
+            name="seoDefaultDescription"
+            label="Override: meta description"
+            rules={[{ max: 500, message: "Max 500 characters" }]}
+            extra={
+              <span>
+                Short summary for search result snippets and link previews; also
+                the subtitle on the signed-out home page. One or two clear
+                sentences. Leave empty to use the built-in.
+                <Space size="middle" className="mt-1 block">
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() =>
+                      form.setFieldsValue({
+                        seoDefaultDescription:
+                          BUILTIN_SEO_REFERENCE.metaDescription,
+                      })
+                    }
+                  >
+                    Fill with built-in
+                  </Typography.Link>
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() =>
+                      form.setFieldsValue({ seoDefaultDescription: "" })
+                    }
+                  >
+                    Clear override
+                  </Typography.Link>
+                </Space>
+              </span>
+            }
+          >
+            <Input.TextArea rows={4} maxLength={500} />
+          </Form.Item>
+          <Form.Item
+            name="seoKeywords"
+            label="Override: meta keywords"
+            rules={[{ max: 2000, message: "Max 2000 characters" }]}
+            extra={
+              <span>
+                Comma-separated phrases in the{" "}
+                <code className="text-xs">keywords</code> meta tag. Most search
+                engines ignore it; optional. Leave empty to use the built-in.
+                <Space size="middle" className="mt-1 block">
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() =>
+                      form.setFieldsValue({
+                        seoKeywords:
+                          BUILTIN_SEO_REFERENCE.keywordsCommaSeparated,
+                      })
+                    }
+                  >
+                    Fill with built-in
+                  </Typography.Link>
+                  <Typography.Link
+                    className="text-sm"
+                    onClick={() => form.setFieldsValue({ seoKeywords: "" })}
+                  >
+                    Clear override
+                  </Typography.Link>
+                </Space>
+              </span>
+            }
+          >
+            <Input maxLength={2000} />
+          </Form.Item>
+          <Form.Item
+            name="ogImageUrl"
+            label="Open Graph / Twitter share image URL"
+            rules={[{ max: 2000, message: "Max 2000 characters" }]}
+            extra={
+              <span>
+                Image shown when someone shares a link (Discord, X, iMessage,
+                etc.). Must be a full{" "}
+                <code className="text-xs">https://</code> URL, ~1200&times;630px.
+                If empty, platforms may pick another image or show none.
+                <Typography.Link
+                  className="mt-1 block text-sm"
+                  onClick={() => form.setFieldsValue({ ogImageUrl: "" })}
+                >
+                  Clear URL
+                </Typography.Link>
+              </span>
+            }
+            className="!mb-0"
+          >
+            <Input placeholder="https://…" maxLength={2000} />
+          </Form.Item>
+        </Card>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={saving}
+            size="large"
+          >
+            Save all settings
           </Button>
         </Form.Item>
       </Form>

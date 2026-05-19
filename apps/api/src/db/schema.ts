@@ -69,6 +69,22 @@ export const notebookGrowthStageEnum = pgEnum('notebook_growth_stage', [
 export type CatalogSuggestionKind =
   (typeof catalogSuggestionKindEnum.enumValues)[number];
 
+/** Per-user notification toggles surfaced in `/settings/notifications`. */
+export type NotificationPreferences = {
+  new_comment: boolean;
+  new_follower: boolean;
+  vote_milestone: boolean;
+  direct_message: boolean;
+};
+
+/** Defaults applied at column level and when seeding a missing row. */
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  new_comment: true,
+  new_follower: true,
+  vote_milestone: true,
+  direct_message: true,
+};
+
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
   displayName: text('display_name'),
@@ -92,6 +108,19 @@ export const profiles = pgTable('profiles', {
   suspendedUntil: timestamp('suspended_until', { withTimezone: true }),
   /** Opt-in to site email (announcements, etc.); never exposed to other users. */
   mailingListOptIn: boolean('mailing_list_opt_in').notNull().default(false),
+  /** Per-kind notification toggles ({ new_comment, new_follower, vote_milestone, direct_message }). */
+  notificationPreferences: jsonb('notification_preferences')
+    .$type<NotificationPreferences>()
+    .default(
+      sql`'{"new_comment": true, "new_follower": true, "vote_milestone": true, "direct_message": true}'::jsonb`,
+    ),
+  /**
+   * Rolling activity timestamp; powers the "Growers online now" badge on the guest landing.
+   * Read via the `growers_online_count()` SECURITY DEFINER RPC so anon clients never see profile rows.
+   */
+  lastSeen: timestamp('last_seen', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -123,6 +152,8 @@ export const communities = pgTable(
     description: text('description'),
     /** Curated icon id for sidebar / directory (set in admin). */
     iconKey: text('icon_key'),
+    /** Public https URL (community-banners bucket) for wide hero on community page. */
+    bannerUrl: text('banner_url'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

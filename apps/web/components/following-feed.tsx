@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ApiErrorCard } from "@/components/api-error-card";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
+import { SkeletonFeedList } from "@/components/skeletons";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/client";
@@ -24,12 +27,14 @@ export function FollowingFeed({
   sort: "new" | "top";
   page: number;
 }) {
+  const router = useRouter();
   const [items, setItems] = useState<FeedPost[]>([]);
   const [total, setTotal] = useState(0);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     setSort(initialSort);
@@ -63,6 +68,7 @@ export function FollowingFeed({
     let cancelled = false;
     void (async () => {
       setLoading(true);
+      setLoadError(false);
       try {
         const supabase = createClient();
         const token = await getAccessTokenForApi(supabase);
@@ -83,6 +89,7 @@ export function FollowingFeed({
         if (!cancelled) {
           setItems([]);
           setTotal(0);
+          setLoadError(true);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -99,11 +106,7 @@ export function FollowingFeed({
   };
 
   if (signedIn === null) {
-    return (
-      <p className="text-sm text-[var(--gn-text-muted)]" aria-live="polite">
-        Loading…
-      </p>
-    );
+    return <SkeletonFeedList />;
   }
 
   if (signedIn === false) {
@@ -124,6 +127,32 @@ export function FollowingFeed({
 
   return (
     <div>
+      {/* Collapsed post composer strip — only shown to signed-in users */}
+      <div
+        className="gn-card flex items-center gap-3 px-4 py-3 mb-4 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => router.push("/new-post")}
+      >
+        <div className="h-9 w-9 rounded-full bg-[var(--gn-surface-2)] flex-shrink-0 overflow-hidden" />
+        <div
+          className="flex-1 rounded-full bg-[var(--gn-surface-2)] border border-[var(--gn-divide)] px-4 py-2 text-sm text-[var(--gn-text-3)]"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && router.push("/new-post")}
+        >
+          What&apos;s growing? Share your update...
+        </div>
+        <button
+          className="text-[var(--gn-text-3)] hover:text-[var(--gn-accent)] transition-colors"
+          aria-label="Add photo"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push("/new-post");
+          }}
+        >
+          📷
+        </button>
+      </div>
+
       <div className="mb-4 flex gap-2 text-sm font-medium">
         <Link
           href={sortLink("new")}
@@ -148,22 +177,35 @@ export function FollowingFeed({
       </div>
 
       {loading ? (
-        <p className="text-sm text-[var(--gn-text-muted)]">Loading posts…</p>
-      ) : null}
-
-      {!loading && items.length === 0 ? (
-        <div className="gn-panel border-dashed p-8 text-center text-[var(--gn-text-muted)]">
-          <p className="text-[var(--gn-text)]">Your feed is empty.</p>
-          <p className="mt-2 text-sm">
-            Follow other growers or join communities—then new posts appear
-            here, similar to Reddit’s home feed.
+        <SkeletonFeedList />
+      ) : loadError ? (
+        <ApiErrorCard
+          message="Could not load your following feed right now."
+          onRetry={() => window.location.reload()}
+        />
+      ) : items.length === 0 ? (
+        <div className="text-center py-12 gn-panel rounded-2xl">
+          <div className="text-5xl mb-4">🌱</div>
+          <h3 className="text-lg font-semibold text-[var(--gn-text-1)] mb-2">
+            Your feed is empty
+          </h3>
+          <p className="text-sm text-[var(--gn-text-2)] mb-6 max-w-xs mx-auto">
+            Follow some growers or join communities to see their posts here.
           </p>
-          <Link
-            href="/"
-            className="mt-4 inline-block text-sm font-medium text-[#ff4500] hover:underline"
-          >
-            Browse communities
-          </Link>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <a
+              href="/community"
+              className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Browse Communities
+            </a>
+            <a
+              href="/hot"
+              className="inline-flex items-center gap-2 bg-[var(--gn-surface-2)] text-[var(--gn-text-1)] border border-[var(--gn-divide)] rounded-full px-5 py-2 text-sm font-medium hover:bg-[var(--gn-surface-3)] transition-colors"
+            >
+              See What&apos;s Hot
+            </a>
+          </div>
         </div>
       ) : (
         <FeedPostCardList items={items} />

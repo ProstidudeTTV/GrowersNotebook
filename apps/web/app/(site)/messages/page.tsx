@@ -8,11 +8,8 @@ export default function MessagesPage() {
         Messages
       </h1>
       <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
-        Your open conversations. To start a new chat, open someone you follow
-        and use Message on their profile. Messages are private to participants
-        and protected in transit; Growers can access content when needed for
-        safety and operations (similar to default Messenger—not Signal-style
-        end-to-end encryption from the service).
+        Your open conversations. To start a new chat, visit someone&apos;s
+        profile and use the Message button.
       </p>
       <div className="mt-6">
         <Suspense

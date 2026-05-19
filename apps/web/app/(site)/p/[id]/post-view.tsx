@@ -43,7 +43,7 @@ import {
 } from "@/components/comment-discussion-composer";
 import type { PostMediaItem } from "@/lib/feed-post";
 import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
-import { displayPostBodyHtml } from "@/lib/youtube-embed";
+import { displayPostBodyHtml, extractYouTubeVideoId } from "@/lib/youtube-embed";
 
 type Author = {
   id: string;
@@ -74,6 +74,41 @@ function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
     .replace(/\s+/g, " ")
     .trim();
   return text.length > 0;
+}
+
+function isYouTubeMedia(item: { url: string; type: string }): boolean {
+  return item.type === "video" && Boolean(extractYouTubeVideoId(item.url));
+}
+
+function AvatarChip({
+  avatarUrl,
+  displayName,
+  sizePx = 32,
+}: {
+  avatarUrl?: string | null;
+  displayName?: string | null;
+  sizePx?: 32 | 48;
+}) {
+  const initial = (displayName ?? "").trim().charAt(0).toUpperCase() || "?";
+  const sizeClass = sizePx === 48 ? "h-12 w-12 text-sm" : "h-8 w-8 text-xs";
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        className={`${sizeClass} shrink-0 rounded-full object-cover ring-1 ring-[var(--gn-ring)]`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`${sizeClass} inline-flex shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]`}
+      aria-hidden
+    >
+      {initial}
+    </span>
+  );
 }
 
 type PostDetail = {
@@ -228,21 +263,24 @@ function CommentTree({
             />
             <div className="min-w-0 flex-1 gn-card-subtle p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="text-xs text-[var(--gn-text-muted)]">
-                  <UserProfileLink
-                    userId={c.author.id}
-                    className="font-medium text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
-                  >
-                    {c.author.displayName ?? "member"}
-                  </UserProfileLink>
-                  <span> · </span>
-                  <span title="Grower tier">{tier}</span>
-                  <span> · </span>
-                  <span title="Net seeds from posts and comments">
-                    {formatSeeds(c.author.seeds)} seeds
-                  </span>
-                  <span> · </span>
-                  {new Date(c.createdAt).toLocaleString()}
+                <div className="flex items-start gap-2">
+                  <AvatarChip displayName={c.author.displayName} sizePx={32} />
+                  <div className="text-xs text-[var(--gn-text-muted)]">
+                    <UserProfileLink
+                      userId={c.author.id}
+                      className="font-semibold text-[var(--gn-text)] transition hover:text-[#ff4500] hover:underline"
+                    >
+                      {c.author.displayName ?? "member"}
+                    </UserProfileLink>
+                    <span> · </span>
+                    <span title="Grower tier">{tier}</span>
+                    <span> · </span>
+                    <span title="Net seeds from posts and comments">
+                      {formatSeeds(c.author.seeds)} seeds
+                    </span>
+                    <span> · </span>
+                    {new Date(c.createdAt).toLocaleString()}
+                  </div>
                 </div>
                 {viewerId ? (
                   <CommentActionMenu ariaLabel={`Actions for comment by ${c.author.displayName ?? "member"}`}>
@@ -905,7 +943,12 @@ export function PostView({
   const authorTier = post.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
   const isOp = Boolean(viewerId && viewerId === post.author.id);
   const showPostBody = postBodyHtmlIsMeaningful(post.bodyHtml);
-  const showPostMedia = Boolean(post.media && post.media.length > 0);
+  /** First media item shown as full-width hero above the title (not while editing). */
+  const heroMedia =
+    !editingPost && post.media && post.media.length > 0 ? post.media[0] : null;
+  /** Remaining media items go to the carousel (avoids duplicating the hero). */
+  const carouselMedia = heroMedia ? post.media!.slice(1) : (post.media ?? []);
+  const showPostMedia = carouselMedia.length > 0;
   const commentsTotal =
     typeof post.commentCount === "number"
       ? post.commentCount
@@ -925,6 +968,28 @@ export function PostView({
       ) : null}
       <article className="relative z-20 overflow-visible rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]">
         <div className="overflow-hidden rounded-t-2xl">
+        {heroMedia ? (
+          isYouTubeMedia(heroMedia) ? (
+            <div className="w-full aspect-video">
+              <iframe
+                className="h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${extractYouTubeVideoId(heroMedia.url)}`}
+                title="Post video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroMedia.url}
+              alt=""
+              className="w-full max-h-[480px] object-cover"
+            />
+          )
+        ) : null}
         <div className="p-3.5 sm:p-5">
           <div className="flex items-start gap-2.5 sm:gap-3">
             {post.community ? (
@@ -998,6 +1063,48 @@ export function PostView({
                 <h1 className="mt-2 text-xl font-bold leading-snug text-[var(--gn-text)] sm:text-2xl">
                   {post.title}
                 </h1>
+              )}
+              {!editingPost && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--gn-divide)] pb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <AvatarChip
+                      avatarUrl={post.author.avatarUrl}
+                      displayName={post.author.displayName}
+                      sizePx={48}
+                    />
+                    <div className="min-w-0">
+                      <UserProfileLink
+                        userId={post.author.id}
+                        className="block font-semibold text-[var(--gn-text)] hover:text-[#ff4500] hover:underline"
+                      >
+                        {post.author.displayName ?? "member"}
+                      </UserProfileLink>
+                      {post.community ? (
+                        <p className="text-xs text-[var(--gn-text-muted)]">
+                          Posted in{" "}
+                          <Link
+                            href={`/community/${post.community.slug}`}
+                            className="hover:underline"
+                          >
+                            {post.community.name.trim() || post.community.slug}
+                          </Link>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--gn-text-muted)]">
+                          Profile post
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className="inline-flex items-center rounded-full bg-[var(--gn-accent)]/20 px-3 py-1 text-xs font-semibold text-[var(--gn-accent)]">
+                      🌱 {authorTier}
+                    </span>
+                    <span className="text-xs text-[var(--gn-text-muted)]">
+                      Grower since {new Date(post.createdAt).getFullYear()}
+                    </span>
+                  </div>
+                </div>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <FollowUserButton
@@ -1189,7 +1296,7 @@ export function PostView({
               />
             ) : null}
             {showPostMedia ? (
-              <PostMediaCarousel items={post.media!} embedded />
+              <PostMediaCarousel items={carouselMedia} embedded />
             ) : null}
           </div>
         ) : null}
@@ -1274,29 +1381,46 @@ export function PostView({
             </button>
           </div>
         ) : null}
-        <div className="mt-3 space-y-2">
-          <CommentDiscussionComposer
-            viewerId={viewerId}
-            disabled={busy}
-            placeholder="Join the discussion…"
-            submitLabel="Comment"
-            onSubmit={submitCommentFromComposer}
-            onSubmitError={(msg) => setError(msg)}
-            replyBanner={
-              replyTo ? (
-                <div className="text-xs text-[var(--gn-text-muted)]">
-                  Replying to a thread.{" "}
-                  <button
-                    type="button"
-                    className="font-medium text-[#ff4500] underline"
-                    onClick={() => setReplyTo(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : null
-            }
-          />
+        <div className="mt-4 flex items-start gap-3 border-t border-[var(--gn-divide)] pt-4">
+          {/* Viewer avatar placeholder — profile data isn't loaded here */}
+          <span
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]"
+            aria-hidden
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-[var(--gn-text-muted)]"
+            >
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <CommentDiscussionComposer
+              viewerId={viewerId}
+              disabled={busy}
+              placeholder="Join the discussion…"
+              submitLabel="Comment"
+              onSubmit={submitCommentFromComposer}
+              onSubmitError={(msg) => setError(msg)}
+              replyBanner={
+                replyTo ? (
+                  <div className="text-xs text-[var(--gn-text-muted)]">
+                    Replying to a thread.{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-[#ff4500] underline"
+                      onClick={() => setReplyTo(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : null
+              }
+            />
+          </div>
         </div>
         <div className="mt-5 sm:mt-6">
           <CommentTree

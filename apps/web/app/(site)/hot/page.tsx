@@ -25,14 +25,41 @@ type FeedResponse = {
   pageSize: number;
 };
 
+type ValidRange = "day" | "week" | "month";
+
+const RANGE_CONFIG: Record<ValidRange, { label: string; heading: string; subheading: string }> = {
+  day: {
+    label: "Today",
+    heading: "Hot today",
+    subheading: "Posts from the last 24 hours, ranked by net upvotes.",
+  },
+  week: {
+    label: "This Week",
+    heading: "Hot this week",
+    subheading:
+      "Posts from the last seven days, ranked by net upvotes—the same list as in the sidebar. Newer posts break ties when scores match.",
+  },
+  month: {
+    label: "This Month",
+    heading: "Hot this month",
+    subheading: "Posts from the last 30 days, ranked by net upvotes.",
+  },
+};
+
+function isValidRange(value: string): value is ValidRange {
+  return value === "day" || value === "week" || value === "month";
+}
+
 export default async function HotWeekPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; range?: string }>;
 }) {
   const sp = await searchParams;
   const page = Number(sp.page ?? 1) || 1;
   const pageSize = 20;
+  const range: ValidRange = isValidRange(sp.range ?? "") ? (sp.range as ValidRange) : "week";
+  const config = RANGE_CONFIG[range];
 
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
@@ -48,7 +75,7 @@ export default async function HotWeekPage({
       page: String(page),
       pageSize: String(pageSize),
     });
-    feed = await apiFetch<FeedResponse>(`/posts/hot/week?${qs.toString()}`, {
+    feed = await apiFetch<FeedResponse>(`/posts/hot/${range}?${qs.toString()}`, {
       token: token ?? undefined,
     });
   } catch {
@@ -58,20 +85,48 @@ export default async function HotWeekPage({
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight text-[var(--gn-text)]">
-        Hot this week
+        {config.heading}
       </h1>
-      <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-        Posts from the last seven days, ranked by net upvotes—the same list as
-        in the sidebar. Newer posts break ties when scores match.
-      </p>
+      <p className="mt-1 text-sm text-[var(--gn-text-muted)]">{config.subheading}</p>
+
+      {/* Time-range tab pills */}
+      <div className="flex gap-2 mt-5 mb-6">
+        {(Object.entries(RANGE_CONFIG) as [ValidRange, (typeof RANGE_CONFIG)[ValidRange]][]).map(
+          ([key, { label }]) => (
+            <Link
+              key={key}
+              href={`/hot?range=${key}`}
+              className={
+                range === key
+                  ? "bg-[var(--gn-accent)] text-white rounded-full px-4 py-1.5 text-sm font-medium"
+                  : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] rounded-full px-4 py-1.5 text-sm"
+              }
+            >
+              {label}
+            </Link>
+          ),
+        )}
+      </div>
 
       {feed.items.length === 0 ? (
-        <p className="mt-8 text-sm text-[var(--gn-text-muted)]">
-          No posts in the last week yet.
-        </p>
+        <div className="text-center py-16 gn-panel rounded-2xl">
+          <div className="text-5xl mb-4">🌿</div>
+          <h3 className="text-lg font-semibold text-[var(--gn-text-1)] mb-2">
+            No hot posts yet
+          </h3>
+          <p className="text-sm text-[var(--gn-text-2)] mb-6">
+            Be the first to start a discussion in a community.
+          </p>
+          <a
+            href="/community"
+            className="inline-flex items-center gap-2 bg-[var(--gn-accent)] text-white rounded-full px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Browse Communities
+          </a>
+        </div>
       ) : (
         <div className="mt-6">
-          <FeedPostCardList items={feed.items} />
+          <FeedPostCardList items={feed.items} showRanks />
         </div>
       )}
 
@@ -79,16 +134,16 @@ export default async function HotWeekPage({
         <div className="mt-6 flex justify-center gap-4 text-sm">
           {page > 1 ? (
             <Link
-              className="text-[#ff4500] hover:underline"
-              href={`/hot?page=${page - 1}`}
+              className="text-[var(--gn-accent)] hover:underline"
+              href={`/hot?range=${range}&page=${page - 1}`}
             >
               Previous
             </Link>
           ) : null}
           {page * feed.pageSize < feed.total ? (
             <Link
-              className="text-[#ff4500] hover:underline"
-              href={`/hot?page=${page + 1}`}
+              className="text-[var(--gn-accent)] hover:underline"
+              href={`/hot?range=${range}&page=${page + 1}`}
             >
               Next
             </Link>

@@ -222,7 +222,7 @@ function MetricGrid({
   titleDivider?: boolean;
   /** `wrap` lays out metrics in a horizontal flow to save vertical space. */
   metricsFlow?: "grid" | "wrap";
-  items: { label: string; value: ReactNode; wide?: boolean }[];
+  items: { label: string; value: ReactNode; wide?: boolean; noPill?: boolean }[];
   gridClass?: string;
   rootClassName?: string;
 }) {
@@ -250,12 +250,16 @@ function MetricGrid({
             <dt className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
               {item.label}
             </dt>
-            <dd
-              className={`text-sm font-medium text-[var(--gn-text)] ${
-                isWrap ? "mt-0.5" : "mt-1"
-              }`}
-            >
-              {item.value}
+            <dd className={isWrap ? "mt-0.5" : "mt-1"}>
+              {item.noPill ? (
+                <span className="text-sm font-medium text-[var(--gn-text)]">
+                  {item.value}
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-2.5 py-0.5 text-xs font-medium text-[var(--gn-text)]">
+                  {item.value}
+                </span>
+              )}
             </dd>
           </div>
         ))}
@@ -881,6 +885,7 @@ export function NotebookDetailClient({
                 label: string;
                 value: ReactNode;
                 wide?: boolean;
+                noPill?: boolean;
               }[] = [];
               const waterRows =
                 w.waterings && w.waterings.length > 0
@@ -943,6 +948,8 @@ export function NotebookDetailClient({
                       <div className="space-y-1">{bits}</div>
                     ),
                   wide: true,
+                  // Notes text is multi-line/free-form — skip pill chrome
+                  noPill: !!(row.notes?.trim()),
                 });
               });
 

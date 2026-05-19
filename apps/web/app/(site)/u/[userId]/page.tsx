@@ -101,7 +101,9 @@ export default async function UserProfilePage({
       ? "comments"
       : sp.tab === "notebooks"
         ? "notebooks"
-        : "posts";
+        : sp.tab === "media"
+          ? "media"
+          : "posts";
   const sort = sp.sort === "top" ? "top" : "new";
   const page = Number(sp.page ?? 1) || 1;
 
@@ -121,7 +123,7 @@ export default async function UserProfilePage({
   let commentsPayload: CommentsResponse | null = null;
   let notebooksPayload: NotebooksResponse | null = null;
 
-  if (activeTab === "posts") {
+  if (activeTab === "posts" || activeTab === "media") {
     const qs = new URLSearchParams({
       sort,
       page: String(page),

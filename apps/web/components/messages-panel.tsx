@@ -62,6 +62,18 @@ type OpenThreadResponse = {
   peer: { id: string; displayName: string | null };
 };
 
+type ProfileSearchItem = {
+  id: string;
+  displayName: string | null;
+  description?: string | null;
+  avatarUrl?: string | null;
+};
+
+type ProfileSearchResponse = {
+  items: ProfileSearchItem[];
+  total: number;
+};
+
 type ThreadSummary = {
   id: string;
   peer: { id: string; displayName: string | null };
@@ -169,6 +181,38 @@ function threadPreviewLine(
   return `${n} photos`;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2)
+    return ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
+  return (parts[0]?.[0] ?? "G").toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  "bg-orange-600",
+  "bg-emerald-700",
+  "bg-sky-700",
+  "bg-violet-700",
+  "bg-rose-700",
+];
+
+function MiniAvatar({ name, size }: { name: string; size: number }) {
+  const initials = getInitials(name);
+  const colorIdx =
+    name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) %
+    AVATAR_COLORS.length;
+  const bg = AVATAR_COLORS[colorIdx];
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold uppercase text-white ${bg}`}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
+    >
+      {initials}
+    </span>
+  );
+}
+
 export function MessagesPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -204,6 +248,11 @@ export function MessagesPanel() {
   const gifFetchSeq = useRef(0);
   const lastGifPickMs = useRef(0);
   const [openingFromQuery, setOpeningFromQuery] = useState(false);
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<ProfileSearchItem[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const debouncedUserSearch = useDebouncedValue(userSearchQuery.trim(), 320);
   const deepLinkProcessedOk = useRef<string | null>(null);
   const sharePostPrefillDone = useRef<string | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
@@ -277,6 +326,42 @@ export function MessagesPanel() {
     setGifQuery("");
     setGifItems([]);
   }, []);
+
+  useEffect(() => {
+    if (!showNewMessageModal || debouncedUserSearch.length < 2) {
+      setUserSearchResults([]);
+      setUserSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setUserSearchLoading(true);
+    (async () => {
+      try {
+        const data = await apiFetch<ProfileSearchResponse>(
+          `/profiles/search?q=${encodeURIComponent(debouncedUserSearch)}&pageSize=8&page=1`,
+          { method: "GET" },
+        );
+        if (!cancelled) setUserSearchResults(data.items);
+      } catch {
+        if (!cancelled) setUserSearchResults([]);
+      } finally {
+        if (!cancelled) setUserSearchLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedUserSearch, showNewMessageModal]);
+
+  const startConversation = useCallback(
+    (user: ProfileSearchItem) => {
+      setShowNewMessageModal(false);
+      setUserSearchQuery("");
+      setUserSearchResults([]);
+      router.push(`/messages?with=${user.id}`);
+    },
+    [router],
+  );
 
   const fetchToken = useCallback(async () => {
     return getAccessTokenForApi(supabase);
@@ -839,6 +924,61 @@ export function MessagesPanel() {
           onClose={() => setLightbox(null)}
         />
       ) : null}
+      {showNewMessageModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowNewMessageModal(false)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-2xl bg-[var(--gn-surface-1,var(--gn-surface-elevated))] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 font-semibold text-[var(--gn-text)]">
+              New Message
+            </h2>
+            <input
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              placeholder="Search by username…"
+              className="gn-input mb-4 w-full"
+              autoFocus
+            />
+            {userSearchLoading ? (
+              <p className="text-xs text-[var(--gn-text-muted)]">
+                Searching…
+              </p>
+            ) : userSearchQuery.trim().length > 0 &&
+              userSearchQuery.trim().length < 2 ? (
+              <p className="text-xs text-[var(--gn-text-muted)]">
+                Type at least 2 characters.
+              </p>
+            ) : userSearchResults.length === 0 &&
+              debouncedUserSearch.length >= 2 ? (
+              <p className="text-xs text-[var(--gn-text-muted)]">
+                No users found.
+              </p>
+            ) : null}
+            <div className="max-h-48 space-y-1 overflow-y-auto">
+              {userSearchResults.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => startConversation(user)}
+                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--gn-surface-hover)]"
+                >
+                  <MiniAvatar
+                    name={user.displayName?.trim() || "Grower"}
+                    size={32}
+                  />
+                  <span className="text-sm font-medium text-[var(--gn-text)]">
+                    {user.displayName?.trim() || "Grower"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {actionError ? (
         <div
           className="rounded-lg border border-red-300/50 bg-red-500/10 px-4 py-3 text-sm text-[var(--gn-text)]"
@@ -869,6 +1009,13 @@ export function MessagesPanel() {
       ) : null}
       <div className="flex min-h-[420px] flex-col gap-4 lg:flex-row">
         <div className="flex w-full shrink-0 flex-col border-[var(--gn-divide)] lg:w-64 lg:border-r lg:pr-3">
+          <button
+            type="button"
+            onClick={() => setShowNewMessageModal(true)}
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            <span aria-hidden>+</span> New Message
+          </button>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
             Conversations
           </p>
@@ -896,28 +1043,44 @@ export function MessagesPanel() {
                       }
                     }}
                   >
-                    <span className="flex w-full items-start gap-2 text-left">
-                      <span
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                          t.unread ? "bg-[#ff6a38]" : "invisible"
-                        }`}
-                        aria-hidden
-                      />
+                    <span className="flex w-full items-center gap-2.5 text-left">
+                      <span className="relative shrink-0">
+                        <MiniAvatar
+                          name={displayNameFor(t.peer.id, selfId, t.peer)}
+                          size={40}
+                        />
+                        {t.unread ? (
+                          <span
+                            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[var(--gn-surface)] bg-[#ff6a38]"
+                            aria-label="Unread messages"
+                          />
+                        ) : null}
+                      </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium">
+                        <span
+                          className={`block text-sm font-medium ${t.unread ? "text-[var(--gn-text)]" : "text-[var(--gn-text-muted)]"}`}
+                        >
                           <Link
                             href={`/u/${t.peer.id}`}
-                            className="text-[var(--gn-text)] hover:text-[#ff6a38] hover:underline"
+                            className="hover:text-[#ff6a38] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {displayNameFor(t.peer.id, selfId, t.peer)}
                           </Link>
                         </span>
-                        {threadPreviewLine(t.lastMessage) ? (
-                          <span className="mt-0.5 block truncate text-xs text-[var(--gn-text-muted)]">
-                            {threadPreviewLine(t.lastMessage)}
-                          </span>
-                        ) : null}
+                        {(() => {
+                          const preview = threadPreviewLine(t.lastMessage);
+                          if (!preview) return null;
+                          const short =
+                            preview.length > 40
+                              ? `${preview.slice(0, 40)}…`
+                              : preview;
+                          return (
+                            <span className="mt-0.5 block truncate text-xs text-[var(--gn-text-muted)]">
+                              {short}
+                            </span>
+                          );
+                        })()}
                       </span>
                     </span>
                   </div>
@@ -983,44 +1146,29 @@ export function MessagesPanel() {
                     const showPostEmbed = Boolean(share);
                     const hasText = caption.length > 0;
                     const hasMedia = imgs.length > 0;
+                    const isSelf = Boolean(selfId && ln.senderId === selfId);
+                    const peerDisplay = displayNameFor(
+                      ln.senderId,
+                      selfId,
+                      activePeer,
+                    );
                     return (
                       <div
                         key={ln.id}
-                        className={`rounded-lg border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-2.5 py-2 text-sm shadow-[var(--gn-shadow-sm)] ${imgs.length > 1 ? "overflow-visible" : ""}`}
+                        className={`flex items-end gap-2 ${isSelf ? "justify-end" : ""}`}
                       >
-                        <div className="flex min-w-0 flex-col overflow-visible">
-                          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.95em] leading-snug font-medium text-[var(--gn-accent)]">
-                            <span>
-                              {selfId && ln.senderId === selfId ? (
-                                "You"
-                              ) : (
-                                <Link
-                                  href={`/u/${ln.senderId}`}
-                                  className="hover:text-[#ff6a38] hover:underline"
-                                >
-                                  {displayNameFor(
-                                    ln.senderId,
-                                    selfId,
-                                    activePeer,
-                                  )}
-                                </Link>
-                              )}
-                            </span>
-                            {selfId && ln.senderId === selfId ? (
-                              <button
-                                type="button"
-                                disabled={messageDeletingId === ln.id}
-                                onClick={() => void removeOwnMessage(ln.id)}
-                                className="text-[11px] font-normal text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
-                              >
-                                {messageDeletingId === ln.id
-                                  ? "Removing…"
-                                  : "Delete"}
-                              </button>
-                            ) : null}
-                          </div>
+                        {!isSelf && (
+                          <MiniAvatar name={peerDisplay} size={24} />
+                        )}
+                        <div
+                          className={`text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                            isSelf
+                              ? "ml-auto max-w-[70%] rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-4 py-2 text-white"
+                              : "mr-auto max-w-[70%] rounded-2xl rounded-bl-sm border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] px-4 py-2 text-[var(--gn-text)]"
+                          }`}
+                        >
                           {hasText ? (
-                            <p className="mt-1.5 whitespace-pre-wrap break-words text-[var(--gn-text)]">
+                            <p className="whitespace-pre-wrap break-words">
                               {caption}
                             </p>
                           ) : null}
@@ -1029,30 +1177,38 @@ export function MessagesPanel() {
                           ) : null}
                           {(hasText || showPostEmbed) && hasMedia ? (
                             <div
-                              className="my-2.5 border-t border-[var(--gn-divide)]"
+                              className={`my-2 border-t ${isSelf ? "border-white/20" : "border-[var(--gn-divide)]"}`}
                               role="separator"
                             />
                           ) : null}
                           {hasMedia ? (
-                            <div
-                              className={`overflow-visible ${hasText || showPostEmbed ? "" : "mt-1.5"}`}
-                            >
+                            <div className="overflow-visible">
                               <StackedDmStyleImages
                                 urls={imgs}
                                 stackKey={ln.id}
                                 pileLabel={dmAttachmentPileLabel(
                                   imgs,
-                                  Boolean(selfId && ln.senderId === selfId),
-                                  displayNameFor(
-                                    ln.senderId,
-                                    selfId,
-                                    activePeer,
-                                  ),
+                                  isSelf,
+                                  peerDisplay,
                                 )}
                                 onOpen={(index) =>
                                   setLightbox({ urls: imgs, index })
                                 }
                               />
+                            </div>
+                          ) : null}
+                          {isSelf ? (
+                            <div className="mt-1 flex justify-end">
+                              <button
+                                type="button"
+                                disabled={messageDeletingId === ln.id}
+                                onClick={() => void removeOwnMessage(ln.id)}
+                                className="text-[11px] font-normal text-white/60 hover:text-white/90 hover:underline disabled:opacity-45"
+                              >
+                                {messageDeletingId === ln.id
+                                  ? "Removing…"
+                                  : "Delete"}
+                              </button>
                             </div>
                           ) : null}
                         </div>
@@ -1238,9 +1394,9 @@ export function MessagesPanel() {
                 ) : null}
               </div>
             ) : null}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-4 py-2">
               <input
-                className="min-h-11 min-w-0 w-full flex-1 rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)]"
+                className="flex-1 border-0 bg-transparent text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Type a message…"
@@ -1252,52 +1408,59 @@ export function MessagesPanel() {
                   }
                 }}
               />
-              <div className="flex min-h-11 shrink-0 items-stretch gap-2 sm:min-h-0 sm:items-center">
-                {!activeThreadId ||
-                pendingAttachments.length >= DM_ATTACH_MAX ? (
-                  <span
-                    className="inline-flex flex-1 cursor-not-allowed items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] opacity-50 sm:flex-initial"
-                    aria-disabled
-                  >
-                    Media
-                  </span>
-                ) : (
-                  <label
-                    htmlFor={dmAttachInputId}
-                    className="inline-flex flex-1 cursor-pointer touch-manipulation select-none items-center justify-center rounded-md border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-center text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:flex-initial"
-                  >
-                    Media
-                  </label>
-                )}
-                <button
-                  type="button"
-                  className="min-w-[5.5rem] flex-1 rounded-md bg-[#ff6a38] px-4 py-2 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50 sm:flex-initial"
-                  disabled={(() => {
-                    if (!activeThreadId) return true;
-                    const uploading = pendingAttachments.some((a) => a.uploading);
-                    const hasErr = pendingAttachments.some((a) => a.error);
-                    const remotes = pendingAttachments.filter((a) => a.remoteUrl);
-                    const incomplete =
-                      pendingAttachments.length > 0 &&
-                      remotes.length !== pendingAttachments.length;
-                    if (uploading || hasErr || incomplete) return true;
-                    return (
-                      !draft.trim() &&
-                      remotes.length === 0
-                    );
-                  })()}
-                  onClick={() => void sendMessage()}
+              {!activeThreadId ||
+              pendingAttachments.length >= DM_ATTACH_MAX ? (
+                <span
+                  className="shrink-0 cursor-not-allowed text-sm font-medium text-[var(--gn-text-muted)] opacity-50"
+                  aria-disabled
                 >
-                  Send
-                </button>
-              </div>
+                  Media
+                </span>
+              ) : (
+                <label
+                  htmlFor={dmAttachInputId}
+                  className="shrink-0 cursor-pointer touch-manipulation select-none text-sm font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
+                >
+                  Media
+                </label>
+              )}
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-[#ff6a38] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#ff7d4c] disabled:opacity-50"
+                disabled={(() => {
+                  if (!activeThreadId) return true;
+                  const uploading = pendingAttachments.some((a) => a.uploading);
+                  const hasErr = pendingAttachments.some((a) => a.error);
+                  const remotes = pendingAttachments.filter((a) => a.remoteUrl);
+                  const incomplete =
+                    pendingAttachments.length > 0 &&
+                    remotes.length !== pendingAttachments.length;
+                  if (uploading || hasErr || incomplete) return true;
+                  return !draft.trim() && remotes.length === 0;
+                })()}
+                onClick={() => void sendMessage()}
+              >
+                Send
+              </button>
             </div>
-            <p className="text-xs leading-relaxed text-[var(--gn-text-muted)]">
-              Private between you and the other person on GrowersNotebook, like
-              typical app messages. Content is readable by the service when
-              needed for safety and operations—not end-to-end encrypted from
-              Growers.
-            </p>
+            <details className="relative inline-block">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] [&::-webkit-details-marker]:hidden">
+                <span
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gn-divide)] text-[10px] font-bold leading-none"
+                  aria-hidden
+                >
+                  i
+                </span>
+                Privacy info
+              </summary>
+              <div className="absolute bottom-6 left-0 z-20 w-72 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-3 text-xs leading-relaxed text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-md)]">
+                Private between you and the other person on GrowersNotebook,
+                like typical app messages. Content is readable by the service
+                when needed for safety and operations—not end-to-end encrypted
+                from Growers (similar to default Messenger, not Signal-style
+                encryption).
+              </div>
+            </details>
           </div>
         </div>
       </div>

@@ -45,10 +45,15 @@ Migration **`20260519120000_rls_hardening_public_core.sql`** (and matching Drizz
 
 Migration **`20260520120000_rls_explicit_postgrest_deny.sql`** adds explicit **`USING (false)`** policies for **`anon` / `authenticated`** on backend-only tables (and on **`public.__drizzle_migrations`**) so the Supabase linter stops reporting **“RLS Enabled No Policy”** (INFO) without changing access: Nest still bypasses RLS. If this was applied via Supabase MCP in two steps, **`list_migrations`** may show **`rls_explicit_postgrest_deny_part1`** and **`_part2`** instead of one name—the SQL is equivalent to the single file in the repo.
 
+### SECURITY DEFINER RPCs callable from `anon`
+
+- **`growers_online_count()`** (migration **`20260524120000_profiles_last_seen.sql`**) — returns the count of `profiles.last_seen > now() - INTERVAL '15 minutes'` as `bigint`. `SECURITY DEFINER`, `STABLE`, `SET search_path = public`; `EXECUTE` granted to **`anon`**, **`authenticated`**, **`service_role`**. The guest landing (`apps/web/app/(site)/page.tsx`) calls it via `supabase.rpc('growers_online_count')` so the badge works without exposing the `profiles` table to PostgREST.
+
 ### Security Advisor items that stay as dashboard / product choices
 
 - **[Leaked password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)** (WARN): enable in **Supabase Dashboard → Authentication** (HaveIBeenPwned check for signups/password changes). Not configurable via SQL migration.
-- **Public storage bucket listing** ([lint 0025](https://supabase.com/docs/guides/database/database-linter?lint=0025_public_bucket_allows_listing)) on **`avatars`** / **`post-media`**: broad **`SELECT`** on `storage.objects` is what allows **public `<img>` / video URLs** for arbitrary paths; narrowing policy typically means **private buckets + signed URLs** (app change). Accept the WARN or plan that migration separately.
+- **Public storage bucket listing** ([lint 0025](https://supabase.com/docs/guides/database/database-linter?lint=0025_public_bucket_allows_listing)) on **`avatars`** / **`post-media`** / **`community-banners`**: broad **`SELECT`** on `storage.objects` is what allows **public `<img>` / video URLs** for arbitrary paths; narrowing policy typically means **private buckets + signed URLs** (app change). Accept the WARN or plan that migration separately.
+- **`anon` / `authenticated` can execute `public.growers_online_count()`** ([lints 0028 / 0029](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)): **intentional**. The function is `SECURITY DEFINER` so unauthenticated guests can read an aggregate count without us granting `SELECT` on the `profiles` table to PostgREST. Body is a fixed aggregate (`SELECT COUNT(*) ... WHERE last_seen > now() - 15m`), no inputs, returns `bigint` only. Switching to `SECURITY INVOKER` would break the guest landing badge under current RLS.
 
 ## Tables (public schema)
 
@@ -56,8 +61,8 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `role` enum (`member` / `moderator` / `admin`). |
-| `communities` | `slug`, `name`, `description`. |
+| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `role` enum (`member` / `moderator` / `admin`), `notification_preferences` JSONB (`{ new_comment, new_follower, vote_milestone, direct_message }`, all default true; read/written by `/settings/notifications`), `last_seen` (rolling activity timestamp, indexed; powers the guest landing "Growers online now" badge via the `growers_online_count()` RPC). |
+| `communities` | `slug`, `name`, `description`, `icon_key` (curated sidebar icon), `banner_url` (public `community-banners` URL for wide hero). |
 | `posts` | `community_id` (**nullable**: null = profile post), `author_id`, `title`, `body_json`, `body_html`, `excerpt`, timestamps. |
 | `comments` | Threaded: `post_id`, `author_id`, `parent_id`, `body`. |
 | `post_votes` | PK (`user_id`, `post_id`); `value` ±1. |
@@ -91,7 +96,7 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 ## Web routes (reference)
 
 - `/following` — personal feed (following + joined communities).
-- `/u/[userId]` — public profile (posts + comments tabs). `/settings/profile` — edit name, avatar URL, privacy.
+- `/u/[userId]` — public profile (posts + comments tabs). `/settings/profile` — edit name, avatar URL, privacy. `/settings/notifications` — toggle per-kind notification preferences (`profiles.notification_preferences` JSONB).
 - `/community/[slug]` — community; **Join** / **Joined** maps to `community_follows`.
 - Post author **Follow** / **Following** maps to `user_follows`.
 - **`/hot`** — full hot-week feed; sidebar link + preview use `GET /posts/hot/week?page=1&pageSize=1` for the #1 line.

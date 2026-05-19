@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
   } else if (nextPath !== "/") {
     destination = `${origin}${nextPath}`;
   } else {
-    destination = `${origin}/auth/complete`;
+    destination = `${origin}/welcome`;
   }
 
   const out = redirectPreservingCookies(jar, destination);

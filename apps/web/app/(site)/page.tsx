@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CommunityIcon } from "@/components/community-icon";
-import { GuestLanding } from "@/components/marketing/guest-landing";
+import {
+  GuestLanding,
+  type GuestLandingHotPost,
+} from "@/components/marketing/guest-landing";
 import { apiFetch } from "@/lib/api-public";
 import { getPublicApiUrl } from "@/lib/public-api-url";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -15,6 +18,67 @@ import {
   defaultSiteMetadata,
   mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
+
+/** Shape of items returned by `GET /posts/hot/week` that we surface on the guest hero. */
+type HotPostApiItem = {
+  id: string;
+  title: string;
+  media?: { url: string; type: "image" | "video" }[] | null;
+  score?: number | null;
+  author?: { displayName?: string | null } | null;
+  community?: { slug?: string | null; name?: string | null } | null;
+};
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Calls the SECURITY DEFINER RPC; returns 0 on any failure so the badge always renders. */
+async function fetchGrowersOnline(
+  supabase: SupabaseServerClient,
+): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("growers_online_count");
+    if (error) return 0;
+    const value = typeof data === "number" ? data : Number(data);
+    return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Server-side fetch of the top hot posts; returns [] on any failure (page still renders mock cards). */
+async function fetchGuestHeroHotPosts(): Promise<GuestLandingHotPost[]> {
+  let base: string;
+  try {
+    base = getPublicApiUrl();
+  } catch {
+    base =
+      process.env.API_URL?.trim().replace(/\/+$/, "") ?? "http://localhost:3001";
+  }
+  try {
+    const res = await fetch(`${base}/posts/hot/week?pageSize=2`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const payload = (await res.json()) as { items?: HotPostApiItem[] };
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    return items.slice(0, 2).map((p): GuestLandingHotPost => {
+      const firstImage = (p.media ?? []).find(
+        (m) => m && typeof m.url === "string" && m.type === "image",
+      );
+      const author = p.author?.displayName?.trim();
+      return {
+        id: p.id,
+        title: p.title,
+        imageUrl: firstImage?.url ?? null,
+        score: typeof p.score === "number" ? p.score : Number(p.score ?? 0),
+        authorName: author && author.length > 0 ? author : "A grower",
+        communityName: p.community?.name ?? null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Home used to export static metadata, which overrode root `generateMetadata` and ignored admin SEO.
@@ -58,47 +122,43 @@ type Community = {
   name: string;
   description: string | null;
   iconKey?: string | null;
+  memberCount?: number | null;
 };
 
-function CommunityListRow({ community: c }: { community: Community }) {
+function CommunityCard({ community: c }: { community: Community }) {
   return (
     <Link
       href={`/community/${c.slug}`}
-      className="group flex gap-4 py-5 transition-colors hover:bg-[color-mix(in_srgb,var(--gn-surface-elevated)_70%,transparent)]"
+      className="gn-card block p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
     >
-      <CommunityIcon
-        iconKey={c.iconKey}
-        nameFallback={c.name}
-        slugFallback={c.slug}
-        className="mt-0.5"
-      />
-      <div className="min-w-0 flex-1">
-      <h2 className="text-base font-semibold text-[#ff6a38] transition group-hover:text-[#ff7d4c] group-hover:drop-shadow-[0_0_12px_rgba(255,106,56,0.22)]">
-        {c.name}
-      </h2>
-      {c.description?.trim() ? (
-        <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--gn-text-muted)]">
-          {c.description.trim()}
-        </p>
-      ) : (
-        <p className="mt-1 text-sm italic text-[var(--gn-text-muted)]/80">
-          No description yet.
-        </p>
-      )}
+      <div className="flex items-start gap-3">
+        <CommunityIcon
+          iconKey={c.iconKey}
+          nameFallback={c.name}
+          slugFallback={c.slug}
+          frameClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+        />
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-[var(--gn-text)] truncate">
+            {c.name}
+          </h2>
+          {c.description?.trim() ? (
+            <p className="text-sm text-[var(--gn-text-muted)] line-clamp-2 mt-1">
+              {c.description.trim()}
+            </p>
+          ) : (
+            <p className="text-sm italic text-[var(--gn-text-muted)]/70 mt-1">
+              No description yet.
+            </p>
+          )}
+          {c.memberCount != null && c.memberCount > 0 ? (
+            <p className="text-xs text-[var(--gn-text-excerpt)] mt-2">
+              {c.memberCount.toLocaleString()} members
+            </p>
+          ) : null}
+        </div>
       </div>
     </Link>
-  );
-}
-
-function CommunityColumn({ items }: { items: Community[] }) {
-  return (
-    <ul className="min-w-0 divide-y divide-[var(--gn-divide)]">
-      {items.map((c) => (
-        <li key={c.id} className="min-w-0">
-          <CommunityListRow community={c} />
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -127,6 +187,11 @@ export default async function Home() {
   const hostedProd = isLikelyHostedRenderDeploy();
 
   if (!token) {
+    const [growersOnline, hotPosts] = await Promise.all([
+      fetchGrowersOnline(supabase),
+      fetchGuestHeroHotPosts(),
+    ]);
+
     return (
       <GuestLanding
         communities={communities}
@@ -136,14 +201,11 @@ export default async function Home() {
         heroBlurb={
           publicCfg.seoDefaultDescription?.trim() || SITE_TAGLINE
         }
+        growersOnline={growersOnline}
+        hotPosts={hotPosts}
       />
     );
   }
-
-  const mid = Math.ceil(communities.length / 2);
-  const leftCommunities = communities.slice(0, mid);
-  const rightCommunities = communities.slice(mid);
-  const twoColumns = rightCommunities.length > 0;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -155,68 +217,27 @@ export default async function Home() {
           A space for home growers to share their knowledge and experiences. Growers Notebook is a community-driven platform for sharing tips, tricks, and experiences with other home growers.
         </p>
       </div>
-      {loadError ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-          <p className="font-semibold">Could not load communities</p>
-          <p className="mt-2 text-sm opacity-90">{loadError}</p>
-          <ul className="mt-4 list-inside list-disc text-sm opacity-90">
-            <li>
-              Confirm the API service deploy succeeded and check service logs. Try{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                {apiBase || "(your API)"}/health
-              </code>
-              .
-            </li>
-            <li>
-              Database schema must include required columns (e.g.{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                communities.icon_key
-              </code>
-              ). Apply database migrations (from the project repo) or run the
-              bundled SQL on the project database, then redeploy or restart the
-              API if needed.
-            </li>
-            <li>
-              This page loads from{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                {apiBase || "(set NEXT_PUBLIC_API_URL)"}
-              </code>
-              — set{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                NEXT_PUBLIC_API_URL
-              </code>{" "}
-              on the web app to that API base URL, and ensure{" "}
-              <code className="rounded bg-black/10 px-1 dark:bg-white/10">
-                DATABASE_URL
-              </code>{" "}
-              (with session pooler if your network cannot reach the direct DB host)
-              is configured on the API.
-            </li>
-          </ul>
-        </div>
-      ) : null}
-      {!loadError && communities.length === 0 ? (
-        <p className="border-b border-dashed border-[var(--gn-divide)] py-10 text-center text-sm text-[var(--gn-text-muted)]">
-          No communities yet. Create one via the API or seed your database after
-          connecting the app database and running migrations.
-        </p>
-      ) : null}
-      {communities.length > 0 ? (
-        twoColumns ? (
-          <div className="grid grid-cols-1 border-t border-b border-[var(--gn-divide)] md:grid-cols-2 md:divide-x md:divide-[var(--gn-divide)]">
-            <div className="min-w-0 md:pr-8">
-              <CommunityColumn items={leftCommunities} />
-            </div>
-            <div className="min-w-0 border-t border-[var(--gn-divide)] md:border-t-0 md:pl-8">
-              <CommunityColumn items={rightCommunities} />
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {loadError ? (
+          <div className="col-span-full text-center py-12 gn-panel rounded-2xl">
+            <div className="text-4xl mb-3">🌿</div>
+            <h3 className="font-semibold text-[var(--gn-text)] mb-2">Something went sideways</h3>
+            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Could not load your communities right now.</p>
+            <a href="/" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Try again</a>
+          </div>
+        ) : communities.length === 0 ? (
+          <div className="col-span-full text-center py-12 gn-panel rounded-2xl">
+            <div className="text-4xl mb-3">🌱</div>
+            <h3 className="font-semibold text-[var(--gn-text)] mb-2">Plant your first seed</h3>
+            <p className="text-sm text-[var(--gn-text-muted)] mb-4">Join a community to see their posts in your feed.</p>
+            <a href="/community" className="inline-block bg-[#ff6a38] text-white hover:bg-[#ff7d4c] font-medium px-4 py-2 rounded-full text-sm transition-colors">Browse Communities</a>
           </div>
         ) : (
-          <div className="border-t border-b border-[var(--gn-divide)]">
-            <CommunityColumn items={leftCommunities} />
-          </div>
-        )
-      ) : null}
+          communities.map((c) => (
+            <CommunityCard key={c.id} community={c} />
+          ))
+        )}
+      </div>
     </main>
   );
 }

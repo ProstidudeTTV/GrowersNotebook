@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ProfileSettingsPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <div>
       <h1 className="text-2xl font-bold text-[var(--gn-text)]">
         Profile &amp; privacy
       </h1>
@@ -32,6 +32,6 @@ export default function ProfileSettingsPage() {
           <BlockedUsersSettings />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

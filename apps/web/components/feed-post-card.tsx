@@ -38,12 +38,22 @@ function compactCount(n: number): string {
   return String(n);
 }
 
+// A1.1 — 56 px avatar (h-14 w-14)
 const authorAvatarFrame =
-  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
 
+// A1.4 — shared pill style (maps --gn-surface-2 → --gn-surface-elevated, --gn-text-2 → --gn-text-muted)
+const tagPillClass =
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] border border-[var(--gn-divide)]";
+
+// A1.1 — 56 px community/author icon frame
+const iconFrameClass =
+  "flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
+
+// A1.2 — YouTube thumbnail resized to match hero image (h-48, rounded-xl)
 function YouTubeThumbnailPreview({ videoId }: { videoId: string }) {
   return (
-    <div className="relative mt-3 aspect-video w-full max-h-[min(28rem,72dvh)] min-h-[8.5rem] overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
+    <div className="relative mt-3 h-48 w-full overflow-hidden rounded-xl bg-black/35 ring-1 ring-[var(--gn-ring)]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
@@ -103,11 +113,14 @@ export function FeedPostCard({
   post,
   onPatch,
   pinnedCommunity,
+  rank,
 }: {
   post: FeedPost;
   onPatch: (postId: string, patch: Partial<FeedPost>) => void;
   /** On a community feed page: lock header to this community (icon + name). */
   pinnedCommunity?: { slug: string; name: string; iconKey?: string | null };
+  /** Rank badge (1-based). Rendered only for ranks 1–5. */
+  rank?: number;
 }) {
   const router = useRouter();
   const [local, setLocal] = useState(post);
@@ -259,29 +272,35 @@ export function FeedPostCard({
   }, [local.bodyHtml, local.excerpt]);
 
   const media = local.media?.[0];
+  // A1.2 — split media into hero image vs. video
+  const heroImage = media?.type === "image" ? media : null;
+  const videoMedia = media?.type === "video" ? media : null;
+
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
   const isOwn = viewerId != null && viewerId === local.author.id;
   const community = local.community;
+  const excerpt = formatFeedExcerpt(local.excerpt);
 
   const openPost = () => {
     router.push(`/p/${local.id}`);
   };
 
+  // A1.1 — 56 px icons for all three lead variants
   const headerLead =
     pinnedCommunity != null ? (
       <CommunityIcon
         iconKey={pinnedCommunity.iconKey}
         nameFallback={pinnedCommunity.name}
         slugFallback={pinnedCommunity.slug}
-        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+        frameClassName={iconFrameClass}
       />
     ) : community ? (
       <CommunityIcon
         iconKey={null}
         nameFallback={community.name}
         slugFallback={community.slug}
-        frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+        frameClassName={iconFrameClass}
       />
     ) : (
       <AuthorFeedAvatar
@@ -343,9 +362,15 @@ export function FeedPostCard({
     );
 
   return (
+    // A1.3 — borderless card with shadow lift on hover
     <article
-      className={`relative rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_22%,var(--gn-border))] hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative rounded-2xl border-0 bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-shadow duration-200 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
     >
+      {rank != null && rank >= 1 && rank <= 5 && (
+        <span className="absolute top-3 left-3 z-10 text-xs font-bold bg-[var(--gn-accent)]/90 text-white rounded-full h-6 w-6 flex items-center justify-center pointer-events-none">
+          {rank}
+        </span>
+      )}
       <div
         role="link"
         tabIndex={0}
@@ -364,22 +389,14 @@ export function FeedPostCard({
         aria-label={`Open post: ${local.title}`}
       >
         <div className="p-3.5 sm:p-4">
-          <div className="flex items-start gap-2">
+          {/* Header row: lead icon + meta + title + action menu */}
+          <div className="flex items-start gap-3">
             {headerLead}
             <div className="min-w-0 flex-1">
               {headerMeta}
               <h2 className="mt-2 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-lg">
                 {local.title}
               </h2>
-              {(() => {
-                const preview = formatFeedExcerpt(local.excerpt);
-                if (!preview) return null;
-                return (
-                  <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
-                    {preview}
-                  </p>
-                );
-              })()}
             </div>
             <div className="shrink-0" data-interactive>
               <CommentActionMenu ariaLabel="Post actions">
@@ -404,39 +421,55 @@ export function FeedPostCard({
             </div>
           </div>
 
-          {youTubePreviewId ? (
+          {/* A1.2 — Hero image: full-width, above excerpt */}
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImage.url}
+              alt=""
+              className="mt-3 h-48 w-full rounded-xl object-cover"
+              loading="lazy"
+            />
+          ) : null}
+
+          {/* A1.2 — YouTube preview (same size/style as hero image; skip if hero present) */}
+          {!heroImage && youTubePreviewId ? (
             <YouTubeThumbnailPreview videoId={youTubePreviewId} />
           ) : null}
 
-          {media ? (
-            media.type === "image" ? (
-              <div className="relative mt-3 aspect-[16/10] max-h-[min(28rem,72dvh)] min-h-[8.5rem] w-full overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={media.url}
-                  alt=""
-                  className="pointer-events-none h-full w-full object-cover object-center select-none"
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <div
-                className="mt-3 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
-                data-interactive
-              >
-                <video
-                  src={media.url}
-                  className="max-h-[min(28rem,72dvh)] w-full object-contain"
-                  controls
-                  preload="metadata"
-                  playsInline
-                />
-              </div>
-            )
+          {/* Video media */}
+          {videoMedia ? (
+            <div
+              className="mt-3 overflow-hidden rounded-xl bg-black/20 ring-1 ring-[var(--gn-ring)]"
+              data-interactive
+            >
+              <video
+                src={videoMedia.url}
+                className="max-h-[min(28rem,72dvh)] w-full object-contain"
+                controls
+                preload="metadata"
+                playsInline
+              />
+            </div>
+          ) : null}
+
+          {/* Excerpt — below hero */}
+          {excerpt ? (
+            <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
+              {excerpt}
+            </p>
+          ) : null}
+
+          {/* A1.4 — Grow-tag pill slot (no-op when strain is absent) */}
+          {local.strain ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className={tagPillClass}>{local.strain}</span>
+            </div>
           ) : null}
         </div>
       </div>
 
+      {/* A1.5 — Footer: votes · comments · share · muted date */}
       <div
         className="flex flex-wrap items-center gap-2 border-t border-[var(--gn-divide)] px-3.5 py-2.5 sm:px-4"
         data-interactive
@@ -482,6 +515,12 @@ export function FeedPostCard({
             postTitle={local.title}
             viewerId={viewerId}
           />
+        </span>
+        <span
+          className="ml-auto text-xs text-[var(--gn-text-muted)]"
+          title={new Date(local.createdAt).toLocaleString()}
+        >
+          {timeAgo(local.createdAt)}
         </span>
       </div>
 

@@ -34,4 +34,8 @@ export class CreateCommunityDto {
   @ValidateIf((_, v) => v != null)
   @IsIn(ICON_OPTIONS)
   iconKey?: string | null;
+
+  @IsOptional()
+  @IsString()
+  bannerUrl?: string;
 }

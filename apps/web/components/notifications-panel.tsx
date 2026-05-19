@@ -20,6 +20,44 @@ type NotificationItem = {
   createdAt: string;
 };
 
+type Bucket = "Today" | "Yesterday" | "Earlier";
+const BUCKETS: Bucket[] = ["Today", "Yesterday", "Earlier"];
+
+function getBucket(dateStr: string): Bucket {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const notifDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (notifDay >= today) return "Today";
+  if (notifDay >= yesterday) return "Yesterday";
+  return "Earlier";
+}
+
+function getTypeIcon(kind?: string | null): {
+  icon: string;
+  colorClass: string;
+} {
+  switch (kind) {
+    case "comment":
+    case "reply":
+      return { icon: "💬", colorClass: "bg-blue-500/20 text-blue-400" };
+    case "follow":
+      return { icon: "👤", colorClass: "bg-purple-500/20 text-purple-400" };
+    case "vote":
+    case "upvote":
+      return { icon: "⬆", colorClass: "bg-green-500/20 text-green-400" };
+    case "mention":
+      return { icon: "@", colorClass: "bg-yellow-500/20 text-yellow-400" };
+    default:
+      return {
+        icon: "🔔",
+        colorClass: "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]",
+      };
+  }
+}
+
 export function NotificationsPanel() {
   const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -205,93 +243,127 @@ export function NotificationsPanel() {
 
   const unread = items.filter((n) => !n.readAt).length;
 
+  const grouped = items.reduce<Record<Bucket, NotificationItem[]>>(
+    (acc, n) => {
+      acc[getBucket(n.createdAt)].push(n);
+      return acc;
+    },
+    { Today: [], Yesterday: [], Earlier: [] },
+  );
+
+  const hasAnyItems = items.length > 0;
+
   return (
     <>
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-[var(--gn-text-muted)]">
-          {unread > 0
-            ? `${unread} unread`
-            : "You’re all caught up."}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          {items.length > 0 ? (
-            <button
-              type="button"
-              className="text-sm font-semibold text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline"
-              onClick={() => void clearAll()}
-            >
-              Clear all
-            </button>
-          ) : null}
-          {unread > 0 ? (
-            <button
-              type="button"
-              className="text-sm font-semibold text-[#ff4500] hover:underline"
-              onClick={() => void markAllRead()}
-            >
-              Mark all read
-            </button>
-          ) : null}
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-[var(--gn-text-muted)]">
+            {unread > 0 ? `${unread} unread` : "You're all caught up."}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {hasAnyItems ? (
+              <button
+                type="button"
+                className="text-sm font-semibold text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:underline"
+                onClick={() => void clearAll()}
+              >
+                Clear all
+              </button>
+            ) : null}
+            {unread > 0 ? (
+              <button
+                type="button"
+                className="text-sm font-semibold text-[#ff4500] hover:underline"
+                onClick={() => void markAllRead()}
+              >
+                Mark all read
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        {!hasAnyItems ? (
+          <p className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
+            No notifications yet.
+          </p>
+        ) : (
+          <div className="space-y-5">
+            {BUCKETS.map((bucket) => {
+              const bucketItems = grouped[bucket];
+              if (bucketItems.length === 0) return null;
+              return (
+                <div key={bucket}>
+                  <div className="sticky top-0 z-10 bg-[var(--gn-surface-muted)]/80 backdrop-blur-sm text-xs font-semibold uppercase tracking-wider text-[var(--gn-text-muted)] py-2 px-1">
+                    {bucket}
+                  </div>
+                  <ul className="divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface)]">
+                    {bucketItems.map((n) => {
+                      const { icon, colorClass } = getTypeIcon(n.kind);
+                      const isUnread = !n.readAt;
+                      return (
+                        <li
+                          key={n.id}
+                          className={`flex ${isUnread ? "border-l-2 border-[var(--gn-accent)]" : "border-l-2 border-transparent"}`}
+                        >
+                          <button
+                            type="button"
+                            className={`flex min-w-0 flex-1 flex-row items-start gap-3 py-3 text-left transition hover:bg-[var(--gn-surface-hover)] ${isUnread ? "pl-3 pr-4 bg-[var(--gn-surface-raised)]" : "pl-4 pr-4 bg-transparent"}`}
+                            onClick={() =>
+                              openNotificationFromUserGesture({
+                                n,
+                                title: n.title,
+                                body: n.body,
+                                markRead,
+                                setModerationModal: setWarningModal,
+                                router,
+                              })
+                            }
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${colorClass}`}
+                            >
+                              {icon}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-semibold text-[var(--gn-text)] leading-snug">
+                                  {n.title}
+                                </span>
+                                <span className="text-xs text-[var(--gn-text-muted)] shrink-0 pt-0.5">
+                                  {formatNotifDate(n.createdAt)}
+                                </span>
+                              </div>
+                              <span className="text-sm leading-snug text-[var(--gn-text-muted)]">
+                                {n.kind === "moderation_warning"
+                                  ? "Tap to read the full message from moderators."
+                                  : n.body}
+                              </span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            className="shrink-0 self-stretch border-l border-[var(--gn-divide)] px-3 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+                            aria-label={`Dismiss notification: ${n.title}`}
+                            onClick={() => void dismissOne(n.id)}
+                          >
+                            Dismiss
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-      {items.length === 0 ? (
-        <p className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-8 text-center text-sm text-[var(--gn-text-muted)]">
-          No notifications yet.
-        </p>
-      ) : (
-        <ul className="divide-y divide-[var(--gn-divide)] rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface)]">
-          {items.map((n) => (
-            <li key={n.id} className="flex">
-              <button
-                type="button"
-                className={`flex min-w-0 flex-1 flex-col gap-1 px-4 py-3 text-left transition hover:bg-[var(--gn-surface-hover)] ${
-                  !n.readAt
-                    ? "bg-[color-mix(in_srgb,var(--gn-accent)_6%,transparent)]"
-                    : ""
-                }`}
-                onClick={() =>
-                  openNotificationFromUserGesture({
-                    n,
-                    title: n.title,
-                    body: n.body,
-                    markRead,
-                    setModerationModal: setWarningModal,
-                    router,
-                  })
-                }
-              >
-                <span className="font-medium text-[var(--gn-text)]">
-                  {n.title}
-                </span>
-                <span className="text-sm leading-snug text-[var(--gn-text-muted)]">
-                  {n.kind === "moderation_warning"
-                    ? "Tap to read the full message from moderators."
-                    : n.body}
-                </span>
-                <span className="text-[0.65rem] text-[var(--gn-text-muted)]">
-                  {formatNotifDate(n.createdAt)}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="shrink-0 self-stretch border-l border-[var(--gn-divide)] px-3 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
-                aria-label={`Dismiss notification: ${n.title}`}
-                onClick={() => void dismissOne(n.id)}
-              >
-                Dismiss
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-    <ModerationWarningModal
-      open={warningModal !== null}
-      title={warningModal?.title ?? ""}
-      body={warningModal?.body ?? ""}
-      onClose={() => setWarningModal(null)}
-    />
+      <ModerationWarningModal
+        open={warningModal !== null}
+        title={warningModal?.title ?? ""}
+        body={warningModal?.body ?? ""}
+        onClose={() => setWarningModal(null)}
+      />
     </>
   );
 }

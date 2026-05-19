@@ -12,6 +12,24 @@ export type GuestLandingCommunity = {
   iconKey?: string | null;
 };
 
+/** Lightweight projection of `/posts/hot/week` items used in the hero preview. */
+export type GuestLandingHotPost = {
+  id: string;
+  title: string;
+  /** First image attached to the post, when one exists. */
+  imageUrl: string | null;
+  /** Net vote score (upvotes - downvotes). */
+  score: number;
+  authorName: string;
+  communityName: string | null;
+};
+
+function formatGrowersOnline(count: number): string {
+  if (!Number.isFinite(count) || count < 0) return "0";
+  if (count > 999) return `${(count / 1000).toFixed(1)}k`;
+  return String(Math.round(count));
+}
+
 function IconLeaf({ className }: { className?: string }) {
   return (
     <svg
@@ -73,60 +91,136 @@ function IconBook({ className }: { className?: string }) {
   );
 }
 
-function HeroPreview() {
+function HotPostCard({ post }: { post: GuestLandingHotPost }) {
   return (
-    <div
-      className="relative mx-auto w-full max-w-lg lg:max-w-none"
-      aria-hidden
-    >
+    <article className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 p-4 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
+      {post.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.imageUrl}
+          alt=""
+          className="mb-3 h-32 w-full rounded-xl object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="mb-3 h-32 w-full rounded-xl bg-gradient-to-br from-[#ff4500]/20 via-[#ff6a38]/15 to-emerald-500/15" />
+      )}
+      <p className="line-clamp-2 text-sm font-semibold text-[var(--gn-text)]">
+        {post.title}
+      </p>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <p className="line-clamp-1 text-xs text-[var(--gn-text-muted)]">
+          {post.authorName}
+          {post.communityName ? (
+            <>
+              {" · "}
+              <span className="text-[#ff6a38]">{post.communityName}</span>
+            </>
+          ) : null}
+        </p>
+        <p className="shrink-0 text-xs font-medium text-[var(--gn-accent)]">
+          {post.score >= 0 ? "+" : ""}
+          {post.score}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function HeroPreviewMockCards() {
+  return (
+    <>
+      <div className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 p-4 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff4500]/25 to-emerald-500/20 text-[#ff4500]">
+            <IconLeaf className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[var(--gn-text)]">
+              Week 6 flower — frost coming in
+            </p>
+            <p className="text-xs text-[var(--gn-text-muted)]">
+              in <span className="text-[#ff6a38]">LED &amp; living soil</span> ·
+              128 votes
+            </p>
+          </div>
+        </div>
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
+          Dialing VPD and keeping temps steady. Sharing notes on terpene
+          preservation for the final two weeks.
+        </p>
+      </div>
+
+      <div className="ml-4 mr-0 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]/60 p-4 shadow-[var(--gn-shadow-md)] backdrop-blur-sm sm:ml-12">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg bg-[var(--gn-surface-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-border)]">
+            Strain library
+          </span>
+          <span className="rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            Gelato × Breath
+          </span>
+          <span className="text-xs text-[var(--gn-text-muted)]">
+            breeder &amp; review data
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function HeroPreview({
+  growersOnline,
+  hotPosts,
+}: {
+  growersOnline: number;
+  hotPosts: GuestLandingHotPost[];
+}) {
+  const showRealPosts = hotPosts.length > 0;
+  const visiblePosts = hotPosts.slice(0, 2);
+
+  return (
+    <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
       <div className="absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.12),transparent_70%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(34,197,94,0.15),transparent_70%)]" />
       <div className="absolute -bottom-10 -right-6 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(255,69,0,0.12),transparent_68%)] blur-2xl" />
 
       <div className="relative space-y-4">
         <div className="flex justify-end">
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/80 px-3 py-1 text-xs font-medium text-[var(--gn-text-muted)] shadow-[var(--gn-shadow-sm)] backdrop-blur-sm">
-            <span className="relative flex h-2 w-2">
+            <span className="relative flex h-2 w-2" aria-hidden>
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
-            Growers online now
+            <span className="text-[var(--gn-text)]">
+              {formatGrowersOnline(growersOnline)}
+            </span>
+            <span>growers online now</span>
           </span>
         </div>
 
-        <div className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/75 p-4 shadow-[var(--gn-shadow-lg)] backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff4500]/25 to-emerald-500/20 text-[#ff4500]">
-              <IconLeaf className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[var(--gn-text)]">
-                Week 6 flower — frost coming in
-              </p>
-              <p className="text-xs text-[var(--gn-text-muted)]">
-                in <span className="text-[#ff6a38]">LED &amp; living soil</span> ·
-                128 votes
-              </p>
-            </div>
-          </div>
-          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--gn-text-excerpt)]">
-            Dialing VPD and keeping temps steady. Sharing notes on terpene
-            preservation for the final two weeks.
-          </p>
-        </div>
-
-        <div className="ml-4 mr-0 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]/60 p-4 shadow-[var(--gn-shadow-md)] backdrop-blur-sm sm:ml-12">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-lg bg-[var(--gn-surface-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-border)]">
-              Strain library
-            </span>
-            <span className="rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              Gelato × Breath
-            </span>
-            <span className="text-xs text-[var(--gn-text-muted)]">
-              breeder &amp; review data
-            </span>
-          </div>
-        </div>
+        {showRealPosts ? (
+          <>
+            {visiblePosts.map((p, idx) => (
+              <div key={p.id} className={idx === 1 ? "ml-4 sm:ml-12" : ""}>
+                <HotPostCard post={p} />
+              </div>
+            ))}
+            {visiblePosts.length < 2 ? (
+              <div className="ml-4 mr-0 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]/60 p-4 shadow-[var(--gn-shadow-md)] backdrop-blur-sm sm:ml-12">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-lg bg-[var(--gn-surface-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-border)]">
+                    Strain library
+                  </span>
+                  <span className="text-xs text-[var(--gn-text-muted)]">
+                    breeder &amp; review data
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <HeroPreviewMockCards />
+        )}
       </div>
     </div>
   );
@@ -138,6 +232,8 @@ export function GuestLanding({
   apiBase,
   hostedDeploy = false,
   heroBlurb = SITE_TAGLINE,
+  growersOnline = 0,
+  hotPosts = [],
 }: {
   communities: GuestLandingCommunity[];
   loadError: string | null;
@@ -146,6 +242,10 @@ export function GuestLanding({
   hostedDeploy?: boolean;
   /** Shown under the hero headline; defaults to code tagline, or pass admin meta description */
   heroBlurb?: string;
+  /** Real "growers online now" count (last 15 min); rendered as `1.2k` when > 999. */
+  growersOnline?: number;
+  /** Top hot posts (last 7 days) to render in the hero preview; empty array falls back to mock. */
+  hotPosts?: GuestLandingHotPost[];
 }) {
   const featured = communities.slice(0, 8);
 
@@ -201,7 +301,7 @@ export function GuestLanding({
               </a>
             </div>
           </div>
-          <HeroPreview />
+          <HeroPreview growersOnline={growersOnline} hotPosts={hotPosts} />
         </div>
       </section>
 

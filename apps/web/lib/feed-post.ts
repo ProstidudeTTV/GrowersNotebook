@@ -27,4 +27,6 @@ export type FeedPost = {
   community?: { slug: string; name: string } | null;
   /** Present when this post is pinned in its community feed (moderation). */
   pinnedAt?: string | null;
+  /** Optional grow/strain tag displayed as a pill on the card. */
+  strain?: string | null;
 };

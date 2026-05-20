@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { asc, eq } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { assertEmbeddedGifAttachmentRules } from '../common/embed-gif-attachment-rules';
 import { isAllowedPostMediaPublicUrl } from '../common/post-media-public-url';
 import { growerLevelFromSeeds } from '../common/grower-seeds';
@@ -69,6 +70,8 @@ export class NotebookCommentsService {
     if (!nb) throw new NotFoundException('Notebook not found');
     await this.assertNotebookReadable(nb.ownerId, viewerId);
 
+    const parentComment = alias(notebookComments, 'parent_nb_comment');
+    const parentAuthor = alias(profiles, 'parent_nb_author');
     const rows = await db
       .select({
         comment: notebookComments,
@@ -77,9 +80,18 @@ export class NotebookCommentsService {
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
         },
+        parentAuthor: {
+          id: parentAuthor.id,
+          displayName: parentAuthor.displayName,
+        },
       })
       .from(notebookComments)
       .innerJoin(profiles, eq(notebookComments.authorId, profiles.id))
+      .leftJoin(
+        parentComment,
+        eq(notebookComments.parentId, parentComment.id),
+      )
+      .leftJoin(parentAuthor, eq(parentComment.authorId, parentAuthor.id))
       .where(eq(notebookComments.notebookId, notebookId))
       .orderBy(asc(notebookComments.createdAt));
 
@@ -96,6 +108,13 @@ export class NotebookCommentsService {
           seeds,
           growerLevel: growerLevelFromSeeds(seeds),
         },
+        parentAuthor:
+          r.comment.parentId && r.parentAuthor?.id
+            ? {
+                id: r.parentAuthor.id,
+                displayName: r.parentAuthor.displayName,
+              }
+            : null,
       };
     });
   }
@@ -127,12 +146,18 @@ export class NotebookCommentsService {
           id: notebookComments.id,
           notebookId: notebookComments.notebookId,
           authorId: notebookComments.authorId,
+          parentId: notebookComments.parentId,
         })
         .from(notebookComments)
         .where(eq(notebookComments.id, dto.parentId));
       if (!parent) throw new NotFoundException('Parent comment not found');
       if (parent.notebookId !== notebookId) {
         throw new BadRequestException('Parent is on a different notebook');
+      }
+      if (parent.parentId) {
+        throw new BadRequestException(
+          'Replies are limited to one level deep',
+        );
       }
       parentAuthorId = parent.authorId;
     }

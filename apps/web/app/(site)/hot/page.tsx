@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { PostComposerPrompt } from "@/components/post-composer-prompt";
+import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
@@ -48,112 +50,38 @@ const RANGE_CONFIG: Record<ValidRange, { label: string; heading: string; subhead
   },
 };
 
-const MOCK_PREVIEW_CARDS = [
-  {
-    gradient: "from-teal-900 to-cyan-800",
-    emoji: "🌿",
-    title: "Week 6 — Trichomes Coming In",
-    author: "u/trichome_tracker",
-    community: "r/Organics",
-    score: 94,
-  },
-  {
-    gradient: "from-violet-800 to-purple-600",
-    emoji: "🏆",
-    title: "First DWC Harvest Done!",
-    author: "u/hydro_hero",
-    community: "r/Hydroponics",
-    score: 127,
-  },
-  {
-    gradient: "from-amber-700 to-yellow-600",
-    emoji: "☀️",
-    title: "Outdoor Monster Crop Season",
-    author: "u/sun_grower",
-    community: "r/Outdoor",
-    score: 61,
-  },
-];
-
 function isValidRange(value: string): value is ValidRange {
   return value === "day" || value === "week" || value === "month";
 }
 
-function HotEmptyState({ range }: { range: ValidRange }) {
+function HotEmptyState({
+  range,
+  signedIn,
+}: {
+  range: ValidRange;
+  signedIn: boolean;
+}) {
   const windowLabel =
     range === "day" ? "today" : range === "week" ? "this week" : "this month";
 
   return (
-    <div className="rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] overflow-hidden">
-      {/* Top message */}
-      <div className="flex flex-col items-center px-6 py-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--gn-accent)]/10 text-4xl mb-4">
-          🌱
-        </div>
-        <h3 className="text-xl font-bold text-[var(--gn-text)] mb-2">
-          No posts yet {windowLabel}
-        </h3>
-        <p className="text-sm text-[var(--gn-text-muted)] max-w-sm mb-6">
-          Be the first to start a discussion. Share your grow, ask a question, or post your latest
-          harvest photos.
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link
-            href="/community"
-            className="inline-flex items-center justify-center rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-text)] transition hover:border-[var(--gn-accent)]/30 hover:bg-[var(--gn-surface-muted)]"
-          >
-            Browse Communities
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-bold text-[var(--gn-on-accent)] shadow-[0_0_20px_-4px_color-mix(in_srgb,var(--gn-accent)_40%,transparent)] transition hover:brightness-110"
-          >
-            Share Your Grow →
-          </Link>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="flex items-center gap-4 px-6 pb-4">
-        <div className="h-px flex-1 bg-[var(--gn-divide)]" />
-        <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
-          What growers are sharing
-        </span>
-        <div className="h-px flex-1 bg-[var(--gn-divide)]" />
-      </div>
-
-      {/* Mock preview cards */}
-      <div className="grid grid-cols-1 gap-3 px-6 pb-6 sm:grid-cols-3">
-        {MOCK_PREVIEW_CARDS.map((card, i) => (
-          <Link
-            key={i}
-            href="/community"
-            className="group overflow-hidden rounded-xl border border-[var(--gn-divide)] transition-all duration-200 hover:border-[var(--gn-accent)]/30 hover:shadow-lg hover:translate-y-[-1px]"
-          >
-            {/* Gradient with emoji */}
-            <div
-              className={`relative flex h-28 items-center justify-center bg-gradient-to-br ${card.gradient} text-4xl`}
-            >
-              {card.emoji}
-              {/* Score badge */}
-              <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-                <span className="text-[var(--gn-accent)]">↑</span>
-                {card.score}
-              </div>
-            </div>
-            {/* Text */}
-            <div className="bg-[var(--gn-surface-elevated)] p-3">
-              <p className="line-clamp-1 text-xs font-semibold text-[var(--gn-text)]">
-                {card.title}
-              </p>
-              <p className="mt-0.5 text-[10px] text-[var(--gn-text-muted)] truncate">
-                {card.author} ·{" "}
-                <span className="text-[var(--gn-accent)]/80">{card.community}</span>
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
+    <div className="space-y-4">
+      <EmptyState
+        icon="🌱"
+        title={`No posts yet ${windowLabel}`}
+        description="Be the first to start a discussion — share your grow, ask a question, or post harvest photos."
+        action={
+          signedIn
+            ? { label: "Create a post", href: "/new-post" }
+            : { label: "Sign in to post", href: "/login" }
+        }
+      />
+      <p className="text-center text-sm text-[var(--gn-text-muted)]">
+        <Link href="/community" className="font-medium text-[var(--gn-accent)] hover:underline">
+          Browse communities
+        </Link>{" "}
+        to find growers to follow.
+      </p>
     </div>
   );
 }
@@ -190,15 +118,22 @@ export default async function HotWeekPage({
     /* API offline */
   }
 
-  return (
-    <main className="mx-auto w-full max-w-[var(--gn-container-max)] px-4 pt-6 pb-12">
-      <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)]">
-        {config.heading}
-      </h1>
-      <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">{config.subheading}</p>
+  const banner = (
+    <div className="border-b border-[var(--gn-divide)] bg-gradient-to-r from-[var(--gn-surface-raised)] via-[var(--gn-surface-elevated)] to-[var(--gn-surface-raised)] px-5 py-6 sm:px-8">
+      <div className="mx-auto max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] sm:px-[var(--gn-gutter)]">
+        <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)]">
+          {config.heading}
+        </h1>
+        <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">
+          {config.subheading}
+        </p>
+      </div>
+    </div>
+  );
 
-      {/* Time-range tab pills */}
-      <div className="flex gap-2 mt-5 mb-6 p-1 rounded-full bg-[var(--gn-surface-raised)] border border-[var(--gn-divide)] w-fit">
+  return (
+    <SitePageShell banner={banner} className="pb-12 pt-6">
+      <div className="mb-6 flex w-fit gap-2 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1">
         {(Object.entries(RANGE_CONFIG) as [ValidRange, (typeof RANGE_CONFIG)[ValidRange]][]).map(
           ([key, { label }]) => (
             <Link
@@ -220,7 +155,7 @@ export default async function HotWeekPage({
         <div className="min-w-0 flex-1">
           <PostComposerPrompt />
           {feed.items.length === 0 ? (
-            <HotEmptyState range={range} />
+            <HotEmptyState range={range} signedIn={!!token} />
           ) : (
             <FeedPostCardList items={feed.items} showRanks />
           )}
@@ -250,6 +185,6 @@ export default async function HotWeekPage({
           <FeedSidebar hideHotPosts />
         </div>
       </div>
-    </main>
+    </SitePageShell>
   );
 }

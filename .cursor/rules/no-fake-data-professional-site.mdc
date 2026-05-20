@@ -1,0 +1,36 @@
+---
+description: No mock data, dead UI, or AI slop on the public site — real APIs only
+alwaysApply: true
+---
+
+# Professional site — no fake data or AI slop
+
+Growers Notebook is a **production social product**. Every public surface must earn trust.
+
+## Never ship
+
+- **Mock / placeholder content presented as live** — fake post cards, invented usernames (`u/trichome_tracker`), gradient preview tiles that look like real posts when the feed is empty.
+- **Inflated or invented metrics** — `10,000+`, `1,000+`, `#1 community`, `30+ communities` unless that number comes from the API or DB at render time.
+- **Dead controls** — buttons or links with no handler (`Save` with no backend, `onClick` that only `preventDefault`).
+- **Duplicate UX** — two post composers on the same page, two sidebars with different widths on one route.
+- **Misleading labels** — “Live Grows” / “LIVE” when nothing is loaded; “loading soon” when there is no fetch in flight.
+- **Hardcoded hex** — use `var(--gn-*)` tokens from `globals.css` (see `design-system.mdc`).
+
+## Always do
+
+- **Empty states** — use `EmptyState` or honest copy + real CTAs (`/community`, `/new-post`, `/login`). No decorative fake feed below the message.
+- **Counts** — `GET /site/platform-stats`, `growers_online_count` RPC, or list `total` from the API. If count is 0, omit the stat or use qualitative copy (“Free to join”), not a fake number.
+- **Guest hero posts** — `GET /posts/hot/week`, then `GET /posts/recent` if empty. Map real `id`, `title`, `author.displayName`, `media`.
+- **Logged-in home** — default feed is **`/following`** (“Your Feed” in sidebar), not `/hot`.
+- **Features** — remove UI until the API exists; do not stub with toast-only or no-ops.
+
+## Before finishing frontend work
+
+1. Grep the diff for: `MOCK`, `fake`, `placeholder`, `10,000`, `1,000`, `#1`, `u/` hardcoded in marketing components.
+2. Run `pnpm --filter @growers/web exec tsc --noEmit`.
+3. Commit/push only when the user asked to ship (see user git rules).
+
+## Reference
+
+- Design tokens & layout: `design-system.mdc`
+- Production deploy: `production-stack.mdc`

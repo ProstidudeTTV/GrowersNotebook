@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CommunityIcon } from "@/components/community-icon";
@@ -24,10 +25,18 @@ function formatMemberCount(count: number | null | undefined): string {
 }
 
 export default function WelcomePage() {
+  const router = useRouter();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [joined, setJoined] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [step, setStep] = useState(1);
+
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.replace("/following");
+    });
+  }, [router]);
 
   useEffect(() => {
     apiFetch<Community[]>("/communities?limit=8")
@@ -230,7 +239,7 @@ export default function WelcomePage() {
               🌿 Start my first notebook
             </Link>
             <Link
-              href="/"
+              href="/following"
               className="w-full rounded-full border border-[var(--gn-divide)] px-8 py-3 text-sm font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] sm:w-auto"
             >
               Go to my feed →

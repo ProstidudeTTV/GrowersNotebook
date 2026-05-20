@@ -128,6 +128,7 @@ export class ProfilesService {
       profilePublic: row.profilePublic,
       showGrowerStatsPublic: row.showGrowerStatsPublic,
       showNotebooksPublic: row.showNotebooksPublic,
+      showFollowListsPublic: row.showFollowListsPublic,
       mailingListOptIn: row.mailingListOptIn,
       role: row.role,
       createdAt: row.createdAt,
@@ -220,6 +221,9 @@ export class ProfilesService {
       isOwner || row.showGrowerStatsPublic !== false;
     const profileFeedHiddenFromViewer =
       row.profilePublic === false && viewerId !== profileId;
+    const followListsHiddenFromViewer =
+      !isOwner &&
+      (row.profilePublic === false || row.showFollowListsPublic === false);
 
     const viewerHasBlocked =
       viewerId != null && viewerId !== profileId
@@ -250,8 +254,12 @@ export class ProfilesService {
       followingCount: Number(followingCount ?? 0),
       viewerFollowing,
       viewerHasBlocked,
+      showFollowListsPublic: row.showFollowListsPublic !== false,
       ...(profileFeedHiddenFromViewer
         ? { profileFeedHiddenFromViewer: true as const }
+        : {}),
+      ...(followListsHiddenFromViewer
+        ? { followListsHiddenFromViewer: true as const }
         : {}),
     };
   }
@@ -282,6 +290,9 @@ export class ProfilesService {
     }
     if (dto.showNotebooksPublic !== undefined) {
       patch.showNotebooksPublic = dto.showNotebooksPublic;
+    }
+    if (dto.showFollowListsPublic !== undefined) {
+      patch.showFollowListsPublic = dto.showFollowListsPublic;
     }
     if (dto.mailingListOptIn !== undefined) {
       patch.mailingListOptIn = dto.mailingListOptIn;

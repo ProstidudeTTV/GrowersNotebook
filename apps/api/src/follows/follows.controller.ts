@@ -16,11 +16,11 @@ import { ListUserFollowsQueryDto } from './dto/list-user-follows.query.dto';
 import { FollowsService } from './follows.service';
 
 @Controller('follows')
-@UseGuards(SupabaseAuthGuard)
 export class FollowsController {
   constructor(private readonly follows: FollowsService) {}
 
   @Get('users')
+  @UseGuards(SupabaseAuthGuard)
   listUsersIFollow(@CurrentUser() user: JwtUser) {
     return this.follows.listUsersIFollowWithProfiles(user.sub);
   }
@@ -30,8 +30,11 @@ export class FollowsController {
   listFollowers(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: ListUserFollowsQueryDto,
+    @CurrentUser() user?: JwtUser,
   ) {
-    return this.follows.listFollowers(userId, query.page, query.pageSize);
+    return this.follows.listFollowers(userId, query.page, query.pageSize, {
+      viewerId: user?.sub,
+    });
   }
 
   @Get('users/:userId/following')
@@ -39,11 +42,15 @@ export class FollowsController {
   listFollowingUsers(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: ListUserFollowsQueryDto,
+    @CurrentUser() user?: JwtUser,
   ) {
-    return this.follows.listFollowing(userId, query.page, query.pageSize);
+    return this.follows.listFollowing(userId, query.page, query.pageSize, {
+      viewerId: user?.sub,
+    });
   }
 
   @Post('users/:userId')
+  @UseGuards(SupabaseAuthGuard)
   followUser(
     @CurrentUser() user: JwtUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -52,6 +59,7 @@ export class FollowsController {
   }
 
   @Delete('users/:userId')
+  @UseGuards(SupabaseAuthGuard)
   unfollowUser(
     @CurrentUser() user: JwtUser,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -60,6 +68,7 @@ export class FollowsController {
   }
 
   @Post('communities/:communityId')
+  @UseGuards(SupabaseAuthGuard)
   followCommunity(
     @CurrentUser() user: JwtUser,
     @Param('communityId', ParseUUIDPipe) communityId: string,
@@ -68,6 +77,7 @@ export class FollowsController {
   }
 
   @Delete('communities/:communityId')
+  @UseGuards(SupabaseAuthGuard)
   unfollowCommunity(
     @CurrentUser() user: JwtUser,
     @Param('communityId', ParseUUIDPipe) communityId: string,

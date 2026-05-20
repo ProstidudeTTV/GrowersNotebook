@@ -4,9 +4,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { getDb } from '../db';
-import { siteConfig } from '../db/schema';
+import { posts, profiles, siteConfig } from '../db/schema';
 import type { PatchSiteConfigDto } from './dto/patch-site-config.dto';
 import type { SendMaintenanceEmailDto } from './dto/send-maintenance-email.dto';
 import { MaintenanceNotifyService } from './maintenance-notify.service';
@@ -55,6 +55,19 @@ export class SiteConfigService {
     const db = getDb();
     const [row] = await db.select().from(siteConfig).where(eq(siteConfig.id, 1));
     return row ?? null;
+  }
+
+  /** Aggregate counts for marketing / guest landing (no auth). */
+  async getPlatformStats(): Promise<{ postCount: number; growerCount: number }> {
+    const db = getDb();
+    const [[postRow], [profileRow]] = await Promise.all([
+      db.select({ c: count() }).from(posts),
+      db.select({ c: count() }).from(profiles),
+    ]);
+    return {
+      postCount: Number(postRow?.c ?? 0),
+      growerCount: Number(profileRow?.c ?? 0),
+    };
   }
 
   async getPublicPayload(): Promise<PublicSiteConfigPayload> {

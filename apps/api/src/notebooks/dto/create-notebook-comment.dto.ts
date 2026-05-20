@@ -1,10 +1,14 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   MaxLength,
 } from 'class-validator';
+
+const NOTEBOOK_COMMENT_IMAGE_MAX = 8;
 
 export class CreateNotebookCommentDto {
   @IsOptional()
@@ -18,6 +22,8 @@ export class CreateNotebookCommentDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @ArrayMaxSize(NOTEBOOK_COMMENT_IMAGE_MAX)
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true })
+  @MaxLength(2048, { each: true })
   imageUrls?: string[];
 }

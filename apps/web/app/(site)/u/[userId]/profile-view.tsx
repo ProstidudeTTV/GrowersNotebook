@@ -30,6 +30,8 @@ type PublicProfile = {
   viewerFollowing: boolean;
   viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;
+  followListsHiddenFromViewer?: boolean;
+  showFollowListsPublic?: boolean;
   /** Social graph counts — populated by API when available */
   followerCount?: number | null;
   followingCount?: number | null;
@@ -491,26 +493,60 @@ export function ProfileView({
             <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">comments</span>
           </span>
           <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-          <Link
-            href={`${base}/followers`}
-            className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
-          >
-            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-              {profile.followerCount ?? 0}
-            </strong>
-            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">followers</span>
-          </Link>
-          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-          <Link
-            href={`${base}/following`}
-            className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
-          >
-            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-              {profile.followingCount ?? 0}
-            </strong>
-            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">following</span>
-          </Link>
+          {profile.followListsHiddenFromViewer && !isOwn ? (
+            <>
+              <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                  —
+                </strong>
+                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
+                  followers
+                </span>
+              </span>
+              <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+              <span className="flex flex-col items-center sm:flex-row sm:gap-1">
+                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                  —
+                </strong>
+                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
+                  following
+                </span>
+              </span>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`${base}/followers`}
+                className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+              >
+                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                  {profile.followerCount ?? 0}
+                </strong>
+                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
+                  followers
+                </span>
+              </Link>
+              <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+              <Link
+                href={`${base}/following`}
+                className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+              >
+                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                  {profile.followingCount ?? 0}
+                </strong>
+                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
+                  following
+                </span>
+              </Link>
+            </>
+          )}
         </div>
+        {isOwn && profile.showFollowListsPublic === false ? (
+          <p className="border-t border-[var(--gn-divide)] py-2 text-xs text-[var(--gn-text-muted)]">
+            Follower and following lists are hidden from others — only you can
+            see them.
+          </p>
+        ) : null}
       </div>
 
       {/* ── Tab navigation ───────────────────────────────────────────── */}
@@ -722,14 +758,14 @@ export function ProfileView({
                         href="/notebooks/new"
                         className="inline-flex items-center justify-center rounded-full bg-[var(--gn-accent)] px-4 py-2 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110"
                       >
-                        📔 Start a grow journal
+                        📔 Start a notebook
                       </Link>
                     </div>
                   ) : null}
                   {notebookItems.length === 0 ? (
                     <div className="py-16 text-center">
                       <div className="text-4xl mb-3">📔</div>
-                      <p className="text-sm text-[var(--gn-text-muted)]">No grow journals yet.</p>
+                      <p className="text-sm text-[var(--gn-text-muted)]">No notebooks yet.</p>
                     </div>
                   ) : (
                     <ul className="space-y-3">

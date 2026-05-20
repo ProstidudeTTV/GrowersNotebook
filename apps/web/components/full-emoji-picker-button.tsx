@@ -5,6 +5,7 @@ import EmojiPicker, {
   type EmojiClickData,
 } from "emoji-picker-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 function FaceSmileIcon({ className }: { className?: string }) {
   return (
@@ -42,33 +43,66 @@ function useDocumentDark(): boolean {
   return dark;
 }
 
+const PICKER_W = 320;
+const PICKER_H = 420;
+
 export function FullEmojiPickerButton({
   onPick,
   disabled,
   ariaLabel = "Open emoji picker",
   buttonClassName,
   showLabel = true,
+  /** Open above trigger (for bottom compose bars). */
+  placement = "below",
+  /** Portal to document.body so overflow-hidden ancestors do not clip the picker. */
+  usePortal = false,
 }: {
   onPick: (emoji: string) => void;
   disabled?: boolean;
   ariaLabel?: string;
-  /** Merged after default button classes (Tailwind: later classes may not override without same specificity). */
   buttonClassName?: string;
-  /** When false, icon-only control (e.g. inline reaction strip). */
   showLabel?: boolean;
+  placement?: "above" | "below";
+  usePortal?: boolean;
 }) {
   const menuId = useId();
   const dark = useDocumentDark();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [portalPos, setPortalPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const updatePortalPos = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const gap = 6;
+  const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove =
+      placement === "above" || spaceBelow < PICKER_H + gap + 16;
+    const top = openAbove
+      ? Math.max(8, rect.top - PICKER_H - gap)
+      : rect.bottom + gap;
+    const left = Math.min(
+      Math.max(8, rect.left),
+      window.innerWidth - PICKER_W - 8,
+    );
+    setPortalPos({ top, left });
+  }, [placement]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent | TouchEvent) => {
-      const el = wrapRef.current;
-      if (!el) return;
+      const wrap = wrapRef.current;
+      const picker = document.getElementById(menuId);
       const t = e.target;
-      if (t instanceof Node && !el.contains(t)) setOpen(false);
+      if (!(t instanceof Node)) return;
+      if (wrap?.contains(t)) return;
+      if (picker?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("touchstart", onDoc, { passive: true });
@@ -76,7 +110,19 @@ export function FullEmojiPickerButton({
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("touchstart", onDoc);
     };
-  }, [open]);
+  }, [open, menuId]);
+
+  useEffect(() => {
+    if (!open || !usePortal) return;
+    updatePortalPos();
+    const onScroll = () => updatePortalPos();
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open, usePortal, updatePortalPos]);
 
   const onEmojiClick = useCallback(
     (data: EmojiClickData) => {
@@ -86,9 +132,43 @@ export function FullEmojiPickerButton({
     [onPick],
   );
 
+  const pickerPanel = open ? (
+    <div
+      id={menuId}
+      className={
+        usePortal
+          ? "fixed z-[300] max-w-[min(100vw-1rem,320px)] overflow-hidden rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] shadow-lg"
+          : [
+              "absolute left-0 z-[200] max-w-[min(100vw-1rem,320px)] overflow-hidden rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] shadow-lg",
+              placement === "above"
+                ? "bottom-[calc(100%+6px)]"
+                : "top-[calc(100%+6px)]",
+            ].join(" ")
+      }
+      style={
+        usePortal && portalPos
+          ? { top: portalPos.top, left: portalPos.left }
+          : undefined
+      }
+      role="dialog"
+      aria-label="Emoji picker"
+    >
+      <EmojiPicker
+        onEmojiClick={onEmojiClick}
+        theme={dark ? Theme.DARK : Theme.LIGHT}
+        width={PICKER_W}
+        height={PICKER_H}
+        lazyLoadEmojis
+        previewConfig={{ showPreview: false }}
+        searchPlaceHolder="Search emojis"
+      />
+    </div>
+  ) : null;
+
   return (
     <div ref={wrapRef} className="relative inline-flex">
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         className={[
@@ -104,7 +184,15 @@ export function FullEmojiPickerButton({
         aria-controls={open ? menuId : undefined}
         title="Browse all emojis"
         aria-label={ariaLabel}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setOpen((o) => {
+            const next = !o;
+            if (next && usePortal) {
+              requestAnimationFrame(() => updatePortalPos());
+            }
+            return next;
+          });
+        }}
       >
         <FaceSmileIcon
           className={
@@ -115,24 +203,9 @@ export function FullEmojiPickerButton({
         />
         {showLabel ? <span>All</span> : null}
       </button>
-      {open ? (
-        <div
-          id={menuId}
-          className="absolute left-0 top-[calc(100%+6px)] z-[200] max-[min(100vw-1rem,320px)] overflow-hidden rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] shadow-lg"
-          role="dialog"
-          aria-label="Emoji picker"
-        >
-          <EmojiPicker
-            onEmojiClick={onEmojiClick}
-            theme={dark ? Theme.DARK : Theme.LIGHT}
-            width={320}
-            height={420}
-            lazyLoadEmojis
-            previewConfig={{ showPreview: false }}
-            searchPlaceHolder="Search emojis"
-          />
-        </div>
-      ) : null}
+      {usePortal && typeof document !== "undefined"
+        ? createPortal(pickerPanel, document.body)
+        : pickerPanel}
     </div>
   );
 }

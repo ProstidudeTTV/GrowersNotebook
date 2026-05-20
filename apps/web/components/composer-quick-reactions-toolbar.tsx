@@ -11,10 +11,14 @@ export function ComposerQuickReactionsToolbar({
   disabled,
   onEmojiAppend,
   gifSlot,
+  emojiPlacement = "below",
+  emojiUsePortal = false,
 }: {
   disabled: boolean;
   onEmojiAppend: (emoji: string) => void;
   gifSlot: ReactNode;
+  emojiPlacement?: "above" | "below";
+  emojiUsePortal?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -40,6 +44,8 @@ export function ComposerQuickReactionsToolbar({
           ariaLabel="More emojis"
           onPick={onEmojiAppend}
           showLabel={false}
+          placement={emojiPlacement}
+          usePortal={emojiUsePortal}
         />
       </div>
       {gifSlot}

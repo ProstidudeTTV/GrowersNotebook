@@ -27,10 +27,11 @@ export class CreatePostDto {
   @IsUUID()
   communityId?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(300)
-  title!: string;
+  title?: string;
 
   @IsObject()
   bodyJson!: Record<string, unknown>;

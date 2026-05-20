@@ -20,8 +20,8 @@ export class ListCatalogQueryDto {
   pageSize = 24;
 
   @IsOptional()
-  @IsIn(['name', 'rating'])
-  sort?: 'name' | 'rating';
+  @IsIn(['name', 'rating', 'reviews'])
+  sort?: 'name' | 'rating' | 'reviews';
 }
 
 export class ListStrainsQueryDto extends ListCatalogQueryDto {
@@ -48,6 +48,15 @@ export class ListStrainsQueryDto extends ListCatalogQueryDto {
   @IsOptional()
   @IsString()
   autoflower?: string;
+
+  @IsOptional()
+  @IsString()
+  genetics?: string;
+
+  /** Comma-separated effect tags; strain must include all listed tags. */
+  @IsOptional()
+  @IsString()
+  effects?: string;
 }
 
 export class ListBreedersQueryDto extends ListCatalogQueryDto {

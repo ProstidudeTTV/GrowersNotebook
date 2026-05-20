@@ -19,6 +19,7 @@ import {
   not,
   notInArray,
   or,
+  sql,
 } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
@@ -47,7 +48,10 @@ const MAX_STRAIN_REVIEW_MEDIA = 8;
 
 export type ListStrainsQuery = {
   q?: string;
-  sort?: 'name' | 'rating';
+  sort?: 'name' | 'rating' | 'reviews';
+  genetics?: string;
+  /** Strain must include every listed effect tag. */
+  effects?: string[];
   breederId?: string;
   /** Resolve published breeder by slug and filter strains to that breeder */
   breederSlug?: string;
@@ -183,12 +187,28 @@ export class StrainsService {
     if (query.autoflower === true) {
       conditions.push(eq(strains.isAutoflower, true));
     }
+    const geneticsQ = query.genetics?.trim();
+    if (geneticsQ) {
+      const term = `%${escapeIlikePattern(geneticsQ)}%`;
+      conditions.push(ilike(strains.genetics, term));
+    }
+    if (query.effects?.length) {
+      for (const tag of query.effects) {
+        const t = tag.trim();
+        if (!t) continue;
+        conditions.push(
+          sql`${strains.effects} @> ${JSON.stringify([t])}::jsonb`,
+        );
+      }
+    }
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const orderBy =
-      query.sort === 'rating'
-        ? [desc(strains.avgRating), asc(strains.name)]
-        : [asc(strains.name)];
+      query.sort === 'reviews'
+        ? [desc(strains.reviewCount), asc(strains.name)]
+        : query.sort === 'rating'
+          ? [desc(strains.avgRating), asc(strains.name)]
+          : [asc(strains.name)];
 
     const [{ total }] = await db
       .select({ total: count() })
@@ -516,6 +536,9 @@ export class StrainsService {
       effects: string[];
       effectsNotes: string | null;
       published: boolean;
+      chemotype?: string | null;
+      genetics?: string | null;
+      isAutoflower?: boolean;
     }>,
   ) {
     if (body.name) await this.nameBlocklist.assertAllowed(body.name);

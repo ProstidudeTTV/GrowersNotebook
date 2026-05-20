@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   AppSidebar,
@@ -55,6 +56,9 @@ export function SiteChrome({
     initialFollowedCommunities,
   );
   const [ann, setAnn] = useState(announcement);
+  const pathname = usePathname();
+  const hideFooter =
+    pathname === "/messages" || pathname.startsWith("/messages/");
 
   useEffect(() => {
     setFollowed(initialFollowedCommunities);
@@ -164,8 +168,8 @@ export function SiteChrome({
         />
 
         <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-clip">
-          <div className="min-h-0 flex-1">{children}</div>
-          <SiteFooter />
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          {hideFooter ? null : <SiteFooter />}
         </div>
       </div>
       {modal}

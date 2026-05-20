@@ -23,7 +23,8 @@ function parseUrlError(raw: string | null): string | null {
 export function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = safeInternalPath(search.get("next"));
+  const nextRaw = safeInternalPath(search.get("next"));
+  const next = nextRaw === "/" ? "/following" : nextRaw;
   const urlError = parseUrlError(search.get("error"));
 
   const [email, setEmail] = useState("");

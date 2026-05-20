@@ -42,7 +42,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-8 text-center text-xs text-[var(--gn-text-muted)]">
-            10,000+ growers trust Growers Notebook
+            Free for home growers — track grows, join communities, share harvests.
           </p>
         </div>
       </div>

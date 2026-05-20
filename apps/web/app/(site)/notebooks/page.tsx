@@ -182,13 +182,13 @@ export default async function NotebooksDirectoryPage({
           <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-page-top))] via-[color-mix(in_srgb,var(--gn-accent)_18%,var(--gn-surface-elevated))] to-[var(--gn-surface-elevated)] p-6 sm:p-8">
             <div className="relative z-10">
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--gn-accent)_20%,transparent)] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
-                📓 Grow Journals
+                📓 Notebooks
               </div>
               <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
                 Notebooks
               </h1>
               <p className="mt-2 max-w-lg text-sm text-white/70">
-                Public grow journals shared by the community — from seed to harvest.
+                Public notebooks shared by the community — from seed to harvest.
               </p>
               <Link
                 href="/notebooks/new"

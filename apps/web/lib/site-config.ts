@@ -20,7 +20,7 @@ export const SEO_KEYWORDS = [
   "weed growing tips",
   "indoor cannabis",
   "outdoor cannabis grow",
-  "grow journal",
+  "notebook",
   "cannabis community",
   "home cultivation",
   "growers forum",

@@ -9,6 +9,19 @@ type BreederHit = { slug: string; name: string };
 
 type BreedersListJson = { items: BreederHit[] };
 
+const EFFECT_OPTIONS = [
+  "Relaxed",
+  "Happy",
+  "Euphoric",
+  "Uplifted",
+  "Creative",
+  "Energetic",
+  "Sleepy",
+  "Hungry",
+  "Focused",
+  "Tingly",
+];
+
 function buildStrainsQueryFromInputs(s: {
   q: string;
   sort: string;
@@ -17,10 +30,13 @@ function buildStrainsQueryFromInputs(s: {
   minReviews: string;
   chemotype: string;
   autoflower: string;
+  genetics: string;
+  effects: string;
 }): URLSearchParams {
   const p = new URLSearchParams();
   if (s.q.trim()) p.set("q", s.q.trim());
   if (s.sort === "rating") p.set("sort", "rating");
+  else if (s.sort === "reviews") p.set("sort", "reviews");
   if (s.breederSlug.trim()) p.set("breederSlug", s.breederSlug.trim());
   const mr = s.minRating.trim();
   if (mr && Number(mr) >= 1 && Number(mr) <= 5) p.set("minRating", mr);
@@ -29,6 +45,8 @@ function buildStrainsQueryFromInputs(s: {
   const ct = s.chemotype.trim().toLowerCase();
   if (ct === "indica" || ct === "sativa" || ct === "hybrid") p.set("chemotype", ct);
   if (s.autoflower === "1") p.set("autoflower", "1");
+  if (s.genetics.trim()) p.set("genetics", s.genetics.trim());
+  if (s.effects.trim()) p.set("effects", s.effects.trim());
   return p;
 }
 
@@ -209,10 +227,23 @@ export function StrainsCatalogToolbar({
       ? "1"
       : "",
   );
+  const [genetics, setGenetics] = useState(() => sp.get("genetics") ?? "");
+  const [effects, setEffects] = useState(() => sp.get("effects") ?? "");
+  const [moreOpen, setMoreOpen] = useState(
+    () =>
+      Boolean(sp.get("genetics")?.trim()) || Boolean(sp.get("effects")?.trim()),
+  );
 
   useEffect(() => {
     setQ(sp.get("q") ?? "");
-    setSort(sp.get("sort") === "rating" ? "rating" : "name");
+    const sortParam = sp.get("sort");
+    setSort(
+      sortParam === "rating"
+        ? "rating"
+        : sortParam === "reviews"
+          ? "reviews"
+          : "name",
+    );
     const bSlug = sp.get("breederSlug")?.trim() ?? "";
     setBreederSlug(bSlug);
     setMinRating(sp.get("minRating") ?? "");
@@ -226,6 +257,8 @@ export function StrainsCatalogToolbar({
         ? "1"
         : "",
     );
+    setGenetics(sp.get("genetics") ?? "");
+    setEffects(sp.get("effects") ?? "");
     const name = breederLabelResolved?.trim() ?? "";
     if (bSlug) setBreederLabel(name);
     else setBreederLabel("");
@@ -239,6 +272,8 @@ export function StrainsCatalogToolbar({
     minReviews,
     chemotype,
     autoflower,
+    genetics,
+    effects,
   };
   const inputsRef = useRef(inputs);
   inputsRef.current = inputs;
@@ -313,15 +348,12 @@ export function StrainsCatalogToolbar({
           <select
             id="strain-sort"
             value={sort}
-            onChange={(e) => {
-              const v = e.target.value === "rating" ? "rating" : "name";
-              setSort(v);
-              navigateWith({ sort: v });
-            }}
+            onChange={(e) => setSort(e.target.value)}
             className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           >
             <option value="name">Name</option>
             <option value="rating">Rating</option>
+            <option value="reviews">Most reviewed</option>
           </select>
         </div>
         <div className="shrink-0">
@@ -334,11 +366,7 @@ export function StrainsCatalogToolbar({
           <select
             id="strain-chemotype"
             value={chemotype}
-            onChange={(e) => {
-              const v = e.target.value;
-              setChemotype(v);
-              navigateWith({ chemotype: v });
-            }}
+            onChange={(e) => setChemotype(e.target.value)}
             className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           >
             <option value="">Any</option>
@@ -357,11 +385,7 @@ export function StrainsCatalogToolbar({
           <select
             id="strain-autoflower"
             value={autoflower}
-            onChange={(e) => {
-              const v = e.target.value;
-              setAutoflower(v);
-              navigateWith({ autoflower: v });
-            }}
+            onChange={(e) => setAutoflower(e.target.value)}
             className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           >
             <option value="">Any</option>
@@ -374,7 +398,6 @@ export function StrainsCatalogToolbar({
           onCommittedSlug={(slug, label) => {
             setBreederSlug(slug);
             setBreederLabel(label);
-            navigateWith({ breederSlug: slug });
           }}
         />
         <div className="shrink-0">
@@ -387,11 +410,7 @@ export function StrainsCatalogToolbar({
           <select
             id="strain-min-rating"
             value={minRating}
-            onChange={(e) => {
-              const v = e.target.value;
-              setMinRating(v);
-              navigateWith({ minRating: v });
-            }}
+            onChange={(e) => setMinRating(e.target.value)}
             className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           >
             <option value="">Any</option>
@@ -411,11 +430,7 @@ export function StrainsCatalogToolbar({
           <select
             id="strain-min-reviews"
             value={minReviews}
-            onChange={(e) => {
-              const v = e.target.value;
-              setMinReviews(v);
-              navigateWith({ minReviews: v });
-            }}
+            onChange={(e) => setMinReviews(e.target.value)}
             className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
           >
             <option value="">Any</option>
@@ -427,15 +442,84 @@ export function StrainsCatalogToolbar({
         </div>
         <button
           type="button"
-          className="shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:mt-5 sm:px-4 sm:py-2"
+          className="shrink-0 rounded-lg bg-[var(--gn-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] hover:brightness-110 sm:mt-5 sm:px-4 sm:py-2"
           onClick={() => navigateWith({})}
         >
-          Refresh
+          Apply
+        </button>
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:mt-5 sm:px-4 sm:py-2"
+          onClick={() => router.refresh()}
+        >
+          Reload
         </button>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="text-xs font-semibold text-[var(--gn-accent)] hover:underline"
+          onClick={() => setMoreOpen((o) => !o)}
+        >
+          {moreOpen ? "Hide" : "More"} filters
+        </button>
+      </div>
+      {moreOpen ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3">
+          <label className="block">
+            <span className="mb-1 block text-xs text-[var(--gn-text-muted)]">
+              Genetics (lineage)
+            </span>
+            <input
+              type="search"
+              value={genetics}
+              onChange={(e) => setGenetics(e.target.value)}
+              placeholder="e.g. OG Kush, Gelato"
+              className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
+            />
+          </label>
+          <div>
+            <span className="mb-1 block text-xs text-[var(--gn-text-muted)]">
+              Effects (select any)
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {EFFECT_OPTIONS.map((eff) => {
+                const selected = effects
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+                  .includes(eff);
+                return (
+                  <button
+                    key={eff}
+                    type="button"
+                    onClick={() => {
+                      const cur = effects
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      const next = selected
+                        ? cur.filter((x) => x !== eff)
+                        : [...cur, eff];
+                      setEffects(next.join(","));
+                    }}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                      selected
+                        ? "bg-[var(--gn-accent)] text-[var(--gn-on-accent)]"
+                        : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
+                    }`}
+                  >
+                    {eff}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <p className="text-xs text-[var(--gn-text-muted)]">
-        Strain name applies when you press Enter (same row as Page). Header search
-        is for growers & posts only.{" "}
+        Adjust filters, then Apply. Reload refetches the current URL. Strain name
+        search commits on Enter. Header search is for growers & posts only.{" "}
         <Link href="/strains" className="text-[var(--gn-accent)] hover:underline">
           Reset all filters
         </Link>

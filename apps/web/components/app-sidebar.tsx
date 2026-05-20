@@ -351,7 +351,7 @@ export function AppSidebar({
             <NavIcon color="bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]">
               <IconNotebook />
             </NavIcon>
-            Grow Journals
+            Notebooks
           </Link>
 
           <Link href="/strains" className={navItem} onClick={afterNav}>

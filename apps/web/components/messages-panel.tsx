@@ -920,7 +920,7 @@ export function MessagesPanel() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {lightbox ? (
         <DmImageLightbox
           urls={lightbox.urls}
@@ -1000,7 +1000,7 @@ export function MessagesPanel() {
       ) : null}
 
       {/* Two-panel layout — mobile cross-fades between list and thread */}
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
 
         {/* Left: conversation list */}
         <div
@@ -1139,7 +1139,7 @@ export function MessagesPanel() {
 
         {/* Right: active conversation */}
         <div
-          className={`flex flex-1 flex-col overflow-hidden transition-opacity duration-200 ease-out lg:transition-none ${
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden transition-opacity duration-200 ease-out lg:transition-none ${
             activeThreadId
               ? "relative z-10 opacity-100"
               : "pointer-events-none absolute inset-0 z-0 opacity-0 lg:pointer-events-auto lg:static lg:z-auto lg:opacity-100"
@@ -1212,7 +1212,7 @@ export function MessagesPanel() {
           <div
             ref={timelineRef}
             onScroll={onTimelineScroll}
-            className="flex flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
           >
             {!activeThreadId ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -1353,7 +1353,7 @@ export function MessagesPanel() {
           </div>
 
           {/* Compose area */}
-          <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-4">
+          <div className="max-h-[min(50dvh,28rem)] shrink-0 overflow-y-auto border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-4">
             <input
               id={dmAttachInputId}
               type="file"
@@ -1449,6 +1449,8 @@ export function MessagesPanel() {
             <ComposerQuickReactionsToolbar
               disabled={!activeThreadId}
               onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
+              emojiPlacement="above"
+              emojiUsePortal
               gifSlot={
                 <button
                   type="button"

@@ -480,7 +480,6 @@ export function FeedPostCard({
                 viewerId={viewerId}
               />
             </span>
-            <button className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]">Save</button>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ApiErrorCard } from "@/components/api-error-card";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { SkeletonFeedList } from "@/components/skeletons";
@@ -27,7 +26,6 @@ export function FollowingFeed({
   sort: "new" | "top";
   page: number;
 }) {
-  const router = useRouter();
   const [items, setItems] = useState<FeedPost[]>([]);
   const [total, setTotal] = useState(0);
   const [sort, setSort] = useState(initialSort);
@@ -127,32 +125,6 @@ export function FollowingFeed({
 
   return (
     <div>
-      {/* Collapsed post composer strip — only shown to signed-in users */}
-      <div
-        className="gn-card flex items-center gap-3 px-4 py-3 mb-4 cursor-pointer hover:shadow-md transition-shadow"
-        onClick={() => router.push("/new-post")}
-      >
-        <div className="h-9 w-9 rounded-full bg-[var(--gn-surface-2)] flex-shrink-0 overflow-hidden" />
-        <div
-          className="flex-1 rounded-full bg-[var(--gn-surface-2)] border border-[var(--gn-divide)] px-4 py-2 text-sm text-[var(--gn-text-3)]"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && router.push("/new-post")}
-        >
-          What&apos;s growing? Share your update...
-        </div>
-        <button
-          className="text-[var(--gn-text-3)] hover:text-[var(--gn-accent)] transition-colors"
-          aria-label="Add photo"
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push("/new-post");
-          }}
-        >
-          📷
-        </button>
-      </div>
-
       <div className="mb-4 flex gap-2 text-sm font-medium">
         <Link
           href={sortLink("new")}

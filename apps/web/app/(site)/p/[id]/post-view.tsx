@@ -5,28 +5,21 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import {
-  CommentActionMenu,
-  MenuRow,
-} from "@/components/comment-action-menu";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { PostShareButton } from "@/components/post-share-button";
 import { UserProfileLink } from "@/components/user-profile-link";
-import { PostEditor } from "@/components/post-editor";
+import { CommentThread, type CommentThreadItem } from "@/components/comment-thread";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
+import { PostComposer } from "@/components/post-composer";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
-import { PostMediaDropzone } from "@/components/post-media-dropzone";
-import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
-import { VoteFeedPill, VoteScoreRail } from "@/components/vote-score-rail";
+import { VoteFeedPill } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import {
   bodyHtmlIsSubmittable,
   MAX_POST_MEDIA,
-  TITLE_MAX_LEN,
 } from "@/lib/post-draft-validation";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 import {
@@ -41,7 +34,6 @@ import {
   CommentDiscussionComposer,
 } from "@/components/comment-discussion-composer";
 import type { PostMediaItem } from "@/lib/feed-post";
-import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
 import { displayPostBodyHtml, extractYouTubeVideoId } from "@/lib/youtube-embed";
 
 type Author = {
@@ -58,36 +50,6 @@ function compactCount(n: number): string {
   if (n >= 10_000) return `${Math.round(n / 1000)}k`;
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
   return String(n);
-}
-
-const COMMENT_AVATAR_COLORS = [
-  "bg-[var(--gn-accent)]",
-  "bg-teal-800",
-  "bg-sky-800",
-  "bg-violet-800",
-  "bg-amber-800",
-] as const;
-
-function nameColorClass(name: string | null | undefined): string {
-  if (!name) return COMMENT_AVATAR_COLORS[0];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) {
-    h = ((h * 31) + name.charCodeAt(i)) >>> 0;
-  }
-  return COMMENT_AVATAR_COLORS[h % COMMENT_AVATAR_COLORS.length];
-}
-
-function CommentAvatar({ displayName }: { displayName?: string | null }) {
-  const initial = (displayName ?? "").trim().charAt(0).toUpperCase() || "?";
-  const colorClass = nameColorClass(displayName);
-  return (
-    <span
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${colorClass} text-[11px] font-semibold text-white`}
-      aria-hidden
-    >
-      {initial}
-    </span>
-  );
 }
 
 function postBodyHtmlIsMeaningful(rawHtml: string): boolean {
@@ -122,298 +84,12 @@ type PostDetail = {
   author: Author;
 };
 
-type CommentRow = {
-  id: string;
+type CommentRow = CommentThreadItem & {
   postId: string;
-  authorId: string;
-  parentId: string | null;
-  body: string;
-  imageUrls?: string[];
-  createdAt: string;
   upvotes: number;
   downvotes: number;
   score: number;
-  viewerVote: number | null;
-  author: Pick<Author, "id" | "displayName" | "seeds" | "growerLevel">;
 };
-
-function commentImageUrls(c: Pick<CommentRow, "imageUrls">): string[] {
-  const u = c.imageUrls?.filter(Boolean) ?? [];
-  return dedupeUrlsPreserveOrder(u);
-}
-
-function CommentTree({
-  comments,
-  viewerId,
-  onReply,
-  onVoteComment,
-  onSaveEdit,
-  onReport,
-  onDeleteComment,
-  onOpenCommentImages,
-  votingCommentId,
-  deletingCommentId,
-}: {
-  comments: CommentRow[];
-  viewerId: string | null;
-  onReply: (id: string) => void;
-  onVoteComment: (commentId: string, value: 1 | -1) => void;
-  onSaveEdit: (comment: CommentRow, body: string) => Promise<void>;
-  onReport: (
-    comment: CommentRow,
-    reason: string,
-  ) => Promise<{ alreadyReported: boolean }>;
-  onDeleteComment: (comment: CommentRow) => void | Promise<void>;
-  onOpenCommentImages: (urls: string[], index: number) => void;
-  votingCommentId: string | null;
-  deletingCommentId: string | null;
-}) {
-  const byParent = useMemo(() => {
-    const map = new Map<string | null, CommentRow[]>();
-    for (const c of comments) {
-      const k = c.parentId;
-      if (!map.has(k)) map.set(k, []);
-      map.get(k)!.push(c);
-    }
-    return map;
-  }, [comments]);
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [reportingId, setReportingId] = useState<string | null>(null);
-  const [reportDraft, setReportDraft] = useState("");
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [reportNotice, setReportNotice] = useState<{
-    commentId: string;
-    text: string;
-    tone: "success" | "info";
-  } | null>(null);
-
-  const startEdit = (c: CommentRow) => {
-    setEditingId(c.id);
-    setDraft(c.body);
-    setLocalError(null);
-  };
-
-  const cancelEdit = () => {
-    setLocalError(null);
-    setEditingId(null);
-    setDraft("");
-  };
-
-  const saveEdit = async (c: CommentRow) => {
-    setLocalError(null);
-    try {
-      await onSaveEdit(c, draft.trim());
-      setEditingId(null);
-    } catch (e) {
-      setLocalError(e instanceof Error ? e.message : "Could not save");
-    }
-  };
-
-  const submitReport = async (c: CommentRow) => {
-    setLocalError(null);
-    setReportNotice(null);
-    try {
-      const { alreadyReported } = await onReport(c, reportDraft.trim());
-      setReportingId(null);
-      setReportDraft("");
-      setReportNotice({
-        commentId: c.id,
-        tone: alreadyReported ? "info" : "success",
-        text: alreadyReported
-          ? "You already reported this comment."
-          : "Thanks — moderators will review your report.",
-      });
-    } catch (e) {
-      setLocalError(e instanceof Error ? e.message : "Report failed");
-    }
-  };
-
-  const renderNodes = (parentId: string | null, depth: number) => {
-    const kids = byParent.get(parentId) ?? [];
-    return kids.map((c) => {
-      const busy = votingCommentId === c.id || deletingCommentId === c.id;
-      const cImgs = commentImageUrls(c);
-      const isAuthor = viewerId != null && viewerId === c.authorId;
-      const canDelete = isAuthor;
-      const tier = c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
-
-      return (
-        <li
-          key={c.id}
-          className="mt-3"
-          id={`comment-${c.id}`}
-        >
-          <div className="flex gap-2.5" style={{ marginLeft: depth * 16 }}>
-            <VoteScoreRail
-              score={c.score}
-              upvotes={c.upvotes}
-              downvotes={c.downvotes}
-              viewerVote={c.viewerVote}
-              onUp={() => onVoteComment(c.id, 1)}
-              onDown={() => onVoteComment(c.id, -1)}
-              disabled={busy}
-              size="sm"
-            />
-            <div className={`min-w-0 flex-1 rounded-xl border p-4 ${depth === 0 ? "border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]" : "border-[var(--gn-divide)]/60 bg-[var(--gn-surface-elevated)]/40"}`}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="flex items-start gap-2">
-                  <CommentAvatar displayName={c.author.displayName} />
-                  <div className="text-xs text-[var(--gn-text-muted)]">
-                    <UserProfileLink
-                      userId={c.author.id}
-                      className="font-semibold text-[var(--gn-text)] transition hover:text-[var(--gn-accent)] hover:underline"
-                    >
-                      {c.author.displayName ?? "member"}
-                    </UserProfileLink>
-                    <span> · </span>
-                    <span title="Grower tier">{tier}</span>
-                    <span> · </span>
-                    <span title="Net seeds from posts and comments">
-                      {formatSeeds(c.author.seeds)} seeds
-                    </span>
-                    <span> · </span>
-                    {new Date(c.createdAt).toLocaleString()}
-                  </div>
-                </div>
-                {viewerId ? (
-                  <CommentActionMenu ariaLabel={`Actions for comment by ${c.author.displayName ?? "member"}`}>
-                    {isAuthor ? (
-                      <MenuRow
-                        onClick={() =>
-                          editingId === c.id ? cancelEdit() : startEdit(c)
-                        }
-                      >
-                        {editingId === c.id ? "Cancel edit" : "Edit"}
-                      </MenuRow>
-                    ) : (
-                      <MenuRow
-                        onClick={() => {
-                          setReportingId((id) =>
-                            id === c.id ? null : c.id,
-                          );
-                          setReportDraft("");
-                          setLocalError(null);
-                          setReportNotice(null);
-                        }}
-                      >
-                        {reportingId === c.id ? "Hide report form" : "Report"}
-                      </MenuRow>
-                    )}
-                    {canDelete ? (
-                      <MenuRow
-                        danger
-                        onClick={() => void onDeleteComment(c)}
-                        disabled={busy}
-                      >
-                        Delete
-                      </MenuRow>
-                    ) : null}
-                  </CommentActionMenu>
-                ) : null}
-              </div>
-              {localError && (editingId === c.id || reportingId === c.id) ? (
-                <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-                  {localError}
-                </p>
-              ) : null}
-              {editingId === c.id ? (
-                <div className="mt-2 space-y-2">
-                  <textarea
-                    className="gn-input w-full p-2 text-sm"
-                    rows={4}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    disabled={!draft.trim() || busy}
-                    className="rounded-full bg-[var(--gn-accent)] px-3 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
-                    onClick={() => void saveEdit(c)}
-                  >
-                    Save
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {c.body.trim() ? (
-                    <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
-                      {c.body}
-                    </div>
-                  ) : null}
-                  {cImgs.length > 0 ? (
-                    <div
-                      className={`overflow-visible ${c.body.trim() ? "mt-2.5" : "mt-1"}`}
-                    >
-                      <StackedDmStyleImages
-                        urls={cImgs}
-                        stackKey={c.id}
-                        pileLabel={
-                          cImgs.length > 1 ? `${cImgs.length} photos` : null
-                        }
-                        onOpen={(index) =>
-                          onOpenCommentImages(cImgs, index)
-                        }
-                      />
-                    </div>
-                  ) : null}
-                </>
-              )}
-              {reportNotice?.commentId === c.id ? (
-                <p
-                  className={
-                    reportNotice.tone === "success"
-                      ? "mt-2 text-xs text-[var(--gn-accent)]"
-                      : "mt-2 text-xs text-amber-800 dark:text-amber-200"
-                  }
-                >
-                  {reportNotice.text}
-                </p>
-              ) : null}
-              {reportingId === c.id ? (
-                <div className="mt-2 space-y-2 rounded border border-amber-200 bg-amber-50/80 p-2 dark:border-amber-900 dark:bg-amber-950/40">
-                  <p className="text-xs text-amber-900 dark:text-amber-100">
-                    Moderators review reports in the admin area. You can add an
-                    optional note below.
-                  </p>
-                  <textarea
-                    className="gn-input w-full p-2 text-sm"
-                    rows={2}
-                    placeholder="Reason (optional)"
-                    value={reportDraft}
-                    onChange={(e) => setReportDraft(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-amber-900 underline dark:text-amber-200"
-                    onClick={() => void submitReport(c)}
-                  >
-                    Submit report
-                  </button>
-                </div>
-              ) : null}
-              <button
-                type="button"
-                className="mt-2 text-xs font-medium text-[var(--gn-accent)] transition hover:underline"
-                onClick={() => onReply(c.id)}
-              >
-                Reply
-              </button>
-            </div>
-          </div>
-          {byParent.has(c.id) ? (
-            <ul className="list-none border-l-2 border-[var(--gn-divide)] pl-0 ml-4">
-              {renderNodes(c.id, depth + 1)}
-            </ul>
-          ) : null}
-        </li>
-      );
-    });
-  };
-
-  return <ul className="list-none pl-0">{renderNodes(null, 0)}</ul>;
-}
 
 export function PostView({
   initialPost,
@@ -435,7 +111,6 @@ export function PostView({
     urls: string[];
     index: number;
   } | null>(null);
-  const [replyTo, setReplyTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
@@ -564,6 +239,26 @@ export function PostView({
         "postgres_changes",
         {
           event: "INSERT",
+          schema: "public",
+          table: "comments",
+          filter: `post_id=eq.${id}`,
+        },
+        syncAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "comments",
+          filter: `post_id=eq.${id}`,
+        },
+        syncAll,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
           schema: "public",
           table: "comments",
           filter: `post_id=eq.${id}`,
@@ -708,11 +403,11 @@ export function PostView({
     }
   };
 
-  const saveCommentEdit = async (c: CommentRow, body: string) => {
+  const saveCommentEdit = async (c: CommentThreadItem, body: string) => {
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
     if (!token) throw new Error("Sign in to edit.");
-    await apiFetch(`/posts/${c.postId}/comments/${c.id}`, {
+    await apiFetch(`/posts/${post.id}/comments/${c.id}`, {
       method: "PATCH",
       token,
       body: JSON.stringify({ body }),
@@ -721,7 +416,7 @@ export function PostView({
     await refreshPost();
   };
 
-  const reportComment = async (c: CommentRow, reason: string) => {
+  const reportComment = async (c: CommentThreadItem, reason: string) => {
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
     if (!token) throw new Error("Sign in to report.");
@@ -770,7 +465,7 @@ export function PostView({
     }
   };
 
-  const removeComment = async (c: CommentRow) => {
+  const removeComment = async (c: CommentThreadItem) => {
     if (
       !window.confirm(
         "Delete this comment and all replies beneath it? This cannot be undone.",
@@ -823,10 +518,6 @@ export function PostView({
 
   const saveEditPost = async () => {
     setError(null);
-    if (!editTitle.trim()) {
-      setError("Title is required.");
-      return;
-    }
     if (!editDraft) {
       setError("Wait for the editor to finish loading.");
       return;
@@ -847,7 +538,7 @@ export function PostView({
         method: "PATCH",
         token,
         body: JSON.stringify({
-          title: editTitle.trim(),
+          title: editTitle.trim() || "",
           bodyHtml: editDraft.html,
           bodyJson: editDraft.json,
           media: editMedia,
@@ -918,7 +609,7 @@ export function PostView({
         imageUrls?: string[];
       } = {
         body: payload.body,
-        parentId: replyTo,
+        parentId: null,
       };
       if (payload.imageUrls.length > 0) body.imageUrls = payload.imageUrls;
       await apiFetch(`/posts/${post.id}/comments`, {
@@ -926,11 +617,48 @@ export function PostView({
         token,
         body: JSON.stringify(body),
       });
-      setReplyTo(null);
       await refreshComments(token);
       await refreshPost();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Comment failed");
+      throw e;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+
+  const submitReplyToComment = async (
+    parentId: string,
+    payload: { body: string; imageUrls: string[] },
+  ) => {
+    setError(null);
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) {
+        setError("Sign in to comment.");
+        throw new Error("Sign in to comment.");
+      }
+      const body: {
+        body: string;
+        parentId: string;
+        imageUrls?: string[];
+      } = {
+        body: payload.body,
+        parentId,
+      };
+      if (payload.imageUrls.length > 0) body.imageUrls = payload.imageUrls;
+      await apiFetch(`/posts/${post.id}/comments`, {
+        method: "POST",
+        token,
+        body: JSON.stringify(body),
+      });
+      await refreshComments(token);
+      await refreshPost();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Reply failed");
       throw e;
     } finally {
       setBusy(false);
@@ -1007,19 +735,11 @@ export function PostView({
           </div>
 
           {/* Title */}
-          {editingPost ? (
-            <input
-              className="gn-input mt-1 w-full text-xl font-bold text-[var(--gn-text)] sm:text-2xl"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              maxLength={TITLE_MAX_LEN}
-              aria-label="Post title"
-            />
-          ) : (
+          {!editingPost ? (
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-[var(--gn-text)] sm:text-3xl">
-              {post.title}
+              {post.title.trim() || "Post"}
             </h1>
-          )}
+          ) : null}
 
           {/* Author strip */}
           <div className="mt-3 flex items-center gap-2.5">
@@ -1174,58 +894,20 @@ export function PostView({
         </div>
 
         {editingPost ? (
-          <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
-            <div className="p-3 sm:p-4">
-              <PostEditor
-                key={editorMountKey}
-                embedded
-                initialJson={post.bodyJson ?? null}
-                onChange={setEditDraftStable}
-                disabled={editBusy}
-              />
-            </div>
-            <div className="space-y-3 border-t border-[var(--gn-divide)] p-3 sm:p-4">
-              <PostMediaDropzone
-                disabled={editBusy}
-                onMediaReady={onEditMediaReady}
-                onError={setError}
-              />
-              {editMedia.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {editMedia.map((m, idx) => (
-                    <li
-                      key={`${m.url}-${idx}`}
-                      className="relative overflow-hidden rounded-lg ring-1 ring-[var(--gn-ring)]"
-                    >
-                      {m.type === "image" ? (
-                        <img
-                          src={m.url}
-                          alt=""
-                          className="h-24 w-24 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-24 w-24 items-center justify-center bg-[var(--gn-surface-elevated)] text-xs font-medium text-[var(--gn-text-muted)]">
-                          Video
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        disabled={editBusy}
-                        aria-label="Remove attachment"
-                        className="absolute right-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-xs text-white hover:bg-black/75 disabled:opacity-50"
-                        onClick={() =>
-                          setEditMedia((list) =>
-                            list.filter((_, i) => i !== idx),
-                          )
-                        }
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+          <div className="border-t border-[var(--gn-divide)] p-3 sm:p-4">
+            <PostComposer
+              title={editTitle}
+              onTitleChange={setEditTitle}
+              titleOptional
+              media={editMedia}
+              onMediaChange={setEditMedia}
+              onMediaReady={onEditMediaReady}
+              initialJson={post.bodyJson ?? null}
+              editorKey={editorMountKey}
+              onDraftChange={setEditDraftStable}
+              disabled={editBusy}
+              onError={setError}
+            />
           </div>
         ) : showPostBody || showPostMedia ? (
           <div className="border-t border-[var(--gn-divide)] gn-post-content-flow">
@@ -1256,7 +938,7 @@ export function PostView({
         ) : null}
         </div>
 
-        <div
+                <div
           className="flex flex-col gap-2 rounded-b-2xl border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5"
           data-interactive
         >
@@ -1361,31 +1043,17 @@ export function PostView({
                   submitLabel="Comment"
                   onSubmit={submitCommentFromComposer}
                   onSubmitError={(msg) => setError(msg)}
-                  replyBanner={
-                    replyTo ? (
-                      <div className="text-xs text-[var(--gn-text-muted)]">
-                        Replying to a thread.{" "}
-                        <button
-                          type="button"
-                          className="font-medium text-[var(--gn-accent)] underline"
-                          onClick={() => setReplyTo(null)}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : null
-                  }
                 />
               </div>
             </div>
           </div>
         </div>
         <div className="mt-6">
-          <CommentTree
+          <CommentThread
             comments={comments}
             viewerId={viewerId}
-            onReply={(id) => setReplyTo(id)}
-            onVoteComment={voteComment}
+            onVoteComment={(id) => void voteComment(id, 1)}
+            onReplySubmit={submitReplyToComment}
             onSaveEdit={saveCommentEdit}
             onReport={reportComment}
             onDeleteComment={removeComment}
@@ -1394,6 +1062,7 @@ export function PostView({
             }
             votingCommentId={votingCommentId}
             deletingCommentId={deletingCommentId}
+            replyDisabled={busy}
           />
         </div>
       </section>

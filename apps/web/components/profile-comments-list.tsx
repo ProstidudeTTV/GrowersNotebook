@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
+
 export type ProfileCommentRow = {
   id: string;
   kind?: "post" | "notebook";
@@ -56,77 +57,90 @@ export function ProfileCommentsList({
           onClose={() => setLightbox(null)}
         />
       ) : null}
-      <ul className="gn-panel divide-y divide-[var(--gn-divide)] overflow-hidden">
+      <ul className="space-y-3">
         {items.map((c) => {
           const imgs = dedupeUrlsPreserveOrder(
             c.imageUrls?.filter(Boolean) ?? [],
           );
           const preview = excerpt(c.body);
+          const isNotebook = c.kind === "notebook" || Boolean(c.notebookId);
           const threadHref = c.notebookId
             ? `/notebooks/${encodeURIComponent(c.notebookId)}#comments`
             : `/p/${encodeURIComponent(c.postId ?? "")}#comment-${encodeURIComponent(c.id)}`;
+          const showScore = !isNotebook && c.score !== 0;
           return (
-            <li key={c.id} className="gn-list-row p-0">
+            <li key={c.id}>
               <Link
                 href={threadHref}
-                className="block p-4 text-left transition hover:bg-[color-mix(in_srgb,var(--gn-surface-hover)_55%,transparent)]"
+                className="block rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 text-left shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] hover:shadow-[var(--gn-shadow-md)]"
               >
-              {preview ? (
-                <p className="text-sm text-[var(--gn-text)]">{preview}</p>
-              ) : null}
-              {imgs.length > 0 ? (
-                <div
-                  className="mt-2"
-                  role="presentation"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <StackedDmStyleImages
-                    urls={imgs}
-                    stackKey={c.id}
-                    pileLabel={imgs.length > 1 ? `${imgs.length} photos` : null}
-                    compact
-                    onOpen={(index) =>
-                      setLightbox({ urls: imgs, index })
-                    }
-                  />
-                </div>
-              ) : null}
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--gn-text-muted)]">
-                <span className="font-medium text-[var(--gn-text)]">
-                  on{" "}
-                  {c.notebookId ? (
-                    <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
-                      {c.notebookTitle?.trim() || "Grow diary"}
-                    </span>
+                {preview ? (
+                  <p className="text-sm leading-relaxed text-[var(--gn-text)]">
+                    {preview}
+                  </p>
+                ) : null}
+                {imgs.length > 0 ? (
+                  <div
+                    className="mt-2"
+                    role="presentation"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <StackedDmStyleImages
+                      urls={imgs}
+                      stackKey={c.id}
+                      pileLabel={
+                        imgs.length > 1 ? `${imgs.length} photos` : null
+                      }
+                      compact
+                      onOpen={(index) =>
+                        setLightbox({ urls: imgs, index })
+                      }
+                    />
+                  </div>
+                ) : null}
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--gn-text-muted)]">
+                  <span className="font-medium text-[var(--gn-text)]">
+                    on{" "}
+                    {isNotebook ? (
+                      <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
+                        {c.notebookTitle?.trim() || "Grow diary"}
+                      </span>
+                    ) : (
+                      <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
+                        {c.postTitle}
+                      </span>
+                    )}
+                  </span>
+                  {c.community ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="font-semibold text-[var(--gn-text-muted)]">
+                        {c.community.name.trim() || c.community.slug}
+                      </span>
+                    </>
                   ) : (
-                    <span className="text-[var(--gn-accent)] underline-offset-2 hover:underline">
-                      {c.postTitle}
-                    </span>
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="font-semibold text-[var(--gn-text-muted)]">
+                        {profileLabel}
+                      </span>
+                    </>
                   )}
-                </span>
-                {c.community ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="font-semibold text-[var(--gn-text-muted)]">
-                      {c.community.name.trim() || c.community.slug}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="font-semibold text-[var(--gn-text-muted)]">
-                      {profileLabel}
-                    </span>
-                  </>
-                )}
-                <span aria-hidden>·</span>
-                <span>{new Date(c.createdAt).toLocaleString()}</span>
-                <span aria-hidden>·</span>
-                <span>{c.score} pts</span>
-              </div>
+                  <span aria-hidden>·</span>
+                  <span>{new Date(c.createdAt).toLocaleString()}</span>
+                  {showScore ? (
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="tabular-nums text-[var(--gn-accent)]">
+                        {c.score > 0 ? "+" : ""}
+                        {c.score} pts
+                      </span>
+                    </>
+                  ) : null}
+                </div>
               </Link>
             </li>
           );
@@ -135,3 +149,4 @@ export function ProfileCommentsList({
     </>
   );
 }
+

@@ -18,6 +18,7 @@ type MeProfile = {
   profilePublic: boolean;
   showGrowerStatsPublic: boolean;
   showNotebooksPublic: boolean;
+  showFollowListsPublic: boolean;
   mailingListOptIn: boolean;
 };
 
@@ -35,6 +36,7 @@ export function ProfileSettingsForm() {
   const [profilePublic, setProfilePublic] = useState(true);
   const [showGrowerStatsPublic, setShowGrowerStatsPublic] = useState(true);
   const [showNotebooksPublic, setShowNotebooksPublic] = useState(true);
+  const [showFollowListsPublic, setShowFollowListsPublic] = useState(true);
   const [mailingListOptIn, setMailingListOptIn] = useState(false);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [resetSending, setResetSending] = useState(false);
@@ -61,6 +63,7 @@ export function ProfileSettingsForm() {
       setProfilePublic(me.profilePublic !== false);
       setShowGrowerStatsPublic(me.showGrowerStatsPublic !== false);
       setShowNotebooksPublic(me.showNotebooksPublic !== false);
+      setShowFollowListsPublic(me.showFollowListsPublic !== false);
       setMailingListOptIn(me.mailingListOptIn === true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load profile");
@@ -93,6 +96,7 @@ export function ProfileSettingsForm() {
           profilePublic,
           showGrowerStatsPublic,
           showNotebooksPublic,
+          showFollowListsPublic,
           mailingListOptIn,
         }),
       });
@@ -180,17 +184,45 @@ export function ProfileSettingsForm() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      {userId ? (
-        <p className="text-sm text-[var(--gn-text-muted)]">
-          <Link
-            href={`/u/${userId}`}
-            className="text-[var(--gn-accent)] hover:underline"
-          >
-            View your profile
-          </Link>
+      <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
+        <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+          Profile preview
         </p>
-      ) : null}
+        <div className="mt-3 flex items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[var(--gn-surface-muted)] ring-2 ring-[var(--gn-border)]">
+            {avatarUrl.trim() ? (
+              <img
+                src={avatarUrl.trim()}
+                alt=""
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-lg font-semibold text-[var(--gn-text-muted)]">
+                {(displayName.trim().charAt(0) || "G").toUpperCase()}
+              </span>
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-bold text-[var(--gn-text)]">
+              {displayName.trim() || "Your display name"}
+            </p>
+            {userId ? (
+              <Link
+                href={`/u/${userId}`}
+                className="mt-1 inline-flex text-sm font-semibold text-[var(--gn-accent)] hover:underline"
+              >
+                View profile →
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </section>
 
+      <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
+        <p className="mb-4 text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+          Profile
+        </p>
       <div className="block">
         <span className="mb-2 block text-sm font-medium text-[var(--gn-text)]">
           Profile picture
@@ -266,27 +298,13 @@ export function ProfileSettingsForm() {
         </span>
       </label>
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-[var(--gn-text)]">
-          Or image URL
-        </span>
-        <input
-          type="url"
-          inputMode="url"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          maxLength={2048}
-          className="gn-input w-full"
-          placeholder="https://…"
-        />
-        <span className="mt-1 block text-xs text-[var(--gn-text-muted)]">
-          Optional. Use a direct HTTPS image link, or leave empty and save to
-          show initials.
-        </span>
-      </label>
+      </section>
 
-      <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
-        <p className="text-sm font-medium text-[var(--gn-text)]">Email</p>
+      <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
+        <p className="mb-4 text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+          Email
+        </p>
+      <div className="space-y-3">
         <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-0.5 hover:bg-[var(--gn-surface-hover)]">
           <input
             type="checkbox"
@@ -305,11 +323,13 @@ export function ProfileSettingsForm() {
           </span>
         </label>
       </div>
+      </section>
 
-      <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
-        <p className="text-sm font-medium text-[var(--gn-text)]">
-          Account & sign-in
+      <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
+        <p className="mb-4 text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+          Account
         </p>
+      <div className="space-y-3">
         <p className="text-xs text-[var(--gn-text-muted)]">
           Signed in as{" "}
           <span className="font-medium text-[var(--gn-text)]">
@@ -340,9 +360,13 @@ export function ProfileSettingsForm() {
           </div>
         ) : null}
       </div>
+      </section>
 
-      <div className="space-y-3 border-t border-[var(--gn-divide)] pt-6">
-        <p className="text-sm font-medium text-[var(--gn-text)]">Privacy</p>
+      <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
+        <p className="mb-4 text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+          Privacy
+        </p>
+      <div className="space-y-3">
 
         <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-0.5 hover:bg-[var(--gn-surface-hover)]">
           <input
@@ -356,8 +380,27 @@ export function ProfileSettingsForm() {
               Public profile
             </span>
             <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
-              When off, only you can open your profile page and post or comment
-              history. Others will see a not-found page.
+              When off, visitors who aren&apos;t you see a not-found page. Your
+              profile card and feeds stay hidden from everyone else.
+            </span>
+          </span>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-0.5 hover:bg-[var(--gn-surface-hover)]">
+          <input
+            type="checkbox"
+            checked={showFollowListsPublic}
+            onChange={(e) => setShowFollowListsPublic(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-[var(--gn-border)]"
+          />
+          <span>
+            <span className="block text-sm text-[var(--gn-text)]">
+              Show follower &amp; following lists
+            </span>
+            <span className="mt-0.5 block text-xs text-[var(--gn-text-muted)]">
+              When off, only you can open your followers and following pages.
+              Counts on your profile stay visible unless your whole profile is
+              private.
             </span>
           </span>
         </label>
@@ -398,6 +441,7 @@ export function ProfileSettingsForm() {
           </span>
         </label>
       </div>
+      </section>
 
       {error ? (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -413,7 +457,7 @@ export function ProfileSettingsForm() {
           {saving ? "Saving…" : "Save changes"}
         </button>
         <Link
-          href="/"
+          href="/following"
           className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] px-5 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
         >
           Cancel

@@ -132,6 +132,23 @@ export default function AdminStrainEditPage() {
             <Form.Item label="Tag notes" name="effectsNotes">
               <Input.TextArea rows={2} maxLength={2000} />
             </Form.Item>
+            <Form.Item label="Genetics" name="genetics">
+              <Input placeholder="e.g. OG Kush × Durban Poison" maxLength={500} />
+            </Form.Item>
+            <Form.Item label="Chemotype" name="chemotype">
+              <Select
+                allowClear
+                placeholder="Any"
+                options={[
+                  { value: "indica", label: "Indica" },
+                  { value: "sativa", label: "Sativa" },
+                  { value: "hybrid", label: "Hybrid" },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item label="Autoflower" name="isAutoflower" valuePropName="checked">
+              <Switch />
+            </Form.Item>
           </>
         )}
         <Form.Item label="Published" name="published" valuePropName="checked">

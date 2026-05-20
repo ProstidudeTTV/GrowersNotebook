@@ -334,6 +334,93 @@ export class PostsService {
     };
   }
 
+  /** Newest public posts (guest hero fallback when hot/week is empty). */
+  async listRecentPublic(query: {
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
+    const db = getDb();
+    const offset = (query.page - 1) * query.pageSize;
+
+    const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
+    const authorVisible = or(
+      eq(profiles.profilePublic, true),
+      query.viewerId
+        ? eq(posts.authorId, query.viewerId)
+        : sql`false`,
+    );
+    const recentWhere = and(authorVisible, blockAuthors ?? sql`true`);
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
+      .where(recentWhere);
+
+    const rows = await db
+      .select({
+        post: posts,
+        author: {
+          id: profiles.id,
+          displayName: profiles.displayName,
+          avatarUrl: profiles.avatarUrl,
+        },
+        community: {
+          slug: communities.slug,
+          name: communities.name,
+        },
+        authorSeeds: authorSeedsExpr.as('author_seeds'),
+        score: posts.voteScore,
+        upvotes: posts.upvoteCount,
+        downvotes: posts.downvoteCount,
+        commentCount: commentCountExpr.as('comment_count'),
+        viewerVote: viewerVoteSelect(query.viewerId),
+      })
+      .from(posts)
+      .innerJoin(profiles, eq(posts.authorId, profiles.id))
+      .leftJoin(communities, eq(posts.communityId, communities.id))
+      .where(recentWhere)
+      .orderBy(desc(posts.createdAt))
+      .offset(offset)
+      .limit(query.pageSize);
+
+    const rowAuthorIds = rows.map((r) => r.author.id);
+    const followedAuthors = query.viewerId
+      ? await this.follows.getFollowingUserIds(query.viewerId, rowAuthorIds)
+      : null;
+
+    return {
+      items: rows.map((r) => {
+        const seeds = Number(r.authorSeeds);
+        const raw = r as unknown as Record<string, unknown>;
+        const community =
+          r.community?.slug != null
+            ? { slug: r.community.slug, name: r.community.name }
+            : null;
+        const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
+        return {
+          ...r.post,
+          author: {
+            ...r.author,
+            seeds,
+            growerLevel: growerLevelFromSeeds(seeds),
+            viewerFollowing: authorFollowing,
+          },
+          community,
+          score: Number(r.score),
+          upvotes: Number(r.upvotes),
+          downvotes: Number(r.downvotes),
+          commentCount: Number(r.commentCount),
+          viewerVote: viewerVoteFromRow(raw),
+        };
+      }),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
   async create(authorId: string, dto: CreatePostDto) {
     if (dto.communityId) {
       const joined = await this.follows.getFollowingCommunityIds(authorId, [
@@ -360,7 +447,7 @@ export class PostsService {
       .values({
         communityId: dto.communityId ?? null,
         authorId,
-        title: dto.title.trim(),
+        title: dto.title?.trim() ?? '',
         bodyJson: dto.bodyJson,
         bodyHtml,
         media: mediaItems,

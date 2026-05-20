@@ -33,6 +33,8 @@ Migrations under `supabase/migrations/` enable replication for:
 
 **Not** on `user_follows` / `community_follows` unless you add a new migration to `ALTER PUBLICATION supabase_realtime ADD TABLE ...`.
 
+**Also on Realtime:** `notebook_comments` (migration `20260527210000_notebook_comments_realtime.sql`) — powers live notebook discussion threads on `/notebooks/[id]#comments`.
+
 ## Row Level Security (PostgREST / anon key)
 
 Migration **`20260519120000_rls_hardening_public_core.sql`** (and matching Drizzle **`0031_rls_hardening_public_core.sql`**) enables **RLS** on core `public` tables.
@@ -61,7 +63,7 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `role` enum (`member` / `moderator` / `admin`), `notification_preferences` JSONB (`{ new_comment, new_follower, vote_milestone, direct_message }`, all default true; read/written by `/settings/notifications`), `last_seen` (rolling activity timestamp, indexed; powers the guest landing "Growers online now" badge via the `growers_online_count()` RPC). |
+| `profiles` | `id` = `auth.users.id`; `display_name`, `avatar_url`, `profile_public` (default true), `show_grower_stats_public` (default true), `show_notebooks_public` (default true), `show_follow_lists_public` (default true; when false, only the owner can open follower/following list pages), `role` enum (`member` / `moderator` / `admin`), `notification_preferences` JSONB (`{ new_comment, new_follower, vote_milestone, direct_message }`, all default true; read/written by `/settings/notifications`), `last_seen` (rolling activity timestamp, indexed; powers the guest landing "Growers online now" badge via the `growers_online_count()` RPC). |
 | `communities` | `slug`, `name`, `description`, `icon_key` (curated sidebar icon), `banner_url` (public `community-banners` URL for wide hero). |
 | `posts` | `community_id` (**nullable**: null = profile post), `author_id`, `title`, `body_json`, `body_html`, `excerpt`, denormalized `upvote_count` / `downvote_count` / `vote_score` (synced from `post_votes` via trigger), timestamps. Indexes: `posts_created_at_desc_idx`, `posts_author_created_at_desc_idx`. |
 | `comments` | Threaded: `post_id`, `author_id`, `parent_id`, `body`. |
@@ -81,13 +83,16 @@ Canonical definitions: `apps/api/src/db/schema.ts`.
 
 - **Auth:** JWT from Supabase; Nest `ProfilesService.ensureProfile` on optional/auth routes.
 - **Votes:** `POST /votes/post`, `POST /votes/comment`; tallies drive “seeds” / grower level.
-- **Follows:** `POST|DELETE /follows/users/:userId`, `POST|DELETE /follows/communities/:communityId`.
+- **Follows:** `POST|DELETE /follows/users/:userId`, `POST|DELETE /follows/communities/:communityId`.  
+  - `GET /follows/users` — messaging picker; **Bearer required** (users you follow).  
+  - `GET /follows/users/:userId/followers` and `GET /follows/users/:userId/following` — paginated (`page`, `pageSize`); **optional Bearer** for `viewerId` privacy. Response may include `{ hidden: true, hiddenReason }` when `show_follow_lists_public` is false and the viewer is not the owner; blocked users are omitted from rows.
 - **Feeds:**  
   - `GET /posts?communityId=&sort=&page=` — per community.  
   - `GET /posts/following?sort=&page=` — posts where **author** is followed **or** **community** is joined; `community` on items is **null** for profile posts.  
   - `GET /posts/hot/week?page=&pageSize=` — hot **feed**: posts from the **last 7 days** (rolling), ordered by net vote score (then newest). Same item shape as community/following feeds (`items`, `total`, `page`, `pageSize`). Public (optional Bearer).  
   - `GET /profiles/:id`, `GET /profiles/:id/posts`, `GET /profiles/:id/comments` — public profile + tabs (optional Bearer for `viewerFollowing` on profile). If `profile_public` is false and the viewer is not the owner: `GET /profiles/:id` returns the profile card fields plus `profileFeedHiddenFromViewer: true`; `GET /profiles/:id/posts` and `GET /profiles/:id/comments` are empty. The owner always sees full lists. When `show_grower_stats_public` is false (public profile), `seeds` and `growerLevel` are null for non-owners.  
-  - `GET /profiles/me`, `PATCH /profiles/me` — authenticated profile (edit display name, `avatar_url` HTTPS URL, privacy flags including `showNotebooksPublic`).  
+  - `GET /profiles/me`, `PATCH /profiles/me` — authenticated profile (edit display name, `avatar_url` HTTPS URL, privacy flags including `showNotebooksPublic`, `showFollowListsPublic`).  
+  - `GET /strains` — public catalog; query: `q`, `breederSlug`, `chemotype` (`indica`|`sativa`|`hybrid`), `autoflower=1`, `genetics` (ILIKE lineage), `effects` (comma-separated tags; strain must include **all** listed tags), `minRating`, `minReviews`, `sort` (`name`|`rating`|`reviews`), `page`, `pageSize`.  
   - **Notebooks:** `GET /notebooks`, `GET /notebooks/:id`, profile notebooks tab, votes, comments — see Nest `notebooks` module (public listings respect `show_notebooks_public` and `profile_public`).  
   - `POST /posts` — `communityId` optional (omit for profile post).  
 - **Communities list/detail:** `viewerFollowing` on `GET /communities`, `GET /communities/:slug` when Bearer present.

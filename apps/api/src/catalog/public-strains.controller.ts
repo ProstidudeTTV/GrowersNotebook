@@ -33,13 +33,29 @@ export class PublicStrainsController {
     const af = query.autoflower?.trim().toLowerCase();
     const autoflower =
       af === '1' || af === 'true' || af === 'yes' ? true : undefined;
+    const sortRaw = query.sort?.trim().toLowerCase();
+    const sort =
+      sortRaw === 'rating'
+        ? 'rating'
+        : sortRaw === 'reviews'
+          ? 'reviews'
+          : 'name';
+    const effectsRaw = query.effects?.trim();
+    const effects = effectsRaw
+      ? effectsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : undefined;
     return this.strains.listPublic({
       q: query.q,
-      sort: query.sort === 'rating' ? 'rating' : 'name',
+      sort,
       breederId: query.breederId,
       breederSlug: query.breederSlug,
       chemotype,
       autoflower,
+      genetics: query.genetics,
+      effects,
       minRating:
         Number.isFinite(minRating) && minRating >= 1 && minRating <= 5
           ? minRating

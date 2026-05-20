@@ -43,5 +43,10 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
+  showFollowListsPublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
   mailingListOptIn?: boolean;
 }

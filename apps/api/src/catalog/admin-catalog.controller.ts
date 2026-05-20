@@ -103,6 +103,9 @@ export class AdminCatalogController {
       effects: string[];
       effectsNotes: string | null;
       published: boolean;
+      chemotype?: string | null;
+      genetics?: string | null;
+      isAutoflower?: boolean;
     }>,
   ) {
     const actor = await this.profiles.findById(user.sub);

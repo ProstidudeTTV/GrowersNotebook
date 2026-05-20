@@ -9,4 +9,9 @@ export class PublicSiteController {
   getPublicConfig() {
     return this.siteConfig.getPublicPayload();
   }
+
+  @Get('platform-stats')
+  getPlatformStats() {
+    return this.siteConfig.getPlatformStats();
+  }
 }

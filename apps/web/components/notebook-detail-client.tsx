@@ -37,6 +37,10 @@ import { NotebookWeekSidebar } from "@/components/notebooks/notebook-week-sideba
 import { NotebookWeekWizard } from "@/components/notebooks/notebook-week-wizard";
 import { WeekNotesExpandable } from "@/components/notebooks/week-notes-expandable";
 import { CommentDiscussionComposer } from "@/components/comment-discussion-composer";
+import {
+  CommentThread,
+  type CommentThreadItem,
+} from "@/components/comment-thread";
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
@@ -119,19 +123,8 @@ export type NotebookDetailPayload = {
   weeks: Week[];
 };
 
-type NbComment = {
-  id: string;
-  body: string;
-  createdAt: string;
+type NbComment = CommentThreadItem & {
   imageUrls: string[];
-  parentId: string | null;
-  author: {
-    id: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    seeds: number;
-    growerLevel: string;
-  };
 };
 
 type WeekRow = NotebookDetailPayload["weeks"][number];
@@ -428,9 +421,60 @@ export function NotebookDetailClient({
     setComments(list);
   }, [initial.id]);
 
+  const reloadCommentsRef = useRef(reloadComments);
+  reloadCommentsRef.current = reloadComments;
+
   useEffect(() => {
     void reloadComments();
   }, [reloadComments]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const notebookId = nb.id;
+    const syncComments = () => {
+      void reloadCommentsRef.current();
+    };
+    const ch = supabase
+      .channel(`notebook-comments:${notebookId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notebook_comments",
+          filter: `notebook_id=eq.${notebookId}`,
+        },
+        syncComments,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notebook_comments",
+          filter: `notebook_id=eq.${notebookId}`,
+        },
+        syncComments,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notebook_comments",
+          filter: `notebook_id=eq.${notebookId}`,
+        },
+        syncComments,
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void reloadCommentsRef.current();
+        }
+      });
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [nb.id]);
 
   const vote = async (value: 1 | -1) => {
     if (!viewerId) {
@@ -521,10 +565,10 @@ export function NotebookDetailClient({
     }
   };
 
-  const submitNotebookComment = async (payload: {
-    body: string;
-    imageUrls: string[];
-  }) => {
+  const submitNotebookComment = async (
+    parentId: string | null,
+    payload: { body: string; imageUrls: string[] },
+  ) => {
     if (!viewerId) {
       router.push("/login");
       throw new Error("Sign in.");
@@ -532,8 +576,13 @@ export function NotebookDetailClient({
     const supabase = createClient();
     const token = await getAccessTokenForApi(supabase);
     if (!token) throw new Error("Sign in.");
-    const body: { body: string; imageUrls?: string[] } = {
+    const body: {
+      body: string;
+      parentId: string | null;
+      imageUrls?: string[];
+    } = {
       body: payload.body,
+      parentId,
     };
     if (payload.imageUrls.length > 0) body.imageUrls = payload.imageUrls;
     await apiFetch(`/notebooks/${nb.id}/comments`, {
@@ -543,6 +592,11 @@ export function NotebookDetailClient({
     });
     await reloadComments();
     router.refresh();
+  };
+
+  const deleteNotebookComment = async (c: CommentThreadItem) => {
+    if (!viewerId || viewerId !== c.authorId) return;
+    await deleteOwnComment(c.id);
   };
 
   const isOwner = viewerId === nb.ownerId;
@@ -878,7 +932,7 @@ export function NotebookDetailClient({
                   Time for a new entry!
                 </p>
                 <p className="text-xs text-[var(--gn-text-muted)]">
-                  It&apos;s been {daysSince} day{daysSince !== 1 ? "s" : ""} since your last log. Keep your grow journal up to date.
+                  It&apos;s been {daysSince} day{daysSince !== 1 ? "s" : ""} since your last log. Keep your notebook up to date.
                 </p>
               </div>
             </div>
@@ -1198,72 +1252,7 @@ export function NotebookDetailClient({
           />
         ) : null}
         <SectionHeading>Comments</SectionHeading>
-        <ul className="mt-4 space-y-4">
-          {comments.map((c) => {
-            const imgs = dedupeUrlsPreserveOrder(
-              c.imageUrls?.filter(Boolean) ?? [],
-            );
-            const tier =
-              c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
-            return (
-              <li
-                key={c.id}
-                className="rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-2"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="text-xs text-[var(--gn-text-muted)]">
-                    <UserProfileLink
-                      userId={c.author.id}
-                      className="font-medium text-[var(--gn-text)] transition hover:text-[var(--gn-accent)] hover:underline"
-                    >
-                      {c.author.displayName?.trim() || "Member"}
-                    </UserProfileLink>
-                    <span> · </span>
-                    <span title="Grower tier">{tier}</span>
-                    <span> · </span>
-                    <span title="Net seeds from posts and comments">
-                      {formatSeeds(c.author.seeds)} seeds
-                    </span>
-                    <span> · </span>
-                    {new Date(c.createdAt).toLocaleString()}
-                  </div>
-                  {viewerId && viewerId === c.author.id ? (
-                    <button
-                      type="button"
-                      disabled={commentDeletingId === c.id}
-                      onClick={() => void deleteOwnComment(c.id)}
-                      className="shrink-0 text-xs font-medium text-red-400/90 hover:text-red-300 hover:underline disabled:opacity-45"
-                    >
-                      {commentDeletingId === c.id ? "Removing…" : "Delete"}
-                    </button>
-                  ) : null}
-                </div>
-                {c.body.trim() ? (
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--gn-text)]">
-                    {c.body}
-                  </p>
-                ) : null}
-                {imgs.length > 0 ? (
-                  <div
-                    className={`overflow-visible ${c.body.trim() ? "mt-2.5" : "mt-1"}`}
-                  >
-                    <StackedDmStyleImages
-                      urls={imgs}
-                      stackKey={c.id}
-                      pileLabel={
-                        imgs.length > 1 ? `${imgs.length} photos` : null
-                      }
-                      onOpen={(index) =>
-                        setCommentLightbox({ urls: imgs, index })
-                      }
-                    />
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-4">
+        <div className="mt-4 rounded-2xl bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-sm)]">
           {commentComposerError ? (
             <p className="mb-2 text-sm text-red-600 dark:text-red-400">
               {commentComposerError}
@@ -1277,9 +1266,24 @@ export function NotebookDetailClient({
             submitLabel="Comment"
             onSubmit={async (p) => {
               setCommentComposerError(null);
-              await submitNotebookComment(p);
+              await submitNotebookComment(null, p);
             }}
             onSubmitError={(msg) => setCommentComposerError(msg)}
+          />
+        </div>
+        <div className="mt-4">
+          <CommentThread
+            comments={comments}
+            viewerId={viewerId}
+            enableVotes={false}
+            onReplySubmit={(parentId, payload) =>
+              submitNotebookComment(parentId, payload)
+            }
+            onDeleteComment={deleteNotebookComment}
+            onOpenCommentImages={(urls, index) =>
+              setCommentLightbox({ urls, index })
+            }
+            deletingCommentId={commentDeletingId}
           />
         </div>
       </section>

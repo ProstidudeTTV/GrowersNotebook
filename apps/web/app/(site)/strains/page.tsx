@@ -53,12 +53,16 @@ export default async function StrainsPage({
     minReviews?: string;
     chemotype?: string;
     autoflower?: string;
+    genetics?: string;
+    effects?: string;
     detail?: string;
     reviewsPage?: string;
   }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
+  const genetics = sp.genetics?.trim() ?? "";
+  const effects = sp.effects?.trim() ?? "";
   const breederSlug = sp.breederSlug?.trim() ?? "";
   const minRatingRaw = sp.minRating?.trim() ?? "";
   const minReviewsRaw = sp.minReviews?.trim() ?? "";
@@ -70,7 +74,12 @@ export default async function StrainsPage({
       ? chemotypeRaw
       : "";
   const autoflowerOnly = sp.autoflower === "1" || sp.autoflower === "true";
-  const sort = sp.sort === "rating" ? "rating" : "name";
+  const sort =
+    sp.sort === "rating"
+      ? "rating"
+      : sp.sort === "reviews"
+        ? "reviews"
+        : "name";
   const page = Number(sp.page ?? 1) || 1;
   const detailSlug = sp.detail?.trim() ?? "";
   const overlayReviewsPage = Number(sp.reviewsPage ?? 1) || 1;
@@ -92,6 +101,8 @@ export default async function StrainsPage({
   }
   if (chemotype) qs.set("chemotype", chemotype);
   if (autoflowerOnly) qs.set("autoflower", "1");
+  if (genetics) qs.set("genetics", genetics);
+  if (effects) qs.set("effects", effects);
 
   let data: ListJson = {
     items: [],

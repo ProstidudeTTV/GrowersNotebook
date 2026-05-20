@@ -49,6 +49,20 @@ export class PostsController {
     });
   }
 
+  /** Newest public posts (guest landing when hot/week has no items). */
+  @Get('recent')
+  @UseGuards(OptionalAuthGuard)
+  recent(
+    @Query() query: ListHotWeekPostsQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    return this.posts.listRecentPublic({
+      page: query.page,
+      pageSize: query.pageSize,
+      viewerId: user?.sub,
+    });
+  }
+
   /** Hot feed: posts from the last 7 days, ranked by net score (sidebar + /hot page). */
   @Get('hot/week')
   @UseGuards(OptionalAuthGuard)

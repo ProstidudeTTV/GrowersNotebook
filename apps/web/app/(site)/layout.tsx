@@ -107,14 +107,7 @@ export default async function SiteLayout({
         publicSiteConfig.mailingListNudgeRecommended ?? false
       }
     >
-      {/*
-        Content wrapper: constrains page content to a comfortable reading width
-        on large screens while allowing full-bleed pages (like guest landing)
-        to use their own inner max-w via mx-auto on child sections.
-      */}
-      <div className="mx-auto w-full max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] sm:px-0">
-        <SiteProviders>{children}</SiteProviders>
-      </div>
+      <SiteProviders>{children}</SiteProviders>
     </SiteChrome>
   );
 }

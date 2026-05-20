@@ -8,7 +8,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.communities (id, slug, name, description) VALUES
 ('f2000000-0000-4000-8000-000000000001', 'general', 'General', 'Announcements, meta, and wide-ranging grow talk.'),
-('f2000000-0000-4000-8000-000000000002', 'grow-journal', 'Grow Journal', 'Week-by-week notes, environments, and lessons learned.'),
+('f2000000-0000-4000-8000-000000000002', 'grow-journal', 'Notebooks', 'Week-by-week notes, environments, and lessons learned.'),
 ('f2000000-0000-4000-8000-000000000003', 'genetics', 'Genetics & lineage', 'Breeding goals, cultivar notes, and stabilization journeys.'),
 ('f2000000-0000-4000-8000-000000000004', 'indoor', 'Indoor', 'Tents, closets, and full indoor setups—environment control and day-to-day indoor workflows.'),
 ('f2000000-0000-4000-8000-000000000005', 'outdoor', 'Outdoor', 'Backyard, balcony, guerilla, and greenhouse grows—sun, season, and weather.'),

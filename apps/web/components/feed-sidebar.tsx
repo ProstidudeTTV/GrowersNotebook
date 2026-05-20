@@ -274,7 +274,7 @@ export async function FeedSidebar({
         </div>
       ) : null}
 
-      {/* Start a Grow Journal CTA */}
+      {/* Start a Notebook CTA */}
       <div className="rounded-2xl border border-[var(--gn-accent)]/20 bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_22%,var(--gn-surface-muted))] to-[var(--gn-surface-muted)] p-4">
         <div className="mb-2 flex items-center gap-2">
           <svg
@@ -293,7 +293,7 @@ export async function FeedSidebar({
             <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
           </svg>
           <p className="text-sm font-bold text-[var(--gn-text)]">
-            Start a Grow Journal
+            Start a Notebook
           </p>
         </div>
         <p className="mb-4 text-xs leading-relaxed text-[var(--gn-text-muted)]">

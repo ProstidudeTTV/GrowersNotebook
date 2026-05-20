@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, notInArray } from 'drizzle-orm';
+import { BlocksService } from '../blocks/blocks.service';
 import { getDb } from '../db';
 import {
   communities,
@@ -13,9 +14,43 @@ import {
 } from '../db/schema';
 import { NotificationsService } from '../notifications/notifications.service';
 
+type ListFollowOpts = { viewerId?: string };
+
 @Injectable()
 export class FollowsService {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly blocks: BlocksService,
+  ) {}
+
+  private async assertFollowListsVisible(
+    profileId: string,
+    viewerId?: string,
+  ): Promise<{
+    hidden: boolean;
+    hiddenReason?: 'private_lists' | 'private_profile';
+  }> {
+    const db = getDb();
+    const [row] = await db
+      .select({
+        profilePublic: profiles.profilePublic,
+        showFollowListsPublic: profiles.showFollowListsPublic,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, profileId))
+      .limit(1);
+    if (!row) throw new NotFoundException('User not found.');
+    if (viewerId === profileId) {
+      return { hidden: false };
+    }
+    if (row.profilePublic === false) {
+      return { hidden: true, hiddenReason: 'private_profile' };
+    }
+    if (row.showFollowListsPublic === false) {
+      return { hidden: true, hiddenReason: 'private_lists' };
+    }
+    return { hidden: false };
+  }
 
   async followUser(followerId: string, followingId: string) {
     if (followerId === followingId) {
@@ -148,19 +183,44 @@ export class FollowsService {
     return rows.map((r) => r.id);
   }
 
-  async listFollowers(userId: string, page: number, pageSize: number) {
+  async listFollowers(
+    userId: string,
+    page: number,
+    pageSize: number,
+    opts: ListFollowOpts = {},
+  ) {
+    const visibility = await this.assertFollowListsVisible(
+      userId,
+      opts.viewerId,
+    );
+    if (visibility.hidden) {
+      return {
+        items: [],
+        total: 0,
+        page,
+        pageSize,
+        hidden: true,
+        hiddenReason: visibility.hiddenReason,
+      };
+    }
+
     const db = getDb();
-    const [target] = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1);
-    if (!target) throw new NotFoundException('User not found.');
+    const hiddenIds =
+      opts.viewerId != null
+        ? await this.blocks.getHiddenUserIdsForViewer(opts.viewerId)
+        : [];
     const skip = (page - 1) * pageSize;
+    const baseWhere = eq(userFollows.followingId, userId);
+    const excludeHidden =
+      hiddenIds.length > 0
+        ? and(baseWhere, notInArray(userFollows.followerId, hiddenIds))
+        : baseWhere;
+
     const [{ total }] = await db
       .select({ total: count() })
       .from(userFollows)
-      .where(eq(userFollows.followingId, userId));
+      .where(excludeHidden);
+
     const rows = await db
       .select({
         id: profiles.id,
@@ -170,31 +230,58 @@ export class FollowsService {
       })
       .from(userFollows)
       .innerJoin(profiles, eq(profiles.id, userFollows.followerId))
-      .where(eq(userFollows.followingId, userId))
+      .where(excludeHidden)
       .orderBy(desc(userFollows.createdAt))
       .limit(pageSize)
       .offset(skip);
+
     return {
       items: rows,
       total: Number(total),
       page,
       pageSize,
+      hidden: false,
     };
   }
 
-  async listFollowing(userId: string, page: number, pageSize: number) {
+  async listFollowing(
+    userId: string,
+    page: number,
+    pageSize: number,
+    opts: ListFollowOpts = {},
+  ) {
+    const visibility = await this.assertFollowListsVisible(
+      userId,
+      opts.viewerId,
+    );
+    if (visibility.hidden) {
+      return {
+        items: [],
+        total: 0,
+        page,
+        pageSize,
+        hidden: true,
+        hiddenReason: visibility.hiddenReason,
+      };
+    }
+
     const db = getDb();
-    const [target] = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1);
-    if (!target) throw new NotFoundException('User not found.');
+    const hiddenIds =
+      opts.viewerId != null
+        ? await this.blocks.getHiddenUserIdsForViewer(opts.viewerId)
+        : [];
     const skip = (page - 1) * pageSize;
+    const baseWhere = eq(userFollows.followerId, userId);
+    const excludeHidden =
+      hiddenIds.length > 0
+        ? and(baseWhere, notInArray(userFollows.followingId, hiddenIds))
+        : baseWhere;
+
     const [{ total }] = await db
       .select({ total: count() })
       .from(userFollows)
-      .where(eq(userFollows.followerId, userId));
+      .where(excludeHidden);
+
     const rows = await db
       .select({
         id: profiles.id,
@@ -204,15 +291,17 @@ export class FollowsService {
       })
       .from(userFollows)
       .innerJoin(profiles, eq(profiles.id, userFollows.followingId))
-      .where(eq(userFollows.followerId, userId))
+      .where(excludeHidden)
       .orderBy(desc(userFollows.createdAt))
       .limit(pageSize)
       .offset(skip);
+
     return {
       items: rows,
       total: Number(total),
       page,
       pageSize,
+      hidden: false,
     };
   }
 

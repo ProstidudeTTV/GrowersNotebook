@@ -188,31 +188,13 @@ function PreviewCard({
   return inner;
 }
 
-// ─── Social proof avatars ──────────────────────────────────────────────────────
-
-function AvatarStack() {
-  const avatars = [
-    { letter: "G", bg: "bg-[var(--gn-accent)]" },
-    { letter: "M", bg: "bg-violet-600" },
-    { letter: "T", bg: "bg-amber-500" },
-    { letter: "A", bg: "bg-teal-600" },
-  ];
+function GrowerSocialProof({ growerCount }: { growerCount: number }) {
+  if (growerCount <= 0) return null;
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex -space-x-2">
-        {avatars.map((a) => (
-          <div
-            key={a.letter}
-            className={`flex h-8 w-8 items-center justify-center rounded-full ${a.bg} text-xs font-bold text-white ring-2 ring-[var(--gn-surface)]`}
-          >
-            {a.letter}
-          </div>
-        ))}
-      </div>
-      <p className="text-sm text-[var(--gn-text-muted)]">
-        Join <span className="font-semibold text-[var(--gn-text)]">1,000+</span> home growers
-      </p>
-    </div>
+    <p className="text-sm text-[var(--gn-text-muted)]">
+      <span className="font-semibold text-[var(--gn-text)]">{formatCount(growerCount)}</span>{" "}
+      {growerCount === 1 ? "grower" : "growers"} on the platform
+    </p>
   );
 }
 
@@ -221,21 +203,44 @@ function AvatarStack() {
 function StatsBand({
   growersOnline,
   communityCount,
+  postCount,
+  growerCount,
 }: {
   growersOnline: number;
   communityCount: number;
+  postCount: number;
+  growerCount: number;
 }) {
-  const stats = [
-    { value: "10,000+", label: "Posts Tracked" },
-    { value: communityCount > 0 ? `${communityCount}+` : "30+", label: "Communities" },
-    { value: "100%", label: "Free to Join" },
-    { value: growersOnline > 0 ? formatCount(growersOnline) : "Active", label: "Growers Online" },
-  ];
+  const stats: { value: string; label: string }[] = [];
+  if (postCount > 0) {
+    stats.push({ value: formatCount(postCount), label: postCount === 1 ? "Post" : "Posts" });
+  }
+  if (growerCount > 0) {
+    stats.push({
+      value: formatCount(growerCount),
+      label: growerCount === 1 ? "Grower" : "Growers",
+    });
+  }
+  if (communityCount > 0) {
+    stats.push({
+      value: formatCount(communityCount),
+      label: communityCount === 1 ? "Community" : "Communities",
+    });
+  }
+  if (growersOnline > 0) {
+    stats.push({ value: formatCount(growersOnline), label: "Online now" });
+  }
+  stats.push({ value: "Free", label: "To join" });
+
+  const cols = stats.length >= 4 ? 4 : Math.max(2, stats.length);
 
   return (
     <div className="border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]">
       <div className="mx-auto max-w-6xl px-4">
-        <div className="grid grid-cols-2 divide-x divide-[var(--gn-divide)] sm:grid-cols-4">
+        <div
+          className="grid divide-x divide-[var(--gn-divide)]"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col items-center py-6 px-4 text-center">
               <span className="text-2xl font-black tabular-nums text-[var(--gn-accent)] sm:text-3xl">
@@ -262,6 +267,8 @@ export function GuestLanding({
   heroBlurb = SITE_TAGLINE,
   growersOnline = 0,
   hotPosts = [],
+  postCount = 0,
+  growerCount = 0,
 }: {
   communities: GuestLandingCommunity[];
   loadError: string | null;
@@ -274,6 +281,9 @@ export function GuestLanding({
   growersOnline?: number;
   /** Top hot posts (last 7 days) from `GET /posts/hot/week` for the hero preview grid. */
   hotPosts?: GuestLandingHotPost[];
+  /** From `GET /site/platform-stats`. */
+  postCount?: number;
+  growerCount?: number;
 }) {
   const featured = communities.slice(0, 8);
 
@@ -314,7 +324,7 @@ export function GuestLanding({
               {/* Tag */}
               <div className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-accent)]/25 bg-[var(--gn-accent)]/8 px-4 py-2 text-sm font-semibold text-[var(--gn-accent)]">
                 <span>🌿</span>
-                <span>The #1 Cannabis Grow Community</span>
+                <span>Home cannabis grow community</span>
               </div>
 
               {/* Headline */}
@@ -350,7 +360,7 @@ export function GuestLanding({
               </div>
 
               {/* Social proof */}
-              <AvatarStack />
+              <GrowerSocialProof growerCount={growerCount} />
 
               {/* Discord subtle link */}
               <a
@@ -415,7 +425,12 @@ export function GuestLanding({
       </section>
 
       {/* ── Stats Band ────────────────────────────────────────────────────────── */}
-      <StatsBand growersOnline={growersOnline} communityCount={communities.length} />
+      <StatsBand
+        growersOnline={growersOnline}
+        communityCount={communities.length}
+        postCount={postCount}
+        growerCount={growerCount}
+      />
 
       {/* ── Why Growers Notebook ─────────────────────────────────────────────── */}
       <section className="py-20 sm:py-24">

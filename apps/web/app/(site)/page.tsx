@@ -20,6 +20,7 @@ import {
   mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
 import { fetchGrowersOnlineCount } from "@/lib/growers-online";
+import { fetchPlatformStats } from "@/lib/platform-stats";
 
 /** Shape of items returned by `GET /posts/hot/week` that we surface on the guest hero. */
 type HotPostApiItem = {
@@ -31,7 +32,35 @@ type HotPostApiItem = {
   community?: { slug?: string | null; name?: string | null } | null;
 };
 
-/** Server-side fetch of the top hot posts for the guest hero; returns [] on any failure. */
+function mapHotApiItems(items: HotPostApiItem[]): GuestLandingHotPost[] {
+  return items.slice(0, 6).map((p): GuestLandingHotPost => {
+    const firstImage = (p.media ?? []).find(
+      (m) => m && typeof m.url === "string" && m.type === "image",
+    );
+    const author = p.author?.displayName?.trim();
+    return {
+      id: p.id,
+      title: p.title,
+      imageUrl: firstImage?.url ?? null,
+      score: typeof p.score === "number" ? p.score : Number(p.score ?? 0),
+      authorName: author && author.length > 0 ? author : "A grower",
+      communityName: p.community?.name ?? null,
+    };
+  });
+}
+
+async function fetchGuestHeroPostsFromPath(
+  base: string,
+  path: string,
+): Promise<GuestLandingHotPost[]> {
+  const res = await fetch(`${base}${path}`, { next: { revalidate: 3600 } });
+  if (!res.ok) return [];
+  const payload = (await res.json()) as { items?: HotPostApiItem[] };
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return mapHotApiItems(items);
+}
+
+/** Hot this week first; newest public posts when the hot list is empty. */
 async function fetchGuestHeroHotPosts(): Promise<GuestLandingHotPost[]> {
   let base: string;
   try {
@@ -41,26 +70,9 @@ async function fetchGuestHeroHotPosts(): Promise<GuestLandingHotPost[]> {
       process.env.API_URL?.trim().replace(/\/+$/, "") ?? "http://localhost:3001";
   }
   try {
-    const res = await fetch(`${base}/posts/hot/week?pageSize=6`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return [];
-    const payload = (await res.json()) as { items?: HotPostApiItem[] };
-    const items = Array.isArray(payload?.items) ? payload.items : [];
-    return items.slice(0, 6).map((p): GuestLandingHotPost => {
-      const firstImage = (p.media ?? []).find(
-        (m) => m && typeof m.url === "string" && m.type === "image",
-      );
-      const author = p.author?.displayName?.trim();
-      return {
-        id: p.id,
-        title: p.title,
-        imageUrl: firstImage?.url ?? null,
-        score: typeof p.score === "number" ? p.score : Number(p.score ?? 0),
-        authorName: author && author.length > 0 ? author : "A grower",
-        communityName: p.community?.name ?? null,
-      };
-    });
+    const hot = await fetchGuestHeroPostsFromPath(base, "/posts/hot/week?pageSize=6");
+    if (hot.length > 0) return hot;
+    return await fetchGuestHeroPostsFromPath(base, "/posts/recent?pageSize=6");
   } catch {
     return [];
   }
@@ -180,9 +192,10 @@ export default async function Home() {
   const hostedProd = isLikelyHostedRenderDeploy();
 
   if (!token) {
-    const [growersOnline, hotPosts] = await Promise.all([
+    const [growersOnline, hotPosts, platformStats] = await Promise.all([
       fetchGrowersOnlineCount(supabase),
       fetchGuestHeroHotPosts(),
+      fetchPlatformStats(),
     ]);
 
     return (
@@ -196,12 +209,13 @@ export default async function Home() {
         }
         growersOnline={growersOnline}
         hotPosts={hotPosts}
+        postCount={platformStats.postCount}
+        growerCount={platformStats.growerCount}
       />
     );
   }
 
-  // Logged-in users land on the community feed, not a bare directory
-  redirect("/hot");
+  redirect("/following");
 
   // Unreachable — kept only so TS doesn't complain about missing return
   return (

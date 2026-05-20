@@ -372,7 +372,7 @@ export function NotebookSetupWizard({
           {step === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-[var(--gn-text-muted)]">
-                Describe your grow room for readers. The more detail you give, the more useful your journal is to other growers who want to replicate your results.
+                Describe your grow room for readers. The more detail you give, the more useful your notebook is to other growers who want to replicate your results.
               </p>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -413,7 +413,7 @@ export function NotebookSetupWizard({
               <div className="rounded-2xl border border-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)] bg-[color-mix(in_srgb,var(--gn-accent)_10%,transparent)] p-5 text-center">
                 <div className="mx-auto mb-3 text-4xl">🌱</div>
                 <h3 className="text-base font-bold text-[var(--gn-text)]">
-                  {isCreate ? "Ready to create your journal!" : "Ready to save!"}
+                  {isCreate ? "Ready to create your notebook!" : "Ready to save!"}
                 </h3>
                 <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
                   {isCreate
@@ -497,7 +497,7 @@ export function NotebookSetupWizard({
                 onClick={() => void finishSetup()}
                 className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-accent)] px-6 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-45"
               >
-                {saving ? "Saving…" : isCreate ? "Create Journal →" : "Save Setup →"}
+                {saving ? "Saving…" : isCreate ? "Create notebook →" : "Save Setup →"}
               </button>
             )}
           </div>

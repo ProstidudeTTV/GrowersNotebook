@@ -101,6 +101,10 @@ export const profiles = pgTable('profiles', {
   showNotebooksPublic: boolean('show_notebooks_public')
     .notNull()
     .default(true),
+  /** When false, only the owner can open followers/following list pages. */
+  showFollowListsPublic: boolean('show_follow_lists_public')
+    .notNull()
+    .default(true),
   role: roleEnum('role').notNull().default('member'),
   bannedAt: timestamp('banned_at', { withTimezone: true }),
   /** When set with bannedAt, ban lifts after this instant (temporary ban). Null = permanent ban. */

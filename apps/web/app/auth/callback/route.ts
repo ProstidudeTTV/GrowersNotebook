@@ -23,7 +23,8 @@ import { sessionIsPasswordRecovery } from "@/lib/supabase/session-flow";
 export async function GET(request: NextRequest) {
   const origin = getPublicSiteOrigin(request);
   const { searchParams } = new URL(request.url);
-  const nextPath = safeInternalPath(searchParams.get("next"));
+  const nextRaw = searchParams.get("next");
+  const nextPath = safeInternalPath(nextRaw);
   const code = searchParams.get("code");
   const err = searchParams.get("error");
   const errDesc = searchParams.get("error_description");
@@ -58,8 +59,9 @@ export async function GET(request: NextRequest) {
   let destination: string;
   if (recovery) {
     destination = `${origin}/auth/update-password`;
-  } else if (nextPath !== "/") {
-    destination = `${origin}${nextPath}`;
+  } else if (nextRaw?.trim()) {
+    const dest = nextPath === "/" ? "/following" : nextPath;
+    destination = `${origin}${dest}`;
   } else {
     destination = `${origin}/welcome`;
   }

@@ -24,7 +24,7 @@ export default function AuthCompletePage() {
     if (seconds > 0) return;
     if (redirected.current) return;
     redirected.current = true;
-    router.push("/");
+    router.push("/following");
     router.refresh();
   }, [seconds, router]);
 
@@ -51,7 +51,7 @@ export default function AuthCompletePage() {
         …
       </p>
       <Link
-        href="/"
+        href="/following"
         className="mt-6 inline-block text-sm font-semibold text-[var(--gn-accent)] hover:underline"
       >
         Go home now

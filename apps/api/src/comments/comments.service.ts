@@ -603,6 +603,9 @@ export class CommentsService {
       .select({ total: count() })
       .from(commentReports)
       .where(eq(commentReports.status, 'open'));
+    // Use LEFT joins so reports whose comment/post/reporter was deleted
+    // still appear in the queue — otherwise the dashboard count is non-zero
+    // but the list is empty and the admin can never resolve them.
     const rows = await db
       .select({
         id: commentReports.id,
@@ -616,29 +619,34 @@ export class CommentsService {
         reporterName: profiles.displayName,
       })
       .from(commentReports)
-      .innerJoin(comments, eq(comments.id, commentReports.commentId))
-      .innerJoin(posts, eq(posts.id, commentReports.postId))
-      .innerJoin(profiles, eq(profiles.id, commentReports.reporterId))
+      .leftJoin(comments, eq(comments.id, commentReports.commentId))
+      .leftJoin(posts, eq(posts.id, commentReports.postId))
+      .leftJoin(profiles, eq(profiles.id, commentReports.reporterId))
       .where(eq(commentReports.status, 'open'))
       .orderBy(desc(commentReports.createdAt))
       .limit(take)
       .offset(skip);
     return {
-      rows: rows.map((r) => ({
-        id: r.id,
-        createdAt: r.createdAt.toISOString(),
-        reason: r.reason,
-        commentId: r.commentId,
-        postId: r.postId,
-        postTitle: r.postTitle,
-        reporterId: r.reporterId,
-        reporterName: r.reporterName,
-        commentBody: r.commentBody,
-        commentPreview:
-          r.commentBody.length > 120
-            ? `${r.commentBody.slice(0, 120)}…`
-            : r.commentBody,
-      })),
+      rows: rows.map((r) => {
+        const body = r.commentBody ?? '';
+        return {
+          id: r.id,
+          createdAt: r.createdAt.toISOString(),
+          reason: r.reason,
+          commentId: r.commentId,
+          postId: r.postId,
+          postTitle: r.postTitle ?? '(post deleted)',
+          reporterId: r.reporterId,
+          reporterName: r.reporterName ?? '(deleted user)',
+          commentBody: body || '(comment deleted)',
+          commentPreview:
+            body.length === 0
+              ? '(comment deleted)'
+              : body.length > 120
+                ? `${body.slice(0, 120)}…`
+                : body,
+        };
+      }),
       total: Number(total),
     };
   }

@@ -376,11 +376,11 @@ export class ProfilesService {
         reporterName: reporterProfile.displayName,
       })
       .from(profileReports)
-      .innerJoin(
+      .leftJoin(
         reportedProfile,
         eq(reportedProfile.id, profileReports.reportedUserId),
       )
-      .innerJoin(
+      .leftJoin(
         reporterProfile,
         eq(reporterProfile.id, profileReports.reporterId),
       )
@@ -396,10 +396,10 @@ export class ProfilesService {
           createdAt: r.createdAt.toISOString(),
           reason: r.reason,
           reportedUserId: r.reportedUserId,
-          reportedName: r.reportedName,
+          reportedName: r.reportedName ?? '(deleted user)',
           reporterId: r.reporterId,
-          reporterName: r.reporterName,
-          reportedProfilePublic: r.reportedProfilePublic,
+          reporterName: r.reporterName ?? '(deleted user)',
+          reportedProfilePublic: r.reportedProfilePublic ?? false,
           reportedDescriptionPreview:
             desc.length > 200 ? `${desc.slice(0, 200)}…` : desc || null,
           reportedDescriptionFull: desc.length > 0 ? desc : null,

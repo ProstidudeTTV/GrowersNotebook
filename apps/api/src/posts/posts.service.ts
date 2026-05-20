@@ -583,9 +583,9 @@ export class PostsService {
         reporterName: reporterProfile.displayName,
       })
       .from(postReports)
-      .innerJoin(posts, eq(posts.id, postReports.postId))
-      .innerJoin(authorProfile, eq(authorProfile.id, posts.authorId))
-      .innerJoin(reporterProfile, eq(reporterProfile.id, postReports.reporterId))
+      .leftJoin(posts, eq(posts.id, postReports.postId))
+      .leftJoin(authorProfile, eq(authorProfile.id, posts.authorId))
+      .leftJoin(reporterProfile, eq(reporterProfile.id, postReports.reporterId))
       .where(eq(postReports.status, 'open'))
       .orderBy(desc(postReports.createdAt))
       .limit(take)
@@ -602,10 +602,10 @@ export class PostsService {
           createdAt: r.createdAt.toISOString(),
           reason: r.reason,
           postId: r.postId,
-          postTitle: r.postTitle,
-          authorName: r.authorName,
+          postTitle: r.postTitle ?? '(post deleted)',
+          authorName: r.authorName ?? '(deleted user)',
           reporterId: r.reporterId,
-          reporterName: r.reporterName,
+          reporterName: r.reporterName ?? '(deleted user)',
           postBody: normalized.length > 0 ? normalized : null,
           postPreview:
             normalized.length > 120

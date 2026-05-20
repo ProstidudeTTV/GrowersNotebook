@@ -7,6 +7,7 @@ import {
   CommentActionMenu,
   MenuRow,
 } from "@/components/comment-action-menu";
+import { EntityCoverBanner } from "@/components/entity-cover-banner";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import {
@@ -261,46 +262,18 @@ export function ProfileView({
   ] as const;
 
   return (
-    <main className="mx-auto max-w-5xl pb-16">
-
-      {/* ── Cover Banner ─────────────────────────────────────────────── */}
-      <div className="relative h-40 w-full overflow-hidden sm:h-52">
-        {profile.bannerUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profile.bannerUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_28%,var(--gn-page-bottom))] via-[color-mix(in_srgb,var(--gn-accent)_16%,var(--gn-surface-muted))] to-[var(--gn-surface-elevated)]">
-            {/* Subtle organic dot / vine pattern overlay */}
-            <svg
-              className="absolute inset-0 h-full w-full opacity-[0.07]"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <pattern id="leaf-dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <circle cx="10" cy="10" r="1.5" fill="white" />
-                  <circle cx="30" cy="30" r="1" fill="white" />
-                  <path d="M20 5 Q25 15 20 25 Q15 15 20 5Z" fill="none" stroke="white" strokeWidth="0.8" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#leaf-dots)" />
-            </svg>
-            {/* Radial glow from top-right */}
-            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[var(--gn-accent)]/10 blur-3xl" />
-          </div>
-        )}
-        {/* Bottom fade */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
-      </div>
+    <main className="mx-auto w-full max-w-[var(--gn-container-max)] pb-16">
+      <EntityCoverBanner
+        imageUrl={profile.bannerUrl}
+        alt=""
+        variant="hero"
+        priority
+      />
 
       {/* ── Profile identity block ────────────────────────────────────── */}
       <div className="relative bg-[var(--gn-surface-raised)] px-5 sm:px-8 pb-0">
         {/* Avatar — breaks out of banner into this section */}
-        <div className="absolute -top-10 left-5 sm:left-8 z-10">
+        <div className="absolute -top-12 left-5 sm:left-8 z-10 md:-top-14">
           <span
             className={`flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-4 ring-[var(--gn-surface-raised)] shadow-2xl bg-gradient-to-br ${avatarGrad}`}
           >

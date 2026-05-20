@@ -119,6 +119,7 @@ export function CommunityModeratorsPanel({
           allowClear
           placeholder="Search member by name…"
           className="min-w-[16rem]"
+          getPopupContainer={() => document.body}
           filterOption={false}
           loading={searching}
           value={pickerId}

@@ -83,3 +83,12 @@ html:not(.dark) .ant-menu-light {
 html.dark .admin-table-row-clickable:hover > td {
   background: rgba(255, 255, 255, 0.06) !important;
 }
+
+/* Ant Design portals must sit above Refine layout / sticky sider (z ~1000) */
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-dropdown,
+.ant-modal-root,
+.ant-drawer {
+  z-index: 2100 !important;
+}

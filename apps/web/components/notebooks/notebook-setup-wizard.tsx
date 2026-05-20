@@ -24,10 +24,12 @@ function PillChoice({
   options,
   value,
   onChange,
+  allowDeselect = false,
 }: {
   options: { value: string; label: string; icon?: string }[];
   value: string | undefined;
   onChange: (v: string | undefined) => void;
+  allowDeselect?: boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -35,7 +37,11 @@ function PillChoice({
         <button
           key={o.value}
           type="button"
-          onClick={() => onChange(value === o.value ? undefined : o.value)}
+          onClick={() =>
+            onChange(
+              allowDeselect && value === o.value ? undefined : o.value,
+            )
+          }
           className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
             value === o.value
               ? "border-[var(--gn-accent)] bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]"
@@ -257,20 +263,22 @@ export function NotebookSetupWizard({
 
               <div>
                 <label className={labelClass}>Where are you growing?</label>
-                <PillChoice
-                  options={[
-                    { value: "indoor", label: "Indoor", icon: "🏠" },
-                    { value: "outdoor", label: "Outdoor", icon: "☀️" },
-                    { value: "greenhouse", label: "Greenhouse", icon: "🪟" },
-                  ]}
-                  value={roomType}
-                  onChange={setRoomType}
-                />
+                  <PillChoice
+                    allowDeselect
+                    options={[
+                      { value: "indoor", label: "Indoor", icon: "🏠" },
+                      { value: "outdoor", label: "Outdoor", icon: "☀️" },
+                      { value: "greenhouse", label: "Greenhouse", icon: "🪟" },
+                    ]}
+                    value={roomType}
+                    onChange={setRoomType}
+                  />
               </div>
 
               <div>
                 <label className={labelClass}>How did you start?</label>
                 <PillChoice
+                  allowDeselect
                   options={[
                     { value: "seed", label: "From seed" },
                     { value: "clone", label: "From clone" },
@@ -284,6 +292,7 @@ export function NotebookSetupWizard({
               <div>
                 <label className={labelClass}>How do you water?</label>
                 <PillChoice
+                  allowDeselect
                   options={[
                     { value: "manual", label: "By hand" },
                     { value: "drip", label: "Drip system" },
@@ -301,7 +310,7 @@ export function NotebookSetupWizard({
                   <PillChoice
                     options={[{ value: "F", label: "°F" }, { value: "C", label: "°C" }]}
                     value={tempUnit}
-                    onChange={(v) => { if (v) setTempUnit(v as "C" | "F"); }}
+                    onChange={(v) => setTempUnit((v as "C" | "F") ?? "C")}
                   />
                   <p className={helpClass}>Used for your weekly readings.</p>
                 </div>
@@ -310,7 +319,7 @@ export function NotebookSetupWizard({
                   <PillChoice
                     options={[{ value: "L", label: "Liters" }, { value: "gal", label: "Gallons" }]}
                     value={volumeUnit}
-                    onChange={(v) => { if (v) setVolumeUnit(v as "L" | "gal"); }}
+                    onChange={(v) => setVolumeUnit((v as "L" | "gal") ?? "L")}
                   />
                   <p className={helpClass}>Used when logging waterings.</p>
                 </div>

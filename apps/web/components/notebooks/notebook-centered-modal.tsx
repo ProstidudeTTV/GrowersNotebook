@@ -118,9 +118,7 @@ export function NotebookCenteredModal({
       >
         <ConfigProvider
           theme={antdTheme}
-          getPopupContainer={() =>
-            panelRef.current ?? document.body
-          }
+          getPopupContainer={() => document.body}
         >
           {title ? (
             <div className="border-b border-[var(--gn-divide)] px-5 py-4 sm:px-6">

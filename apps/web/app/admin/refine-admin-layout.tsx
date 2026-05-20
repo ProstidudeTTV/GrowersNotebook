@@ -103,6 +103,9 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
           fontFamily: `var(--font-geist-sans), system-ui, sans-serif`,
         },
       }}
+      getPopupContainer={() =>
+        typeof document !== "undefined" ? document.body : (null as unknown as HTMLElement)
+      }
     >
       {!restDataProvider || staffLoading ? (
         <div style={{ padding: "4rem", textAlign: "center" }}>

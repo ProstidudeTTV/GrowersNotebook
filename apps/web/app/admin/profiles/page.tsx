@@ -98,6 +98,7 @@ export default function AdminProfilesPage() {
           allowClear
           style={{ width: 180 }}
           value={roleFilterValue}
+          getPopupContainer={() => document.body}
           onChange={(val: string | undefined) => {
             setFilters(
               val

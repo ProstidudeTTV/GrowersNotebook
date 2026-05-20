@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { EntityCoverBanner } from "@/components/entity-cover-banner";
 import { FollowCommunityButton } from "@/components/follow-buttons";
 import { RecentCommunitiesTracker } from "@/components/recent-communities-tracker";
 import { CommunityIcon } from "@/components/community-icon";
@@ -159,43 +160,12 @@ export default async function CommunityPage({
         iconKey={community.iconKey ?? null}
       />
 
-      {/* ── Full-bleed banner ────────────────────────────────────────── */}
-      <div className="relative h-56 w-full overflow-hidden sm:h-72">
-        {hasBanner ? (
-          <Image
-            src={community.bannerUrl!}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="(max-width: 1280px) 100vw, 1280px"
-            priority
-            unoptimized
-          />
-        ) : (
-          <div className="h-full w-full relative overflow-hidden">
-            {/* Base gradient */}
-            <div className="absolute inset-0" style={{
-              background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 45%, #0a0a0a 55%) 0%, color-mix(in srgb, var(--gn-accent) 15%, #050505 85%) 100%)`
-            }} />
-            {/* Radial glow center-top */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(ellipse 80% 60% at 30% 0%, color-mix(in srgb, var(--gn-accent) 18%, transparent) 0%, transparent 70%)",
-              }}
-            />
-            {/* Dot matrix pattern */}
-            <div className="absolute inset-0 opacity-[0.06]" style={{
-              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
-            }} />
-          </div>
-        )}
-        {/* Gradient overlay — bottom fade for text readability */}
-        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 to-transparent" />
-
-        {/* Community identity at bottom of banner */}
+      <EntityCoverBanner
+        imageUrl={hasBanner ? community.bannerUrl : null}
+        alt=""
+        variant="hero"
+        priority
+      >
         <div className="absolute bottom-0 left-0 flex items-end gap-4 px-5 pb-5">
           {community.iconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -221,7 +191,7 @@ export default async function CommunityPage({
             </p>
           </div>
         </div>
-      </div>
+      </EntityCoverBanner>
 
       {/* ── Stats + action bar ───────────────────────────────────────── */}
       <div className="border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-5 py-3">

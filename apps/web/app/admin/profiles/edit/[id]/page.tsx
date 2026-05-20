@@ -301,7 +301,10 @@ export default function AdminProfileEditPage() {
         </Form.Item>
         {canChangeRoles ? (
           <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-            <Select options={ROLE_OPTIONS} />
+            <Select
+              options={ROLE_OPTIONS}
+              getPopupContainer={(n) => n.parentElement ?? document.body}
+            />
           </Form.Item>
         ) : (
           <Form.Item label="Role">

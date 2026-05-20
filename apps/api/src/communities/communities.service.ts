@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, or } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
   communities,
@@ -63,8 +63,8 @@ export class CommunitiesService {
           name: dto.name,
           description: dto.description ?? null,
           iconKey: assertCommunityIconKey(dto.iconKey ?? null),
-          iconUrl: dto.iconUrl ?? null,
-          bannerUrl: dto.bannerUrl ?? null,
+          iconUrl: dto.iconUrl?.trim() || null,
+          bannerUrl: dto.bannerUrl?.trim() || null,
         })
         .returning();
       return row;
@@ -146,16 +146,27 @@ export class CommunitiesService {
     return row ?? null;
   }
 
-  async listPaged(skip: number, take: number) {
+  async listPaged(skip: number, take: number, opts?: { q?: string }) {
     const db = getDb();
-    const [{ total }] = await db.select({ total: count() }).from(communities);
+    const q = opts?.q?.trim();
+    const where = q
+      ? or(
+          ilike(communities.name, `%${q}%`),
+          ilike(communities.slug, `%${q}%`),
+        )
+      : undefined;
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(communities)
+      .where(where);
     const rows = await db
       .select()
       .from(communities)
-      .orderBy(asc(communities.createdAt))
+      .where(where)
+      .orderBy(asc(communities.name))
       .offset(skip)
       .limit(take);
-    return { rows, total };
+    return { rows, total: Number(total) };
   }
 
   async update(

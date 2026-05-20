@@ -7,6 +7,7 @@ import { Edit, useForm } from "@refinedev/antd";
 import { Button, Form, Input } from "antd";
 
 import { CommunityAppearanceFields } from "@/components/admin/community-appearance-fields";
+import { CommunityModeratorsPanel } from "@/components/admin/community-moderators-panel";
 
 import Link from "next/link";
 
@@ -72,9 +73,8 @@ export default function AdminCommunityEditPage() {
 
       </Form>
 
+      <CommunityModeratorsPanel communityId={id} />
     </Edit>
-
   );
-
 }
 

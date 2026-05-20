@@ -63,6 +63,26 @@ export class ProfilesService {
     return row ?? null;
   }
 
+  /** Admin Refine edit forms — ISO date strings + ban/suspend flags. */
+  serializeAdminProfile(
+    r: NonNullable<Awaited<ReturnType<ProfilesService['findById']>>>,
+  ) {
+    const now = Date.now();
+    const bannedActive =
+      !!r.bannedAt && (!r.banExpiresAt || r.banExpiresAt.getTime() > now);
+    const suspendedActive =
+      !!r.suspendedUntil && r.suspendedUntil.getTime() > now;
+    return {
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      bannedAt: r.bannedAt?.toISOString() ?? null,
+      banExpiresAt: r.banExpiresAt?.toISOString() ?? null,
+      suspendedUntil: r.suspendedUntil?.toISOString() ?? null,
+      isBanned: bannedActive,
+      isSuspended: suspendedActive,
+    };
+  }
+
   /** Display names for audit / admin tables (batch). */
   async getDisplayNamesByIds(ids: string[]) {
     const uniq = [...new Set(ids.filter((x) => x && /^[0-9a-f-]{36}$/i.test(x)))];
@@ -373,7 +393,7 @@ export class ProfilesService {
         const desc = r.reportedDescription?.trim() ?? '';
         return {
           id: r.id,
-          createdAt: r.createdAt,
+          createdAt: r.createdAt.toISOString(),
           reason: r.reason,
           reportedUserId: r.reportedUserId,
           reportedName: r.reportedName,
@@ -578,16 +598,65 @@ export class ProfilesService {
     };
   }
 
-  async listPaged(skip: number, take: number) {
+  async listPaged(
+    skip: number,
+    take: number,
+    opts?: { q?: string; role?: string },
+  ) {
     const db = getDb();
-    const [{ total }] = await db.select({ total: count() }).from(profiles);
+    const q = opts?.q?.trim();
+    const role =
+      opts?.role === 'admin' ||
+      opts?.role === 'moderator' ||
+      opts?.role === 'member'
+        ? opts.role
+        : undefined;
+    const conditions = [];
+    if (q) {
+      if (/^[0-9a-f-]{36}$/i.test(q)) {
+        conditions.push(eq(profiles.id, q));
+      } else {
+        conditions.push(ilike(profiles.displayName, `%${q}%`));
+      }
+    }
+    if (role) {
+      conditions.push(eq(profiles.role, role));
+    }
+    const where =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]
+          : and(...conditions);
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(profiles)
+      .where(where);
     const rows = await db
       .select()
       .from(profiles)
+      .where(where)
       .orderBy(asc(profiles.createdAt))
       .offset(skip)
       .limit(take);
-    return { rows, total };
+    const now = Date.now();
+    const mapped = rows.map((r) => {
+      const bannedActive =
+        !!r.bannedAt &&
+        (!r.banExpiresAt || r.banExpiresAt.getTime() > now);
+      const suspendedActive =
+        !!r.suspendedUntil && r.suspendedUntil.getTime() > now;
+      return {
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        bannedAt: r.bannedAt?.toISOString() ?? null,
+        banExpiresAt: r.banExpiresAt?.toISOString() ?? null,
+        suspendedUntil: r.suspendedUntil?.toISOString() ?? null,
+        isBanned: bannedActive,
+        isSuspended: suspendedActive,
+      };
+    });
+    return { rows: mapped, total: Number(total) };
   }
 
   async clearExpiredBan(profileId: string) {

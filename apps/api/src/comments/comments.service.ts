@@ -626,7 +626,7 @@ export class CommentsService {
     return {
       rows: rows.map((r) => ({
         id: r.id,
-        createdAt: r.createdAt,
+        createdAt: r.createdAt.toISOString(),
         reason: r.reason,
         commentId: r.commentId,
         postId: r.postId,

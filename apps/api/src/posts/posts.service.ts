@@ -599,7 +599,7 @@ export class PostsService {
         const normalized = body.replace(/\s+/g, ' ').trim();
         return {
           id: r.id,
-          createdAt: r.createdAt,
+          createdAt: r.createdAt.toISOString(),
           reason: r.reason,
           postId: r.postId,
           postTitle: r.postTitle,
@@ -1052,14 +1052,34 @@ export class PostsService {
     };
   }
 
-  async listPaged(skip: number, take: number, communityId?: string) {
+  async listPaged(
+    skip: number,
+    take: number,
+    opts?: { communityId?: string; q?: string },
+  ) {
     const db = getDb();
-    const whereCommunity = communityId
-      ? eq(posts.communityId, communityId)
-      : undefined;
+    const communityId = opts?.communityId;
+    const q = opts?.q?.trim();
+    const conditions = [];
+    if (communityId) {
+      conditions.push(eq(posts.communityId, communityId));
+    }
+    if (q) {
+      if (/^[0-9a-f-]{36}$/i.test(q)) {
+        conditions.push(eq(posts.id, q));
+      } else {
+        conditions.push(ilike(posts.title, `%${q}%`));
+      }
+    }
+    const where =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]
+          : and(...conditions);
     const countBase = db.select({ total: count() }).from(posts);
-    const [{ total }] = whereCommunity
-      ? await countBase.where(whereCommunity)
+    const [{ total }] = where
+      ? await countBase.where(where)
       : await countBase;
     const pinThenExpr = sql`(case when ${communityPins.pinnedAt} is null then 1 else 0 end)`;
     const listBase = db
@@ -1076,12 +1096,18 @@ export class PostsService {
       .orderBy(pinThenExpr, asc(communityPins.pinnedAt), desc(posts.createdAt))
       .offset(skip)
       .limit(take);
-    const rows = whereCommunity
-      ? await listBase.where(whereCommunity)
-      : await listBase;
+    const rows = where ? await listBase.where(where) : await listBase;
     return {
       rows: rows.map((r) => ({
         ...r.post,
+        createdAt:
+          r.post.createdAt instanceof Date
+            ? r.post.createdAt.toISOString()
+            : r.post.createdAt,
+        updatedAt:
+          r.post.updatedAt instanceof Date
+            ? r.post.updatedAt.toISOString()
+            : r.post.updatedAt,
         communitySlug: r.communitySlug,
         authorName: r.authorName,
         pinnedAt: r.pinnedAt ? r.pinnedAt.toISOString() : null,

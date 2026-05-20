@@ -3,6 +3,15 @@
 import { useTable } from "@refinedev/antd";
 import { Button, Card, Col, Row, Space, Statistic } from "antd";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { adminAxios } from "@/lib/admin-axios";
+import { useAdminStaff } from "./admin-staff-context";
+
+type ModStats = {
+  openPostReports: number;
+  openCommentReports: number;
+  openProfileReports: number;
+};
 
 function useTotalCount(resource: string): number | undefined {
   const { tableProps } = useTable({
@@ -14,199 +23,152 @@ function useTotalCount(resource: string): number | undefined {
     : undefined;
 }
 
-function RecentReports() {
-  const { tableProps: postReports } = useTable({
-    resource: "post-reports",
-    pagination: { pageSize: 5 },
-  });
-  const { tableProps: commentReports } = useTable({
-    resource: "comment-reports",
-    pagination: { pageSize: 5 },
-  });
+const ADMIN_QUICK_ACTIONS = [
+  { href: "/admin/moderation", label: "🛡️ Moderation hub" },
+  { href: "/admin/post-reports", label: "📝 Post reports" },
+  { href: "/admin/comment-reports", label: "💬 Comment reports" },
+  { href: "/admin/profile-reports", label: "👤 Profile reports" },
+  { href: "/admin/communities/create", label: "🏘️ Add community" },
+  { href: "/admin/profiles", label: "👥 Manage users" },
+  { href: "/admin/strains/create", label: "🌿 Add strain" },
+  { href: "/admin/site-settings", label: "🔧 Site settings" },
+] as const;
 
-  const postItems = (postReports.dataSource ?? []) as Array<{
-    id: string;
-    reason?: string;
-    createdAt?: string;
-  }>;
-  const commentItems = (commentReports.dataSource ?? []) as Array<{
-    id: string;
-    reason?: string;
-    createdAt?: string;
-  }>;
-
-  const combined = [
-    ...postItems.map((p) => ({ ...p, kind: "Post" as const })),
-    ...commentItems.map((c) => ({ ...c, kind: "Comment" as const })),
-  ]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt ?? 0).getTime() -
-        new Date(a.createdAt ?? 0).getTime(),
-    )
-    .slice(0, 5);
-
-  if (combined.length === 0) {
-    return (
-      <p className="text-sm text-[var(--gn-text-muted,#7fa887)]">
-        🌿 No recent reports — the community is behaving!
-      </p>
-    );
-  }
-
-  return (
-    <ul className="space-y-2">
-      {combined.map((item) => (
-        <li
-          key={`${item.kind}-${item.id}`}
-          className="flex items-center gap-3 rounded-lg border border-neutral-700/50 bg-neutral-800/30 px-3 py-2 text-sm"
-        >
-          <span
-            className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
-              item.kind === "Post"
-                ? "bg-blue-500/20 text-blue-400"
-                : "bg-purple-500/20 text-purple-400"
-            }`}
-          >
-            {item.kind}
-          </span>
-          <span className="flex-1 truncate text-neutral-300">
-            {item.reason ?? "No reason given"}
-          </span>
-          {item.createdAt && (
-            <span className="shrink-0 text-xs text-neutral-500">
-              {new Date(item.createdAt).toLocaleDateString()}
-            </span>
-          )}
-          <Link
-            href={
-              item.kind === "Post"
-                ? "/admin/post-reports"
-                : "/admin/comment-reports"
-            }
-            className="shrink-0 text-xs text-[#1677ff] hover:underline dark:text-[#69b1ff]"
-          >
-            View →
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-const QUICK_ACTIONS = [
-  { href: "/admin/post-reports", label: "📝 Moderate Posts" },
-  { href: "/admin/comment-reports", label: "💬 Review Comments" },
-  { href: "/admin/communities/create", label: "🏘️ Add Community" },
-  { href: "/admin/profiles", label: "👤 Manage Users" },
-  { href: "/admin/strains/create", label: "🌿 Add Strain" },
-  { href: "/admin/site-settings", label: "🔧 Site Settings" },
+const MODERATOR_QUICK_ACTIONS = [
+  { href: "/admin/moderation", label: "🛡️ Moderation hub" },
+  { href: "/admin/post-reports", label: "📝 Post reports" },
+  { href: "/admin/comment-reports", label: "💬 Comment reports" },
+  { href: "/admin/profile-reports", label: "👤 Profile reports" },
+  { href: "/admin/profiles", label: "👥 Manage users" },
+  { href: "/admin/catalog-suggestions", label: "📥 Catalog inbox" },
 ] as const;
 
 export default function AdminDashboardPage() {
+  const { isAdmin } = useAdminStaff();
+  const [stats, setStats] = useState<ModStats | null>(null);
   const commentReportCount = useTotalCount("comment-reports");
   const postReportCount = useTotalCount("post-reports");
+  const profileReportCount = useTotalCount("profile-reports");
   const communityCount = useTotalCount("communities");
   const memberCount = useTotalCount("profiles");
 
-  const hasAlerts =
-    (postReportCount ?? 0) > 0 || (commentReportCount ?? 0) > 0;
+  useEffect(() => {
+    void adminAxios
+      .get<ModStats>("/moderation-stats")
+      .then((res) => setStats(res.data))
+      .catch(() => setStats(null));
+  }, []);
+
+  const openPosts = stats?.openPostReports ?? postReportCount ?? 0;
+  const openComments = stats?.openCommentReports ?? commentReportCount ?? 0;
+  const openProfiles = stats?.openProfileReports ?? profileReportCount ?? 0;
+  const hasAlerts = openPosts > 0 || openComments > 0 || openProfiles > 0;
+  const quickActions = isAdmin ? ADMIN_QUICK_ACTIONS : MODERATOR_QUICK_ACTIONS;
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-[var(--gn-text)]">
+          Admin dashboard
+        </h1>
         <a
           href="https://growersnotebook.com"
           target="_blank"
           rel="noreferrer"
-          className="text-sm text-[#1677ff] hover:underline dark:text-[#69b1ff]"
+          className="text-sm text-[var(--gn-accent)] hover:underline"
         >
-          growersnotebook.com →
+          View live site →
         </a>
       </div>
 
-      {hasAlerts && (
+      {hasAlerts ? (
         <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          ⚠️ You have open reports requiring attention — review the cards below.
+          You have open reports — start in the{" "}
+          <Link href="/admin/moderation" className="font-semibold underline">
+            moderation hub
+          </Link>
+          .
         </div>
-      )}
+      ) : null}
 
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={24} sm={12} xl={6}>
-          <Link href="/admin/post-reports">
+          <Link href="/admin/moderation">
             <Card hoverable className="h-full cursor-pointer">
-              <div className="mb-2 text-2xl">🚨</div>
               <Statistic
-                title="Open Post Reports"
-                value={postReportCount ?? "—"}
+                title="Open post reports"
+                value={openPosts}
                 valueStyle={
-                  postReportCount
-                    ? { color: "#cf1322", fontWeight: 700 }
+                  openPosts > 0
+                    ? { color: "#f87171", fontWeight: 700 }
                     : { fontWeight: 700 }
                 }
               />
-              <p className="mt-2 text-xs text-[var(--gn-text-muted,#7fa887)]">
-                View &amp; moderate →
-              </p>
             </Card>
           </Link>
         </Col>
         <Col xs={24} sm={12} xl={6}>
-          <Link href="/admin/comment-reports">
+          <Link href="/admin/moderation">
             <Card hoverable className="h-full cursor-pointer">
-              <div className="mb-2 text-2xl">🚨</div>
               <Statistic
-                title="Open Comment Reports"
-                value={commentReportCount ?? "—"}
+                title="Open comment reports"
+                value={openComments}
                 valueStyle={
-                  commentReportCount
-                    ? { color: "#cf1322", fontWeight: 700 }
+                  openComments > 0
+                    ? { color: "#f87171", fontWeight: 700 }
                     : { fontWeight: 700 }
                 }
               />
-              <p className="mt-2 text-xs text-[var(--gn-text-muted,#7fa887)]">
-                View &amp; moderate →
-              </p>
             </Card>
           </Link>
         </Col>
         <Col xs={24} sm={12} xl={6}>
-          <Link href="/admin/profiles">
+          <Link href="/admin/moderation">
             <Card hoverable className="h-full cursor-pointer">
-              <div className="mb-2 text-2xl">👥</div>
               <Statistic
-                title="Total Members"
-                value={memberCount ?? "—"}
-                valueStyle={{ fontWeight: 700 }}
+                title="Open profile reports"
+                value={openProfiles}
+                valueStyle={
+                  openProfiles > 0
+                    ? { color: "#f87171", fontWeight: 700 }
+                    : { fontWeight: 700 }
+                }
               />
-              <p className="mt-2 text-xs text-[var(--gn-text-muted,#7fa887)]">
-                Manage users →
-              </p>
             </Card>
           </Link>
         </Col>
-        <Col xs={24} sm={12} xl={6}>
-          <Link href="/admin/communities">
-            <Card hoverable className="h-full cursor-pointer">
-              <div className="mb-2 text-2xl">🏘️</div>
-              <Statistic
-                title="Total Communities"
-                value={communityCount ?? "—"}
-                valueStyle={{ fontWeight: 700 }}
-              />
-              <p className="mt-2 text-xs text-[var(--gn-text-muted,#7fa887)]">
-                Manage communities →
-              </p>
-            </Card>
-          </Link>
-        </Col>
+        {isAdmin ? (
+          <>
+            <Col xs={24} sm={12} xl={6}>
+              <Link href="/admin/profiles">
+                <Card hoverable className="h-full cursor-pointer">
+                  <Statistic
+                    title="Total members"
+                    value={memberCount ?? "—"}
+                    valueStyle={{ fontWeight: 700 }}
+                  />
+                </Card>
+              </Link>
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <Link href="/admin/communities">
+                <Card hoverable className="h-full cursor-pointer">
+                  <Statistic
+                    title="Communities"
+                    value={communityCount ?? "—"}
+                    valueStyle={{ fontWeight: 700 }}
+                  />
+                </Card>
+              </Link>
+            </Col>
+          </>
+        ) : null}
       </Row>
 
-      <Card title="Quick Actions" className="mb-6">
+      <Card title="Quick actions" className="mb-6">
         <Row gutter={[12, 12]}>
-          {QUICK_ACTIONS.map(({ href, label }) => (
-            <Col key={href} xs={12} sm={8} md={4}>
+          {quickActions.map(({ href, label }) => (
+            <Col key={href} xs={12} sm={8} md={6}>
               <Link href={href}>
                 <Button block>{label}</Button>
               </Link>
@@ -216,23 +178,26 @@ export default function AdminDashboardPage() {
       </Card>
 
       <Card
-        title="Recent Activity"
+        title="Moderation shortcuts"
         extra={
           <Space>
-            <Link href="/admin/post-reports">
+            <Link href="/admin/audit-log">
               <Button type="link" size="small">
-                All post reports
+                Audit log
               </Button>
             </Link>
-            <Link href="/admin/comment-reports">
+            <Link href="/admin/moderation">
               <Button type="link" size="small">
-                All comment reports
+                Open hub
               </Button>
             </Link>
           </Space>
         }
       >
-        <RecentReports />
+        <p className="text-sm text-[var(--gn-text-muted)]">
+          Use the moderation hub for a single inbox of open reports. Dedicated
+          queues still support remove post, delete comment, and profile bans.
+        </p>
       </Card>
     </div>
   );

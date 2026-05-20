@@ -1,7 +1,7 @@
 "use client";
 
 import { CreateButton, DeleteButton, List, useTable } from "@refinedev/antd";
-import { Avatar, Button, Form, Input, Table } from "antd";
+import { Avatar, Button, Form, Input, Table, Tag } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
@@ -61,8 +61,42 @@ export default function AdminCommunitiesPage() {
             )
           }
         />
+        <Table.Column<{ bannerUrl?: string | null }>
+          title="Banner"
+          width={88}
+          render={(_, record) =>
+            record.bannerUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={record.bannerUrl}
+                alt=""
+                className="h-10 w-16 rounded object-cover ring-1 ring-neutral-700"
+              />
+            ) : (
+              <span className="text-xs text-neutral-500">—</span>
+            )
+          }
+        />
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
+        <Table.Column<{ iconUrl?: string | null; bannerUrl?: string | null }>
+          title="Assets"
+          width={120}
+          render={(_, record) => (
+            <span className="flex flex-wrap gap-1">
+              {record.iconUrl ? (
+                <Tag color="green">Icon</Tag>
+              ) : (
+                <Tag>No icon</Tag>
+              )}
+              {record.bannerUrl ? (
+                <Tag color="blue">Banner</Tag>
+              ) : (
+                <Tag>No banner</Tag>
+              )}
+            </span>
+          )}
+        />
         <Table.Column
           dataIndex="description"
           title="Description"

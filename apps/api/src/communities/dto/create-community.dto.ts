@@ -3,8 +3,10 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsUrl,
   Length,
   Matches,
+  MaxLength,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -36,10 +38,14 @@ export class CreateCommunityDto {
   iconKey?: string | null;
 
   @IsOptional()
-  @IsString()
-  iconUrl?: string;
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_tld: true })
+  @MaxLength(2000)
+  iconUrl?: string | null;
 
   @IsOptional()
-  @IsString()
-  bannerUrl?: string;
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_tld: true })
+  @MaxLength(2000)
+  bannerUrl?: string | null;
 }

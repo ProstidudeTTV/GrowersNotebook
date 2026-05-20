@@ -1,6 +1,8 @@
 import {
+  AlertOutlined,
   BarChartOutlined,
   BookOutlined,
+  DashboardOutlined,
   ExperimentOutlined,
   FileTextOutlined,
   InboxOutlined,
@@ -14,6 +16,16 @@ import type { ResourceProps } from "@refinedev/core";
 
 /** Full admin sidebar (super-admin + moderation). */
 export const fullAdminResources: ResourceProps[] = [
+  {
+    name: "dashboard",
+    list: "/admin",
+    meta: { label: "Dashboard", icon: <DashboardOutlined /> },
+  },
+  {
+    name: "moderation-hub",
+    list: "/admin/moderation",
+    meta: { label: "Moderation hub", icon: <AlertOutlined /> },
+  },
   {
     name: "site-settings",
     list: "/admin/site-settings",
@@ -150,6 +162,8 @@ export const fullAdminResources: ResourceProps[] = [
 ];
 
 const MODERATOR_RESOURCE_NAMES = new Set([
+  "dashboard",
+  "moderation-hub",
   "profiles",
   "comment-reports",
   "post-reports",

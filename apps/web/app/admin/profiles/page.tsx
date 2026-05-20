@@ -40,7 +40,7 @@ function roleTag(role: string) {
 
 function statusBadge(record: BaseRecord) {
   const bannedAt = record.bannedAt as string | null | undefined;
-  const suspendedAt = record.suspendedAt as string | null | undefined;
+  const suspendedUntil = record.suspendedUntil as string | null | undefined;
   const isBanned = record.isBanned as boolean | undefined;
   const isSuspended = record.isSuspended as boolean | undefined;
 
@@ -51,7 +51,7 @@ function statusBadge(record: BaseRecord) {
       </Tag>
     );
   }
-  if (suspendedAt || isSuspended) {
+  if (suspendedUntil || isSuspended) {
     return (
       <Tag color="orange" className="font-medium">
         Suspended

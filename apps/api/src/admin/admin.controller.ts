@@ -114,6 +114,8 @@ export class AdminController {
     @Query('_start') _start: string,
     @Query('_end') _end: string,
     @Query('communityId') communityId: string | undefined,
+    @Query('q') q: string | undefined,
+    @Query('q_like') qLike: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { skip, take } = range(_start, _end);
@@ -121,7 +123,11 @@ export class AdminController {
       communityId && /^[0-9a-f-]{36}$/i.test(communityId)
         ? communityId
         : undefined;
-    const { rows, total } = await this.posts.listPaged(skip, take, cid);
+    const search = (q ?? qLike)?.trim();
+    const { rows, total } = await this.posts.listPaged(skip, take, {
+      communityId: cid,
+      q: search,
+    });
     res.setHeader('X-Total-Count', String(total));
     return rows;
   }
@@ -176,12 +182,23 @@ export class AdminController {
   async listCommunities(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
+    @Query('q') q: string | undefined,
+    @Query('q_like') qLike: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { skip, take } = range(_start, _end);
-    const { rows, total } = await this.communities.listPaged(skip, take);
+    const search = (q ?? qLike)?.trim();
+    const { rows, total } = await this.communities.listPaged(skip, take, {
+      q: search,
+    });
     res.setHeader('X-Total-Count', String(total));
-    return rows;
+    return rows.map((r) => ({
+      ...r,
+      createdAt:
+        r.createdAt instanceof Date
+          ? r.createdAt.toISOString()
+          : r.createdAt,
+    }));
   }
 
   @Post('communities')
@@ -193,7 +210,13 @@ export class AdminController {
   async getCommunity(@Param('id', ParseUUIDPipe) id: string) {
     const row = await this.communities.findById(id);
     if (!row) throw new NotFoundException();
-    return row;
+    return {
+      ...row,
+      createdAt:
+        row.createdAt instanceof Date
+          ? row.createdAt.toISOString()
+          : row.createdAt,
+    };
   }
 
   @Patch('communities/:id')
@@ -238,12 +261,34 @@ export class AdminController {
   async listProfiles(
     @Query('_start') _start: string,
     @Query('_end') _end: string,
+    @Query('q') q: string | undefined,
+    @Query('q_like') qLike: string | undefined,
+    @Query('role') role: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { skip, take } = range(_start, _end);
-    const { rows, total } = await this.profiles.listPaged(skip, take);
+    const search = (q ?? qLike)?.trim();
+    const { rows, total } = await this.profiles.listPaged(skip, take, {
+      q: search,
+      role: role?.trim(),
+    });
     res.setHeader('X-Total-Count', String(total));
     return rows;
+  }
+
+  @Get('moderation-stats')
+  @Roles('admin', 'moderator')
+  async moderationStats() {
+    const [postReports, commentReports, profileReports] = await Promise.all([
+      this.posts.listPostReportsPaged(0, 1),
+      this.comments.listReportsPaged(0, 1),
+      this.profiles.listProfileReportsPaged(0, 1),
+    ]);
+    return {
+      openPostReports: postReports.total,
+      openCommentReports: commentReports.total,
+      openProfileReports: profileReports.total,
+    };
   }
 
   @Get('profiles/:id/moderation-summary')
@@ -257,7 +302,7 @@ export class AdminController {
   async getProfile(@Param('id', ParseUUIDPipe) id: string) {
     const row = await this.profiles.findById(id);
     if (!row) throw new NotFoundException();
-    return row;
+    return this.profiles.serializeAdminProfile(row);
   }
 
   @Patch('profiles/:id')
@@ -278,7 +323,10 @@ export class AdminController {
   ) {
     const actor = await this.profiles.findById(user.sub);
     if (!actor) throw new ForbiddenException();
-    return this.profiles.updateAdmin(id, body, { actorRole: actor.role });
+    const row = await this.profiles.updateAdmin(id, body, {
+      actorRole: actor.role,
+    });
+    return this.profiles.serializeAdminProfile(row);
   }
 
   @Get('disallowed-names')

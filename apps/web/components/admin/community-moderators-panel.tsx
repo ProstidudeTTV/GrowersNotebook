@@ -10,6 +10,7 @@ import {
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminApiErrorMessage } from "@/lib/admin-api-error";
 
 type ModeratorRow = {
   communityId: string;
@@ -43,8 +44,10 @@ export function CommunityModeratorsPanel({
         `/communities/${communityId}/moderators`,
       );
       setRows(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      message.error("Could not load community moderators.");
+    } catch (e) {
+      message.error(
+        adminApiErrorMessage(e, "Could not load community moderators."),
+      );
     } finally {
       setLoading(false);
     }
@@ -84,9 +87,7 @@ export function CommunityModeratorsPanel({
       setProfileOptions([]);
       await load();
     } catch (e) {
-      message.error(
-        e instanceof Error ? e.message : "Could not assign moderator.",
-      );
+      message.error(adminApiErrorMessage(e, "Could not assign moderator."));
     } finally {
       setAdding(false);
     }
@@ -99,8 +100,8 @@ export function CommunityModeratorsPanel({
       );
       message.success("Moderator removed.");
       await load();
-    } catch {
-      message.error("Could not remove moderator.");
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not remove moderator."));
     }
   };
 

@@ -17,9 +17,29 @@ async function uploadViaBrowserStorage(
   return uploadCommunityBanner(file, communitySlug);
 }
 
+/** Heuristic: detect API saying "storage is not configured" so the browser
+ * fallback only kicks in when the API genuinely can't reach Supabase storage,
+ * NOT when the proxy or auth is broken. */
+function isApiStorageMissing(err: unknown): boolean {
+  if (!axios.isAxiosError(err)) return false;
+  if (err.response?.status !== 503) return false;
+  const data = err.response?.data;
+  const text =
+    typeof data === "string"
+      ? data
+      : data && typeof data === "object" && "message" in data
+        ? String((data as { message?: unknown }).message ?? "")
+        : "";
+  return /storage is not configured|service role|SUPABASE_SERVICE_ROLE/i.test(
+    text,
+  );
+}
+
 /**
- * Upload community banner/icon — prefers Nest admin API (service role), falls back
- * to signed-in browser upload when API storage env is missing (503).
+ * Upload community banner/icon — prefers Nest admin API (service role), falls
+ * back to signed-in browser upload only when the API genuinely cannot reach
+ * Supabase storage. Other 503s (proxy missing API URL) are surfaced directly
+ * so the user knows which service to fix.
  */
 export async function uploadCommunityImageAdmin(
   file: File,
@@ -49,26 +69,41 @@ export async function uploadCommunityImageAdmin(
   } catch (err) {
     const status = axios.isAxiosError(err) ? err.response?.status : undefined;
     const msg = adminApiErrorMessage(err, "Upload failed.");
-    const storageUnavailable =
-      status === 503 ||
-      /storage is not configured|not configured/i.test(msg);
 
-    if (storageUnavailable) {
+    if (isApiStorageMissing(err)) {
       try {
         return await uploadViaBrowserStorage(file, slug, kind);
       } catch (fallbackErr) {
+        const fbMsg =
+          fallbackErr instanceof Error
+            ? fallbackErr.message
+            : "unknown error";
         throw new Error(
-          `${msg} Browser fallback also failed: ${
-            fallbackErr instanceof Error ? fallbackErr.message : "unknown error"
-          }. Ensure SUPABASE_SERVICE_ROLE_KEY is set on the API service, or your profile role is admin in Supabase.`,
+          `API upload failed: ${msg}\nBrowser-direct fallback also failed: ${fbMsg}\nFix: set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY on growers-notebook-api.`,
         );
       }
     }
 
+    if (status === 502 || status === 503) {
+      throw new Error(
+        `${msg}\nThis is usually the web service missing NEXT_PUBLIC_API_URL. Open /admin/health for a per-layer diagnostic.`,
+      );
+    }
+
+    if (status === 401) {
+      throw new Error(
+        "Sign-in expired during upload. Refresh the page and try again.",
+      );
+    }
+
     if (status === 403) {
       throw new Error(
-        "Only site admins can upload community images. Your account may be a moderator, or the API rejected the session.",
+        "Forbidden — only admins can upload community images. Verify your profile role.",
       );
+    }
+
+    if (status === 400) {
+      throw new Error(msg);
     }
 
     throw new Error(msg);

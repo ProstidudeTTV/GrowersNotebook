@@ -226,8 +226,23 @@ export default function AdminProfileEditPage() {
         invalidates: ["detail", "list"],
       });
       await query?.refetch();
-    } catch {
-      message.error("Could not clear profile picture");
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not clear profile picture"));
+    }
+  };
+
+  const quickSetRole = async (newRole: "member" | "moderator" | "admin") => {
+    try {
+      await adminAxios.patch(`/profiles/${id}`, { role: newRole });
+      message.success(`Role changed to ${newRole}`);
+      form.setFieldsValue({ role: newRole });
+      await invalidate({
+        resource: "profiles",
+        invalidates: ["detail", "list"],
+      });
+      await query?.refetch();
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not change role"));
     }
   };
 
@@ -300,12 +315,33 @@ export default function AdminProfileEditPage() {
           <TextArea rows={3} maxLength={2000} showCount allowClear />
         </Form.Item>
         {canChangeRoles ? (
-          <Form.Item label="Role" name="role" rules={[{ required: true }]}>
-            <Select
-              options={ROLE_OPTIONS}
-              getPopupContainer={(n) => n.parentElement ?? document.body}
-            />
-          </Form.Item>
+          <>
+            <Form.Item label="Role" name="role" rules={[{ required: true }]}>
+              <Select
+                options={ROLE_OPTIONS}
+                getPopupContainer={() =>
+                  typeof document !== "undefined"
+                    ? document.body
+                    : (null as unknown as HTMLElement)
+                }
+              />
+            </Form.Item>
+            <div className="-mt-2 mb-6 flex flex-wrap items-center gap-2 text-xs text-[var(--gn-text-muted,#7fa887)]">
+              <span>Quick change (saves immediately):</span>
+              {ROLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    void quickSetRole(opt.value as "member" | "moderator" | "admin")
+                  }
+                  className="rounded-md border border-neutral-600 px-2 py-1 hover:border-[var(--gn-accent,#4ade80)] hover:text-[var(--gn-accent,#4ade80)]"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </>
         ) : (
           <Form.Item label="Role">
             <Typography.Text type="secondary">

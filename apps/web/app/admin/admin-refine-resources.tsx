@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   ExperimentOutlined,
   FileTextOutlined,
+  HeartOutlined,
   InboxOutlined,
   MedicineBoxOutlined,
   MessageOutlined,
@@ -25,6 +26,11 @@ export const fullAdminResources: ResourceProps[] = [
     name: "moderation-hub",
     list: "/admin/moderation",
     meta: { label: "Moderation hub", icon: <AlertOutlined /> },
+  },
+  {
+    name: "admin-health",
+    list: "/admin/health",
+    meta: { label: "Function test (health)", icon: <HeartOutlined /> },
   },
   {
     name: "site-settings",
@@ -164,6 +170,7 @@ export const fullAdminResources: ResourceProps[] = [
 const MODERATOR_RESOURCE_NAMES = new Set([
   "dashboard",
   "moderation-hub",
+  "admin-health",
   "profiles",
   "comment-reports",
   "post-reports",

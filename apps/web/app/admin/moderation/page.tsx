@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import {
   AdminDismissReportModal,
   type AdminDismissReportPayload,
@@ -85,8 +86,8 @@ export default function AdminModerationHubPage() {
       setProfileReports(
         Array.isArray(profilesRes.data) ? profilesRes.data : [],
       );
-    } catch {
-      message.error("Could not load moderation queue.");
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not load moderation queue."));
     } finally {
       setLoading(false);
     }
@@ -158,8 +159,8 @@ export default function AdminModerationHubPage() {
         resource: `${dismiss.kind}-reports`,
         invalidates: ["list"],
       });
-    } catch {
-      message.error("Could not resolve report.");
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not resolve report."));
     } finally {
       setDismissLoading(false);
     }

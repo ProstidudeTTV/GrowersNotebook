@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import { adminClickableRowTo, stopAdminRowClick } from "@/lib/admin-clickable-table-row";
 import {
   AdminDismissReportModal,
@@ -64,8 +65,8 @@ export default function AdminPostReportsPage() {
       setRemoveOpen(false);
       setRemoveTarget(null);
       await invalidate({ resource: "post-reports", invalidates: ["list"] });
-    } catch {
-      setRemoveError("Could not remove post");
+    } catch (e) {
+      setRemoveError(adminApiErrorMessage(e, "Could not remove post"));
     } finally {
       setRemoveSubmitting(false);
     }
@@ -82,8 +83,8 @@ export default function AdminPostReportsPage() {
       message.success("Report resolved; reporter notified.");
       setDismissReportId(null);
       await invalidate({ resource: "post-reports", invalidates: ["list"] });
-    } catch {
-      message.error("Could not resolve report");
+    } catch (e) {
+      message.error(adminApiErrorMessage(e, "Could not resolve report"));
     } finally {
       setDismissLoading(false);
     }

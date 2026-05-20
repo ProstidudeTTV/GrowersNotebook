@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { loginHref } from "@/lib/login-return-path";
 import {
   CommentActionMenu,
   MenuRow,
@@ -178,6 +181,12 @@ export function CommentThread({
   } | null>(null);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyBusy, setReplyBusy] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const signInToReportHref = loginHref(
+    pathname,
+    searchParams.toString() || undefined,
+  );
 
   const startEdit = (c: CommentThreadItem) => {
     setEditingId(c.id);
@@ -251,6 +260,8 @@ export function CommentThread({
     const upvotes = c.upvotes ?? 0;
     const canReply = depth === 0 && viewerId && !replyDisabled;
     const isReplying = replyingToId === c.id;
+    const canReport = Boolean(onReport) && !isAuthor;
+    const showReportForm = reportingId === c.id && canReport && viewerId;
 
     return (
       <li
@@ -304,7 +315,14 @@ export function CommentThread({
                   {new Date(c.createdAt).toLocaleString()}
                 </time>
               </div>
-              {viewerId && (onSaveEdit || onReport || canDelete) ? (
+              {!viewerId && onReport ? (
+                <Link
+                  href={signInToReportHref}
+                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
+                >
+                  Sign in to report
+                </Link>
+              ) : viewerId && (onSaveEdit || canReport || canDelete) ? (
                 <CommentActionMenu
                   ariaLabel={`Actions for comment by ${c.author.displayName ?? "member"}`}
                 >
@@ -316,7 +334,8 @@ export function CommentThread({
                     >
                       {editingId === c.id ? "Cancel edit" : "Edit"}
                     </MenuRow>
-                  ) : onReport ? (
+                  ) : null}
+                  {canReport ? (
                     <MenuRow
                       onClick={() => {
                         setReportingId((id) => (id === c.id ? null : c.id));
@@ -325,7 +344,7 @@ export function CommentThread({
                         setReportNotice(null);
                       }}
                     >
-                      {reportingId === c.id ? "Hide report form" : "Report"}
+                      {showReportForm ? "Hide report form" : "Report"}
                     </MenuRow>
                   ) : null}
                   {canDelete ? (
@@ -400,7 +419,7 @@ export function CommentThread({
               </p>
             ) : null}
 
-            {reportingId === c.id && onReport ? (
+            {showReportForm ? (
               <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/80 p-2 dark:border-amber-900 dark:bg-amber-950/40">
                 <p className="text-xs text-amber-900 dark:text-amber-100">
                   Moderators review reports in the admin area. You can add an
@@ -442,6 +461,28 @@ export function CommentThread({
                 >
                   {isReplying ? "Cancel" : "Reply"}
                 </button>
+              ) : null}
+              {canReport && viewerId ? (
+                <button
+                  type="button"
+                  className="text-xs font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-accent)] hover:underline"
+                  onClick={() => {
+                    setReportingId((id) => (id === c.id ? null : c.id));
+                    setReportDraft("");
+                    setLocalError(null);
+                    setReportNotice(null);
+                  }}
+                >
+                  {showReportForm ? "Cancel report" : "Report"}
+                </button>
+              ) : null}
+              {!viewerId && onReport ? (
+                <Link
+                  href={signInToReportHref}
+                  className="text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
+                >
+                  Sign in to report
+                </Link>
               ) : null}
             </div>
 

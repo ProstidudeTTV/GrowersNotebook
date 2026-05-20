@@ -11,6 +11,7 @@ import { AppVersionRefresh } from "@/components/app-version-refresh";
 import { MailingListPrompt } from "@/components/mailing-list-prompt";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { useAuth } from "@/components/auth-provider";
 import { clientApiJson } from "@/lib/client-api";
 import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
 
@@ -37,7 +38,6 @@ export function SiteChrome({
   modal,
   initialFollowedCommunities,
   initialHotWeekPosts,
-  authed,
   motdText,
   announcement,
   mailingListNudgeRecommended,
@@ -46,11 +46,12 @@ export function SiteChrome({
   modal?: React.ReactNode;
   initialFollowedCommunities: SidebarCommunity[];
   initialHotWeekPosts: SidebarHotPost[];
-  authed: boolean;
   motdText: string | null;
   announcement: PublicSiteConfigPayload["announcement"];
   mailingListNudgeRecommended: boolean;
 }) {
+  const { userId } = useAuth();
+  const authed = Boolean(userId);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [followed, setFollowed] = useState<SidebarCommunity[]>(
     initialFollowedCommunities,
@@ -171,7 +172,7 @@ export function SiteChrome({
           }
         />
 
-        <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-clip">
+        <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-auto overflow-y-visible">
           <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           {hideFooter ? null : <SiteFooter />}
         </div>

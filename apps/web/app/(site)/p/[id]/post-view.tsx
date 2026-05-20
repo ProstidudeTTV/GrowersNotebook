@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { loginHref } from "@/lib/login-return-path";
 import {
   useCallback,
   useEffect,
@@ -102,6 +103,8 @@ export function PostView({
   commentsFetchFailed?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [post, setPost] = useState(initialPost);
   const [comments, setComments] = useState(initialComments);
   const [commentsLoadHadError, setCommentsLoadHadError] = useState(
@@ -846,6 +849,16 @@ export function PostView({
               >
                 {postReportOpen ? "Close report" : "Report post"}
               </button>
+            ) : !viewerId && !isOp && !editingPost ? (
+              <Link
+                href={loginHref(
+                  pathname,
+                  searchParams.toString() || undefined,
+                )}
+                className="rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] px-3 py-1.5 text-xs font-medium text-[var(--gn-accent)] transition hover:bg-[var(--gn-surface-hover)]"
+              >
+                Sign in to report
+              </Link>
             ) : null}
           </div>
           {viewerId && !isOp && postReportMsg ? (

@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { loginHref } from "@/lib/login-return-path";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -91,6 +92,8 @@ export function FeedPostCard({
   rank?: number;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [local, setLocal] = useState(post);
   const { userId: viewerId } = useAuth();
   const [voteBusy, setVoteBusy] = useState(false);
@@ -392,21 +395,38 @@ export function FeedPostCard({
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">{metaRow}</div>
             <div className="shrink-0" data-interactive>
-              <CommentActionMenu ariaLabel="Post actions">
-                <MenuRow onClick={() => { router.push(`/u/${local.author.id}`); }}>
-                  View profile
-                </MenuRow>
-                {!isOwn ? (
+              {viewerId ? (
+                <CommentActionMenu ariaLabel="Post actions">
                   <MenuRow
                     onClick={() => {
-                      setReportOpen(true);
-                      setReportMsg(null);
+                      router.push(`/u/${local.author.id}`);
                     }}
                   >
-                    Report post
+                    View profile
                   </MenuRow>
-                ) : null}
-              </CommentActionMenu>
+                  {!isOwn ? (
+                    <MenuRow
+                      onClick={() => {
+                        setReportOpen(true);
+                        setReportMsg(null);
+                      }}
+                    >
+                      Report post
+                    </MenuRow>
+                  ) : null}
+                </CommentActionMenu>
+              ) : !isOwn ? (
+                <Link
+                  href={loginHref(
+                    pathname,
+                    searchParams.toString() || undefined,
+                  )}
+                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Sign in to report
+                </Link>
+              ) : null}
             </div>
           </div>
 
@@ -490,7 +510,7 @@ export function FeedPostCard({
         </p>
       ) : null}
 
-      {reportOpen ? (
+      {viewerId && reportOpen ? (
         <div
           className="border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3"
           data-interactive

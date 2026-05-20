@@ -103,27 +103,26 @@ export default async function SiteLayout({
   }));
 
   return (
-    <SiteChrome
-      initialFollowedCommunities={followedCommunities}
-      initialHotWeekPosts={hotWeekPosts}
-      authed={!!token}
-      modal={modal}
-      motdText={publicSiteConfig.motdText}
-      announcement={publicSiteConfig.announcement}
-      mailingListNudgeRecommended={
-        publicSiteConfig.mailingListNudgeRecommended ?? false
-      }
+    <SiteProviders
+      initialAuth={{
+        userId: profileMe?.id ?? authUser?.id ?? null,
+        email: authUser?.email ?? null,
+        displayName: profileMe?.displayName?.trim() || null,
+        avatarUrl: profileMe?.avatarUrl?.trim() || null,
+      }}
     >
-      <SiteProviders
-        initialAuth={{
-          userId: profileMe?.id ?? authUser?.id ?? null,
-          email: authUser?.email ?? null,
-          displayName: profileMe?.displayName?.trim() || null,
-          avatarUrl: profileMe?.avatarUrl?.trim() || null,
-        }}
+      <SiteChrome
+        initialFollowedCommunities={followedCommunities}
+        initialHotWeekPosts={hotWeekPosts}
+        modal={modal}
+        motdText={publicSiteConfig.motdText}
+        announcement={publicSiteConfig.announcement}
+        mailingListNudgeRecommended={
+          publicSiteConfig.mailingListNudgeRecommended ?? false
+        }
       >
         {children}
-      </SiteProviders>
-    </SiteChrome>
+      </SiteChrome>
+    </SiteProviders>
   );
 }

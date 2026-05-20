@@ -209,6 +209,7 @@ export class AdminController {
   }
 
   @Post('posts/:id/remove')
+  @Roles('admin', 'moderator')
   async removePost(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AdminRemovePostDto,

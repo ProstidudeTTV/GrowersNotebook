@@ -76,6 +76,13 @@ html:not(.dark) .ant-menu-light {
   cursor: pointer;
 }
 
+/* Refine edit/create forms: allow Select dropdowns to escape card overflow */
+.admin-refine-surface .ant-form,
+.admin-refine-surface .ant-card-body,
+.admin-refine-surface .ant-table-wrapper {
+  overflow: visible;
+}
+
 .admin-table-row-clickable:hover > td {
   background: rgba(0, 0, 0, 0.035) !important;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { loginHref } from "@/lib/login-return-path";
 import { useCallback, useEffect, useState } from "react";
 import {
   CommentActionMenu,
@@ -112,6 +113,8 @@ export function ProfileView({
   notebooksPayload: NotebooksResponse | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState(initialProfile);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -325,6 +328,16 @@ export function ProfileView({
                 </>
               )}
             </CommentActionMenu>
+          ) : !isOwn ? (
+            <Link
+              href={loginHref(
+                pathname,
+                searchParams.toString() || undefined,
+              )}
+              className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
+            >
+              Sign in to report
+            </Link>
           ) : null}
         </div>
 

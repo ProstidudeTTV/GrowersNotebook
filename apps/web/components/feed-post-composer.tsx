@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { loginHref } from "@/lib/login-return-path";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PostComposer } from "@/components/post-composer";
@@ -52,6 +53,8 @@ export function FeedPostComposer({
   communityName?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -214,7 +217,7 @@ export function FeedPostComposer({
       <div className="mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3 shadow-[var(--gn-shadow-sm)]">
         <div className="h-9 w-9 shrink-0 rounded-full bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]" />
         <a
-          href="/login?next=/following"
+          href={loginHref(pathname, searchParams.toString() || undefined)}
           className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-2 text-sm text-[var(--gn-text-muted)] transition hover:border-[var(--gn-accent)]/40 hover:text-[var(--gn-text)]"
         >
           Sign in to share your grow…

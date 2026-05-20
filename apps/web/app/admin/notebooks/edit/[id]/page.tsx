@@ -18,6 +18,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminSelectPopupProps } from "@/lib/admin-select-props";
 import { NotebookStrainFields } from "@/components/notebook-strain-fields";
 
 const { Text } = Typography;
@@ -317,7 +318,7 @@ export default function AdminNotebookEditPage() {
         </Form.Item>
         <NotebookStrainFields displaySeed={`${id}:${strainDisplaySeed}`} />
         <Form.Item name="status" label="Status">
-          <Select options={STATUSES} />
+          <Select options={STATUSES} {...adminSelectPopupProps()} />
         </Form.Item>
 
         <Divider />
@@ -327,21 +328,36 @@ export default function AdminNotebookEditPage() {
           label="Room type"
           tooltip="Indoor tent, outdoor, or greenhouse."
         >
-          <Select allowClear placeholder="Select…" options={ROOM_OPTIONS} />
+          <Select
+            allowClear
+            placeholder="Select…"
+            options={ROOM_OPTIONS}
+            {...adminSelectPopupProps()}
+          />
         </Form.Item>
         <Form.Item
           name="wateringType"
           label="Watering / irrigation"
           tooltip="How water and nutrients reach plants."
         >
-          <Select allowClear placeholder="Select…" options={WATERING_OPTIONS} />
+          <Select
+            allowClear
+            placeholder="Select…"
+            options={WATERING_OPTIONS}
+            {...adminSelectPopupProps()}
+          />
         </Form.Item>
         <Form.Item
           name="startType"
           label="How grow started"
           tooltip="Seed, clone, or seedling."
         >
-          <Select allowClear placeholder="Select…" options={START_OPTIONS} />
+          <Select
+            allowClear
+            placeholder="Select…"
+            options={START_OPTIONS}
+            {...adminSelectPopupProps()}
+          />
         </Form.Item>
         <Form.Item
           name="plantCount"

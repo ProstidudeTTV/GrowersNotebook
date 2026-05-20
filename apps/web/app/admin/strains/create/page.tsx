@@ -3,6 +3,7 @@
 import { Create, useForm } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
 import { Button, Form, Input, Select, Switch } from "antd";
+import { adminSelectPopupProps } from "@/lib/admin-select-props";
 
 export default function AdminStrainCreatePage() {
   const { form, formProps, saveButtonProps } = useForm({
@@ -58,6 +59,7 @@ export default function AdminStrainCreatePage() {
             options={breederOptions}
             showSearch
             optionFilterProp="label"
+            {...adminSelectPopupProps()}
           />
         </Form.Item>
         <Form.Item
@@ -65,7 +67,11 @@ export default function AdminStrainCreatePage() {
           name="effects"
           extra="Type and press Enter to add each tag"
         >
-          <Select mode="tags" placeholder="e.g. citrus, calming" />
+          <Select
+            mode="tags"
+            placeholder="e.g. citrus, calming"
+            {...adminSelectPopupProps()}
+          />
         </Form.Item>
         <Form.Item label="Tag notes" name="effectsNotes">
           <Input.TextArea rows={2} maxLength={2000} />
@@ -82,6 +88,7 @@ export default function AdminStrainCreatePage() {
               { value: "sativa", label: "Sativa" },
               { value: "hybrid", label: "Hybrid" },
             ]}
+            {...adminSelectPopupProps()}
           />
         </Form.Item>
         <Form.Item label="Autoflower" name="isAutoflower" valuePropName="checked">

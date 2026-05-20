@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export function CommentActionMenu({
   ariaLabel = "Comment actions",
@@ -10,12 +11,30 @@ export function CommentActionMenu({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    const updatePos = () => {
+      const btn = buttonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const menuW = menuRef.current?.offsetWidth ?? 144;
+      let left = rect.right - menuW;
+      left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+      setMenuPos({ top: rect.bottom + 4, left });
+    };
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
     const onDoc = (e: MouseEvent) => {
-      if (root.current?.contains(e.target as Node)) return;
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (buttonRef.current?.contains(t) || menuRef.current?.contains(t)) return;
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -24,14 +43,29 @@ export function CommentActionMenu({
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
+  const menu =
+    open && menuPos ? (
+      <div
+        ref={menuRef}
+        className="gn-menu fixed z-[200] min-w-[9rem] overflow-hidden py-1 shadow-lg"
+        style={{ top: menuPos.top, left: menuPos.left }}
+        role="menu"
+      >
+        <div onClick={() => setOpen(false)}>{children}</div>
+      </div>
+    ) : null;
+
   return (
-    <div className="relative" ref={root}>
+    <>
       <button
+        ref={buttonRef}
         type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
@@ -41,15 +75,10 @@ export function CommentActionMenu({
       >
         ⋮
       </button>
-      {open ? (
-        <div
-          className="gn-menu absolute right-0 top-full z-30 mt-1 min-w-[9rem] overflow-hidden py-1"
-          role="menu"
-        >
-          <div onClick={() => setOpen(false)}>{children}</div>
-        </div>
-      ) : null}
-    </div>
+      {typeof document !== "undefined" && menu
+        ? createPortal(menu, document.body)
+        : null}
+    </>
   );
 }
 

@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { apiFetch } from "@/lib/api-public";
+import { createClient } from "@/lib/supabase/server";
+import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { NewPostForm } from "./post-form";
 
 type Community = {
@@ -14,6 +17,11 @@ export default async function NewPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const supabase = await createClient();
+  const token = await getAccessTokenForApi(supabase);
+  if (!token) {
+    redirect(`/login?next=${encodeURIComponent(`/community/${slug}/new`)}`);
+  }
   let community: Community;
   try {
     community = await apiFetch<Community>(`/communities/${slug}`);

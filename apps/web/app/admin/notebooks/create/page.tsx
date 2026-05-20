@@ -4,6 +4,7 @@ import { Create } from "@refinedev/antd";
 import { App as AntdApp, Form, Input, Select } from "antd";
 import { useRouter } from "next/navigation";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminSelectPopupProps } from "@/lib/admin-select-props";
 
 const STATUSES = [
   { value: "active", label: "Active" },
@@ -64,7 +65,7 @@ export default function AdminNotebookCreatePage() {
           <Input />
         </Form.Item>
         <Form.Item name="status" label="Status" initialValue="active">
-          <Select options={STATUSES} />
+          <Select options={STATUSES} {...adminSelectPopupProps()} />
         </Form.Item>
         <Form.Item>
           <button

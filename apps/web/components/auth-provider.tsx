@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 
@@ -62,6 +63,7 @@ export function AuthProvider({
     Boolean(initial?.userId) && !initial?.displayName,
   );
   const profileFetchSeq = useRef(0);
+  const router = useRouter();
 
   const applyProfile = useCallback(async (token: string | null | undefined) => {
     const seq = ++profileFetchSeq.current;
@@ -107,11 +109,14 @@ export function AuthProvider({
     });
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       sync(session);
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+        router.refresh();
+      }
     });
     return () => subscription.unsubscribe();
-  }, [applyProfile]);
+  }, [applyProfile, router]);
 
   return (
     <AuthContext.Provider

@@ -26,18 +26,47 @@ type ModStats = {
 };
 
 export default async function AdminHealthPage() {
-  const checks = await Promise.all([
-    adminFetchServer<StaffMe>("/me"),
-    adminFetchServer<ModStats>("/moderation-stats"),
-    adminFetchServer<unknown[]>("/post-reports", { query: { _start: 0, _end: 1 } }),
-    adminFetchServer<unknown[]>("/comment-reports", { query: { _start: 0, _end: 1 } }),
-    adminFetchServer<unknown[]>("/profile-reports", { query: { _start: 0, _end: 1 } }),
-    adminFetchServer<unknown[]>("/profiles", { query: { _start: 0, _end: 1 } }),
-    adminFetchServer<unknown[]>("/communities", { query: { _start: 0, _end: 1 } }),
-    adminFetchServer<unknown[]>("/audit-events", { query: { _start: 0, _end: 1 } }),
-  ]);
+  const me = await adminFetchServer<StaffMe>("/me");
+  const isAdmin = me.ok && me.data.role === "admin";
 
-  const [me, stats, postRep, commentRep, profileRep, profiles, communities, audit] = checks;
+  const [stats, postRep, commentRep, profileRep, profiles, communities, audit] =
+    await Promise.all([
+      adminFetchServer<ModStats>("/moderation-stats"),
+      adminFetchServer<unknown[]>("/post-reports", {
+        query: { _start: 0, _end: 1 },
+      }),
+      adminFetchServer<unknown[]>("/comment-reports", {
+        query: { _start: 0, _end: 1 },
+      }),
+      adminFetchServer<unknown[]>("/profile-reports", {
+        query: { _start: 0, _end: 1 },
+      }),
+      adminFetchServer<unknown[]>("/profiles", { query: { _start: 0, _end: 1 } }),
+      isAdmin
+        ? adminFetchServer<unknown[]>("/communities", {
+            query: { _start: 0, _end: 1 },
+          })
+        : Promise.resolve({
+            ok: true as const,
+            status: 200,
+            data: [] as unknown[],
+            totalCount: 0,
+            skipped: true,
+            message: "Skipped (admin-only endpoint)",
+          }),
+      isAdmin
+        ? adminFetchServer<unknown[]>("/audit-events", {
+            query: { _start: 0, _end: 1 },
+          })
+        : Promise.resolve({
+            ok: true as const,
+            status: 200,
+            data: [] as unknown[],
+            totalCount: 0,
+            skipped: true,
+            message: "Skipped (admin-only endpoint)",
+          }),
+    ]);
 
   const envInfo = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ? "set" : "MISSING",
@@ -77,8 +106,14 @@ export default async function AdminHealthPage() {
           <CheckRow label="GET /admin/comment-reports?_start=0&_end=1" result={commentRep} />
           <CheckRow label="GET /admin/profile-reports?_start=0&_end=1" result={profileRep} />
           <CheckRow label="GET /admin/profiles?_start=0&_end=1" result={profiles} />
-          <CheckRow label="GET /admin/communities?_start=0&_end=1" result={communities} />
-          <CheckRow label="GET /admin/audit-events?_start=0&_end=1" result={audit} />
+          <CheckRow
+            label="GET /admin/communities?_start=0&_end=1 (admin only)"
+            result={communities}
+          />
+          <CheckRow
+            label="GET /admin/audit-events?_start=0&_end=1 (admin only)"
+            result={audit}
+          />
         </ul>
       </section>
 
@@ -139,13 +174,21 @@ function CheckRow({
   result,
 }: {
   label: string;
-  result: Awaited<ReturnType<typeof adminFetchServer>>;
+  result: Awaited<ReturnType<typeof adminFetchServer>> & {
+    skipped?: boolean;
+    message?: string;
+  };
 }) {
+  const skipped = "skipped" in result && result.skipped;
   return (
     <li className="flex items-start justify-between gap-4 py-2">
       <span className="font-mono text-xs text-[var(--gn-text)] sm:text-sm">{label}</span>
       <span className="flex-shrink-0">
-        {result.ok ? (
+        {skipped ? (
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-surface-muted)] px-3 py-0.5 text-xs font-semibold text-[var(--gn-text-muted)]">
+            N/A (moderator)
+          </span>
+        ) : result.ok ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--gn-accent)]/15 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
             {result.status} OK
             {typeof result.totalCount === "number" ? ` · total=${result.totalCount}` : ""}

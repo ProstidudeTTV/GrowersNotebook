@@ -5,7 +5,15 @@ import Link from "next/link";
 import { useAdminStaff } from "@/app/admin/admin-staff-context";
 
 export function AdminStaffStatusBar() {
-  const { loading, role, displayName, userId, error } = useAdminStaff();
+  const {
+    loading,
+    role,
+    displayName,
+    userId,
+    error,
+    storageConfigured,
+    isAdmin,
+  } = useAdminStaff();
 
   if (loading) {
     return (
@@ -15,7 +23,7 @@ export function AdminStaffStatusBar() {
     );
   }
 
-  if (error || !role) {
+  if (!role) {
     return (
       <Alert
         type="error"
@@ -43,20 +51,34 @@ export function AdminStaffStatusBar() {
   const name = displayName?.trim() || "Staff";
 
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#303030] bg-[#141414] px-4 py-2.5 text-sm">
-      <span className="text-neutral-300">
-        Signed in as{" "}
-        <strong className="text-neutral-100">{name}</strong>
-        <span className="mx-2 text-neutral-600">·</span>
-        <span className="font-semibold text-[#4ade80]">{roleLabel}</span>
-      </span>
-      {userId ? (
-        <Link
-          href={`/u/${userId}`}
-          className="text-[#4ade80] hover:underline"
-        >
-          View your profile →
-        </Link>
+    <div className="mb-4 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#303030] bg-[#141414] px-4 py-2.5 text-sm">
+        <span className="text-neutral-300">
+          Signed in as{" "}
+          <strong className="text-neutral-100">{name}</strong>
+          <span className="mx-2 text-neutral-600">·</span>
+          <span className="font-semibold text-[#4ade80]">{roleLabel}</span>
+        </span>
+        {userId ? (
+          <Link
+            href={`/u/${userId}`}
+            className="text-[#4ade80] hover:underline"
+          >
+            View your profile →
+          </Link>
+        ) : null}
+      </div>
+      {error ? (
+        <p className="text-xs text-amber-400/90">{error}</p>
+      ) : null}
+      {isAdmin && storageConfigured === false ? (
+        <Alert
+          type="warning"
+          showIcon
+          className="!mb-0"
+          message="API image uploads disabled"
+          description="Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the growers-notebook-api Render service. Uploads will try your browser session until that is fixed."
+        />
       ) : null}
     </div>
   );

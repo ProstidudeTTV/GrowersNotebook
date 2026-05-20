@@ -45,6 +45,11 @@ services:
         value: production
       - key: LISTEN_HOST
         value: "0.0.0.0"
+      # Required for admin community image uploads and post-media processing
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
 
   - type: web
     name: growers-notebook-web
@@ -71,6 +76,9 @@ services:
         sync: false
       # Nest API origin (no trailing slash). Required for the app + dynamic sitemap entries.
       - key: NEXT_PUBLIC_API_URL
+        sync: false
+      # Server-side gn-proxy target (same as NEXT_PUBLIC_API_URL in production)
+      - key: INTERNAL_API_URL
         sync: false
       # Optional: https://plausible.io — public hostname only (no https://), e.g. growersnotebook.com
       - key: NEXT_PUBLIC_PLAUSIBLE_DOMAIN

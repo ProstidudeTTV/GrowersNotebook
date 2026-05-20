@@ -2,9 +2,16 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import { createClient } from "@/lib/supabase/client";
 
 export type StaffRole = "admin" | "moderator";
+
+export type InitialStaffSession = {
+  userId: string;
+  displayName: string | null;
+  role: StaffRole;
+};
 
 type AdminStaffContextValue = {
   role: StaffRole | null;
@@ -13,6 +20,8 @@ type AdminStaffContextValue = {
   userId: string | null;
   displayName: string | null;
   error: string | null;
+  storageConfigured: boolean | null;
+  canChangeRoles: boolean;
 };
 
 const AdminStaffContext = createContext<AdminStaffContextValue>({
@@ -22,20 +31,33 @@ const AdminStaffContext = createContext<AdminStaffContextValue>({
   userId: null,
   displayName: null,
   error: null,
+  storageConfigured: null,
+  canChangeRoles: false,
 });
 
-export function AdminStaffProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = useState<StaffRole | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
+export function AdminStaffProvider({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  initial?: InitialStaffSession;
+}) {
+  const [role, setRole] = useState<StaffRole | null>(initial?.role ?? null);
+  const [userId, setUserId] = useState<string | null>(initial?.userId ?? null);
+  const [displayName, setDisplayName] = useState<string | null>(
+    initial?.displayName?.trim() || null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [storageConfigured, setStorageConfigured] = useState<boolean | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(!initial?.role);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      setLoading(true);
+      if (!initial?.role) setLoading(true);
       setError(null);
       try {
         const supabase = createClient();
@@ -47,22 +69,26 @@ export function AdminStaffProvider({ children }: { children: React.ReactNode }) 
             setRole(null);
             setUserId(null);
             setDisplayName(null);
+            setStorageConfigured(null);
             setError("Not signed in.");
             setLoading(false);
           }
           return;
         }
-        if (!cancelled) setUserId(sessionUserId);
+        if (!cancelled && sessionUserId) setUserId(sessionUserId);
 
         const res = await adminAxios.get<{
           id: string;
           role: string;
           displayName: string | null;
           isAdmin: boolean;
+          storageConfigured?: boolean;
+          canChangeRoles?: boolean;
         }>("/me");
         if (!cancelled) {
           setUserId(res.data.id);
           setDisplayName(res.data.displayName?.trim() || null);
+          setStorageConfigured(res.data.storageConfigured ?? null);
           if (res.data.role === "admin" || res.data.role === "moderator") {
             setRole(res.data.role);
             setError(null);
@@ -74,13 +100,19 @@ export function AdminStaffProvider({ children }: { children: React.ReactNode }) 
         }
       } catch (e) {
         if (!cancelled) {
-          setRole(null);
-          const msg =
-            e instanceof Error
-              ? e.message
-              : "Could not verify staff session with the API.";
-          setError(msg);
-          setLoading(false);
+          if (initial?.role) {
+            setRole(initial.role);
+            setUserId(initial.userId);
+            setDisplayName(initial.displayName?.trim() || null);
+            setError(
+              `Live staff check failed (${adminApiErrorMessage(e, "API error")}). Using server-verified role.`,
+            );
+            setLoading(false);
+          } else {
+            setRole(null);
+            setError(adminApiErrorMessage(e, "Could not verify staff session."));
+            setLoading(false);
+          }
         }
       }
     };
@@ -98,17 +130,21 @@ export function AdminStaffProvider({ children }: { children: React.ReactNode }) 
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initial?.role, initial?.userId, initial?.displayName]);
+
+  const isAdmin = role === "admin";
 
   return (
     <AdminStaffContext.Provider
       value={{
         role,
         loading,
-        isAdmin: role === "admin",
+        isAdmin,
         userId,
         displayName,
         error,
+        storageConfigured,
+        canChangeRoles: isAdmin,
       }}
     >
       {children}

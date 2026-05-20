@@ -11,11 +11,25 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 export class StorageService {
   constructor(private readonly config: ConfigService) {}
 
+  private serviceRoleKey(): string | undefined {
+    return (
+      this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY')?.trim() ||
+      this.config.get<string>('SUPABASE_SECRET_KEY')?.trim() ||
+      this.config.get<string>('SUPABASE_SERVICE_KEY')?.trim() ||
+      undefined
+    );
+  }
+
   private adminClient(): SupabaseClient | null {
     const url = this.config.get<string>('SUPABASE_URL')?.trim();
-    const key = this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY')?.trim();
+    const key = this.serviceRoleKey();
     if (!url || !key) return null;
     return createClient(url, key);
+  }
+
+  /** Whether server-side storage uploads (community banners, post-media admin) can run. */
+  isAdminStorageConfigured(): boolean {
+    return this.adminClient() !== null;
   }
 
   /**

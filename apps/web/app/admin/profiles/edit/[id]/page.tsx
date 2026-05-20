@@ -17,6 +17,7 @@ const { TextArea } = Input;
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import { useAdminStaff } from "../../../admin-staff-context";
 
 type ModerationSummary = {
@@ -183,7 +184,7 @@ function roleLabelTag(role: string) {
 export default function AdminProfileEditPage() {
   const params = useParams();
   const id = params.id as string;
-  const { isAdmin } = useAdminStaff();
+  const { canChangeRoles } = useAdminStaff();
   const invalidate = useInvalidate();
   const { message } = AntdApp.useApp();
   const { form, formProps, saveButtonProps, onFinish, query } = useForm({
@@ -240,7 +241,7 @@ export default function AdminProfileEditPage() {
           const v = values as {
             displayName?: string | null;
             description?: string | null;
-            role?: string;
+            role?: "member" | "moderator" | "admin";
             moderationBanned?: boolean;
             banExpiresLocal?: string;
             suspendedLocal?: string;
@@ -251,23 +252,32 @@ export default function AdminProfileEditPage() {
               : v.banExpiresLocal && String(v.banExpiresLocal).trim()
                 ? new Date(String(v.banExpiresLocal)).toISOString()
                 : null;
-          const roleValue =
-            isAdmin && v.role
-              ? v.role
-              : ((record as { role?: string })?.role ?? v.role);
-          await onFinish({
+          const payload: Record<string, unknown> = {
             displayName: v.displayName,
             description: v.description?.trim() ? v.description.trim() : null,
-            role: roleValue,
-            bannedAt: v.moderationBanned
-              ? new Date().toISOString()
-              : null,
+            bannedAt: v.moderationBanned ? new Date().toISOString() : null,
             banExpiresAt,
             suspendedUntil:
               v.suspendedLocal && String(v.suspendedLocal).trim()
                 ? new Date(String(v.suspendedLocal)).toISOString()
                 : null,
-          } as never);
+          };
+          if (canChangeRoles && v.role) {
+            payload.role = v.role;
+          }
+          try {
+            await adminAxios.patch(`/profiles/${id}`, payload);
+            message.success("Profile updated.");
+            await invalidate({
+              resource: "profiles",
+              invalidates: ["detail", "list"],
+            });
+            await query?.refetch();
+          } catch (e) {
+            message.error(
+              adminApiErrorMessage(e, "Could not save profile changes."),
+            );
+          }
         }}
       >
         <Typography.Paragraph type="secondary">
@@ -289,7 +299,7 @@ export default function AdminProfileEditPage() {
         >
           <TextArea rows={3} maxLength={2000} showCount allowClear />
         </Form.Item>
-        {isAdmin ? (
+        {canChangeRoles ? (
           <Form.Item label="Role" name="role" rules={[{ required: true }]}>
             <Select options={ROLE_OPTIONS} />
           </Form.Item>
@@ -315,7 +325,7 @@ export default function AdminProfileEditPage() {
           name="moderationBanned"
           valuePropName="checked"
         >
-          <Switch disabled={!isAdmin && targetIsAdmin} />
+          <Switch disabled={!canChangeRoles && targetIsAdmin} />
         </Form.Item>
         <Typography.Paragraph type="secondary" className="-mt-2 mb-4">
           Banned users cannot use the API. Turn off to lift a ban. Optional ban
@@ -338,7 +348,7 @@ export default function AdminProfileEditPage() {
               >
                 <Input
                   type="datetime-local"
-                  disabled={!isAdmin && targetIsAdmin}
+                  disabled={!canChangeRoles && targetIsAdmin}
                 />
               </Form.Item>
             ) : null
@@ -352,10 +362,10 @@ export default function AdminProfileEditPage() {
         >
           <Input
             type="datetime-local"
-            disabled={!isAdmin && targetIsAdmin}
+            disabled={!canChangeRoles && targetIsAdmin}
           />
         </Form.Item>
-        {!isAdmin && targetIsAdmin ? (
+        {!canChangeRoles && targetIsAdmin ? (
           <Typography.Paragraph type="secondary">
             Moderators cannot ban or suspend administrator accounts.
           </Typography.Paragraph>

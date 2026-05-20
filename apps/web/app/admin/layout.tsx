@@ -39,10 +39,24 @@ export default async function AdminRootLayout({
   if (meRes.status === 403) redirect("/?admin_error=forbidden");
   if (!meRes.ok) redirect("/?admin_error=api");
 
-  const profile = (await meRes.json()) as { role: string };
+  const profile = (await meRes.json()) as {
+    id: string;
+    role: string;
+    displayName: string | null;
+  };
   if (profile.role !== "admin" && profile.role !== "moderator") {
     redirect("/?admin_error=not_staff");
   }
 
-  return <RefineAdminLayout>{children}</RefineAdminLayout>;
+  return (
+    <RefineAdminLayout
+      initialStaff={{
+        userId: profile.id || user.id,
+        displayName: profile.displayName,
+        role: profile.role as "admin" | "moderator",
+      }}
+    >
+      {children}
+    </RefineAdminLayout>
+  );
 }

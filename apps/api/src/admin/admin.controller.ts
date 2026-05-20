@@ -76,6 +76,8 @@ export class AdminController {
       displayName: row.displayName,
       isAdmin: row.role === 'admin',
       isModerator: row.role === 'moderator',
+      canChangeRoles: row.role === 'admin',
+      storageConfigured: this.storage.isAdminStorageConfigured(),
     };
   }
 

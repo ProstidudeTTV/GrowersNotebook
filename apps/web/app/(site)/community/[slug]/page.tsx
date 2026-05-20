@@ -350,15 +350,28 @@ export default async function CommunityPage({
 
             {/* About card */}
             <div className="gn-card overflow-hidden">
-              <div
-                className="h-10 w-full"
-                style={{
-                  background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 60%, #1a1a2e 40%), color-mix(in srgb, var(--gn-accent) 25%, #0f0f1a 75%))`,
-                }}
-              />
-              <div className="p-4 space-y-3">
+              <div className="relative h-14 w-full overflow-hidden">
+                {hasBanner ? (
+                  <Image
+                    src={community.bannerUrl!}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="300px"
+                    unoptimized
+                  />
+                ) : (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      background: `linear-gradient(135deg, color-mix(in srgb, var(--gn-accent) 60%, #1a1a2e 40%), color-mix(in srgb, var(--gn-accent) 25%, #0f0f1a 75%))`,
+                    }}
+                  />
+                )}
+              </div>
+              <div className="space-y-3 p-4">
                 <h3 className="text-sm font-bold text-[var(--gn-text)]">
-                  About r/{community.slug}
+                  About {community.name}
                 </h3>
                 {community.description && (
                   <p className="text-sm leading-relaxed text-[var(--gn-text-muted)]">

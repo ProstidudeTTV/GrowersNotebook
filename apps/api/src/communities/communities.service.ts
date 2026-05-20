@@ -63,6 +63,7 @@ export class CommunitiesService {
           name: dto.name,
           description: dto.description ?? null,
           iconKey: assertCommunityIconKey(dto.iconKey ?? null),
+          iconUrl: dto.iconUrl ?? null,
           bannerUrl: dto.bannerUrl ?? null,
         })
         .returning();
@@ -163,6 +164,7 @@ export class CommunitiesService {
       name: string;
       description: string | null;
       iconKey: string | null;
+      iconUrl: string | null;
       bannerUrl: string | null;
     }>,
   ) {
@@ -174,6 +176,7 @@ export class CommunitiesService {
       name?: string;
       description?: string | null;
       iconKey?: string | null;
+      iconUrl?: string | null;
       bannerUrl?: string | null;
     } = {};
     if (partial.name !== undefined) toSet.name = partial.name;
@@ -182,6 +185,7 @@ export class CommunitiesService {
     if (partial.iconKey !== undefined) {
       toSet.iconKey = assertCommunityIconKey(partial.iconKey);
     }
+    if (partial.iconUrl !== undefined) toSet.iconUrl = partial.iconUrl;
     // Omitting bannerUrl from the patch preserves the existing value; pass null to clear.
     if (partial.bannerUrl !== undefined) toSet.bannerUrl = partial.bannerUrl;
     const [row] = await db

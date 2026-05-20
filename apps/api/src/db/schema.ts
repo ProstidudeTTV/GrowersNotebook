@@ -156,6 +156,8 @@ export const communities = pgTable(
     description: text('description'),
     /** Curated icon id for sidebar / directory (set in admin). */
     iconKey: text('icon_key'),
+    /** Public https URL (community-banners bucket) for square avatar. */
+    iconUrl: text('icon_url'),
     /** Public https URL (community-banners bucket) for wide hero on community page. */
     bannerUrl: text('banner_url'),
     createdAt: timestamp('created_at', { withTimezone: true })

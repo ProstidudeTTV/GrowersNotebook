@@ -74,6 +74,14 @@ function ToolbarDivider() {
   );
 }
 
+/** Keep editor selection/caret when clicking toolbar (avoids lists jumping to doc start). */
+function toolbarMouseDown(run: () => void) {
+  return (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    run();
+  };
+}
+
 function IconUndo() {
   return (
     <svg
@@ -299,7 +307,7 @@ export function PostEditor({
               aria-label="Undo"
               disabled={!can || !e?.can().undo()}
               className={toolClass(false, !!(can && e?.can().undo()))}
-              onClick={() => e?.chain().focus().undo().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().undo().run())}
             >
               <IconUndo />
             </button>
@@ -309,7 +317,7 @@ export function PostEditor({
               aria-label="Redo"
               disabled={!can || !e?.can().redo()}
               className={toolClass(false, !!(can && e?.can().redo()))}
-              onClick={() => e?.chain().focus().redo().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().redo().run())}
             >
               <IconRedo />
             </button>
@@ -321,7 +329,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("bold") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("bold") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleBold().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleBold().run())}
             >
               <strong className="text-xs">B</strong>
             </button>
@@ -332,7 +340,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("italic") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("italic") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleItalic().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleItalic().run())}
             >
               <em className="text-xs">I</em>
             </button>
@@ -343,7 +351,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("strike") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("strike") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleStrike().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleStrike().run())}
             >
               <s className="text-xs">S</s>
             </button>
@@ -354,7 +362,9 @@ export function PostEditor({
               aria-pressed={e?.isActive("superscript") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("superscript") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleSuperscript().run()}
+              onMouseDown={toolbarMouseDown(() =>
+                e?.chain().focus().toggleSuperscript().run(),
+              )}
             >
               <span className="text-xs font-medium">x²</span>
             </button>
@@ -365,7 +375,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("code") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("code") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleCode().run()}
+              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleCode().run())}
             >
               <code className="text-[11px]">&lt;/&gt;</code>
             </button>
@@ -377,7 +387,9 @@ export function PostEditor({
               aria-pressed={e?.isActive("bulletList") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("bulletList") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleBulletList().run()}
+              onMouseDown={toolbarMouseDown(() =>
+                e?.chain().focus().toggleBulletList().run(),
+              )}
             >
               <IconListBullet />
             </button>
@@ -388,7 +400,9 @@ export function PostEditor({
               aria-pressed={e?.isActive("orderedList") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("orderedList") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleOrderedList().run()}
+              onMouseDown={toolbarMouseDown(() =>
+                e?.chain().focus().toggleOrderedList().run(),
+              )}
             >
               <IconListOrdered />
             </button>
@@ -400,7 +414,9 @@ export function PostEditor({
               aria-pressed={e?.isActive("blockquote") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("blockquote") ?? false, can)}
-              onClick={() => e?.chain().focus().toggleBlockquote().run()}
+              onMouseDown={toolbarMouseDown(() =>
+                e?.chain().focus().toggleBlockquote().run(),
+              )}
             >
               <IconQuote />
             </button>
@@ -411,7 +427,9 @@ export function PostEditor({
               aria-pressed={e?.isActive("spoiler") ?? false}
               disabled={!can}
               className={`${toolClass(e?.isActive("spoiler") ?? false, can)} px-2.5 font-semibold tracking-widest`}
-              onClick={() => e?.chain().focus().toggleMark("spoiler").run()}
+              onMouseDown={toolbarMouseDown(() =>
+                e?.chain().focus().toggleMark("spoiler").run(),
+              )}
             >
               <span className="text-[10px]">···</span>
             </button>
@@ -431,10 +449,10 @@ export function PostEditor({
                 !!(linkOpen || e?.isActive("link")),
                 can,
               )}
-              onClick={() => {
+              onMouseDown={toolbarMouseDown(() => {
                 if (linkOpen) closeLinkPanel();
                 else openLinkPanel();
-              }}
+              })}
             >
               <IconLink />
             </button>

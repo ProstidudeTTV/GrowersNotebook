@@ -11,6 +11,7 @@ export type CommunityDirectoryItem = {
   description: string | null;
   iconKey?: string | null;
   iconUrl?: string | null;
+  bannerUrl?: string | null;
   memberCount?: number | null;
 };
 
@@ -55,7 +56,15 @@ function CommunityCard({ community: c }: { community: CommunityDirectoryItem }) 
       href={`/community/${c.slug}`}
       className="group gn-card flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[var(--gn-shadow-md)]"
     >
-      <div className={`relative h-16 w-full bg-gradient-to-r ${grad}`}>
+      <div className={`relative h-16 w-full overflow-hidden bg-gradient-to-r ${grad}`}>
+        {c.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.bannerUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
         <svg
           className="absolute inset-0 h-full w-full opacity-[0.06]"
           xmlns="http://www.w3.org/2000/svg"
@@ -75,6 +84,7 @@ function CommunityCard({ community: c }: { community: CommunityDirectoryItem }) 
           </defs>
           <rect width="100%" height="100%" fill={`url(#dots-${c.slug})`} />
         </svg>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
       </div>
 
       <div className="flex flex-1 flex-col px-4 pb-4">

@@ -40,5 +40,11 @@ export class UpdateCommunityAdminDto {
   @ValidateIf((_, v) => v != null)
   @IsUrl({ require_tld: true })
   @MaxLength(2000)
+  iconUrl?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v != null)
+  @IsUrl({ require_tld: true })
+  @MaxLength(2000)
   bannerUrl?: string | null;
 }

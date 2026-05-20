@@ -37,5 +37,9 @@ export class CreateCommunityDto {
 
   @IsOptional()
   @IsString()
+  iconUrl?: string;
+
+  @IsOptional()
+  @IsString()
   bannerUrl?: string;
 }

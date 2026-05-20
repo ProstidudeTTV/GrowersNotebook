@@ -12,7 +12,7 @@ import {
 import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 import { createClient } from "@/lib/supabase/client";
-import { SiteLogo } from "@/components/site-logo";
+import { SiteBrand } from "@/components/site-brand";
 
 export type SidebarCommunity = {
   id: string;
@@ -231,12 +231,9 @@ export function AppSidebar({
       <Link
         href={authed ? "/following" : "/"}
         onClick={afterNav}
-        className="group flex flex-col gap-1 border-b border-[var(--gn-divide)] px-4 py-3.5 transition-opacity hover:opacity-90"
+        className="group flex items-center border-b border-[var(--gn-divide)] px-3 py-3 transition-opacity hover:opacity-90"
       >
-        <SiteLogo className="h-11 w-auto max-w-[11.5rem] shrink-0" />
-        <span className="mt-0.5 block text-[0.6rem] font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
-          Grow · Share · Thrive
-        </span>
+        <SiteBrand size="md" className="w-full" />
       </Link>
 
       {/* ── Create Post CTA ──────────────────────────────────────────── */}

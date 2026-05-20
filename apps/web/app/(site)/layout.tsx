@@ -109,6 +109,7 @@ export default async function SiteLayout({
         email: authUser?.email ?? null,
         displayName: profileMe?.displayName?.trim() || null,
         avatarUrl: profileMe?.avatarUrl?.trim() || null,
+        role: profileRole,
       }}
     >
       <SiteChrome

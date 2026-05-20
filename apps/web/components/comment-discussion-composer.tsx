@@ -9,7 +9,10 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from "react";
-import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
+import {
+  fetchGiphySearchItems,
+  fetchGiphyTrendingItems,
+} from "@/lib/giphy-search-client";
 import { createClient } from "@/lib/supabase/client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { uploadPostImage } from "@/lib/upload-post-media";
@@ -61,6 +64,7 @@ export function CommentDiscussionComposer({
     { id?: string; url: string; preview: string; title: string }[]
   >([]);
   const [gifLoading, setGifLoading] = useState(false);
+  const [gifConfigured, setGifConfigured] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const commentPhotoInputId = useId();
   const pendingRef = useRef(pendingCommentImages);
@@ -79,16 +83,17 @@ export function CommentDiscussionComposer({
 
   const runGifSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setGifItems([]);
-      setGifLoading(false);
-      return;
-    }
     const seq = ++gifFetchSeq.current;
     setGifLoading(true);
     try {
-      const items = await fetchGiphySearchItems(trimmed);
-      if (seq === gifFetchSeq.current) setGifItems(items);
+      const res =
+        trimmed.length >= 2
+          ? await fetchGiphySearchItems(trimmed, { limit: 24 })
+          : await fetchGiphyTrendingItems({ limit: 24 });
+      if (seq === gifFetchSeq.current) {
+        setGifConfigured(res.configured !== false);
+        setGifItems(res.items);
+      }
     } catch {
       if (seq === gifFetchSeq.current) setGifItems([]);
     } finally {
@@ -325,12 +330,20 @@ export function CommentDiscussionComposer({
             </button>
           </div>
           <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-            One GIF per comment, and not with photos. Powered by Giphy. Results
-            update as you type (after a short pause).
+            One GIF per comment, and not with photos. Powered by Giphy.
           </p>
-          {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
-            <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Type at least 2 characters.
+          {!gifConfigured ? (
+            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+              GIF search is not configured on this server. Ask an admin to set
+              GIPHY_API_KEY.
+            </p>
+          ) : null}
+          {gifConfigured &&
+          !gifLoading &&
+          gifItems.length === 0 &&
+          debouncedGifQuery.trim().length < 2 ? (
+            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+              Trending GIFs appear here. Type to search.
             </p>
           ) : null}
           {gifItems.length > 0 ? (

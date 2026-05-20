@@ -312,12 +312,19 @@ export default async function SearchPage({
                             </p>
                           ) : null}
                         </div>
-                        <Link
-                          href={`/u/${p.id}`}
-                          className="ml-auto shrink-0 rounded-full border border-[var(--gn-accent)] px-3 py-1 text-xs text-[var(--gn-accent)] transition-colors hover:bg-[var(--gn-accent)] hover:text-white"
-                        >
-                          {p.isFollowing ? "Following" : "Follow"}
-                        </Link>
+                        <div className="ml-auto flex shrink-0 items-center gap-2">
+                          {p.isFollowing ? (
+                            <span className="rounded-full bg-[var(--gn-accent)]/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--gn-accent)]">
+                              Following
+                            </span>
+                          ) : null}
+                          <Link
+                            href={`/u/${p.id}`}
+                            className="rounded-full border border-[var(--gn-accent)] px-3 py-1 text-xs text-[var(--gn-accent)] transition-colors hover:bg-[var(--gn-accent)] hover:text-[var(--gn-on-accent)]"
+                          >
+                            View profile
+                          </Link>
+                        </div>
                       </div>
                     </li>
                   ))}

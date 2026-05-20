@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 type MeProfile = {
   displayName: string | null;
   avatarUrl: string | null;
+  role?: string | null;
 };
 
 export type InitialAuthSession = {
@@ -23,6 +24,8 @@ export type InitialAuthSession = {
   email: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  /** From server `profiles/me` — drives staff chrome on the public site. */
+  role?: string | null;
 };
 
 type AuthContextValue = {
@@ -30,6 +33,7 @@ type AuthContextValue = {
   email: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  role: string | null;
   loading: boolean;
   profileLoading: boolean;
 };
@@ -39,6 +43,7 @@ const AuthContext = createContext<AuthContextValue>({
   email: null,
   displayName: null,
   avatarUrl: null,
+  role: null,
   loading: true,
   profileLoading: true,
 });
@@ -58,6 +63,7 @@ export function AuthProvider({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     initial?.avatarUrl ?? null,
   );
+  const [role, setRole] = useState<string | null>(initial?.role ?? null);
   const [loading, setLoading] = useState(!initial?.userId);
   const [profileLoading, setProfileLoading] = useState(
     Boolean(initial?.userId) && !initial?.displayName,
@@ -82,10 +88,13 @@ export function AuthProvider({
       if (seq !== profileFetchSeq.current) return;
       setDisplayName(me.displayName?.trim() || null);
       setAvatarUrl(me.avatarUrl?.trim() || null);
+      const r = me.role?.trim();
+      setRole(r === "admin" || r === "moderator" ? r : null);
     } catch {
       if (seq !== profileFetchSeq.current) return;
       setDisplayName(null);
       setAvatarUrl(null);
+      setRole(null);
     } finally {
       if (seq === profileFetchSeq.current) setProfileLoading(false);
     }
@@ -125,6 +134,7 @@ export function AuthProvider({
         email,
         displayName,
         avatarUrl,
+        role,
         loading,
         profileLoading,
       }}

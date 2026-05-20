@@ -130,7 +130,9 @@ export function FeedPostCard({
 
   const vote = async (value: 1 | -1) => {
     if (!viewerId) {
-      router.push("/login");
+      router.push(
+        loginHref(pathname, searchParams.toString() || undefined),
+      );
       return;
     }
     setVoteBusy(true);
@@ -266,7 +268,7 @@ export function FeedPostCard({
     ) : community ? (
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
         <CommunityIcon
-          iconKey={null}
+          iconKey={community.iconKey ?? null}
           nameFallback={community.name}
           slugFallback={community.slug}
           frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs"

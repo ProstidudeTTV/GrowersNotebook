@@ -16,7 +16,10 @@ import {
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { ComposerQuickReactionsToolbar } from "@/components/composer-quick-reactions-toolbar";
 import { dedupeUrlsPreserveOrder, isDmVideoUrl } from "@/lib/dm-media-url";
-import { fetchGiphySearchItems } from "@/lib/giphy-search-client";
+import {
+  fetchGiphySearchItems,
+  fetchGiphyTrendingItems,
+} from "@/lib/giphy-search-client";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
 import {
@@ -244,6 +247,8 @@ export function MessagesPanel() {
     { id?: string; url: string; preview: string; title: string }[]
   >([]);
   const [gifLoading, setGifLoading] = useState(false);
+  const [gifConfigured, setGifConfigured] = useState(true);
+  const gifOffsetRef = useRef(0);
   const debouncedGifQuery = useDebouncedValue(gifQuery.trim(), 320);
   const gifFetchSeq = useRef(0);
   const lastGifPickMs = useRef(0);
@@ -274,20 +279,31 @@ export function MessagesPanel() {
     });
   }, []);
 
-  const runGifSearch = useCallback(async (q: string) => {
+  const runGifSearch = useCallback(async (q: string, append = false) => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setGifItems([]);
-      setGifLoading(false);
-      return;
-    }
     const seq = ++gifFetchSeq.current;
     setGifLoading(true);
+    const offset = append ? gifOffsetRef.current : 0;
     try {
-      const items = await fetchGiphySearchItems(trimmed);
-      if (seq === gifFetchSeq.current) setGifItems(items);
+      const res =
+        trimmed.length >= 2
+          ? await fetchGiphySearchItems(trimmed, { offset, limit: 24 })
+          : await fetchGiphyTrendingItems({ offset, limit: 24 });
+      if (seq === gifFetchSeq.current) {
+        setGifConfigured(res.configured !== false);
+        setGifItems((prev) =>
+          append ? [...prev, ...res.items] : res.items,
+        );
+        gifOffsetRef.current = append
+          ? gifOffsetRef.current + res.items.length
+          : res.items.length;
+      }
     } catch {
-      if (seq === gifFetchSeq.current) setGifItems([]);
+      if (seq === gifFetchSeq.current && !append) {
+        setGifItems([]);
+        setGifConfigured(true);
+        gifOffsetRef.current = 0;
+      }
     } finally {
       if (seq === gifFetchSeq.current) setGifLoading(false);
     }
@@ -297,8 +313,10 @@ export function MessagesPanel() {
     if (!gifPickerOpen) {
       gifFetchSeq.current += 1;
       setGifLoading(false);
+      gifOffsetRef.current = 0;
       return;
     }
+    gifOffsetRef.current = 0;
     void runGifSearch(debouncedGifQuery);
   }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
 
@@ -1497,9 +1515,18 @@ export function MessagesPanel() {
                   One GIF per message, and not with photos or videos. Powered by
                   Giphy. Results update as you type (after a short pause).
                 </p>
-                {gifQuery.trim().length > 0 && gifQuery.trim().length < 2 ? (
-                  <p className="mt-1 text-[10px] text-[var(--gn-text-muted)]">
-                    Type at least 2 characters.
+                {!gifConfigured ? (
+                  <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                    GIF search is not configured on this server. Ask an admin to
+                    set GIPHY_API_KEY.
+                  </p>
+                ) : null}
+                {gifConfigured &&
+                !gifLoading &&
+                gifItems.length === 0 &&
+                debouncedGifQuery.trim().length < 2 ? (
+                  <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+                    Trending GIFs appear here. Type to search.
                   </p>
                 ) : null}
                 {gifItems.length > 0 ? (
@@ -1528,6 +1555,16 @@ export function MessagesPanel() {
                         </li>
                       ))}
                     </ul>
+                    {gifConfigured && gifItems.length >= 12 ? (
+                      <button
+                        type="button"
+                        className="mt-2 w-full rounded-lg py-2 text-xs font-semibold text-[var(--gn-accent)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                        disabled={gifLoading}
+                        onClick={() => void runGifSearch(gifQuery, true)}
+                      >
+                        {gifLoading ? "Loading…" : "Load more GIFs"}
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

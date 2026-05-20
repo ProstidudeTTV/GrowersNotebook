@@ -11,6 +11,7 @@ type GiphySearchResponse = {
       fixed_height?: { url?: string };
     };
   }>;
+  pagination?: { total_count?: number; count?: number; offset?: number };
 };
 
 type GiphyItem = { id: string; url: string; preview: string; title: string };
@@ -31,30 +32,55 @@ function toItem(d: NonNullable<GiphySearchResponse["data"]>[number]): GiphyItem 
   };
 }
 
-async function searchOnce(
+async function fetchGiphy(
   apiKey: string,
-  query: string,
-  limit: number,
-): Promise<GiphyItem[]> {
-  const upstream = new URL("https://api.giphy.com/v1/gifs/search");
+  path: "search" | "trending",
+  params: { q?: string; limit: number; offset: number },
+): Promise<{ items: GiphyItem[]; totalCount: number | null }> {
+  const upstream = new URL(
+    path === "trending"
+      ? "https://api.giphy.com/v1/gifs/trending"
+      : "https://api.giphy.com/v1/gifs/search",
+  );
   upstream.searchParams.set("api_key", apiKey);
-  upstream.searchParams.set("q", query);
-  upstream.searchParams.set("limit", String(limit));
+  upstream.searchParams.set("limit", String(params.limit));
+  upstream.searchParams.set("offset", String(params.offset));
   upstream.searchParams.set("rating", "g");
-  upstream.searchParams.set("lang", "en");
+  if (path === "search" && params.q) {
+    upstream.searchParams.set("q", params.q);
+    upstream.searchParams.set("lang", "en");
+  }
   let res: Response;
   try {
     res = await fetch(upstream.toString(), { cache: "no-store" });
   } catch {
-    return [];
+    return { items: [], totalCount: null };
   }
-  if (!res.ok) return [];
+  if (!res.ok) return { items: [], totalCount: null };
   const json = (await res.json()) as GiphySearchResponse;
   const items =
     json.data
       ?.map((d) => toItem(d))
       .filter(Boolean) ?? [];
-  return items as GiphyItem[];
+  const totalCount =
+    typeof json.pagination?.total_count === "number"
+      ? json.pagination.total_count
+      : null;
+  return { items: items as GiphyItem[], totalCount };
+}
+
+async function searchOnce(
+  apiKey: string,
+  query: string,
+  limit: number,
+  offset = 0,
+): Promise<GiphyItem[]> {
+  const { items } = await fetchGiphy(apiKey, "search", {
+    q: query,
+    limit,
+    offset,
+  });
+  return items;
 }
 
 /** Broader matching: full phrase + significant words, deduped by GIF id. */
@@ -71,7 +97,6 @@ function fuzzyQueries(raw: string): string[] {
 }
 
 function mergeFuzzyResults(chunks: GiphyItem[][], cap: number): GiphyItem[] {
-  /** Dedupe by Giphy id — downsized vs fixed_height URLs differ for the same GIF. */
   const seen = new Set<string>();
   const out: GiphyItem[] = [];
   let round = 0;
@@ -95,22 +120,53 @@ function mergeFuzzyResults(chunks: GiphyItem[][], cap: number): GiphyItem[] {
 export async function GET(req: NextRequest) {
   const key = process.env.GIPHY_API_KEY?.trim();
   if (!key) {
-    return Response.json({ items: [] as GiphyItem[] });
+    return Response.json({
+      items: [] as GiphyItem[],
+      configured: false,
+      totalCount: null,
+    });
   }
+
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
-  if (q.length < 2) {
-    return Response.json({ items: [] as GiphyItem[] });
+  const mode = req.nextUrl.searchParams.get("mode")?.trim() ?? "";
+  const offset = Math.max(
+    0,
+    Number(req.nextUrl.searchParams.get("offset") ?? 0) || 0,
+  );
+  const limit = Math.min(
+    50,
+    Math.max(8, Number(req.nextUrl.searchParams.get("limit") ?? 24) || 24),
+  );
+
+  if (q.length < 2 || mode === "trending") {
+    const { items, totalCount } = await fetchGiphy(key, "trending", {
+      limit,
+      offset,
+    });
+    return Response.json({
+      items,
+      configured: true,
+      mode: "trending",
+      totalCount,
+      offset,
+      limit,
+    });
   }
 
   const qTrim = q.trim();
   const queries = fuzzyQueries(qTrim);
-  /** One large primary request so short queries still return many GIFs; extras diversify. */
   const primaryQuery = queries[0] ?? qTrim;
-  const primaryChunk = await searchOnce(key, primaryQuery, 50);
+  const primaryChunk = await searchOnce(key, primaryQuery, 50, offset);
   const altQueries = queries.filter((sub) => sub !== primaryQuery).slice(0, 5);
   const altChunks = await Promise.all(
-    altQueries.map((sub) => searchOnce(key, sub, 16)),
+    altQueries.map((sub) => searchOnce(key, sub, 16, 0)),
   );
   const items = mergeFuzzyResults([primaryChunk, ...altChunks], 56);
-  return Response.json({ items });
+  return Response.json({
+    items,
+    configured: true,
+    mode: "search",
+    offset,
+    limit,
+  });
 }

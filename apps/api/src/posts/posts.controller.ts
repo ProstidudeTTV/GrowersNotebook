@@ -77,6 +77,32 @@ export class PostsController {
     });
   }
 
+  @Get('hot/day')
+  @UseGuards(OptionalAuthGuard)
+  hotDay(
+    @Query() query: ListHotWeekPostsQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    return this.posts.listHotDay({
+      page: query.page,
+      pageSize: query.pageSize,
+      viewerId: user?.sub,
+    });
+  }
+
+  @Get('hot/month')
+  @UseGuards(OptionalAuthGuard)
+  hotMonth(
+    @Query() query: ListHotWeekPostsQueryDto,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    return this.posts.listHotMonth({
+      page: query.page,
+      pageSize: query.pageSize,
+      viewerId: user?.sub,
+    });
+  }
+
   @Throttle({ default: { limit: 45, ttl: 60000 } })
   @Get('search')
   @UseGuards(OptionalAuthGuard)

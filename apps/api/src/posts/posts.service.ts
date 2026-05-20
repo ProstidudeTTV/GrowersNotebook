@@ -192,6 +192,7 @@ export class PostsService {
         },
         communitySlug: communities.slug,
         communityName: communities.name,
+        communityIconKey: communities.iconKey,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
         viewerVote: viewerVoteSelect(query.viewerId),
@@ -215,7 +216,11 @@ export class PostsService {
         const rawRow = r as unknown as Record<string, unknown>;
         const community =
           r.communitySlug != null
-            ? { slug: r.communitySlug, name: r.communityName ?? '' }
+            ? {
+                slug: r.communitySlug,
+                name: r.communityName ?? '',
+                iconKey: r.communityIconKey ?? null,
+              }
             : null;
         return {
           id: r.post.id,
@@ -240,16 +245,16 @@ export class PostsService {
   }
 
   /**
-   * Paginated feed: posts from the last 7 days, highest net vote score first (then newest).
+   * Paginated feed: posts since `since`, highest net vote score first (then newest).
    */
-  async listHotWeek(query: {
+  async listHotSince(query: {
     page: number;
     pageSize: number;
     viewerId?: string;
+    since: Date;
   }) {
     const db = getDb();
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const weekWhere = gte(posts.createdAt, weekAgo);
+    const sinceWhere = gte(posts.createdAt, query.since);
     const offset = (query.page - 1) * query.pageSize;
 
     const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
@@ -260,7 +265,7 @@ export class PostsService {
         : sql`false`,
     );
     const hotWhere = and(
-      weekWhere,
+      sinceWhere,
       authorVisible,
       blockAuthors ?? sql`true`,
     );
@@ -282,6 +287,7 @@ export class PostsService {
         community: {
           slug: communities.slug,
           name: communities.name,
+          iconKey: communities.iconKey,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -309,7 +315,11 @@ export class PostsService {
         const raw = r as unknown as Record<string, unknown>;
         const community =
           r.community?.slug != null
-            ? { slug: r.community.slug, name: r.community.name }
+            ? {
+                slug: r.community.slug,
+                name: r.community.name,
+                iconKey: r.community.iconKey ?? null,
+              }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
         return {
@@ -332,6 +342,42 @@ export class PostsService {
       page: query.page,
       pageSize: query.pageSize,
     };
+  }
+
+  /** Posts from the last 7 days (sidebar + /hot?range=week). */
+  async listHotWeek(query: {
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
+    return this.listHotSince({
+      ...query,
+      since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    });
+  }
+
+  /** Posts from the last 24 hours (/hot?range=day). */
+  async listHotDay(query: {
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
+    return this.listHotSince({
+      ...query,
+      since: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    });
+  }
+
+  /** Posts from the last 30 days (/hot?range=month). */
+  async listHotMonth(query: {
+    page: number;
+    pageSize: number;
+    viewerId?: string;
+  }) {
+    return this.listHotSince({
+      ...query,
+      since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    });
   }
 
   /** Newest public posts (guest hero fallback when hot/week is empty). */
@@ -369,6 +415,7 @@ export class PostsService {
         community: {
           slug: communities.slug,
           name: communities.name,
+          iconKey: communities.iconKey,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -396,7 +443,11 @@ export class PostsService {
         const raw = r as unknown as Record<string, unknown>;
         const community =
           r.community?.slug != null
-            ? { slug: r.community.slug, name: r.community.name }
+            ? {
+                slug: r.community.slug,
+                name: r.community.name,
+                iconKey: r.community.iconKey ?? null,
+              }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
         return {
@@ -695,6 +746,7 @@ export class PostsService {
         },
         communitySlug: communities.slug,
         communityName: communities.name,
+        communityIconKey: communities.iconKey,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
         upvotes: posts.upvoteCount,
@@ -732,7 +784,11 @@ export class PostsService {
       : false;
     const community =
       row.communitySlug != null
-        ? { slug: row.communitySlug, name: row.communityName ?? '' }
+        ? {
+            slug: row.communitySlug,
+            name: row.communityName ?? '',
+            iconKey: row.communityIconKey ?? null,
+          }
         : null;
     return {
       ...row.post,
@@ -916,6 +972,7 @@ export class PostsService {
         community: {
           slug: communities.slug,
           name: communities.name,
+          iconKey: communities.iconKey,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -944,7 +1001,11 @@ export class PostsService {
         const raw = r as unknown as Record<string, unknown>;
         const community =
           r.community?.slug != null
-            ? { slug: r.community.slug, name: r.community.name }
+            ? {
+                slug: r.community.slug,
+                name: r.community.name,
+                iconKey: r.community.iconKey ?? null,
+              }
             : null;
         return {
           ...r.post,
@@ -1000,6 +1061,7 @@ export class PostsService {
         community: {
           slug: communities.slug,
           name: communities.name,
+          iconKey: communities.iconKey,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -1027,7 +1089,11 @@ export class PostsService {
         const raw = r as unknown as Record<string, unknown>;
         const community =
           r.community?.slug != null
-            ? { slug: r.community.slug, name: r.community.name }
+            ? {
+                slug: r.community.slug,
+                name: r.community.name,
+                iconKey: r.community.iconKey ?? null,
+              }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
         return {

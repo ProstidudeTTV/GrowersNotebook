@@ -1,16 +1,17 @@
 import { useId } from "react";
 
-/** GN monogram — icon-only mark for compact header / favicon-style slots. */
-export function SiteLogoMark({ className }: { className?: string }) {
+/** Full horizontal logo: GN monogram + GROWERS / NOTEBOOK wordmark. */
+export function SiteLogo({ className }: { className?: string }) {
   const gradId = `gn-leaf-grad-${useId().replace(/:/g, "")}`;
 
   return (
     <svg
       className={className}
-      viewBox="0 0 60 80"
+      viewBox="0 0 160 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
+      role="img"
+      aria-label="Growers Notebook"
     >
       <defs>
         <linearGradient id={gradId} x1="0%" y1="100%" x2="100%" y2="0%">
@@ -44,6 +45,28 @@ export function SiteLogoMark({ className }: { className?: string }) {
           strokeLinejoin="round"
         />
       </g>
+      <text
+        x="70"
+        y="44"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontSize="13"
+        fontWeight="800"
+        fill="var(--gn-text)"
+        letterSpacing="0.8"
+      >
+        GROWERS
+      </text>
+      <text
+        x="70"
+        y="59"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        fontSize="13"
+        fontWeight="800"
+        fill="var(--gn-text)"
+        letterSpacing="0.8"
+      >
+        NOTEBOOK
+      </text>
     </svg>
   );
 }

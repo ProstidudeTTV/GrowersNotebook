@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PostComposer } from "@/components/post-composer";
 import { apiFetch } from "@/lib/api-public";
@@ -11,6 +11,11 @@ import {
   bodyHtmlIsSubmittable,
   emptyTipTapDoc,
 } from "@/lib/post-draft-validation";
+import {
+  clearPostComposerDraft,
+  loadPostComposerDraft,
+  savePostComposerDraft,
+} from "@/lib/post-composer-draft-storage";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 
@@ -31,6 +36,32 @@ export function NewPostForm({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const saved = loadPostComposerDraft();
+    if (!saved) return;
+    setTitle(saved.title);
+    setAttachedMedia(saved.media);
+    setDraft({ json: saved.bodyJson, html: saved.bodyHtml });
+    setEditorKey((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    savePostComposerDraft({
+      title,
+      media: attachedMedia,
+      bodyJson: draft?.json ?? { ...emptyTipTapDoc },
+      bodyHtml: draft?.html ?? "",
+      communitySlug: null,
+      expanded: true,
+      updatedAt: Date.now(),
+    });
+  }, [title, attachedMedia, draft]);
 
   const setDraftStable = useCallback(
     (p: { json: Record<string, unknown>; html: string }) => {
@@ -78,6 +109,7 @@ export function NewPostForm({
           ...(media.length ? { media } : {}),
         }),
       });
+      clearPostComposerDraft();
       toast.success("Post published!");
       router.push(`/p/${post.id}`);
       router.refresh();
@@ -98,6 +130,8 @@ export function NewPostForm({
         onMediaChange={setAttachedMedia}
         onMediaReady={onMediaReady}
         onDraftChange={setDraftStable}
+        initialJson={draft?.json}
+        editorKey={editorKey}
         disabled={loading}
         onError={setError}
         showTips

@@ -272,7 +272,11 @@ export default async function CommunityPage({
         {/* Main content column */}
         <div className="min-w-0">
           {/* Post composer */}
-          <PostComposerPrompt communitySlug={slug} />
+          <PostComposerPrompt
+            communitySlug={slug}
+            communityId={community.id}
+            communityName={community.name}
+          />
 
           {/* Sort controls */}
           <div className="mb-4 flex items-center gap-2">

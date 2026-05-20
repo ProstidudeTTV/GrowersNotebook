@@ -12,7 +12,7 @@ import {
 import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 import { createClient } from "@/lib/supabase/client";
-import { SiteLogoMark } from "@/components/site-logo-mark";
+import { SiteLogo } from "@/components/site-logo";
 
 export type SidebarCommunity = {
   id: string;
@@ -231,23 +231,11 @@ export function AppSidebar({
       <Link
         href={authed ? "/following" : "/"}
         onClick={afterNav}
-        className="group flex items-center gap-3 border-b border-[var(--gn-divide)] px-4 py-3.5 transition-opacity hover:opacity-90"
+        className="group flex flex-col gap-1 border-b border-[var(--gn-divide)] px-4 py-3.5 transition-opacity hover:opacity-90"
       >
-        {/* Logo mark with glow */}
-        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-          <span className="absolute inset-0 rounded-xl bg-[var(--gn-accent)]/15 blur-sm" />
-          <span className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--gn-accent)]/20 bg-[var(--gn-surface-raised)]">
-            <SiteLogoMark className="h-5 w-5" />
-          </span>
-        </span>
-        {/* Wordmark */}
-        <span className="min-w-0">
-          <span className="block text-[0.9rem] font-extrabold leading-none tracking-tight text-[var(--gn-text)]">
-            Growers Notebook
-          </span>
-          <span className="mt-0.5 block text-[0.6rem] font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
-            Grow · Share · Thrive
-          </span>
+        <SiteLogo className="h-11 w-auto max-w-[11.5rem] shrink-0" />
+        <span className="mt-0.5 block text-[0.6rem] font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
+          Grow · Share · Thrive
         </span>
       </Link>
 

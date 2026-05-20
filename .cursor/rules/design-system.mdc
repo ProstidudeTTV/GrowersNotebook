@@ -15,7 +15,7 @@ Growers Notebook is a **cannabis community social media ENGINE** — not a blog,
 
 - **Name:** Growers Notebook  
 - **Tagline:** Grow · Share · Thrive  
-- **Logo:** Notebook with leaf/plant SVG glyph (`SiteLogoMark` component) — green gradient, notebook + leaf icon  
+- **Logo:** GN monogram + wordmark (`SiteLogo` full, `SiteLogoMark` icon-only) — green leaf gradient, geometric G/N letterforms  
 - **Voice:** Warm, direct, grower-to-grower — never corporate or clinical
 
 ---
@@ -104,7 +104,7 @@ Growers Notebook is a **cannabis community social media ENGINE** — not a blog,
 - Composer: wrapped in `rounded-2xl bg-[var(--gn-surface-elevated)] p-4` — Facebook-style
 
 ### Sidebar Navigation
-- Logo: `SiteLogoMark` glyph + "Growers Notebook" wordmark + "Grow · Share · Thrive" tagline
+- Logo: `SiteLogo` (sidebar / desktop header) or `SiteLogoMark` (compact mobile) + "Grow · Share · Thrive" tagline in sidebar
 - Nav icons: colored chip `h-7 w-7 rounded-lg` behind each icon (green for home, orange for fire, sky for messages, etc.)
 - Community list: colored letter avatars from hash palette (never plain gray)
 - User footer: avatar + name + settings icon + sign out

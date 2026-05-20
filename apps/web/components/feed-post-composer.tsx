@@ -1,0 +1,401 @@
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { PostComposer } from "@/components/post-composer";
+import { apiFetch } from "@/lib/api-public";
+import type { PostMediaItem } from "@/lib/feed-post";
+import {
+  bodyHtmlIsSubmittable,
+  emptyTipTapDoc,
+} from "@/lib/post-draft-validation";
+import {
+  clearPostComposerDraft,
+  draftHasContent,
+  loadPostComposerDraft,
+  savePostComposerDraft,
+  type PostComposerDraft,
+} from "@/lib/post-composer-draft-storage";
+import { createClient } from "@/lib/supabase/client";
+import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+
+type JoinedCommunity = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+const AVATAR_COLORS = [
+  "bg-[var(--gn-accent)]",
+  "bg-violet-700",
+  "bg-amber-600",
+  "bg-teal-700",
+  "bg-rose-700",
+  "bg-blue-700",
+];
+
+function hashColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+/**
+ * Facebook-style inline feed composer: expands in place, persists draft in
+ * sessionStorage across navigation within the tab.
+ */
+export function FeedPostComposer({
+  communitySlug: lockedCommunitySlug,
+  communityId: lockedCommunityId,
+  communityName: lockedCommunityName,
+}: {
+  communitySlug?: string;
+  communityId?: string;
+  communityName?: string;
+}) {
+  const router = useRouter();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [joined, setJoined] = useState<JoinedCommunity[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const [title, setTitle] = useState("");
+  const [media, setMedia] = useState<PostMediaItem[]>([]);
+  const [draft, setDraft] = useState<{
+    json: Record<string, unknown>;
+    html: string;
+  } | null>(null);
+  const [communitySlug, setCommunitySlug] = useState<string | null>(
+    lockedCommunitySlug ?? null,
+  );
+  const [editorKey, setEditorKey] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const hydrated = useRef(false);
+
+  const effectiveSlug = lockedCommunitySlug ?? communitySlug;
+  const communityId = useMemo(() => {
+    if (lockedCommunityId) return lockedCommunityId;
+    if (!effectiveSlug) return undefined;
+    return joined.find((c) => c.slug === effectiveSlug)?.id;
+  }, [lockedCommunityId, effectiveSlug, joined]);
+
+  const communityLabel = useMemo(() => {
+    if (lockedCommunityName) return lockedCommunityName;
+    if (!effectiveSlug) return "Your profile";
+    return joined.find((c) => c.slug === effectiveSlug)?.name ?? effectiveSlug;
+  }, [lockedCommunityName, effectiveSlug, joined]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) {
+        setLoggedIn(false);
+        return;
+      }
+      setLoggedIn(true);
+      const meta = session.user.user_metadata as Record<string, unknown>;
+      setDisplayName((meta?.display_name as string) || null);
+      setAvatarUrl((meta?.avatar_url as string) || null);
+      const token = await getAccessTokenForApi(supabase);
+      if (token) {
+        try {
+          const list = await apiFetch<JoinedCommunity[]>(
+            "/communities/me/following",
+            { token },
+          );
+          setJoined(Array.isArray(list) ? list : []);
+        } catch {
+          setJoined([]);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const saved = loadPostComposerDraft();
+    if (!saved) return;
+    if (
+      lockedCommunitySlug &&
+      saved.communitySlug &&
+      saved.communitySlug !== lockedCommunitySlug
+    ) {
+      return;
+    }
+    setTitle(saved.title);
+    setMedia(saved.media);
+    setDraft({ json: saved.bodyJson, html: saved.bodyHtml });
+    setCommunitySlug(lockedCommunitySlug ?? saved.communitySlug);
+    setEditorKey((k) => k + 1);
+    if (saved.expanded || draftHasContent(saved)) {
+      setExpanded(true);
+    }
+  }, [lockedCommunitySlug]);
+
+  const persist = useCallback(
+    (patch: Partial<PostComposerDraft> & { expanded?: boolean }) => {
+      const next: PostComposerDraft = {
+        title: patch.title ?? title,
+        media: patch.media ?? media,
+        bodyJson: patch.bodyJson ?? draft?.json ?? { ...emptyTipTapDoc },
+        bodyHtml: patch.bodyHtml ?? draft?.html ?? "",
+        communitySlug: lockedCommunitySlug
+          ? lockedCommunitySlug
+          : patch.communitySlug !== undefined
+            ? patch.communitySlug
+            : communitySlug,
+        expanded: patch.expanded ?? expanded,
+        updatedAt: Date.now(),
+      };
+      savePostComposerDraft(next);
+    },
+    [title, media, draft, communitySlug, expanded, lockedCommunitySlug],
+  );
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    persist({});
+  }, [title, media, draft, communitySlug, expanded, persist]);
+
+  const expand = () => {
+    setExpanded(true);
+    persist({ expanded: true });
+  };
+
+  const collapse = () => {
+    setExpanded(false);
+    persist({ expanded: false });
+  };
+
+  const onMediaReady = useCallback((url: string, kind: "image" | "video") => {
+    setError(null);
+    setMedia((prev) => {
+      if (prev.some((m) => m.url === url)) return prev;
+      const next = [...prev, { url, type: kind }];
+      persist({ media: next });
+      return next;
+    });
+  }, [persist]);
+
+  const setDraftStable = useCallback(
+    (p: { json: Record<string, unknown>; html: string }) => {
+      setDraft(p);
+      persist({ bodyJson: p.json, bodyHtml: p.html });
+    },
+    [persist],
+  );
+
+  const submit = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const token = await getAccessTokenForApi(supabase);
+      if (!token) {
+        setError("Sign in to post.");
+        return;
+      }
+
+      const bodyHtml = draft?.html ?? "";
+      const bodyJson = draft?.json ?? { ...emptyTipTapDoc };
+
+      if (!bodyHtmlIsSubmittable(bodyHtml, media.length)) {
+        setError("Add a caption or at least one photo or video.");
+        return;
+      }
+
+      const post = await apiFetch<{ id: string }>("/posts", {
+        method: "POST",
+        token,
+        body: JSON.stringify({
+          ...(communityId ? { communityId } : {}),
+          ...(title.trim() ? { title: title.trim() } : {}),
+          bodyJson,
+          bodyHtml,
+          ...(media.length ? { media } : {}),
+        }),
+      });
+
+      clearPostComposerDraft();
+      setTitle("");
+      setMedia([]);
+      setDraft(null);
+      setEditorKey((k) => k + 1);
+      setExpanded(false);
+      toast.success("Post published!");
+      router.push(`/p/${post.id}`);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to publish");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initial = ((displayName ?? "G").charAt(0) || "G").toUpperCase();
+  const avatarBg = hashColor(displayName ?? "G");
+
+  if (!loggedIn) {
+    return (
+      <div className="mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3 shadow-[var(--gn-shadow-sm)]">
+        <div className="h-9 w-9 shrink-0 rounded-full bg-[var(--gn-surface-elevated)] ring-1 ring-[var(--gn-ring)]" />
+        <a
+          href="/login?next=/following"
+          className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-2 text-sm text-[var(--gn-text-muted)] transition hover:border-[var(--gn-accent)]/40 hover:text-[var(--gn-text)]"
+        >
+          Sign in to share your grow…
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={panelRef}
+      className="mb-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]"
+    >
+      <div className="flex items-center gap-3 border-b border-[var(--gn-divide)] p-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-[var(--gn-on-accent)] ring-2 ring-[var(--gn-surface-raised)] ${avatarBg}`}
+        >
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt=""
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+              sizes="40px"
+            />
+          ) : (
+            <span>{initial}</span>
+          )}
+        </div>
+        {!expanded ? (
+          <button
+            type="button"
+            onClick={expand}
+            className="flex-1 cursor-text rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-2.5 text-left text-sm text-[var(--gn-text-muted)] transition hover:border-[var(--gn-accent)]/40 hover:bg-[var(--gn-surface-elevated)]"
+          >
+            What&apos;s growing? Share photos, updates, or questions…
+          </button>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--gn-text)]">
+              Create post
+            </p>
+            <p className="text-xs text-[var(--gn-text-muted)]">
+              Posting to{" "}
+              <span className="font-medium text-[var(--gn-accent)]">
+                {communityLabel}
+              </span>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {expanded ? (
+        <div className="space-y-4 p-4 pt-3">
+          {!lockedCommunitySlug ? (
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+                Where to post
+              </span>
+              <select
+                className="gn-input w-full text-sm"
+                value={communitySlug ?? ""}
+                disabled={loading}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const slug = v === "" ? null : v;
+                  setCommunitySlug(slug);
+                  persist({ communitySlug: slug });
+                }}
+              >
+                <option value="">Your profile (followers&apos; feed)</option>
+                {joined.map((c) => (
+                  <option key={c.id} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <PostComposer
+            title={title}
+            onTitleChange={(v) => {
+              setTitle(v);
+              persist({ title: v });
+            }}
+            titleOptional
+            media={media}
+            onMediaChange={(items) => {
+              setMedia(items);
+              persist({ media: items });
+            }}
+            onMediaReady={onMediaReady}
+            initialJson={draft?.json}
+            editorKey={editorKey}
+            onDraftChange={setDraftStable}
+            disabled={loading}
+            onError={setError}
+          />
+
+          {error ? (
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--gn-divide)] pt-3">
+            <p className="text-xs text-[var(--gn-text-muted)]">
+              Draft saved while this tab is open
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={collapse}
+                className="rounded-full border border-[var(--gn-border)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+              >
+                Minimize
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void submit()}
+                className="rounded-full bg-[var(--gn-accent)] px-5 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-50"
+              >
+                {loading ? "Publishing…" : "Post"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex border-t border-[var(--gn-divide)]">
+          <button
+            type="button"
+            onClick={expand}
+            className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-accent)]"
+          >
+            <span aria-hidden>📷</span>
+            Photo / video
+          </button>
+          <div className="w-px bg-[var(--gn-divide)]" />
+          <button
+            type="button"
+            onClick={expand}
+            className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-accent)]"
+          >
+            <span aria-hidden>✏️</span>
+            Write update
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

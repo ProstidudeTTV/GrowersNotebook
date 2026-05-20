@@ -17,6 +17,13 @@ type MeProfile = {
   avatarUrl: string | null;
 };
 
+export type InitialAuthSession = {
+  userId: string | null;
+  email: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+};
+
 type AuthContextValue = {
   userId: string | null;
   email: string | null;
@@ -35,13 +42,25 @@ const AuthContext = createContext<AuthContextValue>({
   profileLoading: true,
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(true);
+export function AuthProvider({
+  children,
+  initial,
+}: {
+  children: ReactNode;
+  initial?: InitialAuthSession;
+}) {
+  const [userId, setUserId] = useState<string | null>(initial?.userId ?? null);
+  const [email, setEmail] = useState<string | null>(initial?.email ?? null);
+  const [displayName, setDisplayName] = useState<string | null>(
+    initial?.displayName ?? null,
+  );
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    initial?.avatarUrl ?? null,
+  );
+  const [loading, setLoading] = useState(!initial?.userId);
+  const [profileLoading, setProfileLoading] = useState(
+    Boolean(initial?.userId) && !initial?.displayName,
+  );
   const profileFetchSeq = useRef(0);
 
   const applyProfile = useCallback(async (token: string | null | undefined) => {

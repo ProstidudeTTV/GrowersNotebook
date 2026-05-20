@@ -20,6 +20,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { ADMIN_PROXY_PATH, adminAxios } from "@/lib/admin-axios";
 import { refineResourcesForStaffRole } from "./admin-refine-resources";
 import { AdminStaffProvider, useAdminStaff } from "./admin-staff-context";
+import { AdminStaffStatusBar } from "@/components/admin/admin-staff-status-bar";
 import { GrowersAdminSider } from "./growers-admin-sider";
 
 function useSiteDarkMode() {
@@ -135,6 +136,7 @@ function RefineAdminShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <div className="admin-refine-surface px-4 py-5 sm:px-6 md:py-7">
+            <AdminStaffStatusBar />
             {children}
           </div>
         </ThemedLayout>

@@ -77,4 +77,55 @@ export class StorageService {
       throw new BadRequestException('Could not upload processed file.');
     }
   }
+
+  /**
+   * Site staff community icon/banner upload (service role — avoids browser RLS on
+   * `community-banners`). Caller must enforce admin role before invoking.
+   */
+  async uploadCommunityBannerImage(
+    communitySlug: string,
+    body: Buffer,
+    contentType: string,
+    originalName: string,
+    kind: 'banner' | 'icon',
+  ): Promise<string> {
+    if (!contentType.startsWith('image/')) {
+      throw new BadRequestException(
+        'Image must be JPEG, PNG, WebP, or GIF.',
+      );
+    }
+    const slug = communitySlug.trim().toLowerCase();
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      throw new BadRequestException('Invalid community slug.');
+    }
+    if (body.length > 5 * 1024 * 1024) {
+      throw new BadRequestException('Image must be 5 MB or smaller.');
+    }
+    const client = this.adminClient();
+    if (!client) {
+      throw new ServiceUnavailableException('Storage is not configured.');
+    }
+    const safeName = (originalName || 'image')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 120);
+    const fileName =
+      kind === 'icon'
+        ? `icon-${Date.now()}-${safeName}`
+        : `${Date.now()}-${safeName}`;
+    const path = `${slug}/${fileName}`;
+    const { error } = await client.storage
+      .from('community-banners')
+      .upload(path, body, { contentType, upsert: false });
+    if (error) {
+      throw new BadRequestException(
+        error.message || 'Could not upload community image.',
+      );
+    }
+    const { data } = client.storage.from('community-banners').getPublicUrl(path);
+    const publicUrl = data.publicUrl;
+    if (!publicUrl?.startsWith('https://')) {
+      throw new BadRequestException('Could not resolve public URL for upload.');
+    }
+    return publicUrl;
+  }
 }

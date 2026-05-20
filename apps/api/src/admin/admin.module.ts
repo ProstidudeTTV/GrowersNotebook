@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { MediaModule } from '../media/media.module';
 import { AdminCatalogController } from '../catalog/admin-catalog.controller';
 import { CatalogModule } from '../catalog/catalog.module';
 import { NameBlocklistModule } from '../name-blocklist/name-blocklist.module';
@@ -24,6 +25,7 @@ import { AdminController } from './admin.controller';
     CommentsModule,
     NameBlocklistModule,
     CatalogModule,
+    MediaModule,
   ],
   controllers: [AdminController, AdminCatalogController],
 })

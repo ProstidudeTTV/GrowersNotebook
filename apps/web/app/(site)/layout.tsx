@@ -20,12 +20,15 @@ export default async function SiteLayout({
 }) {
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
   const pathname =
     (await headers()).get("x-gn-pathname") ?? "";
   const maintenanceExempt =
     pathname.startsWith("/login") || pathname.startsWith("/auth/");
 
-  const [publicSiteConfig, followingRows, hotRes, profileRole] =
+  const [publicSiteConfig, followingRows, hotRes, profileMe] =
     await Promise.all([
     getPublicSiteConfigCached(),
     token
@@ -65,15 +68,19 @@ export default async function SiteLayout({
       items: [] as Array<{ id: string; title: string; score: number }>,
     })),
     token
-      ? apiFetch<{ role: string }>("/profiles/me", {
+      ? apiFetch<{
+          id: string;
+          role: string;
+          displayName: string | null;
+          avatarUrl: string | null;
+        }>("/profiles/me", {
           token,
           timeoutMs: SIDEBAR_API_TIMEOUT_MS,
-        })
-          .then((p) => p.role)
-          .catch(() => null as string | null)
-      : Promise.resolve(null as string | null),
+        }).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
+  const profileRole = profileMe?.role ?? null;
   const staff =
     profileRole === "admin" || profileRole === "moderator";
   if (
@@ -107,7 +114,16 @@ export default async function SiteLayout({
         publicSiteConfig.mailingListNudgeRecommended ?? false
       }
     >
-      <SiteProviders>{children}</SiteProviders>
+      <SiteProviders
+        initialAuth={{
+          userId: profileMe?.id ?? authUser?.id ?? null,
+          email: authUser?.email ?? null,
+          displayName: profileMe?.displayName?.trim() || null,
+          avatarUrl: profileMe?.avatarUrl?.trim() || null,
+        }}
+      >
+        {children}
+      </SiteProviders>
     </SiteChrome>
   );
 }

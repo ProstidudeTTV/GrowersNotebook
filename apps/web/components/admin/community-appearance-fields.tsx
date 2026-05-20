@@ -15,8 +15,7 @@ import {
   COMMUNITY_ICON_KEYS,
   COMMUNITY_ICON_LABELS,
 } from "@/lib/community-icon-keys";
-import { uploadCommunityBanner } from "@/lib/upload-community-banner";
-import { uploadCommunityIcon } from "@/lib/upload-community-icon";
+import { uploadCommunityImageAdmin } from "@/lib/upload-community-image-admin";
 import { useRef, useState } from "react";
 
 type Props = {
@@ -55,7 +54,7 @@ export function CommunityAppearanceFields({
     if (!slug) return;
     setBannerUploading(true);
     try {
-      const url = await uploadCommunityBanner(file, slug);
+      const url = await uploadCommunityImageAdmin(file, slug, "banner");
       form.setFieldValue("bannerUrl", url);
       void message.success("Banner uploaded.");
     } catch (e) {
@@ -74,7 +73,7 @@ export function CommunityAppearanceFields({
     if (!slug) return;
     setIconUploading(true);
     try {
-      const url = await uploadCommunityIcon(file, slug);
+      const url = await uploadCommunityImageAdmin(file, slug, "icon");
       form.setFieldValue("iconUrl", url);
       void message.success("Community icon uploaded.");
     } catch (e) {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,8 +12,12 @@ import {
   Post,
   Query,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CreateNameBlocklistBulkDto } from './dto/create-name-blocklist-bulk.dto';
 import { CreateNameBlocklistDto } from './dto/create-name-blocklist.dto';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
@@ -36,6 +41,7 @@ import { AdminDismissReportDto } from './dto/admin-dismiss-report.dto';
 import { AdminRemovePostDto } from './dto/admin-remove-post.dto';
 import { CreateCommunityDto } from '../communities/dto/create-community.dto';
 import { UpdateCommunityAdminDto } from '../communities/dto/update-community-admin.dto';
+import { StorageService } from '../media/storage.service';
 
 function range(skip: string | undefined, take: string | undefined) {
   const start = Math.max(0, Number(skip ?? 0));
@@ -55,7 +61,56 @@ export class AdminController {
     private readonly comments: CommentsService,
     private readonly nameBlocklist: NameBlocklistService,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
   ) {}
+
+  /** Staff session check for admin UI (role + display name). */
+  @Get('me')
+  @Roles('admin', 'moderator')
+  async staffMe(@CurrentUser() user: JwtUser) {
+    const row = await this.profiles.findById(user.sub);
+    if (!row) throw new NotFoundException();
+    return {
+      id: row.id,
+      role: row.role,
+      displayName: row.displayName,
+      isAdmin: row.role === 'admin',
+      isModerator: row.role === 'moderator',
+    };
+  }
+
+  @Post('communities/upload-image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadCommunityImage(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('slug') slug: string | undefined,
+    @Body('kind') kind: string | undefined,
+  ) {
+    const buf = file?.buffer;
+    if (!buf?.length) {
+      throw new BadRequestException('Choose an image file to upload.');
+    }
+    const normalizedKind = kind === 'icon' ? 'icon' : kind === 'banner' ? 'banner' : null;
+    if (!normalizedKind) {
+      throw new BadRequestException('kind must be banner or icon.');
+    }
+    if (!slug?.trim()) {
+      throw new BadRequestException('Community slug is required.');
+    }
+    const url = await this.storage.uploadCommunityBannerImage(
+      slug.trim(),
+      buf,
+      file?.mimetype || 'application/octet-stream',
+      file?.originalname || 'image',
+      normalizedKind,
+    );
+    return { url };
+  }
 
   @Get('audit-events')
   async listAuditEvents(

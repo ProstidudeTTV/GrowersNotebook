@@ -12,7 +12,7 @@ import {
 import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 import { createClient } from "@/lib/supabase/client";
-import { SiteBrand } from "@/components/site-brand";
+import { useAuth } from "@/components/auth-provider";
 
 export type SidebarCommunity = {
   id: string;
@@ -151,9 +151,16 @@ export function AppSidebar({
 }) {
   const [communitiesOpen, setCommunitiesOpen] = useState(true);
   const [recentCommunities, setRecentCommunities] = useState<RecentCommunity[]>([]);
-  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const {
+    userId,
+    email,
+    displayName: userDisplayName,
+    avatarUrl: userAvatarUrl,
+  } = useAuth();
+  const profileLabel =
+    userDisplayName?.trim() ||
+    email?.split("@")[0]?.trim() ||
+    "Grower";
 
   const pathname = usePathname();
   const afterNav = useCallback(() => { onNavigate?.(); }, [onNavigate]);
@@ -201,20 +208,6 @@ export function AppSidebar({
     };
   }, []);
 
-  useEffect(() => {
-    if (!authed) return;
-    const supabase = createClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      setUserId(session.user.id);
-      const meta = session.user.user_metadata as Record<string, string> | undefined;
-      setUserDisplayName(
-        meta?.display_name?.trim() || meta?.full_name?.trim() || session.user.email?.split("@")[0] || "Grower",
-      );
-      setUserAvatarUrl(meta?.avatar_url ?? null);
-    });
-  }, [authed]);
-
   const handleSignOut = useCallback(async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -227,18 +220,9 @@ export function AppSidebar({
       style={{ background: "var(--gn-sidebar-bg, var(--gn-surface-muted))" }}
       aria-label="Site navigation"
     >
-      {/* ── Brand ────────────────────────────────────────────────────── */}
-      <Link
-        href={authed ? "/following" : "/"}
-        onClick={afterNav}
-        className="group flex items-center border-b border-[var(--gn-divide)] px-3 py-3 transition-opacity hover:opacity-90"
-      >
-        <SiteBrand size="md" className="w-full" />
-      </Link>
-
       {/* ── Create Post CTA ──────────────────────────────────────────── */}
       {authed ? (
-        <div className="px-3 pt-3">
+        <div className="shrink-0 border-b border-[var(--gn-divide)] px-3 py-3">
           <Link
             href="/new-post"
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-[0_2px_12px_-3px_var(--gn-accent)] transition-all hover:brightness-110 active:scale-[0.97]"
@@ -464,13 +448,13 @@ export function AppSidebar({
                   <img src={userAvatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-[var(--gn-accent)]/20 text-sm font-bold text-[var(--gn-accent)]">
-                    {(userDisplayName ?? "G").charAt(0).toUpperCase()}
+                    {profileLabel.charAt(0).toUpperCase()}
                   </span>
                 )}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold text-[var(--gn-text)]">
-                  {userDisplayName ?? "Grower"}
+                  {profileLabel}
                 </span>
                 <span className="block text-[0.6rem] text-[var(--gn-text-muted)]">View profile</span>
               </span>

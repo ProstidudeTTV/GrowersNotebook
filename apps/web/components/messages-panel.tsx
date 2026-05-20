@@ -327,6 +327,10 @@ export function MessagesPanel() {
     setGifItems([]);
   }, []);
 
+  const fetchToken = useCallback(async () => {
+    return getAccessTokenForApi(supabase);
+  }, [supabase]);
+
   useEffect(() => {
     if (!showNewMessageModal || debouncedUserSearch.length < 2) {
       setUserSearchResults([]);
@@ -337,9 +341,11 @@ export function MessagesPanel() {
     setUserSearchLoading(true);
     (async () => {
       try {
+        const token = await fetchToken();
+        if (!token || cancelled) return;
         const data = await apiFetch<ProfileSearchResponse>(
           `/profiles/search?q=${encodeURIComponent(debouncedUserSearch)}&pageSize=8&page=1`,
-          { method: "GET" },
+          { method: "GET", token },
         );
         if (!cancelled) setUserSearchResults(data.items);
       } catch {
@@ -351,7 +357,7 @@ export function MessagesPanel() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedUserSearch, showNewMessageModal]);
+  }, [debouncedUserSearch, showNewMessageModal, fetchToken]);
 
   const startConversation = useCallback(
     (user: ProfileSearchItem) => {
@@ -362,10 +368,6 @@ export function MessagesPanel() {
     },
     [router],
   );
-
-  const fetchToken = useCallback(async () => {
-    return getAccessTokenForApi(supabase);
-  }, [supabase]);
 
   const loadThreads = useCallback(async () => {
     const token = await fetchToken();

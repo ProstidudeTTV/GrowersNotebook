@@ -92,16 +92,20 @@ export function SiteChrome({
   /** Mobile drawer `--gn-mobile-drawer-top` assumes header only; extend when MOTD / banner sit under header. */
   const mobileTopExtraRem =
     (motdText?.trim() ? 2 : 0) + (ann ? 3.5 : 0);
+  const stickyTopRem = 3.5 + mobileTopExtraRem;
 
   return (
     <div
       className="flex min-h-screen flex-col"
       style={
-        mobileTopExtraRem > 0
-          ? {
-              ["--gn-mobile-drawer-top" as string]: `calc(${7.75 + mobileTopExtraRem}rem + env(safe-area-inset-top, 0px))`,
-            }
-          : undefined
+        {
+          ["--gn-sidebar-sticky-top" as string]: `${stickyTopRem}rem`,
+          ...(mobileTopExtraRem > 0
+            ? {
+                ["--gn-mobile-drawer-top" as string]: `calc(${7.75 + mobileTopExtraRem}rem + env(safe-area-inset-top, 0px))`,
+              }
+            : {}),
+        }
       }
     >
       <AppVersionRefresh />
@@ -140,7 +144,7 @@ export function SiteChrome({
         </div>
       ) : null}
 
-      <div className="relative z-0 flex min-h-0 flex-1">
+      <div className="relative z-0 flex min-h-0 flex-1 items-start">
         <button
           type="button"
           className={`fixed inset-0 z-40 bg-black/45 transition-opacity duration-200 ease-out lg:hidden ${
@@ -160,7 +164,7 @@ export function SiteChrome({
           authed={authed}
           onNavigate={() => setMobileOpen(false)}
           className={
-            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-[var(--gn-rail-width)] max-w-[85vw] border-r transition-transform duration-200 ease-out lg:static lg:top-auto lg:z-auto lg:h-auto lg:max-h-none lg:max-w-none lg:border-r lg:transition-none " +
+            "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-[var(--gn-rail-width)] max-w-[85vw] shrink-0 border-r transition-transform duration-200 ease-out lg:sticky lg:top-[var(--gn-sidebar-sticky-top)] lg:z-auto lg:h-[calc(100dvh-var(--gn-sidebar-sticky-top))] lg:max-h-[calc(100dvh-var(--gn-sidebar-sticky-top))] lg:max-w-none lg:overflow-hidden lg:border-r lg:transition-none " +
             (mobileOpen
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0")

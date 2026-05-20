@@ -85,6 +85,10 @@ export function defaultSiteMetadata(): Metadata {
       title: title.default,
       description,
     },
+    icons: {
+      icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+      apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    },
     robots: {
       index: true,
       follow: true,

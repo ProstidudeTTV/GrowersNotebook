@@ -24,6 +24,7 @@ import {
   parseVoteMutationResponse,
   talliesAfterVoteClick,
 } from "@/lib/vote-ui";
+import { MediaPreviewGrid } from "@/components/media-preview-grid";
 import { collectYouTubeIdsForFeedPreview } from "@/lib/youtube-embed";
 
 function timeAgo(iso: string): string {
@@ -232,10 +233,9 @@ export function FeedPostCard({
     return ids[0] ?? null;
   }, [local.bodyHtml, local.excerpt]);
 
-  const media = local.media?.[0];
-  // A1.2 — split media into hero image vs. video
-  const heroImage = media?.type === "image" ? media : null;
-  const videoMedia = media?.type === "video" ? media : null;
+  const imageUrls =
+    local.media?.filter((m) => m.type === "image").map((m) => m.url) ?? [];
+  const videoMedia = local.media?.find((m) => m.type === "video") ?? null;
 
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
@@ -253,6 +253,7 @@ export function FeedPostCard({
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
         <CommunityIcon
           iconKey={pinnedCommunity.iconKey}
+          iconUrl={null}
           nameFallback={pinnedCommunity.name}
           slugFallback={pinnedCommunity.slug}
           frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs"
@@ -269,6 +270,7 @@ export function FeedPostCard({
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
         <CommunityIcon
           iconKey={community.iconKey ?? null}
+          iconUrl={community.iconUrl ?? null}
           nameFallback={community.name}
           slugFallback={community.slug}
           frameClassName="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--gn-surface-elevated)] text-xs"
@@ -322,8 +324,8 @@ export function FeedPostCard({
         </span>
       )}
 
-      {/* Hero image — edge-to-edge, no padding, photo is the star */}
-      {heroImage ? (
+      {/* Hero media — single full-bleed image or multi-image grid */}
+      {imageUrls.length > 0 ? (
         <div
           className="cursor-pointer"
           onClick={(e) => {
@@ -332,15 +334,21 @@ export function FeedPostCard({
             openPost();
           }}
         >
-          <div className="relative h-56 w-full sm:h-72 md:h-80">
-            <Image
-              src={heroImage.url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
-            />
-          </div>
+          {imageUrls.length === 1 ? (
+            <div className="relative h-56 w-full sm:h-72 md:h-80">
+              <Image
+                src={imageUrls[0]!}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
+              />
+            </div>
+          ) : (
+            <div className="p-2 sm:p-3">
+              <MediaPreviewGrid urls={imageUrls} className="w-full" />
+            </div>
+          )}
         </div>
       ) : youTubePreviewId ? (
         <div

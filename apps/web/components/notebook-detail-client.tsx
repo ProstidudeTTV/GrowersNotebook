@@ -44,6 +44,7 @@ import {
 import { DmImageLightbox } from "@/components/dm-image-lightbox";
 import { PostMediaCarousel } from "@/components/post-media-carousel";
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
+import { EntityCoverBanner } from "@/components/entity-cover-banner";
 import { UserProfileLink } from "@/components/user-profile-link";
 import type { PostMediaItem } from "@/lib/feed-post";
 import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
@@ -119,6 +120,8 @@ export type NotebookDetailPayload = {
   upvotes: number;
   downvotes: number;
   viewerVote: number | null;
+  coverImageUrl?: string | null;
+  weekCount?: number;
   owner: { id: string; displayName: string | null; avatarUrl: string | null };
   weeks: Week[];
 };
@@ -653,8 +656,23 @@ export function NotebookDetailClient({
     await reloadNotebook();
   };
 
+  const coverUrl =
+    nb.coverImageUrl?.trim() ||
+    [...(nb.weeks ?? [])]
+      .sort((a, b) => b.weekIndex - a.weekIndex)
+      .flatMap((w) => w.imageUrls ?? [])
+      .find((u) => /^https:\/\//i.test(u.trim())) ||
+    null;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-5">
+    <div className="mx-auto max-w-6xl">
+      <EntityCoverBanner
+        imageUrl={coverUrl}
+        alt={nb.title}
+        variant="hero"
+        priority
+      />
+      <div className="px-4 py-5">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
         <aside className="order-2 hidden h-fit w-[11.25rem] shrink-0 lg:order-1 lg:block lg:self-start lg:sticky lg:top-24 lg:z-20 lg:max-h-[calc(min(100dvh,100vh)-6.5rem)] xl:top-28">
           <div className="max-h-[min(calc(100dvh-7rem),calc(100vh-7rem))] overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-2.5 [-ms-overflow-style:none] [scrollbar-width:thin]">
@@ -1341,6 +1359,7 @@ export function NotebookDetailClient({
             </>
           ) : null}
         </div>
+      </div>
       </div>
     </div>
   );

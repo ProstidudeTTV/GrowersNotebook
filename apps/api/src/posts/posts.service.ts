@@ -193,6 +193,7 @@ export class PostsService {
         communitySlug: communities.slug,
         communityName: communities.name,
         communityIconKey: communities.iconKey,
+        communityIconUrl: communities.iconUrl,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
         viewerVote: viewerVoteSelect(query.viewerId),
@@ -220,6 +221,7 @@ export class PostsService {
                 slug: r.communitySlug,
                 name: r.communityName ?? '',
                 iconKey: r.communityIconKey ?? null,
+                iconUrl: r.communityIconUrl ?? null,
               }
             : null;
         return {
@@ -288,6 +290,7 @@ export class PostsService {
           slug: communities.slug,
           name: communities.name,
           iconKey: communities.iconKey,
+          iconUrl: communities.iconUrl,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -319,6 +322,7 @@ export class PostsService {
                 slug: r.community.slug,
                 name: r.community.name,
                 iconKey: r.community.iconKey ?? null,
+                iconUrl: r.community.iconUrl ?? null,
               }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
@@ -416,6 +420,7 @@ export class PostsService {
           slug: communities.slug,
           name: communities.name,
           iconKey: communities.iconKey,
+          iconUrl: communities.iconUrl,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -447,6 +452,7 @@ export class PostsService {
                 slug: r.community.slug,
                 name: r.community.name,
                 iconKey: r.community.iconKey ?? null,
+                iconUrl: r.community.iconUrl ?? null,
               }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;
@@ -747,6 +753,7 @@ export class PostsService {
         communitySlug: communities.slug,
         communityName: communities.name,
         communityIconKey: communities.iconKey,
+        communityIconUrl: communities.iconUrl,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
         upvotes: posts.upvoteCount,
@@ -788,6 +795,7 @@ export class PostsService {
             slug: row.communitySlug,
             name: row.communityName ?? '',
             iconKey: row.communityIconKey ?? null,
+            iconUrl: row.communityIconUrl ?? null,
           }
         : null;
     return {
@@ -973,6 +981,7 @@ export class PostsService {
           slug: communities.slug,
           name: communities.name,
           iconKey: communities.iconKey,
+          iconUrl: communities.iconUrl,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -1005,6 +1014,7 @@ export class PostsService {
                 slug: r.community.slug,
                 name: r.community.name,
                 iconKey: r.community.iconKey ?? null,
+                iconUrl: r.community.iconUrl ?? null,
               }
             : null;
         return {
@@ -1062,6 +1072,7 @@ export class PostsService {
           slug: communities.slug,
           name: communities.name,
           iconKey: communities.iconKey,
+          iconUrl: communities.iconUrl,
         },
         authorSeeds: authorSeedsExpr.as('author_seeds'),
         score: posts.voteScore,
@@ -1093,6 +1104,7 @@ export class PostsService {
                 slug: r.community.slug,
                 name: r.community.name,
                 iconKey: r.community.iconKey ?? null,
+                iconUrl: r.community.iconUrl ?? null,
               }
             : null;
         const authorFollowing = followedAuthors?.has(r.author.id) ?? false;

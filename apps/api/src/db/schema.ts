@@ -96,6 +96,8 @@ export const profiles = pgTable('profiles', {
   /** Short intro / bio shown on the public profile. */
   description: text('description'),
   avatarUrl: text('avatar_url'),
+  /** Wide cover image (Supabase `avatars` bucket, `{id}/banner-*.jpg`). */
+  bannerUrl: text('banner_url'),
   /** When false, only the account owner can load the public profile and activity feeds. */
   profilePublic: boolean('profile_public').notNull().default(true),
   /** When false, non-owners do not see seed count or grower tier on the profile card. */

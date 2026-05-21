@@ -469,8 +469,9 @@ export class NotebooksService {
       .offset(skip)
       .limit(pageSize);
 
+    const items = rows.map((r) => this.mapListRow(r));
     return {
-      items: rows.map((r) => this.mapListRow(r)),
+      items: await this.enrichListItems(items),
       total: Number(total),
       page,
       pageSize,
@@ -526,12 +527,61 @@ export class NotebooksService {
       .offset(skip)
       .limit(pageSize);
 
+    const items = rows.map((r) => this.mapListRow(r));
     return {
-      items: rows.map((r) => this.mapListRow(r)),
+      items: await this.enrichListItems(items),
       total: Number(total),
       page,
       pageSize,
     };
+  }
+
+  /** Latest week photo + week count for directory cards (GrowDiaries-style). */
+  private async enrichListItems<
+    T extends { id: string },
+  >(items: T[]): Promise<(T & { coverImageUrl: string | null; weekCount: number })[]> {
+    if (items.length === 0) return [];
+    const ids = items.map((i) => i.id);
+    const db = getDb();
+    const weekRows = await db
+      .select({
+        notebookId: notebookWeeks.notebookId,
+        weekIndex: notebookWeeks.weekIndex,
+        imageUrls: notebookWeeks.imageUrls,
+      })
+      .from(notebookWeeks)
+      .where(inArray(notebookWeeks.notebookId, ids))
+      .orderBy(desc(notebookWeeks.weekIndex));
+
+    const countRows = await db
+      .select({
+        notebookId: notebookWeeks.notebookId,
+        weekCount: count(),
+      })
+      .from(notebookWeeks)
+      .where(inArray(notebookWeeks.notebookId, ids))
+      .groupBy(notebookWeeks.notebookId);
+
+    const coverByNotebook = new Map<string, string>();
+    for (const w of weekRows) {
+      if (coverByNotebook.has(w.notebookId)) continue;
+      const urls = Array.isArray(w.imageUrls) ? w.imageUrls : [];
+      const first = urls.find(
+        (u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()),
+      );
+      if (first) coverByNotebook.set(w.notebookId, first.trim());
+    }
+
+    const countByNotebook = new Map<string, number>();
+    for (const c of countRows) {
+      countByNotebook.set(c.notebookId, Number(c.weekCount));
+    }
+
+    return items.map((item) => ({
+      ...item,
+      coverImageUrl: coverByNotebook.get(item.id) ?? null,
+      weekCount: countByNotebook.get(item.id) ?? 0,
+    }));
   }
 
   private mapListRow(r: {
@@ -650,6 +700,18 @@ export class NotebooksService {
 
     const waterByWeek = await this.loadWateringsForWeekIds(weekIds);
 
+    let coverImageUrl: string | null = null;
+    for (const w of [...weeks].sort((a, b) => b.weekIndex - a.weekIndex)) {
+      const urls = Array.isArray(w.imageUrls) ? (w.imageUrls as string[]) : [];
+      const first = urls.find(
+        (u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()),
+      );
+      if (first) {
+        coverImageUrl = first.trim();
+        break;
+      }
+    }
+
     return {
       ...row.notebook,
       owner: row.owner,
@@ -664,6 +726,8 @@ export class NotebooksService {
       upvotes: Number(row.upvotes),
       downvotes: Number(row.downvotes),
       viewerVote: row.viewerVote,
+      coverImageUrl,
+      weekCount: weeks.length,
       weeks: weeks.map((w) => ({
         ...this.mapWeekRowForApi(w),
         imageUrls: Array.isArray(w.imageUrls)

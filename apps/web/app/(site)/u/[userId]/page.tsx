@@ -8,6 +8,7 @@ import type { FeedPost } from "@/lib/feed-post";
 import type { ProfileCommentRow } from "@/components/profile-comments-list";
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import type { NotebookDirectoryItem } from "@/components/notebook-directory-card";
 
 type PublicProfile = {
   id: string;
@@ -37,15 +38,7 @@ type CommentsResponse = {
   pageSize: number;
 };
 
-type ProfileNotebookRow = {
-  id: string;
-  title: string;
-  status: string;
-  updatedAt: string;
-  customStrainLabel: string | null;
-  strain: { slug: string; name: string | null } | null;
-  score: number;
-};
+type ProfileNotebookRow = NotebookDirectoryItem;
 
 type NotebooksResponse = {
   items: ProfileNotebookRow[];

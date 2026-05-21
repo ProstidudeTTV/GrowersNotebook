@@ -151,18 +151,35 @@ function IconForKey({
 /** Renders the curated community glyph, or a letter fallback when `iconKey` is missing or unknown. */
 export function CommunityIcon({
   iconKey,
+  iconUrl,
   nameFallback,
   slugFallback,
   className = "",
   frameClassName = "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]",
 }: {
   iconKey?: string | null;
+  /** Admin-uploaded square icon URL (takes precedence over `iconKey`). */
+  iconUrl?: string | null;
   /** Used for initial-letter avatar when no icon */
   nameFallback: string;
   slugFallback: string;
   className?: string;
   frameClassName?: string;
 }) {
+  const url = iconUrl?.trim();
+  if (url) {
+    return (
+      <span className={`${frameClassName} overflow-hidden p-0`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt=""
+          className={`h-full w-full object-cover ${className}`}
+        />
+      </span>
+    );
+  }
+
   const trimmed = iconKey?.trim() ?? "";
   const key = trimmed && isCommunityIconKey(trimmed) ? trimmed : undefined;
   const label = nameFallback.trim() || slugFallback.trim();

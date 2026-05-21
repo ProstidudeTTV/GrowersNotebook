@@ -145,6 +145,7 @@ export class ProfilesService {
       displayName: row.displayName,
       description: row.description,
       avatarUrl: row.avatarUrl,
+      bannerUrl: row.bannerUrl,
       profilePublic: row.profilePublic,
       showGrowerStatsPublic: row.showGrowerStatsPublic,
       showNotebooksPublic: row.showNotebooksPublic,
@@ -267,6 +268,7 @@ export class ProfilesService {
       displayName: row.displayName,
       description: row.description,
       avatarUrl: row.avatarUrl,
+      bannerUrl: row.bannerUrl,
       createdAt: row.createdAt,
       seeds: statsPublic ? seeds : null,
       growerLevel: statsPublic ? growerLevelFromSeeds(seeds) : null,
@@ -301,6 +303,13 @@ export class ProfilesService {
         throw new BadRequestException('Invalid avatar URL.');
       }
       patch.avatarUrl = !v ? null : v;
+    }
+    if (dto.bannerUrl !== undefined) {
+      const v = dto.bannerUrl?.trim();
+      if (v && !isAllowedAvatarPublicUrl(this.config, v)) {
+        throw new BadRequestException('Invalid banner URL.');
+      }
+      patch.bannerUrl = !v ? null : v;
     }
     if (dto.profilePublic !== undefined) {
       patch.profilePublic = dto.profilePublic;

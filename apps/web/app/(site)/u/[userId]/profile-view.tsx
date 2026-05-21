@@ -12,6 +12,10 @@ import { EntityCoverBanner } from "@/components/entity-cover-banner";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import {
+  NotebookDirectoryCard,
+  type NotebookDirectoryItem,
+} from "@/components/notebook-directory-card";
+import {
   ProfileCommentsList,
   type ProfileCommentRow,
 } from "@/components/profile-comments-list";
@@ -53,15 +57,7 @@ type CommentsResponse = {
   pageSize: number;
 };
 
-type ProfileNotebookRow = {
-  id: string;
-  title: string;
-  status: string;
-  updatedAt: string;
-  customStrainLabel: string | null;
-  strain: { slug: string; name: string | null } | null;
-  score: number;
-};
+type ProfileNotebookRow = NotebookDirectoryItem;
 
 type NotebooksResponse = {
   items: ProfileNotebookRow[];
@@ -754,54 +750,12 @@ export function ProfileView({
                       <p className="text-sm text-[var(--gn-text-muted)]">No notebooks yet.</p>
                     </div>
                   ) : (
-                    <ul className="space-y-3">
-                      {notebookItems.map((n) => {
-                        const strainLabel =
-                          n.strain?.name?.trim() ||
-                          n.customStrainLabel?.trim() ||
-                          null;
-                        const statusColors: Record<string, string> = {
-                          active: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-                          harvest: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-                          complete: "text-sky-400 bg-sky-500/10 border-sky-500/20",
-                        };
-                        const statusClass =
-                          statusColors[n.status?.toLowerCase() ?? ""] ??
-                          "text-[var(--gn-text-muted)] bg-[var(--gn-surface-muted)] border-[var(--gn-border)]";
-                        return (
-                          <li key={n.id}>
-                            <Link
-                              href={`/notebooks/${encodeURIComponent(n.id)}`}
-                              className="flex items-start gap-4 rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-4 transition hover:border-[var(--gn-accent)]/30 hover:shadow-[var(--gn-shadow-md)]"
-                            >
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-accent)]/10 text-xl">
-                                📔
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className="font-semibold text-[var(--gn-text)] leading-snug">
-                                    {n.title}
-                                  </p>
-                                  <span
-                                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold capitalize ${statusClass}`}
-                                  >
-                                    {n.status}
-                                  </span>
-                                </div>
-                                {strainLabel ? (
-                                  <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                                    🌿 {strainLabel}
-                                  </p>
-                                ) : null}
-                                <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
-                                  Score {n.score} · updated{" "}
-                                  {new Date(n.updatedAt).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {notebookItems.map((n) => (
+                        <li key={n.id}>
+                          <NotebookDirectoryCard n={n} />
+                        </li>
+                      ))}
                     </ul>
                   )}
                   {notebooksTotal > notebooksPageSize ? (

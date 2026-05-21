@@ -26,6 +26,12 @@ export class UpdateProfileDto {
   avatarUrl?: string | null;
 
   @IsOptional()
+  @ValidateIf((_, v) => v != null && String(v).trim() !== '')
+  @IsUrl({ require_protocol: true, protocols: ['https'] })
+  @MaxLength(2048)
+  bannerUrl?: string | null;
+
+  @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   profilePublic?: boolean;

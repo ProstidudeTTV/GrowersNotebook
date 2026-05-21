@@ -1,32 +1,25 @@
-import Image from "next/image";
 import Link from "next/link";
 import { CommunityIcon } from "@/components/community-icon";
+import { HotWeekSidebarPanel } from "@/components/hot-week-sidebar-panel";
 import { apiFetch } from "@/lib/api-public";
 import { fetchGrowersOnlineCount } from "@/lib/growers-online";
 import { createClient } from "@/lib/supabase/server";
-
-type HotPost = {
-  id: string;
-  title: string;
-  score?: number | null;
-  media?: { url: string; type: string }[] | null;
-  author?: { displayName?: string | null } | null;
-  community?: { slug?: string | null; name?: string | null } | null;
-};
 
 type Community = {
   id: string;
   slug: string;
   name: string;
   iconKey?: string | null;
+  iconUrl?: string | null;
+  bannerUrl?: string | null;
   memberCount?: number | null;
 };
 
-async function fetchHotPosts(): Promise<HotPost[]> {
+async function fetchHotPosts() {
   try {
-    const res = await apiFetch<{ items: HotPost[] }>(
-      "/posts/hot/week?pageSize=5",
-    );
+    const res = await apiFetch<{
+      items: import("@/components/hot-week-sidebar-panel").HotWeekPost[];
+    }>("/posts/hot/week?pageSize=5");
     return res.items ?? [];
   } catch {
     return [];
@@ -83,69 +76,7 @@ export async function FeedSidebar({
         </div>
       </div>
 
-      {/* Hot this week */}
-      {!hideHotPosts && hotPosts.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]">
-          <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
-              🔥 Hot this week
-            </h2>
-            <Link
-              href="/hot"
-              className="text-xs text-[var(--gn-accent)] hover:underline"
-            >
-              See all
-            </Link>
-          </div>
-          <div className="px-3 py-2 space-y-1">
-            {hotPosts.map((p, i) => {
-              const thumb = p.media?.find((m) => m.type === "image");
-              return (
-                <Link
-                  key={p.id}
-                  href={`/p/${p.id}`}
-                  className="flex items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-[var(--gn-surface-hover)]"
-                >
-                  {/* Rank circle */}
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)]/15 text-xs font-bold text-[var(--gn-accent)]">
-                    {i + 1}
-                  </span>
-                  {/* Thumbnail */}
-                  {thumb ? (
-                    <Image
-                      src={thumb.url}
-                      alt=""
-                      width={56}
-                      height={56}
-                      className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                      sizes="56px"
-                    />
-                  ) : (
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--gn-surface-elevated)] text-2xl">
-                      🌿
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-xs font-semibold leading-snug text-[var(--gn-text)]">
-                      {p.title}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs text-[var(--gn-text-muted)]">
-                        {p.community?.name ?? "Community"}
-                      </span>
-                      {p.score != null ? (
-                        <span className="rounded-full bg-[var(--gn-accent)]/10 px-1.5 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
-                          {p.score} pts
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      {!hideHotPosts ? <HotWeekSidebarPanel posts={hotPosts} /> : null}
 
       {/* Community spotlight */}
       {spotlightCommunity ? (
@@ -159,6 +90,7 @@ export async function FeedSidebar({
             <div className="flex items-center gap-3">
               <CommunityIcon
                 iconKey={spotlightCommunity.iconKey}
+                iconUrl={spotlightCommunity.iconUrl}
                 nameFallback={spotlightCommunity.name}
                 slugFallback={spotlightCommunity.slug}
                 frameClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold ring-1 ring-[var(--gn-ring)]"
@@ -211,6 +143,7 @@ export async function FeedSidebar({
               >
                 <CommunityIcon
                   iconKey={c.iconKey}
+                  iconUrl={c.iconUrl}
                   nameFallback={c.name}
                   slugFallback={c.slug}
                   frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ring-1 ring-[var(--gn-ring)]"
@@ -254,6 +187,7 @@ export async function FeedSidebar({
               >
                 <CommunityIcon
                   iconKey={c.iconKey}
+                  iconUrl={c.iconUrl}
                   nameFallback={c.name}
                   slugFallback={c.slug}
                   frameClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ring-1 ring-[var(--gn-ring)]"

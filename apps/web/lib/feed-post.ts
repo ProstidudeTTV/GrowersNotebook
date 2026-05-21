@@ -24,7 +24,12 @@ export type FeedPost = {
   /** Comment count (community / list feeds). */
   commentCount?: number;
   /** Community context; omitted or null for profile posts. */
-  community?: { slug: string; name: string; iconKey?: string | null } | null;
+  community?: {
+    slug: string;
+    name: string;
+    iconKey?: string | null;
+    iconUrl?: string | null;
+  } | null;
   /** Present when this post is pinned in its community feed (moderation). */
   pinnedAt?: string | null;
   /** Optional grow/strain tag displayed as a pill on the card. */

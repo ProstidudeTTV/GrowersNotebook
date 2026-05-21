@@ -1,23 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  NotebookDirectoryCard,
+  type NotebookDirectoryItem,
+} from "@/components/notebook-directory-card";
 import { apiFetch } from "@/lib/api-public";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
-
-type NotebookListItem = {
-  id: string;
-  title: string;
-  status: string;
-  updatedAt: string;
-  customStrainLabel: string | null;
-  owner: {
-    id: string;
-    displayName: string | null;
-    avatarUrl?: string | null;
-  };
-  strain: { slug: string; name: string | null } | null;
-  breeder: { slug: string; name: string } | null;
-  score: number;
-};
 
 export const metadata: Metadata = {
   title: `Notebooks · ${SITE_NAME}`,
@@ -49,59 +37,6 @@ function buildListQuery(opts: {
   if (opts.breeder?.trim()) p.set("breeder", opts.breeder.trim());
   if (opts.strainSlug?.trim()) p.set("strainSlug", opts.strainSlug.trim());
   return p.toString();
-}
-
-function formatListDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function statusPillClass(status: string): string {
-  switch (status) {
-    case "active":
-      return "bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] text-[var(--gn-accent)] ring-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)]";
-    case "completed":
-      return "bg-sky-500/15 text-sky-200 ring-sky-500/25";
-    case "archived":
-      return "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] ring-[var(--gn-divide)]";
-    default:
-      return "bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)] ring-[var(--gn-divide)]";
-  }
-}
-
-function NotebookCardAvatar({
-  avatarUrl,
-  displayName,
-}: {
-  avatarUrl?: string | null;
-  displayName: string | null;
-}) {
-  const label = (displayName ?? "Grower").trim();
-  const initial = label.charAt(0).toUpperCase() || "?";
-  const frame =
-    "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--gn-surface-elevated)] text-sm font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]";
-  if (avatarUrl?.trim()) {
-    return (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img
-        src={avatarUrl.trim()}
-        alt=""
-        className={`${frame} object-cover`}
-      />
-    );
-  }
-  return (
-    <span className={frame} aria-hidden>
-      {initial}
-    </span>
-  );
 }
 
 export default async function NotebooksDirectoryPage({
@@ -141,26 +76,26 @@ export default async function NotebooksDirectoryPage({
   const listTimeout = 12_000;
   const [listRes, hotByVotes, hotRecent] = await Promise.all([
     apiFetch<{
-      items: NotebookListItem[];
+      items: NotebookDirectoryItem[];
       total: number;
       page: number;
       pageSize: number;
     }>(`/notebooks?${qs}`, {
       timeoutMs: listTimeout,
     }).catch(() => null),
-    apiFetch<{ items: NotebookListItem[] }>(
+    apiFetch<{ items: NotebookDirectoryItem[] }>(
       "/notebooks?page=1&pageSize=3&sort=hot",
       { timeoutMs: listTimeout },
-    ).catch(() => ({ items: [] as NotebookListItem[] })),
-    apiFetch<{ items: NotebookListItem[] }>(
+    ).catch(() => ({ items: [] as NotebookDirectoryItem[] })),
+    apiFetch<{ items: NotebookDirectoryItem[] }>(
       "/notebooks?page=1&pageSize=3",
       { timeoutMs: listTimeout },
-    ).catch(() => ({ items: [] as NotebookListItem[] })),
+    ).catch(() => ({ items: [] as NotebookDirectoryItem[] })),
   ]);
 
   const data =
     listRes ?? { items: [], total: 0, page: 1, pageSize: 24 };
-  const hotNotebooks: NotebookListItem[] =
+  const hotNotebooks: NotebookDirectoryItem[] =
     hotByVotes.items.length > 0 ? hotByVotes.items : hotRecent.items;
   const hotNotebooksSource: "votes" | "recent" =
     hotByVotes.items.length > 0 ? "votes" : "recent";
@@ -291,96 +226,11 @@ export default async function NotebooksDirectoryPage({
           </form>
 
           <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {data.items.map((n) => {
-              const growerName =
-                n.owner.displayName?.trim() || "Grower";
-              const strainLabel =
-                n.strain?.name?.trim() ||
-                n.customStrainLabel?.trim() ||
-                null;
-              const notebookHref = `/notebooks/${encodeURIComponent(n.id)}`;
-              const statusStrip =
-                n.status === "active"
-                  ? "bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_70%,transparent)] to-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-surface-elevated))]"
-                  : n.status === "completed"
-                    ? "bg-gradient-to-r from-sky-600/70 to-blue-800/30"
-                    : "bg-gradient-to-r from-gray-600/50 to-gray-800/20";
-              return (
-                <li key={n.id} className="min-h-0">
-                  <article className="group relative flex h-full min-h-[11rem] flex-col overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-divide))] hover:shadow-[var(--gn-shadow-md)]">
-                    {/* Status accent strip */}
-                    <div className={`h-1 w-full ${statusStrip}`} />
-                    <Link
-                      href={notebookHref}
-                      className="absolute inset-0 z-10 rounded-2xl outline-none ring-[var(--gn-accent)] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
-                      aria-label={`Open notebook: ${n.title}`}
-                    />
-                    <div className="pointer-events-none relative z-20 flex gap-3 p-4 sm:gap-4">
-                      <NotebookCardAvatar
-                        avatarUrl={n.owner.avatarUrl}
-                        displayName={n.owner.displayName}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="text-base font-bold text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)]">
-                            {n.title}
-                          </p>
-                          <span
-                            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ${statusPillClass(n.status)}`}
-                          >
-                            {n.status}
-                          </span>
-                        </div>
-                        <p className="mt-1.5 text-sm text-[var(--gn-text-muted)]">
-                          <Link
-                            href={`/u/${encodeURIComponent(n.owner.id)}`}
-                            className="relative z-30 inline pointer-events-auto font-medium text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
-                          >
-                            {growerName}
-                          </Link>
-                          {strainLabel ? (
-                            <>
-                              {" · "}
-                              {n.strain?.slug ? (
-                                <Link
-                                  href={`/strains/${encodeURIComponent(n.strain.slug)}`}
-                                  className="relative z-30 inline pointer-events-auto text-[var(--gn-accent)] hover:underline"
-                                >
-                                  {strainLabel}
-                                </Link>
-                              ) : (
-                                <span className="text-[var(--gn-text)]">{strainLabel}</span>
-                              )}
-                            </>
-                          ) : null}
-                          {n.breeder ? (
-                            <>
-                              {" · "}
-                              <Link
-                                href={`/breeders/${encodeURIComponent(n.breeder.slug)}`}
-                                className="relative z-30 inline pointer-events-auto hover:text-[var(--gn-accent)] hover:underline"
-                              >
-                                {n.breeder.name}
-                              </Link>
-                            </>
-                          ) : null}
-                        </p>
-                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--gn-text-muted)]">
-                          <span className="inline-flex items-center gap-1">
-                            <span>Score</span>
-                            <span className="font-semibold text-[var(--gn-text)]">
-                              {n.score}
-                            </span>
-                          </span>
-                          <span className="hidden sm:inline">·</span>
-                          <span>Updated {formatListDate(n.updatedAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
+            {data.items.map((n) => (
+              <li key={n.id} className="min-h-0">
+                <NotebookDirectoryCard n={n} />
+              </li>
+            ))}
           </ul>
 
           {data.total > data.pageSize ? (
@@ -436,54 +286,13 @@ export default async function NotebooksDirectoryPage({
                 : "Recently updated—vote ranking unavailable on this build."}
             </p>
             {hotNotebooks.length > 0 ? (
-              <div className="space-y-3">
-                {hotNotebooks.map((n, i) => {
-                  const growerName =
-                    n.owner.displayName?.trim() || "Grower";
-                  const href = `/notebooks/${encodeURIComponent(n.id)}`;
-                  return (
-                    <article
-                      key={n.id}
-                      className="group relative overflow-hidden rounded-xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5"
-                    >
-                      <Link
-                        href={href}
-                        className="absolute inset-0 z-10 rounded-xl outline-none ring-[var(--gn-accent)] ring-offset-2 ring-offset-[var(--gn-page-mid)] focus-visible:ring-2"
-                        aria-label={`Open notebook: ${n.title}`}
-                      />
-                      <div className="relative z-20 flex gap-2.5 pointer-events-none">
-                        <NotebookCardAvatar
-                          avatarUrl={n.owner.avatarUrl}
-                          displayName={n.owner.displayName}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
-                            #{i + 1}
-                          </p>
-                          <p className="text-sm font-semibold leading-snug text-[var(--gn-text)] transition-colors group-hover:text-[var(--gn-accent)] line-clamp-2">
-                            {n.title}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--gn-text-muted)] truncate">
-                            {growerName}
-                          </p>
-                          <p className="mt-1.5 text-xs text-[var(--gn-text-muted)]">
-                            Score{" "}
-                            <span className="font-medium text-[var(--gn-text)]">
-                              {n.score}
-                            </span>
-                            <span className="mx-1">·</span>
-                            <span
-                              className={`inline rounded-full px-1.5 py-0.5 capitalize ring-1 ${statusPillClass(n.status)}`}
-                            >
-                              {n.status}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+              <ul className="grid gap-3">
+                {hotNotebooks.map((n) => (
+                  <li key={n.id}>
+                    <NotebookDirectoryCard n={n} />
+                  </li>
+                ))}
+              </ul>
             ) : (
               <p className="text-sm text-[var(--gn-text-muted)]">
                 No public notebooks yet.

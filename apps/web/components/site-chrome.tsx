@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/components/auth-provider";
 import { clientApiJson } from "@/lib/client-api";
 import type { PublicSiteConfigPayload } from "@/lib/public-site-config";
+import { isViewportLockedPath } from "@/lib/viewport-scroll";
 
 function MenuIcon({ className }: { className?: string }) {
   return (
@@ -58,8 +59,8 @@ export function SiteChrome({
   );
   const [ann, setAnn] = useState(announcement);
   const pathname = usePathname();
-  const hideFooter =
-    pathname === "/messages" || pathname.startsWith("/messages/");
+  const viewportLocked = isViewportLockedPath(pathname);
+  const hideFooter = viewportLocked;
 
   useEffect(() => {
     setFollowed(initialFollowedCommunities);
@@ -97,7 +98,7 @@ export function SiteChrome({
 
   return (
     <div
-      className="flex min-h-screen flex-col"
+      className="gn-site-chrome flex h-dvh max-h-dvh flex-col overflow-hidden"
       style={
         {
           ["--gn-sidebar-sticky-top" as string]: `${stickyTopRem}rem`,
@@ -172,8 +173,20 @@ export function SiteChrome({
           }
         />
 
-        <div className="gn-app-canvas flex min-h-full min-w-0 flex-1 flex-col overflow-x-auto overflow-y-visible">
-          <div className="flex min-h-full flex-1 flex-col">{children}</div>
+        <div
+          className={`gn-app-canvas flex min-h-0 min-w-0 flex-1 flex-col ${
+            viewportLocked
+              ? "overflow-hidden"
+              : "overflow-y-auto overflow-x-hidden overscroll-contain"
+          }`}
+        >
+          <div
+            className={`flex min-h-0 flex-1 flex-col ${
+              viewportLocked ? "h-full min-h-0 overflow-hidden" : ""
+            }`}
+          >
+            {children}
+          </div>
           {hideFooter ? null : <SiteFooter />}
         </div>
       </div>

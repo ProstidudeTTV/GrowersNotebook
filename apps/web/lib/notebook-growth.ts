@@ -1,11 +1,7 @@
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
+import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth-labels";
 
-export const GROWTH_STAGE_LABEL: Record<string, string> = {
-  germination: "Germination",
-  vegetation: "Vegetation",
-  flower: "Flower",
-  harvest: "Harvest",
-};
+export { GROWTH_STAGE_LABEL };
 
 export function maxNotebookWeekIndex(
   weeks: NotebookDetailPayload["weeks"],

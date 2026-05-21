@@ -566,10 +566,12 @@ export class NotebooksService {
     for (const w of weekRows) {
       if (coverByNotebook.has(w.notebookId)) continue;
       const urls = Array.isArray(w.imageUrls) ? w.imageUrls : [];
-      const first = urls.find(
-        (u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()),
-      );
-      if (first) coverByNotebook.set(w.notebookId, first.trim());
+      const httpsUrls = urls
+        .filter((u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()))
+        .map((u) => (u as string).trim());
+      // Highest week first (desc weekIndex); within that week use last upload in the array.
+      const pick = httpsUrls[httpsUrls.length - 1];
+      if (pick) coverByNotebook.set(w.notebookId, pick);
     }
 
     const countByNotebook = new Map<string, number>();
@@ -703,11 +705,12 @@ export class NotebooksService {
     let coverImageUrl: string | null = null;
     for (const w of [...weeks].sort((a, b) => b.weekIndex - a.weekIndex)) {
       const urls = Array.isArray(w.imageUrls) ? (w.imageUrls as string[]) : [];
-      const first = urls.find(
-        (u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()),
-      );
-      if (first) {
-        coverImageUrl = first.trim();
+      const httpsUrls = urls
+        .filter((u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()))
+        .map((u) => u.trim());
+      const pick = httpsUrls[httpsUrls.length - 1];
+      if (pick) {
+        coverImageUrl = pick;
         break;
       }
     }

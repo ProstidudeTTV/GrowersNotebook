@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   alternates: { canonical: canonicalPath("/notebooks") },
 };
 
+/** Filters use `searchParams` — must not be statically prerendered. */
+export const dynamic = "force-dynamic";
+
 function buildListQuery(opts: {
   page: number;
   pageSize: number;
@@ -95,10 +98,12 @@ export default async function NotebooksDirectoryPage({
 
   const data =
     listRes ?? { items: [], total: 0, page: 1, pageSize: 24 };
+  const hotVoteItems = Array.isArray(hotByVotes.items) ? hotByVotes.items : [];
+  const hotRecentItems = Array.isArray(hotRecent.items) ? hotRecent.items : [];
   const hotNotebooks: NotebookDirectoryItem[] =
-    hotByVotes.items.length > 0 ? hotByVotes.items : hotRecent.items;
+    hotVoteItems.length > 0 ? hotVoteItems : hotRecentItems;
   const hotNotebooksSource: "votes" | "recent" =
-    hotByVotes.items.length > 0 ? "votes" : "recent";
+    hotVoteItems.length > 0 ? "votes" : "recent";
 
   const filterBase = {
     status,
@@ -262,9 +267,19 @@ export default async function NotebooksDirectoryPage({
             </div>
           ) : null}
 
-          {data.items.length === 0 ? (
+          {listRes === null ? (
+            <p className="mt-8 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-4 text-sm text-[var(--gn-text-muted)]">
+              Could not load notebooks right now. Refresh the page or try again
+              in a moment.
+            </p>
+          ) : null}
+
+          {listRes !== null && data.items.length === 0 ? (
             <p className="mt-8 text-sm text-[var(--gn-text-muted)]">
-              No notebooks match these filters. Try widening search or{" "}
+              {status
+                ? `No ${status} notebooks match these filters.`
+                : "No notebooks match these filters."}{" "}
+              Try widening search or{" "}
               <Link href="/notebooks" className="text-[var(--gn-accent)] hover:underline">
                 clear filters
               </Link>

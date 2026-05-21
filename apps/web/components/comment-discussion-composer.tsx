@@ -357,7 +357,7 @@ export function CommentDiscussionComposer({
           ) : null}
           {gifItems.length > 0 ? (
             <div
-              className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-[min(52vh,440px)] overflow-y-scroll overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
+              className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-40 overflow-y-auto overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
               role="region"
               aria-label="Giphy search results"
             >

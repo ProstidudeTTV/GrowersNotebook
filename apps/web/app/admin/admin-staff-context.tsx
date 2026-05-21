@@ -1,9 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { adminAxios } from "@/lib/admin-axios";
 import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import { createClient } from "@/lib/supabase/client";
+import { isStaffRole } from "@/lib/staff-role";
 
 export type StaffRole = "admin" | "moderator" | "owner";
 
@@ -42,6 +44,7 @@ export function AdminStaffProvider({
   children: React.ReactNode;
   initial?: InitialStaffSession;
 }) {
+  const router = useRouter();
   const [role, setRole] = useState<StaffRole | null>(initial?.role ?? null);
   const [userId, setUserId] = useState<string | null>(initial?.userId ?? null);
   const [displayName, setDisplayName] = useState<string | null>(
@@ -89,18 +92,14 @@ export function AdminStaffProvider({
           setUserId(res.data.id);
           setDisplayName(res.data.displayName?.trim() || null);
           setStorageConfigured(res.data.storageConfigured ?? null);
-          if (
-            res.data.role === "admin" ||
-            res.data.role === "moderator" ||
-            res.data.role === "owner"
-          ) {
+          if (isStaffRole(res.data.role)) {
             setRole(res.data.role);
             setError(null);
+            setLoading(false);
           } else {
-            setRole(null);
-            setError(`Your account role is "${res.data.role}", not staff.`);
+            router.replace("/snag");
+            return;
           }
-          setLoading(false);
         }
       } catch (e) {
         if (!cancelled) {

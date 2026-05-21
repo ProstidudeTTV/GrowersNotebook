@@ -1019,15 +1019,13 @@ export function MessagesPanel() {
         </div>
       ) : null}
 
-      {/* Two-panel layout — mobile cross-fades between list and thread */}
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+      {/* Two-panel messenger — one scroll per column; row layout on desktop */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
 
         {/* Left: conversation list */}
-        <div
-          className={`flex shrink-0 flex-col border-[var(--gn-divide)] transition-opacity duration-200 ease-out lg:transition-none ${
-            activeThreadId
-              ? "pointer-events-none absolute inset-0 z-0 w-full opacity-0 lg:pointer-events-auto lg:static lg:z-auto lg:flex lg:w-80 lg:border-r lg:opacity-100"
-              : "relative z-10 w-full opacity-100 lg:w-80 lg:border-r"
+        <aside
+          className={`flex min-h-0 flex-col border-[var(--gn-divide)] lg:border-r ${
+            activeThreadId ? "hidden lg:flex" : "flex"
           }`}
         >
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
@@ -1056,7 +1054,7 @@ export function MessagesPanel() {
             </button>
           </div>
 
-          <ul className="flex-1 overflow-y-auto">
+          <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {threads.length === 0 ? (
               <li className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
                 <span
@@ -1155,14 +1153,12 @@ export function MessagesPanel() {
               })
             )}
           </ul>
-        </div>
+        </aside>
 
         {/* Right: active conversation */}
-        <div
-          className={`flex min-h-0 flex-1 flex-col overflow-hidden transition-opacity duration-200 ease-out lg:transition-none ${
-            activeThreadId
-              ? "relative z-10 opacity-100"
-              : "pointer-events-none absolute inset-0 z-0 opacity-0 lg:pointer-events-auto lg:static lg:z-auto lg:opacity-100"
+        <section
+          className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${
+            activeThreadId ? "flex" : "hidden lg:flex"
           }`}
         >
           {/* Chat header */}
@@ -1232,8 +1228,9 @@ export function MessagesPanel() {
           <div
             ref={timelineRef}
             onScroll={onTimelineScroll}
-            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-[var(--gn-surface-muted)] p-4"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
           >
+            <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 py-4">
             {!activeThreadId ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div
@@ -1371,10 +1368,12 @@ export function MessagesPanel() {
                 )}
               </>
             )}
+            </div>
           </div>
 
-          {/* Compose area */}
-          <div className="max-h-[min(50dvh,28rem)] shrink-0 overflow-y-auto border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-4">
+          {/* Compose area — fixed footer; only the GIF list scrolls internally */}
+          <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3">
+            <div className="mx-auto w-full max-w-2xl">
             <input
               id={dmAttachInputId}
               type="file"
@@ -1532,7 +1531,7 @@ export function MessagesPanel() {
                 ) : null}
                 {gifItems.length > 0 ? (
                   <div
-                    className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-[min(52vh,440px)] overflow-y-scroll overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
+                    className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-40 overflow-y-auto overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
                     role="region"
                     aria-label="Giphy search results"
                   >
@@ -1688,8 +1687,9 @@ export function MessagesPanel() {
                 encryption).
               </div>
             </details>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

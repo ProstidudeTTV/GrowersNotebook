@@ -16,15 +16,7 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div
-      className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
-      style={{
-        height:
-          "calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
-        maxHeight:
-          "calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
-      }}
-    >
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
       <h1 className="sr-only">Messages</h1>
       <Suspense
         fallback={

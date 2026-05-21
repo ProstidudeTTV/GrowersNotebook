@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth";
+import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth-labels";
 
 export type NotebookDirectoryItem = {
   id: string;

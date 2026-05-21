@@ -98,6 +98,12 @@ html:not(.dark) body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+body:has(.gn-site-chrome) {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
 /* Light mode prose tokens — use warm text on cream surfaces */
 html:not(.dark) .prose.gn-card-subtle,
 html:not(.dark) .gn-post-content-flow .prose {

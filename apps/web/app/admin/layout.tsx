@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { isStaffRole, type StaffRole } from "@/lib/staff-role";
 import { RefineAdminLayout } from "./refine-admin-layout";
 
 export default async function AdminRootLayout({
@@ -44,12 +45,8 @@ export default async function AdminRootLayout({
     role: string;
     displayName: string | null;
   };
-  if (
-    profile.role !== "admin" &&
-    profile.role !== "moderator" &&
-    profile.role !== "owner"
-  ) {
-    redirect("/?admin_error=not_staff");
+  if (!isStaffRole(profile.role)) {
+    redirect("/snag");
   }
 
   return (
@@ -57,7 +54,7 @@ export default async function AdminRootLayout({
       initialStaff={{
         userId: profile.id || user.id,
         displayName: profile.displayName,
-        role: profile.role as "admin" | "moderator" | "owner",
+        role: profile.role as StaffRole,
       }}
     >
       {children}

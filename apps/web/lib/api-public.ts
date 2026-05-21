@@ -9,6 +9,8 @@ function apiRootForFetch(): string {
   if (typeof window !== "undefined") {
     return `${window.location.origin}/api/gn-proxy`.replace(/\/+$/, "");
   }
+  const internal = process.env.INTERNAL_API_URL?.trim();
+  if (internal) return internal.replace(/\/+$/, "");
   return getPublicApiUrl().replace(/\/+$/, "");
 }
 
@@ -25,7 +27,12 @@ export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { token?: string | null; timeoutMs?: number | null },
 ): Promise<T> {
-  const apiRoot = apiRootForFetch();
+  let apiRoot: string;
+  try {
+    apiRoot = apiRootForFetch();
+  } catch (e) {
+    return Promise.reject(e);
+  }
   const url = `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");

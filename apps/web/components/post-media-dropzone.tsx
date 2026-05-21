@@ -4,6 +4,7 @@ import { useCallback, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
+import { MAX_POST_MEDIA } from "@/lib/post-draft-validation";
 import {
   isProcessablePostImage,
   isProcessablePostVideo,
@@ -15,12 +16,15 @@ type PostMediaDropzoneProps = {
   disabled?: boolean;
   onMediaReady: (url: string, kind: "image" | "video") => void;
   onError?: (message: string) => void;
+  /** hero = full dropzone; compact = bar under single preview; tile = grid add cell */
+  size?: "hero" | "compact" | "tile";
 };
 
 export function PostMediaDropzone({
   disabled,
   onMediaReady,
   onError,
+  size = "hero",
 }: PostMediaDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
@@ -127,13 +131,21 @@ export function PostMediaDropzone({
     inputRef.current?.click();
   }, [busy, disabled]);
 
+  const sizeClasses =
+    size === "tile"
+      ? "relative flex aspect-[4/3] min-h-[120px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-2 py-3 sm:aspect-video"
+      : size === "compact"
+        ? "relative flex min-h-[52px] cursor-pointer flex-row items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3"
+        : "relative flex min-h-[220px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-8 sm:min-h-[240px]";
+
   return (
     <div
       role="button"
       tabIndex={disabled || busy ? -1 : 0}
       aria-label="Upload images or video. Choose files or drag and drop media."
       className={[
-        "relative flex min-h-[168px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 py-6 transition select-none",
+        sizeClasses,
+        "transition select-none",
         dragOver
           ? "border-[var(--gn-accent)] bg-[color-mix(in_srgb,var(--gn-accent)_12%,var(--gn-surface-muted))]"
           : "border-[var(--gn-ring)] bg-[var(--gn-surface-muted)] hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-ring))]",
@@ -171,31 +183,57 @@ export function PostMediaDropzone({
         disabled={disabled || busy}
         onChange={onPick}
       />
-      <div className="pointer-events-none flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]">
+      <div
+        className={
+          size === "tile"
+            ? "pointer-events-none flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]"
+            : "pointer-events-none flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gn-surface-elevated)] text-[var(--gn-accent)] ring-1 ring-[var(--gn-ring)]"
+        }
+      >
         <svg
-          width="24"
-          height="24"
+          width={size === "tile" ? 20 : 24}
+          height={size === "tile" ? 20 : 24}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.75"
           aria-hidden
         >
-          <path d="M12 16V8" strokeLinecap="round" />
-          <path d="M8 12l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
-          <path
-            d="M4 16.5V18a1.5 1.5 0 001.5 1.5h13A1.5 1.5 0 0020 18v-1.5"
-            strokeLinecap="round"
-          />
+          {size === "tile" ? (
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+          ) : (
+            <>
+              <path d="M12 16V8" strokeLinecap="round" />
+              <path d="M8 12l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M4 16.5V18a1.5 1.5 0 001.5 1.5h13A1.5 1.5 0 0020 18v-1.5"
+                strokeLinecap="round"
+              />
+            </>
+          )}
         </svg>
       </div>
-      <p className="pointer-events-none text-center text-sm font-medium text-[var(--gn-text)]">
-        {busy ? "Uploading…" : "Tap to choose or drag and drop media"}
+      <p
+        className={
+          size === "tile"
+            ? "pointer-events-none text-center text-xs font-semibold text-[var(--gn-accent)]"
+            : "pointer-events-none text-center text-sm font-medium text-[var(--gn-text)]"
+        }
+      >
+        {busy
+          ? "Uploading…"
+          : size === "tile"
+            ? "Add"
+            : size === "compact"
+              ? "Add more photos or video"
+              : "Add grow photos or video"}
       </p>
-      <p className="pointer-events-none text-center text-xs text-[var(--gn-text-muted)]">
-        Images up to 8 MB · Videos up to 50 MB · Multiple files · Shown below your
-        text, not inside the editor
-      </p>
+      {size === "hero" ? (
+        <p className="pointer-events-none text-center text-xs text-[var(--gn-text-muted)]">
+          Drag and drop or tap · JPEG, PNG, WebP, GIF · MP4, WebM, MOV · up to{" "}
+          {MAX_POST_MEDIA} files
+        </p>
+      ) : null}
     </div>
   );
 }

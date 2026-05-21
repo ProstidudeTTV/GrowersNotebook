@@ -295,13 +295,12 @@ export function FeedPostComposer({
     <>
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-[110] flex min-h-0 flex-col bg-black lg:flex-row"
+        className="fixed inset-0 z-[110] flex min-h-0 flex-col items-center justify-center bg-[color-mix(in_srgb,var(--gn-page-mid)_88%,transparent)] p-0 backdrop-blur-sm sm:p-4"
         role="dialog"
         aria-modal="true"
         aria-label="Create post"
       >
-        <div className="hidden min-h-0 flex-1 bg-black lg:block" aria-hidden />
-        <div className="flex min-h-0 w-full max-h-dvh flex-col overflow-hidden bg-[var(--gn-surface-raised)] shadow-2xl lg:max-w-2xl lg:shrink-0">
+        <div className="flex min-h-0 max-h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-md)] sm:max-h-[min(92dvh,900px)] sm:rounded-2xl">
           <div className="flex items-center gap-3 border-b border-[var(--gn-divide)] px-4 py-3">
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-[var(--gn-on-accent)] ${avatarBg}`}
@@ -388,9 +387,9 @@ export function FeedPostComposer({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--gn-divide)] px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)]/50 px-4 py-3">
             <p className="text-xs text-[var(--gn-text-muted)]">
-              Draft is kept on this page only
+              Draft stays in this tab until you post
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -418,7 +417,6 @@ export function FeedPostComposer({
             </div>
           </div>
         </div>
-        <div className="hidden min-h-0 flex-1 bg-black lg:block" aria-hidden />
       </div>
 
       <PostComposerLeaveDialog

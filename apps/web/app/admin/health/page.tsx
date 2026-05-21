@@ -70,7 +70,9 @@ export default async function AdminHealthPage() {
 
   const envInfo = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ? "set" : "MISSING",
-    INTERNAL_API_URL: process.env.INTERNAL_API_URL ? "set" : "not set (optional)",
+    INTERNAL_API_URL: process.env.INTERNAL_API_URL
+      ? "set (server-side API base for gn-proxy / admin fetches)"
+      : "not set — falls back to NEXT_PUBLIC_API_URL",
   };
 
   const storageConfigured = me.ok ? me.data.storageConfigured : null;
@@ -95,6 +97,15 @@ export default async function AdminHealthPage() {
             </div>
           ))}
         </dl>
+        <p className="mt-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+          <strong className="text-[var(--gn-text)]">INTERNAL_API_URL</strong> is the
+          Nest API base URL the Next.js server uses for{" "}
+          <code className="font-mono">/api/gn-proxy</code> and admin server fetches.
+          On Render it is usually the same as{" "}
+          <code className="font-mono">NEXT_PUBLIC_API_URL</code> (
+          <code className="font-mono">https://growers-notebook-api.onrender.com</code>
+          ). Browsers never see it; only server-side code does.
+        </p>
       </section>
 
       <section className="rounded-2xl border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] p-5">

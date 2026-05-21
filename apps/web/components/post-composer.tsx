@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { PostComposerMediaStage } from "@/components/post-composer-media-stage";
 import { PostEditor } from "@/components/post-editor";
-import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import type { PostMediaItem } from "@/lib/feed-post";
-import { MAX_POST_MEDIA, TITLE_MAX_LEN } from "@/lib/post-draft-validation";
+import { TITLE_MAX_LEN } from "@/lib/post-draft-validation";
 import { collectYouTubeIdsFromHtml } from "@/lib/youtube-embed";
 
 export function PostComposer({
@@ -46,79 +46,18 @@ export function PostComposer({
 
   const youtubePreviewIds = collectYouTubeIdsFromHtml(captionHtml);
 
-  const removeMedia = (idx: number) => {
-    onMediaChange(media.filter((_, i) => i !== idx));
-  };
-
   return (
-    <div className="space-y-5">
-      {showTips ? (
-        <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3 text-sm text-[var(--gn-text-muted)]">
-          <p className="mb-1 font-medium text-[var(--gn-text)]">
-            Good posts include:
-          </p>
-          <ul className="list-inside list-disc space-y-0.5 text-xs">
-            <li>A photo or video of your grow</li>
-            <li>Details in the caption — strain, week, issues you face</li>
-            <li>An optional title when it helps people click</li>
-          </ul>
-        </div>
-      ) : null}
+    <div className="space-y-6">
+      <PostComposerMediaStage
+        media={media}
+        onMediaChange={onMediaChange}
+        onMediaReady={onMediaReady}
+        disabled={disabled}
+        onError={onError}
+      />
 
-      <section>
-        <span className="block text-sm font-medium text-[var(--gn-text)]">
-          Photos &amp; video
-        </span>
-        <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
-          Add media first — it shows at the top of your post.
-        </p>
-        <div className="mt-2">
-          <PostMediaDropzone
-            disabled={disabled}
-            onMediaReady={onMediaReady}
-            onError={(msg) => onError?.(msg)}
-          />
-          {media.length > 0 ? (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {media.map((m, idx) => (
-                <li
-                  key={`${m.url}-${idx}`}
-                  className="relative overflow-hidden rounded-lg ring-1 ring-[var(--gn-ring)]"
-                >
-                  {m.type === "image" ? (
-                    <img
-                      src={m.url}
-                      alt=""
-                      className="h-24 w-24 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-24 w-24 items-center justify-center bg-[var(--gn-surface-elevated)] text-xs font-medium text-[var(--gn-text-muted)]">
-                      Video
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    aria-label="Remove attachment"
-                    className="absolute right-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-xs text-white hover:bg-black/75 disabled:opacity-50"
-                    onClick={() => removeMedia(idx)}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {media.length >= MAX_POST_MEDIA ? (
-            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-              Maximum {MAX_POST_MEDIA} attachments per post.
-            </p>
-          ) : null}
-        </div>
-      </section>
-
-      <section>
-        <label className="block text-sm font-medium text-[var(--gn-text)]">
+      <section className="space-y-2">
+        <label className="block text-sm font-bold text-[var(--gn-text)]">
           Title{" "}
           {titleOptional ? (
             <span className="font-normal text-[var(--gn-text-muted)]">
@@ -129,21 +68,17 @@ export function PostComposer({
           )}
         </label>
         <input
-          className="gn-input mt-1 w-full"
+          className="gn-input w-full text-base"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           maxLength={TITLE_MAX_LEN}
-          placeholder="e.g. Week 6 update — Northern Lights looking bushy!"
+          placeholder="Week 6 — first pistils on Northern Lights auto"
           autoComplete="off"
           disabled={disabled}
           aria-label="Post title"
         />
-        <div className="mt-1 flex justify-between text-xs text-[var(--gn-text-muted)]">
-          <span>
-            {titleOptional
-              ? "Skip if your photo tells the story."
-              : "Make it descriptive — people decide to click based on this."}
-          </span>
+        <div className="flex justify-between text-xs text-[var(--gn-text-muted)]">
+          <span>Helps people scan the feed — skip if the photo says it all.</span>
           <span
             className={
               title.length > TITLE_MAX_LEN * 0.9 ? "text-amber-600" : ""
@@ -154,14 +89,14 @@ export function PostComposer({
         </div>
       </section>
 
-      <section>
-        <span className="block text-sm font-medium text-[var(--gn-text)]">
+      <section className="space-y-2">
+        <label className="block text-sm font-bold text-[var(--gn-text)]">
           Caption{" "}
           <span className="font-normal text-[var(--gn-text-muted)]">
-            (optional if you add media)
+            (strain, week, medium, issues)
           </span>
-        </span>
-        <div className="mt-1">
+        </label>
+        <div className="overflow-hidden rounded-xl ring-1 ring-[var(--gn-ring)] focus-within:ring-2 focus-within:ring-[var(--gn-ring-focus)]">
           <PostEditor
             key={editorKey}
             embedded={Boolean(initialJson)}
@@ -171,8 +106,8 @@ export function PostComposer({
           />
         </div>
         {youtubePreviewIds.length > 0 ? (
-          <div className="mt-4 space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+          <div className="space-y-3 pt-2">
+            <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
               YouTube preview
             </p>
             {youtubePreviewIds.map((id) => (
@@ -191,8 +126,14 @@ export function PostComposer({
           </div>
         ) : null}
       </section>
+
+      {showTips ? (
+        <p className="rounded-xl bg-[var(--gn-surface-muted)] px-4 py-3 text-xs leading-relaxed text-[var(--gn-text-muted)]">
+          <span className="font-semibold text-[var(--gn-text)]">Tip:</span> Grow
+          posts with photos get the most love. Mention strain, week, and what you
+          changed (lights, nutrients, training).
+        </p>
+      ) : null}
     </div>
   );
 }
-
-

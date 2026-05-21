@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { NewPostForm } from "@/app/(site)/community/[slug]/new/post-form";
+import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,41 +21,46 @@ export default async function NewProfilePostPage({
   const communitySlug = sp.community?.trim();
   let communityId: string | undefined;
   let communityName: string | undefined;
+  let communityIconKey: string | null | undefined;
   let cancelHref = `/u/${user.id}`;
+  let headline = "Share your grow";
+  let subheadline =
+    "Photos first — your cover image is what people see in the feed.";
+
   if (communitySlug) {
     try {
-      const community = await apiFetch<{ id: string; name: string; slug: string }>(
-        `/communities/${encodeURIComponent(communitySlug)}`,
-      );
+      const community = await apiFetch<{
+        id: string;
+        name: string;
+        slug: string;
+        iconKey?: string | null;
+      }>(`/communities/${encodeURIComponent(communitySlug)}`);
       communityId = community.id;
       communityName = community.name;
+      communityIconKey = community.iconKey ?? null;
       cancelHref = `/community/${community.slug}`;
+      headline = `Post in ${community.name}`;
+      subheadline = `This goes to r/${community.slug} and followers' feeds.`;
     } catch {
       /* profile post fallback */
     }
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
-        <Link
-          href={`/u/${user.id}`}
-          className="text-sm text-[var(--gn-accent)] hover:underline"
-        >
-          ← back to your profile
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--gn-text)]">
-          {communityName
-            ? `New post in ${communityName}`
-            : "New post on your profile"}
-        </h1>
-        <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-          {communityName
-            ? `Posting to r/${communitySlug}. Followers of this community will see it in their feeds.`
-            : "This post appears on your profile and in followers' home feeds. Add ?community=slug to post in a community."}
-        </p>
-      </div>
-      <NewPostForm communityId={communityId} cancelHref={cancelHref} />
-    </main>
+    <SitePageShell className="py-6 sm:py-10">
+      <NewPostForm
+        communityId={communityId}
+        communitySlug={communitySlug}
+        communityName={communityName}
+        communityIconKey={communityIconKey}
+        cancelHref={cancelHref}
+        backHref={communitySlug ? cancelHref : `/u/${user.id}`}
+        backLabel={
+          communitySlug ? `Back to ${communityName ?? "community"}` : "Back to profile"
+        }
+        headline={headline}
+        subheadline={subheadline}
+      />
+    </SitePageShell>
   );
 }

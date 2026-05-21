@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/server";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
@@ -9,6 +10,7 @@ type Community = {
   id: string;
   slug: string;
   name: string;
+  iconKey?: string | null;
 };
 
 export default async function NewPostPage({
@@ -27,32 +29,28 @@ export default async function NewPostPage({
     community = await apiFetch<Community>(`/communities/${slug}`);
   } catch {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <p>Community not found.</p>
-        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
-          Home
+      <SitePageShell className="py-10">
+        <p className="text-[var(--gn-text)]">Community not found.</p>
+        <Link href="/community" className="mt-2 inline-block text-[var(--gn-accent)] hover:underline">
+          Browse communities
         </Link>
-      </main>
+      </SitePageShell>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
-        <Link
-          href={`/community/${slug}`}
-          className="text-sm text-[var(--gn-accent)] hover:underline"
-        >
-          ← Back to {community.name}
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--gn-text)]">
-          New post in {community.name}
-        </h1>
-      </div>
+    <SitePageShell className="py-6 sm:py-10">
       <NewPostForm
         communityId={community.id}
+        communitySlug={community.slug}
+        communityName={community.name}
+        communityIconKey={community.iconKey ?? null}
         cancelHref={`/community/${slug}`}
+        backHref={`/community/${slug}`}
+        backLabel={`Back to ${community.name}`}
+        headline={`Post in ${community.name}`}
+        subheadline="Your first photo is the feed cover. Add a title or caption so other growers know what they're looking at."
       />
-    </main>
+    </SitePageShell>
   );
 }

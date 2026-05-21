@@ -11,7 +11,7 @@ import {
 import {
   CommentDiscussionComposer,
 } from "@/components/comment-discussion-composer";
-import { CommentDmMediaGrid } from "@/components/comment-dm-media-grid";
+import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { VoteScoreRail } from "@/components/vote-score-rail";
 import { UserProfileLink } from "@/components/user-profile-link";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
@@ -366,8 +366,10 @@ export function CommentThread({
                   <div
                     className={`overflow-visible ${c.body.trim() ? "mt-2.5" : "mt-1"}`}
                   >
-                    <CommentDmMediaGrid
+                    <StackedDmStyleImages
                       urls={cImgs}
+                      stackKey={c.id}
+                      compact
                       onOpen={(index) => onOpenCommentImages(cImgs, index)}
                     />
                   </div>

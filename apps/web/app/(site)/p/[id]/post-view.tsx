@@ -671,11 +671,7 @@ export function PostView({
   const authorTier = post.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
   const isOp = Boolean(viewerId && viewerId === post.author.id);
   const showPostBody = postBodyHtmlIsMeaningful(post.bodyHtml);
-  /** First media item shown as full-width hero above the title (not while editing). */
-  const heroMedia =
-    !editingPost && post.media && post.media.length > 0 ? post.media[0] : null;
-  /** Remaining media items go to the carousel (avoids duplicating the hero). */
-  const carouselMedia = heroMedia ? post.media!.slice(1) : (post.media ?? []);
+  const carouselMedia = !editingPost ? (post.media ?? []) : [];
   const showPostMedia = carouselMedia.length > 0;
   const commentsTotal =
     typeof post.commentCount === "number"
@@ -695,29 +691,6 @@ export function PostView({
         />
       ) : null}
       <article className="relative z-20 overflow-visible rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)]">
-        <div className="overflow-hidden rounded-t-2xl">
-        {heroMedia ? (
-          isYouTubeMedia(heroMedia) ? (
-            <div className="w-full aspect-video">
-              <iframe
-                className="h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${extractYouTubeVideoId(heroMedia.url)}`}
-                title="Post video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            </div>
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroMedia.url}
-              alt=""
-              className="h-80 w-full object-cover sm:h-96"
-            />
-          )
-        ) : null}
         <div className="p-4 sm:p-6">
           {/* Context breadcrumb */}
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
@@ -949,9 +922,8 @@ export function PostView({
             ) : null}
           </div>
         ) : null}
-        </div>
 
-                <div
+        <div
           className="flex flex-col gap-2 rounded-b-2xl border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5"
           data-interactive
         >

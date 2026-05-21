@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
-import { FeedPostCardList } from "@/components/feed-post-card-list";
 import { FeedSidebar } from "@/components/feed-sidebar";
+import { HotWeekPageLeaderboard } from "@/components/hot-week-page-leaderboard";
 import { PostComposerPrompt } from "@/components/post-composer-prompt";
 import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
@@ -31,22 +31,24 @@ type FeedResponse = {
 
 type ValidRange = "day" | "week" | "month";
 
-const RANGE_CONFIG: Record<ValidRange, { label: string; heading: string; subheading: string }> = {
+const RANGE_CONFIG: Record<
+  ValidRange,
+  { label: string; heading: string; subheading: string }
+> = {
   day: {
     label: "Today",
     heading: "Hot today",
-    subheading: "Posts from the last 24 hours, ranked by net upvotes.",
+    subheading: "Last 24 hours · ranked by Seeds (net upvotes)",
   },
   week: {
-    label: "This Week",
+    label: "This week",
     heading: "Hot this week",
-    subheading:
-      "Posts from the last seven days, ranked by net upvotes—the same list as in the sidebar. Newer posts break ties when scores match.",
+    subheading: "Last 7 days · ranked by Seeds · ties go to newer posts",
   },
   month: {
-    label: "This Month",
+    label: "This month",
     heading: "Hot this month",
-    subheading: "Posts from the last 30 days, ranked by net upvotes.",
+    subheading: "Last 30 days · ranked by Seeds",
   },
 };
 
@@ -77,7 +79,10 @@ function HotEmptyState({
         }
       />
       <p className="text-center text-sm text-[var(--gn-text-muted)]">
-        <Link href="/community" className="font-medium text-[var(--gn-accent)] hover:underline">
+        <Link
+          href="/community"
+          className="font-medium text-[var(--gn-accent)] hover:underline"
+        >
           Browse communities
         </Link>{" "}
         to find growers to follow.
@@ -94,7 +99,9 @@ export default async function HotWeekPage({
   const sp = await searchParams;
   const page = Number(sp.page ?? 1) || 1;
   const pageSize = 20;
-  const range: ValidRange = isValidRange(sp.range ?? "") ? (sp.range as ValidRange) : "week";
+  const range: ValidRange = isValidRange(sp.range ?? "")
+    ? (sp.range as ValidRange)
+    : "week";
   const config = RANGE_CONFIG[range];
 
   const supabase = await createClient();
@@ -111,57 +118,68 @@ export default async function HotWeekPage({
       page: String(page),
       pageSize: String(pageSize),
     });
-    feed = await apiFetch<FeedResponse>(`/posts/hot/${range}?${qs.toString()}`, {
-      token: token ?? undefined,
-    });
+    feed = await apiFetch<FeedResponse>(
+      `/posts/hot/${range}?${qs.toString()}`,
+      {
+        token: token ?? undefined,
+      },
+    );
   } catch {
     /* API offline */
   }
 
   const banner = (
-    <div className="border-b border-[var(--gn-divide)] bg-gradient-to-r from-[var(--gn-surface-raised)] via-[var(--gn-surface-elevated)] to-[var(--gn-surface-raised)] px-5 py-6 sm:px-8">
-      <div className="mx-auto max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] sm:px-[var(--gn-gutter)]">
-        <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)]">
-          {config.heading}
-        </h1>
-        <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">
-          {config.subheading}
-        </p>
+    <div className="relative overflow-hidden border-b border-[var(--gn-divide)] bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-hot)_12%,var(--gn-surface-muted))] via-[var(--gn-surface-raised)] to-[var(--gn-surface-muted)]">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[color-mix(in_srgb,var(--gn-hot)_18%,transparent)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 left-1/4 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] blur-3xl" />
+      <div className="relative mx-auto flex max-w-[var(--gn-container-max)] flex-col gap-4 px-[var(--gn-gutter-mobile)] py-8 sm:flex-row sm:items-end sm:justify-between sm:px-[var(--gn-gutter)] sm:py-10">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--gn-hot)]">
+            Trending
+          </p>
+          <h1 className="mt-1 flex items-center gap-2 text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
+            <span aria-hidden>🔥</span>
+            {config.heading}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">
+            {config.subheading}
+          </p>
+        </div>
+        <div className="flex w-fit flex-wrap gap-2 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1.5 shadow-[var(--gn-shadow-sm)]">
+          {(Object.entries(RANGE_CONFIG) as [
+            ValidRange,
+            (typeof RANGE_CONFIG)[ValidRange],
+          ][]).map(([key, { label }]) => (
+            <Link
+              key={key}
+              href={`/hot?range=${key}`}
+              className={
+                range === key
+                  ? "rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm"
+                  : "rounded-xl px-4 py-2 text-sm font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+              }
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
 
   return (
     <SitePageShell banner={banner} className="pb-12 pt-6">
-      <div className="mb-6 flex w-fit gap-2 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1">
-        {(Object.entries(RANGE_CONFIG) as [ValidRange, (typeof RANGE_CONFIG)[ValidRange]][]).map(
-          ([key, { label }]) => (
-            <Link
-              key={key}
-              href={`/hot?range=${key}`}
-              className={
-                range === key
-                  ? "bg-[var(--gn-accent)] text-[var(--gn-on-accent)] rounded-full px-5 py-1.5 text-sm font-bold shadow-sm transition-all"
-                  : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)] hover:bg-[var(--gn-surface-elevated)] rounded-full px-5 py-1.5 text-sm font-medium transition-all"
-              }
-            >
-              {label}
-            </Link>
-          ),
-        )}
-      </div>
-
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 space-y-6">
           <PostComposerPrompt />
           {feed.items.length === 0 ? (
             <HotEmptyState range={range} signedIn={!!token} />
           ) : (
-            <FeedPostCardList items={feed.items} showRanks />
+            <HotWeekPageLeaderboard items={feed.items} />
           )}
 
           {feed.total > feed.pageSize ? (
-            <div className="mt-6 flex justify-center gap-4 text-sm">
+            <div className="flex justify-center gap-4 text-sm">
               {page > 1 ? (
                 <Link
                   className="text-[var(--gn-accent)] hover:underline"
@@ -181,9 +199,9 @@ export default async function HotWeekPage({
             </div>
           ) : null}
         </div>
-        <div className="w-full shrink-0 lg:w-72">
+        <aside className="w-full shrink-0 lg:w-72">
           <FeedSidebar hideHotPosts />
-        </div>
+        </aside>
       </div>
     </SitePageShell>
   );

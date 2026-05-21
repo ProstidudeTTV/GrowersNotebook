@@ -4,6 +4,10 @@ import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+/**
+ * Full-viewport messenger shell: thread list + chat + composer pinned to the bottom
+ * of the viewport (not the document scroll height).
+ */
 export default async function MessagesPage() {
   const supabase = await createClient();
   const token = await getAccessTokenForApi(supabase);
@@ -12,7 +16,15 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+      style={{
+        height:
+          "calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
+        maxHeight:
+          "calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       <h1 className="sr-only">Messages</h1>
       <Suspense
         fallback={

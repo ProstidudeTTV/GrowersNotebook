@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { GROWTH_STAGE_LABEL } from "@/lib/notebook-growth";
 
 export type NotebookDirectoryItem = {
@@ -69,12 +68,11 @@ export function NotebookDirectoryCard({ n }: { n: NotebookDirectoryItem }) {
       />
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--gn-surface-muted)]">
         {n.coverImageUrl?.trim() ? (
-          <Image
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
             src={n.coverImageUrl.trim()}
             alt=""
-            fill
-            className="object-cover object-center transition duration-300 group-hover:scale-[1.02]"
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            className="absolute inset-0 h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.02]"
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-accent)_22%,var(--gn-surface-muted))] to-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)]">

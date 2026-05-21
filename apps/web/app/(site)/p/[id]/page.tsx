@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api-public";
 import { isUuid } from "@/lib/is-uuid";
 import { ArticleJsonLd } from "@/components/seo-json-ld";
+import { FeedSidebar } from "@/components/feed-sidebar";
 import { SITE_NAME, canonicalPath, getSiteUrl } from "@/lib/site-config";
 import { SitePageShell } from "@/components/site-page-shell";
 import { PostView } from "./post-view";
@@ -126,19 +127,24 @@ export default async function PostPage({
 
   return (
     <SitePageShell className="py-4 sm:py-6">
-      <div className="mx-auto w-full max-w-2xl lg:max-w-3xl">
-        <ArticleJsonLd
-          headline={post.title}
-          description={`${post.title} — cannabis home grow discussion on ${SITE_NAME}.`}
-          url={`${getSiteUrl()}/p/${id}`}
-          imageUrl={firstImage?.url}
-          datePublished={post.createdAt}
-        />
-        <PostView
-          initialPost={post}
-          initialComments={comments}
-          commentsFetchFailed={commentsFetchFailed}
-        />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          <ArticleJsonLd
+            headline={post.title}
+            description={`${post.title} — cannabis home grow discussion on ${SITE_NAME}.`}
+            url={`${getSiteUrl()}/p/${id}`}
+            imageUrl={firstImage?.url}
+            datePublished={post.createdAt}
+          />
+          <PostView
+            initialPost={post}
+            initialComments={comments}
+            commentsFetchFailed={commentsFetchFailed}
+          />
+        </div>
+        <aside className="w-full shrink-0 lg:w-72">
+          <FeedSidebar hideHotPosts />
+        </aside>
       </div>
     </SitePageShell>
   );

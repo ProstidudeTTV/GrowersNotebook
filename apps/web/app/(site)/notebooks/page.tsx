@@ -119,10 +119,10 @@ export default async function NotebooksDirectoryPage({
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--gn-accent)_20%,transparent)] px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[var(--gn-accent)]">
                 📓 Notebooks
               </div>
-              <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+              <h1 className="text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
                 Notebooks
               </h1>
-              <p className="mt-2 max-w-lg text-sm text-white/70">
+              <p className="mt-2 max-w-lg text-sm text-[var(--gn-text-muted)]">
                 Public notebooks shared by the community — from seed to harvest.
               </p>
               <Link

@@ -8,7 +8,6 @@ import {
   CommentActionMenu,
   MenuRow,
 } from "@/components/comment-action-menu";
-import { EntityCoverBanner } from "@/components/entity-cover-banner";
 import { FollowUserButton } from "@/components/follow-buttons";
 import { FeedPostCardList } from "@/components/feed-post-card-list";
 import {
@@ -261,110 +260,94 @@ export function ProfileView({
   ] as const;
 
   return (
-    <main className="mx-auto w-full max-w-[var(--gn-container-max)] pb-16">
-      <EntityCoverBanner
-        imageUrl={profile.bannerUrl}
-        alt=""
-        variant="hero"
-        priority
-      />
-
-      {/* ── Profile identity block ────────────────────────────────────── */}
-      <div className="relative bg-[var(--gn-surface-raised)] px-5 sm:px-8 pb-0">
-        {/* Avatar — breaks out of banner into this section */}
-        <div className="absolute -top-12 left-5 sm:left-8 z-10 md:-top-14">
-          <span
-            className={`flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-4 ring-[var(--gn-surface-raised)] shadow-2xl bg-gradient-to-br ${avatarGrad}`}
-          >
-            {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-on-accent)]">
-                {profileLabel.charAt(0).toUpperCase() || "?"}
-              </span>
-            )}
-          </span>
-        </div>
-
-        {/* Right-side action row (positioned top-right while avatar floats left) */}
-        <div className="flex justify-end pt-3 pb-2 min-h-[3rem]">
-          {viewerId ? (
-            <CommentActionMenu ariaLabel="Profile actions">
-              {isOwn ? (
-                <MenuRow onClick={() => router.push("/settings/profile")}>
-                  Edit profile
-                </MenuRow>
-              ) : (
-                <>
-                  <MenuRow
-                    danger
-                    disabled={blockBusy}
-                    onClick={() => {
-                      setReportNotice(null);
-                      void toggleBlock();
-                    }}
-                  >
-                    {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
-                  </MenuRow>
-                  <MenuRow
-                    danger
-                    onClick={() => {
-                      setReportNotice(null);
-                      setReportOpen(true);
-                    }}
-                  >
-                    Report user
-                  </MenuRow>
-                </>
-              )}
-            </CommentActionMenu>
-          ) : !isOwn ? (
-            <Link
-              href={loginHref(
-                pathname,
-                searchParams.toString() || undefined,
-              )}
-              className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
+    <main className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
+      {/* Profile header — clean card (no full-bleed banner) */}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] sm:mt-6">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+            <span
+              className={`flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-2 ring-[var(--gn-divide)] bg-gradient-to-br sm:h-24 sm:w-24 ${avatarGrad}`}
             >
-              Sign in to report
-            </Link>
-          ) : null}
-        </div>
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[var(--gn-on-accent)]">
+                  {profileLabel.charAt(0).toUpperCase() || "?"}
+                </span>
+              )}
+            </span>
 
-        {/* Name + badges + bio */}
-        <div className="pt-8 pb-4">
-          <div className="flex flex-wrap items-start gap-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[var(--gn-text)] sm:text-3xl">
-              {profileLabel}
-            </h1>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {!statsHidden && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
-                {tierEmoji} {tierLabel}
-              </span>
-            )}
-            {!statsHidden && profile.seeds != null && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-0.5 text-xs font-semibold text-amber-400">
-                🌱 {formatSeeds(profile.seeds)} Seeds
-              </span>
-            )}
-          </div>
-          {bio ? (
-            <p className="mt-3 max-w-prose whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
-              {bio}
-            </p>
-          ) : null}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-3 pb-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-xl font-extrabold tracking-tight text-[var(--gn-text)] sm:text-2xl">
+                  {profileLabel}
+                </h1>
+                {viewerId ? (
+                  <CommentActionMenu ariaLabel="Profile actions">
+                    {isOwn ? (
+                      <MenuRow onClick={() => router.push("/settings/profile")}>
+                        Edit profile
+                      </MenuRow>
+                    ) : (
+                      <>
+                        <MenuRow
+                          danger
+                          disabled={blockBusy}
+                          onClick={() => {
+                            setReportNotice(null);
+                            void toggleBlock();
+                          }}
+                        >
+                          {profile.viewerHasBlocked ? "Unblock user" : "Block user"}
+                        </MenuRow>
+                        <MenuRow
+                          danger
+                          onClick={() => {
+                            setReportNotice(null);
+                            setReportOpen(true);
+                          }}
+                        >
+                          Report user
+                        </MenuRow>
+                      </>
+                    )}
+                  </CommentActionMenu>
+                ) : !isOwn ? (
+                  <Link
+                    href={loginHref(
+                      pathname,
+                      searchParams.toString() || undefined,
+                    )}
+                    className="shrink-0 text-xs font-medium text-[var(--gn-accent)] hover:underline"
+                  >
+                    Sign in to report
+                  </Link>
+                ) : null}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {!statsHidden && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
+                    {tierEmoji} {tierLabel}
+                  </span>
+                )}
+                {!statsHidden && profile.seeds != null && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-surface-elevated)] px-3 py-0.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]">
+                    🌱 {formatSeeds(profile.seeds)} Seeds
+                  </span>
+                )}
+              </div>
+              {bio ? (
+                <p className="mt-3 max-w-prose whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
+                  {bio}
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
           {!isOwn ? (
             <>
               {viewerId && profile.viewerHasBlocked !== true ? (
@@ -410,7 +393,9 @@ export function ProfileView({
               </Link>
             </>
           )}
-        </div>
+              </div>
+            </div>
+          </div>
 
         {/* Report form */}
         {!isOwn && reportOpen ? (
@@ -529,10 +514,11 @@ export function ProfileView({
             see them.
           </p>
         ) : null}
+        </div>
       </div>
 
       {/* ── Tab navigation ───────────────────────────────────────────── */}
-      <div className="sticky top-14 z-10 border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-5 sm:px-8">
+      <div className="sticky top-14 z-10 -mx-4 mt-4 border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 sm:-mx-6 sm:px-6">
         <div className="-mb-px flex gap-0.5">
           {tabItems.map((t) => {
             const isActive = activeTab === t.id;

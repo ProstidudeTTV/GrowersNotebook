@@ -24,7 +24,6 @@ import {
   parseVoteMutationResponse,
   talliesAfterVoteClick,
 } from "@/lib/vote-ui";
-import { MediaPreviewGrid } from "@/components/media-preview-grid";
 import { collectYouTubeIdsForFeedPreview } from "@/lib/youtube-embed";
 
 function timeAgo(iso: string): string {
@@ -233,9 +232,9 @@ export function FeedPostCard({
     return ids[0] ?? null;
   }, [local.bodyHtml, local.excerpt]);
 
-  const imageUrls =
-    local.media?.filter((m) => m.type === "image").map((m) => m.url) ?? [];
-  const videoMedia = local.media?.find((m) => m.type === "video") ?? null;
+  const media = local.media?.[0];
+  const heroImage = media?.type === "image" ? media : null;
+  const videoMedia = media?.type === "video" ? media : null;
 
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
@@ -324,8 +323,7 @@ export function FeedPostCard({
         </span>
       )}
 
-      {/* Hero media — single full-bleed image or multi-image grid */}
-      {imageUrls.length > 0 ? (
+      {heroImage ? (
         <div
           className="cursor-pointer"
           onClick={(e) => {
@@ -334,21 +332,15 @@ export function FeedPostCard({
             openPost();
           }}
         >
-          {imageUrls.length === 1 ? (
-            <div className="relative h-56 w-full sm:h-72 md:h-80">
-              <Image
-                src={imageUrls[0]!}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
-              />
-            </div>
-          ) : (
-            <div className="p-2 sm:p-3">
-              <MediaPreviewGrid urls={imageUrls} className="w-full" />
-            </div>
-          )}
+          <div className="relative h-56 w-full sm:h-72 md:h-80">
+            <Image
+              src={heroImage.url}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
+            />
+          </div>
         </div>
       ) : youTubePreviewId ? (
         <div

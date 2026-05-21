@@ -1303,10 +1303,10 @@ export function MessagesPanel() {
                           <MiniAvatar name={peerDisplay} size={26} />
                         )}
                         <div
-                          className={`max-w-[75%] text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                          className={`max-w-[min(85%,18rem)] text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-4 py-2.5 text-black shadow-sm"
-                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-[var(--gn-text)]"
+                              ? "rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-3 py-2 text-[var(--gn-on-accent)] shadow-sm"
+                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-elevated)] px-3 py-2 text-[var(--gn-text)]"
                           }`}
                         >
                           {hasText ? (
@@ -1328,6 +1328,7 @@ export function MessagesPanel() {
                               <StackedDmStyleImages
                                 urls={imgs}
                                 stackKey={ln.id}
+                                compact
                                 pileLabel={dmAttachmentPileLabel(
                                   imgs,
                                   isSelf,
@@ -1343,7 +1344,7 @@ export function MessagesPanel() {
                             className={`mt-1 flex items-center gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
                           >
                             <span
-                              className={`text-[10px] ${isSelf ? "text-black/60" : "text-[var(--gn-text-muted)]"}`}
+                              className={`text-[10px] ${isSelf ? "text-[var(--gn-on-accent)]/70" : "text-[var(--gn-text-muted)]"}`}
                             >
                               {new Date(ln.createdAt).toLocaleTimeString(
                                 undefined,
@@ -1355,7 +1356,7 @@ export function MessagesPanel() {
                                 type="button"
                                 disabled={messageDeletingId === ln.id}
                                 onClick={() => void removeOwnMessage(ln.id)}
-                                className="text-[10px] text-black/50 hover:text-black hover:underline disabled:opacity-45"
+                                className="text-[10px] text-[var(--gn-on-accent)]/60 hover:text-[var(--gn-on-accent)] hover:underline disabled:opacity-45"
                               >
                                 {messageDeletingId === ln.id
                                   ? "Removing…"

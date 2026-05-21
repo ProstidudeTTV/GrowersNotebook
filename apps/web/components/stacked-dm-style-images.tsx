@@ -1,18 +1,17 @@
 "use client";
 
-import { CommentDmMediaGrid } from "@/components/comment-dm-media-grid";
 import { isDmVideoUrl } from "@/lib/dm-media-url";
 
 /**
- * Vertical photo pile: same-size square tiles, mostly stacked along Y with a
- * tiny ±X stagger and light rotation (matches DMs in `messages-panel`).
+ * Compact vertical photo pile (DM / comment style): square tiles, light stagger.
+ * Uses object-cover so mixed aspect ratios fill the frame without letterboxing.
  */
-const DM_STACK_OVERLAP_Y = 7;
+const DM_STACK_OVERLAP_Y = 6;
 const DM_STACK_JITTER_X = 2;
-const DM_STACK_ROTATION_PAD = 28;
+const DM_STACK_ROTATION_PAD = 20;
 
-const CARD_MD = 128;
-const CARD_SM = 72;
+const CARD_MD = 108;
+const CARD_SM = 76;
 
 function cardSizePx(compact: boolean): number {
   return compact ? CARD_SM : CARD_MD;
@@ -33,7 +32,7 @@ function dmStackCardRotation(index: number, total: number): number {
   if (total <= 1 || index === total - 1) return 0;
   const depth = total - 1 - index;
   const sign = index % 2 === 0 ? -1 : 1;
-  return sign * Math.min(4, 1.5 + depth * 0.65);
+  return sign * Math.min(3.5, 1.2 + depth * 0.55);
 }
 
 function MediaThumb({
@@ -79,32 +78,22 @@ export function StackedDmStyleImages({
   const imgs = urls.filter(Boolean);
   if (imgs.length === 0) return null;
 
-  if (imgs.length <= 4) {
-    return (
-      <CommentDmMediaGrid
-        urls={imgs}
-        onOpen={onOpen}
-        className={className}
-      />
-    );
-  }
-
   const card = cardSizePx(compact);
   const n = imgs.length;
   const stackW =
     n <= 1
       ? undefined
-      : card + DM_STACK_JITTER_X * 2 + DM_STACK_ROTATION_PAD + 8;
+      : card + DM_STACK_JITTER_X * 2 + DM_STACK_ROTATION_PAD + 6;
   const stackH =
     n <= 1
       ? undefined
-      : (n - 1) * DM_STACK_OVERLAP_Y + card + DM_STACK_ROTATION_PAD + 12;
+      : (n - 1) * DM_STACK_OVERLAP_Y + card + DM_STACK_ROTATION_PAD + 8;
   const stackInnerW = stackW ?? 0;
 
   return (
-    <div className={[`overflow-visible ${n > 1 ? "" : ""}`, className].join(" ")}>
+    <div className={[`overflow-visible`, className].filter(Boolean).join(" ")}>
       {pileLabel && n > 1 ? (
-        <p className="mb-1.5 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
+        <p className="mb-1 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
           {pileLabel}
         </p>
       ) : null}
@@ -114,7 +103,7 @@ export function StackedDmStyleImages({
           className={
             compact
               ? "max-w-[min(4.5rem,85%)] border-0 bg-transparent p-0"
-              : "max-w-[min(11rem,85%)] border-0 bg-transparent p-0"
+              : "max-w-[min(9rem,85%)] border-0 bg-transparent p-0"
           }
           onClick={() => onOpen(0)}
         >
@@ -122,8 +111,8 @@ export function StackedDmStyleImages({
             url={imgs[0]}
             className={
               compact
-                ? "max-h-20 w-auto max-w-full cursor-zoom-in rounded-[1rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
-                : "max-h-[min(11rem,28vh)] w-auto max-w-full cursor-zoom-in rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-contain shadow-md"
+                ? "h-20 w-20 cursor-zoom-in rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md"
+                : "h-24 w-24 cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md sm:h-28 sm:w-28"
             }
           />
         </button>
@@ -145,11 +134,10 @@ export function StackedDmStyleImages({
             return (
               <span
                 key={`${stackKey}-${idx}-${url}`}
-                className="absolute box-border overflow-hidden rounded-[1.35rem] border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_6px_18px_rgba(0,0,0,0.14)] ring-1 ring-black/5 dark:shadow-[0_6px_22px_rgba(0,0,0,0.45)] dark:ring-white/10"
+                className="absolute box-border overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] shadow-[0_4px_14px_rgba(0,0,0,0.12)] ring-1 ring-black/5 dark:shadow-[0_4px_18px_rgba(0,0,0,0.35)] dark:ring-white/10"
                 style={{
                   left: dmStackCardLeft(stackInnerW, idx, card),
-                  top:
-                    DM_STACK_ROTATION_PAD / 2 + idx * DM_STACK_OVERLAP_Y,
+                  top: DM_STACK_ROTATION_PAD / 2 + idx * DM_STACK_OVERLAP_Y,
                   width: card,
                   height: card,
                   minWidth: card,
@@ -163,7 +151,7 @@ export function StackedDmStyleImages({
               >
                 <MediaThumb
                   url={url}
-                  className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-contain object-center"
+                  className="h-full w-full min-h-0 min-w-0 cursor-zoom-in object-cover object-center"
                 />
               </span>
             );

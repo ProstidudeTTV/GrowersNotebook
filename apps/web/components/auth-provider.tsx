@@ -89,7 +89,9 @@ export function AuthProvider({
       setDisplayName(me.displayName?.trim() || null);
       setAvatarUrl(me.avatarUrl?.trim() || null);
       const r = me.role?.trim();
-      setRole(r === "admin" || r === "moderator" ? r : null);
+      setRole(
+        r === "owner" || r === "admin" || r === "moderator" ? r : null,
+      );
     } catch {
       if (seq !== profileFetchSeq.current) return;
       setDisplayName(null);

@@ -183,9 +183,9 @@ const MODERATOR_RESOURCE_NAMES = new Set([
 ]);
 
 export function refineResourcesForStaffRole(
-  role: "admin" | "moderator",
+  role: "admin" | "moderator" | "owner",
 ): ResourceProps[] {
-  if (role === "admin") return fullAdminResources;
+  if (role === "admin" || role === "owner") return fullAdminResources;
   return fullAdminResources
     .filter((r) => MODERATOR_RESOURCE_NAMES.has(String(r.name)))
     .map((r) => {

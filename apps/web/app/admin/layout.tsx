@@ -44,7 +44,11 @@ export default async function AdminRootLayout({
     role: string;
     displayName: string | null;
   };
-  if (profile.role !== "admin" && profile.role !== "moderator") {
+  if (
+    profile.role !== "admin" &&
+    profile.role !== "moderator" &&
+    profile.role !== "owner"
+  ) {
     redirect("/?admin_error=not_staff");
   }
 
@@ -53,7 +57,7 @@ export default async function AdminRootLayout({
       initialStaff={{
         userId: profile.id || user.id,
         displayName: profile.displayName,
-        role: profile.role as "admin" | "moderator",
+        role: profile.role as "admin" | "moderator" | "owner",
       }}
     >
       {children}

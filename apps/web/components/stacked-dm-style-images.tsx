@@ -1,5 +1,6 @@
 "use client";
 
+import { CommentDmMediaGrid } from "@/components/comment-dm-media-grid";
 import { isDmVideoUrl } from "@/lib/dm-media-url";
 
 /**
@@ -77,6 +78,16 @@ export function StackedDmStyleImages({
 }) {
   const imgs = urls.filter(Boolean);
   if (imgs.length === 0) return null;
+
+  if (imgs.length <= 4) {
+    return (
+      <CommentDmMediaGrid
+        urls={imgs}
+        onOpen={onOpen}
+        className={className}
+      />
+    );
+  }
 
   const card = cardSizePx(compact);
   const n = imgs.length;

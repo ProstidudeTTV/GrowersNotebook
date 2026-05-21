@@ -13,12 +13,14 @@ import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth-provider";
+import { isStaffRole } from "@/lib/staff-role";
 
 export type SidebarCommunity = {
   id: string;
   slug: string;
   name: string;
   iconKey?: string | null;
+  iconUrl?: string | null;
 };
 
 export type SidebarHotPost = {
@@ -158,7 +160,7 @@ export function AppSidebar({
     avatarUrl: userAvatarUrl,
     role,
   } = useAuth();
-  const isStaff = role === "admin" || role === "moderator";
+  const isStaff = isStaffRole(role);
   const profileLabel =
     userDisplayName?.trim() ||
     email?.split("@")[0]?.trim() ||
@@ -422,12 +424,21 @@ export function AppSidebar({
               {followedCommunities.map((c) => (
                 <li key={c.id}>
                   <Link href={`/community/${c.slug}`} className={`${navItem} min-w-0`} title={c.name} onClick={afterNav}>
-                    <CommunityIcon
-                      iconKey={c.iconKey}
-                      nameFallback={c.name}
-                      slugFallback={c.slug}
-                      frameClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
-                    />
+                    {c.iconUrl?.trim() ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.iconUrl}
+                        alt=""
+                        className="h-7 w-7 shrink-0 rounded-lg object-cover ring-1 ring-[var(--gn-ring)]"
+                      />
+                    ) : (
+                      <CommunityIcon
+                        iconKey={c.iconKey}
+                        nameFallback={c.name}
+                        slugFallback={c.slug}
+                        frameClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+                      />
+                    )}
                     <span className="min-w-0 truncate text-sm">{c.name}</span>
                   </Link>
                 </li>

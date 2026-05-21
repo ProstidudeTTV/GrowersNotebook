@@ -29,9 +29,13 @@ export class RolesGuard implements CanActivate {
     if (!user?.sub) throw new ForbiddenException();
 
     const profile = await this.profiles.findById(user.sub);
-    if (!profile || !roles.includes(profile.role)) {
-      throw new ForbiddenException();
-    }
+    if (!profile) throw new ForbiddenException();
+    const role = profile.role;
+    const allowed =
+      roles.includes(role) ||
+      (role === 'owner' &&
+        roles.some((r) => r === 'admin' || r === 'moderator'));
+    if (!allowed) throw new ForbiddenException();
     return true;
   }
 }

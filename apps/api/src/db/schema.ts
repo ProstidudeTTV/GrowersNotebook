@@ -18,7 +18,12 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
-export const roleEnum = pgEnum('role', ['member', 'moderator', 'admin']);
+export const roleEnum = pgEnum('role', [
+  'member',
+  'moderator',
+  'admin',
+  'owner',
+]);
 
 export const catalogSuggestionKindEnum = pgEnum('catalog_suggestion_kind', [
   'new_strain',

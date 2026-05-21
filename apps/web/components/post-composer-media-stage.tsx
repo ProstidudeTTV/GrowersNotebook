@@ -22,7 +22,6 @@ function MediaTile({
   total,
   disabled,
   onRemove,
-  onSetCover,
   onMoveEarlier,
   onMoveLater,
 }: {
@@ -31,12 +30,9 @@ function MediaTile({
   total: number;
   disabled?: boolean;
   onRemove: () => void;
-  onSetCover: () => void;
   onMoveEarlier: () => void;
   onMoveLater: () => void;
 }) {
-  const isCover = index === 0;
-
   return (
     <div className="group relative overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] ring-1 ring-[var(--gn-divide)]">
       <div className="relative aspect-[4/3] w-full sm:aspect-video">
@@ -51,49 +47,29 @@ function MediaTile({
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--gn-surface-elevated)] text-[var(--gn-text-muted)]">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden
-            >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M8 5v14l11-7L8 5z" />
             </svg>
             <span className="text-xs font-semibold">Video</span>
           </div>
         )}
-        {isCover ? (
-          <span className="absolute left-2 top-2 rounded-full bg-[var(--gn-accent)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--gn-on-accent)] shadow-sm">
-            Cover
+        {index === 0 && total > 1 ? (
+          <span className="absolute left-2 top-2 rounded-full bg-[var(--gn-surface-elevated)]/90 px-2 py-0.5 text-[10px] font-bold text-[var(--gn-text-muted)] ring-1 ring-[var(--gn-divide)]">
+            1st in feed
           </span>
         ) : null}
-        <div className="absolute right-1 top-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label="Remove"
-            className="rounded-full bg-black/60 px-2 py-1 text-xs font-bold text-white hover:bg-black/80 disabled:opacity-50"
-            onClick={onRemove}
-          >
-            ×
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label="Remove"
+          className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-1 text-xs font-bold text-white hover:bg-black/80 disabled:opacity-50"
+          onClick={onRemove}
+        >
+          ×
+        </button>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-1 border-t border-[var(--gn-divide)] px-2 py-1.5">
-        {!isCover ? (
-          <button
-            type="button"
-            disabled={disabled}
-            className="text-[10px] font-semibold text-[var(--gn-accent)] hover:underline disabled:opacity-50"
-            onClick={onSetCover}
-          >
-            Set as cover
-          </button>
-        ) : (
-          <span className="text-[10px] text-[var(--gn-text-muted)]">Feed hero</span>
-        )}
-        <div className="ml-auto flex gap-0.5">
+      {total > 1 ? (
+        <div className="flex items-center justify-end gap-0.5 border-t border-[var(--gn-divide)] px-2 py-1.5">
           <button
             type="button"
             disabled={disabled || index === 0}
@@ -113,12 +89,11 @@ function MediaTile({
             →
           </button>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
 
-/** Instagram-style media stage: hero preview, cover order, reorder — media-first create flow. */
 export function PostComposerMediaStage({
   media,
   onMediaChange,
@@ -141,14 +116,6 @@ export function PostComposerMediaStage({
     [media, onMediaChange],
   );
 
-  const setCover = useCallback(
-    (idx: number) => {
-      if (idx <= 0) return;
-      onMediaChange(moveItem(media, idx, 0));
-    },
-    [media, onMediaChange],
-  );
-
   return (
     <section aria-label="Photos and video">
       <div className="flex items-end justify-between gap-2">
@@ -157,8 +124,8 @@ export function PostComposerMediaStage({
             Photos &amp; video
           </h2>
           <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
-            First image is your feed cover. Drag order with arrows — up to{" "}
-            {MAX_POST_MEDIA} files.
+            Order matters — first file shows first in the feed. Use arrows to
+            reorder.
           </p>
         </div>
         {media.length > 0 ? (
@@ -185,7 +152,6 @@ export function PostComposerMediaStage({
             total={1}
             disabled={disabled}
             onRemove={() => remove(0)}
-            onSetCover={() => {}}
             onMoveEarlier={() => {}}
             onMoveLater={() => {}}
           />
@@ -205,7 +171,7 @@ export function PostComposerMediaStage({
               media.length === 2
                 ? "grid grid-cols-2 gap-2"
                 : media.length <= 4
-                  ? "grid grid-cols-2 gap-2 sm:grid-cols-2"
+                  ? "grid grid-cols-2 gap-2"
                   : "flex gap-2 overflow-x-auto pb-1 gn-scrollbar-themed"
             }
           >
@@ -224,7 +190,6 @@ export function PostComposerMediaStage({
                   total={media.length}
                   disabled={disabled}
                   onRemove={() => remove(idx)}
-                  onSetCover={() => setCover(idx)}
                   onMoveEarlier={() =>
                     onMediaChange(moveItem(media, idx, idx - 1))
                   }

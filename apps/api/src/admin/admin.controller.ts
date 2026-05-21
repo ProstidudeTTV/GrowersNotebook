@@ -66,17 +66,18 @@ export class AdminController {
 
   /** Staff session check for admin UI (role + display name). */
   @Get('me')
-  @Roles('admin', 'moderator')
+  @Roles('admin', 'moderator', 'owner')
   async staffMe(@CurrentUser() user: JwtUser) {
     const row = await this.profiles.findById(user.sub);
     if (!row) throw new NotFoundException();
+    const isOwner = row.role === 'owner';
     return {
       id: row.id,
       role: row.role,
       displayName: row.displayName,
-      isAdmin: row.role === 'admin',
-      isModerator: row.role === 'moderator',
-      canChangeRoles: row.role === 'admin',
+      isAdmin: row.role === 'admin' || isOwner,
+      isModerator: row.role === 'moderator' || isOwner,
+      canChangeRoles: row.role === 'admin' || isOwner,
       storageConfigured: this.storage.isAdminStorageConfigured(),
     };
   }

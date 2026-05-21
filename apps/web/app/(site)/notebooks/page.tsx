@@ -290,7 +290,7 @@ export default async function NotebooksDirectoryPage({
             </div>
           </form>
 
-          <ul className="mt-6 space-y-4">
+          <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {data.items.map((n) => {
               const growerName =
                 n.owner.displayName?.trim() || "Grower";
@@ -306,8 +306,8 @@ export default async function NotebooksDirectoryPage({
                     ? "bg-gradient-to-r from-sky-600/70 to-blue-800/30"
                     : "bg-gradient-to-r from-gray-600/50 to-gray-800/20";
               return (
-                <li key={n.id}>
-                  <article className="group relative overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] shadow-sm ring-1 ring-black/5 transition hover:border-[var(--gn-text-muted)] dark:ring-white/5">
+                <li key={n.id} className="min-h-0">
+                  <article className="group relative flex h-full min-h-[11rem] flex-col overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-divide))] hover:shadow-[var(--gn-shadow-md)]">
                     {/* Status accent strip */}
                     <div className={`h-1 w-full ${statusStrip}`} />
                     <Link

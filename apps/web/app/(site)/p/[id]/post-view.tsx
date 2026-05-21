@@ -424,7 +424,7 @@ export function PostView({
     const token = await getAccessTokenForApi(supabase);
     if (!token) throw new Error("Sign in to report.");
     return apiFetch<{ ok: boolean; alreadyReported: boolean }>(
-      `/posts/${c.postId}/comments/${c.id}/report`,
+      `/posts/${post.id}/comments/${c.id}/report`,
       {
         method: "POST",
         token,
@@ -1065,7 +1065,7 @@ export function PostView({
           <CommentThread
             comments={comments}
             viewerId={viewerId}
-            onVoteComment={(id) => void voteComment(id, 1)}
+            onVoteComment={(id, value) => void voteComment(id, value)}
             onReplySubmit={submitReplyToComment}
             onSaveEdit={saveCommentEdit}
             onReport={reportComment}

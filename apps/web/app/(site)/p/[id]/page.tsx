@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api-public";
 import { isUuid } from "@/lib/is-uuid";
 import { ArticleJsonLd } from "@/components/seo-json-ld";
 import { SITE_NAME, canonicalPath, getSiteUrl } from "@/lib/site-config";
+import { SitePageShell } from "@/components/site-page-shell";
 import { PostView } from "./post-view";
 import type { PostMediaItem } from "@/lib/feed-post";
 
@@ -124,19 +125,21 @@ export default async function PostPage({
   const firstImage = (post.media ?? []).find((m) => m.type === "image");
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 sm:py-8">
-      <ArticleJsonLd
-        headline={post.title}
-        description={`${post.title} — cannabis home grow discussion on ${SITE_NAME}.`}
-        url={`${getSiteUrl()}/p/${id}`}
-        imageUrl={firstImage?.url}
-        datePublished={post.createdAt}
-      />
-      <PostView
-        initialPost={post}
-        initialComments={comments}
-        commentsFetchFailed={commentsFetchFailed}
-      />
-    </main>
+    <SitePageShell className="py-4 sm:py-6">
+      <div className="mx-auto w-full max-w-2xl lg:max-w-3xl">
+        <ArticleJsonLd
+          headline={post.title}
+          description={`${post.title} — cannabis home grow discussion on ${SITE_NAME}.`}
+          url={`${getSiteUrl()}/p/${id}`}
+          imageUrl={firstImage?.url}
+          datePublished={post.createdAt}
+        />
+        <PostView
+          initialPost={post}
+          initialComments={comments}
+          commentsFetchFailed={commentsFetchFailed}
+        />
+      </div>
+    </SitePageShell>
   );
 }

@@ -11,11 +11,11 @@ import {
 import {
   CommentDiscussionComposer,
 } from "@/components/comment-discussion-composer";
-import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
+import { CommentDmMediaGrid } from "@/components/comment-dm-media-grid";
+import { VoteScoreRail } from "@/components/vote-score-rail";
 import { UserProfileLink } from "@/components/user-profile-link";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
 import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
-import { normalizedViewerVote } from "@/lib/vote-ui";
 
 const COMMENT_AVATAR_COLORS = [
   "bg-[var(--gn-accent)]",
@@ -95,37 +95,6 @@ function CommentAvatar({
   );
 }
 
-function CommentLikeButton({
-  upvotes,
-  viewerVote,
-  disabled,
-  onLike,
-}: {
-  upvotes: number;
-  viewerVote: number | null | undefined;
-  disabled?: boolean;
-  onLike: () => void;
-}) {
-  const liked = normalizedViewerVote(viewerVote) === 1;
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onLike}
-      className={`text-xs font-medium transition hover:underline disabled:opacity-45 ${
-        liked
-          ? "text-[var(--gn-accent)]"
-          : "text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)]"
-      }`}
-    >
-      {liked ? "Liked" : "Like"}
-      {upvotes > 0 ? (
-        <span className="tabular-nums"> · {upvotes}</span>
-      ) : null}
-    </button>
-  );
-}
-
 export function CommentThread({
   comments,
   viewerId,
@@ -143,7 +112,7 @@ export function CommentThread({
   comments: CommentThreadItem[];
   viewerId: string | null;
   enableVotes?: boolean;
-  onVoteComment?: (commentId: string, value: 1) => void;
+  onVoteComment?: (commentId: string, value: 1 | -1) => void;
   onReplySubmit: (
     parentId: string,
     payload: { body: string; imageUrls: string[] },
@@ -258,7 +227,10 @@ export function CommentThread({
     const canDelete = isAuthor && Boolean(onDeleteComment);
     const tier = c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
     const upvotes = c.upvotes ?? 0;
-    const canReply = depth === 0 && viewerId && !replyDisabled;
+    const downvotes = c.downvotes ?? 0;
+    const score = c.score ?? upvotes - downvotes;
+    const canReply = Boolean(viewerId && !replyDisabled);
+    const replyParentId = depth === 0 ? c.id : (c.parentId ?? c.id);
     const isReplying = replyingToId === c.id;
     const canReport = Boolean(onReport) && !isAuthor;
     const showReportForm = reportingId === c.id && canReport && viewerId;
@@ -394,12 +366,8 @@ export function CommentThread({
                   <div
                     className={`overflow-visible ${c.body.trim() ? "mt-2.5" : "mt-1"}`}
                   >
-                    <StackedDmStyleImages
+                    <CommentDmMediaGrid
                       urls={cImgs}
-                      stackKey={c.id}
-                      pileLabel={
-                        cImgs.length > 1 ? `${cImgs.length} photos` : null
-                      }
                       onOpen={(index) => onOpenCommentImages(cImgs, index)}
                     />
                   </div>
@@ -443,13 +411,20 @@ export function CommentThread({
             ) : null}
 
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              {enableVotes && onVoteComment ? (
-                <CommentLikeButton
-                  upvotes={upvotes}
-                  viewerVote={c.viewerVote}
-                  disabled={busy}
-                  onLike={() => onVoteComment(c.id, 1)}
-                />
+              {enableVotes && onVoteComment && viewerId ? (
+                <div className="flex items-center gap-1" data-interactive>
+                  <VoteScoreRail
+                    score={score}
+                    upvotes={upvotes}
+                    downvotes={downvotes}
+                    viewerVote={c.viewerVote}
+                    onUp={() => onVoteComment(c.id, 1)}
+                    onDown={() => onVoteComment(c.id, -1)}
+                    disabled={busy}
+                    size="sm"
+                    titles={{ up: "Seed up", down: "Seed down" }}
+                  />
+                </div>
               ) : null}
               {canReply ? (
                 <button
@@ -493,7 +468,7 @@ export function CommentThread({
                   disabled={busy}
                   placeholder={`Reply to ${c.author.displayName ?? "member"}…`}
                   submitLabel="Reply"
-                  onSubmit={(payload) => submitInlineReply(c.id, payload)}
+                  onSubmit={(payload) => submitInlineReply(replyParentId, payload)}
                   onSubmitError={(msg) => setLocalError(msg)}
                 />
               </div>

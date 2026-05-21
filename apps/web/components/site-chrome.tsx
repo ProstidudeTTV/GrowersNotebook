@@ -145,7 +145,7 @@ export function SiteChrome({
         </div>
       ) : null}
 
-      <div className="relative z-0 flex min-h-0 flex-1 items-start">
+      <div className="relative z-0 flex min-h-0 flex-1 items-stretch">
         <button
           type="button"
           className={`fixed inset-0 z-40 bg-black/45 transition-opacity duration-200 ease-out lg:hidden ${
@@ -172,8 +172,8 @@ export function SiteChrome({
           }
         />
 
-        <div className="gn-app-canvas flex min-w-0 min-h-0 flex-1 flex-col overflow-x-auto overflow-y-visible">
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="gn-app-canvas flex min-h-full min-w-0 flex-1 flex-col overflow-x-auto overflow-y-visible">
+          <div className="flex min-h-full flex-1 flex-col">{children}</div>
           {hideFooter ? null : <SiteFooter />}
         </div>
       </div>

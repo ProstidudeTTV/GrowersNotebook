@@ -38,6 +38,7 @@ export default async function SiteLayout({
             slug: string;
             name: string;
             iconKey?: string | null;
+            iconUrl?: string | null;
           }>
         >("/communities/me/following", {
           token,
@@ -49,6 +50,7 @@ export default async function SiteLayout({
               slug: string;
               name: string;
               iconKey?: string | null;
+              iconUrl?: string | null;
             }>,
         )
       : Promise.resolve(
@@ -57,6 +59,7 @@ export default async function SiteLayout({
             slug: string;
             name: string;
             iconKey?: string | null;
+            iconUrl?: string | null;
           }>,
         ),
     apiFetch<{
@@ -82,7 +85,9 @@ export default async function SiteLayout({
 
   const profileRole = profileMe?.role ?? null;
   const staff =
-    profileRole === "admin" || profileRole === "moderator";
+    profileRole === "owner" ||
+    profileRole === "admin" ||
+    profileRole === "moderator";
   if (
     publicSiteConfig.maintenanceEnabled &&
     !staff &&

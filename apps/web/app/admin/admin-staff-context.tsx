@@ -5,7 +5,7 @@ import { adminAxios } from "@/lib/admin-axios";
 import { adminApiErrorMessage } from "@/lib/admin-api-error";
 import { createClient } from "@/lib/supabase/client";
 
-export type StaffRole = "admin" | "moderator";
+export type StaffRole = "admin" | "moderator" | "owner";
 
 export type InitialStaffSession = {
   userId: string;
@@ -89,7 +89,11 @@ export function AdminStaffProvider({
           setUserId(res.data.id);
           setDisplayName(res.data.displayName?.trim() || null);
           setStorageConfigured(res.data.storageConfigured ?? null);
-          if (res.data.role === "admin" || res.data.role === "moderator") {
+          if (
+            res.data.role === "admin" ||
+            res.data.role === "moderator" ||
+            res.data.role === "owner"
+          ) {
             setRole(res.data.role);
             setError(null);
           } else {
@@ -132,7 +136,7 @@ export function AdminStaffProvider({
     };
   }, [initial?.role, initial?.userId, initial?.displayName]);
 
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "owner";
 
   return (
     <AdminStaffContext.Provider

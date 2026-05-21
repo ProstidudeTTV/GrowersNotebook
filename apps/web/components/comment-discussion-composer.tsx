@@ -65,6 +65,7 @@ export function CommentDiscussionComposer({
   >([]);
   const [gifLoading, setGifLoading] = useState(false);
   const [gifConfigured, setGifConfigured] = useState(true);
+  const gifOffsetRef = useRef(0);
   const [submitting, setSubmitting] = useState(false);
   const commentPhotoInputId = useId();
   const pendingRef = useRef(pendingCommentImages);
@@ -81,21 +82,27 @@ export function CommentDiscussionComposer({
     };
   }, []);
 
-  const runGifSearch = useCallback(async (q: string) => {
+  const runGifSearch = useCallback(async (q: string, append = false) => {
     const trimmed = q.trim();
     const seq = ++gifFetchSeq.current;
     setGifLoading(true);
+    const offset = append ? gifOffsetRef.current : 0;
     try {
       const res =
         trimmed.length >= 2
-          ? await fetchGiphySearchItems(trimmed, { limit: 24 })
-          : await fetchGiphyTrendingItems({ limit: 24 });
+          ? await fetchGiphySearchItems(trimmed, { offset, limit: 24 })
+          : await fetchGiphyTrendingItems({ offset, limit: 24 });
       if (seq === gifFetchSeq.current) {
         setGifConfigured(res.configured !== false);
-        setGifItems(res.items);
+        setGifItems((prev) =>
+          append ? [...prev, ...res.items] : res.items,
+        );
+        gifOffsetRef.current = append
+          ? gifOffsetRef.current + res.items.length
+          : res.items.length;
       }
     } catch {
-      if (seq === gifFetchSeq.current) setGifItems([]);
+      if (seq === gifFetchSeq.current && !append) setGifItems([]);
     } finally {
       if (seq === gifFetchSeq.current) setGifLoading(false);
     }
@@ -105,8 +112,10 @@ export function CommentDiscussionComposer({
     if (!gifPickerOpen) {
       gifFetchSeq.current += 1;
       setGifLoading(false);
+      gifOffsetRef.current = 0;
       return;
     }
+    gifOffsetRef.current = 0;
     void runGifSearch(debouncedGifQuery);
   }, [debouncedGifQuery, gifPickerOpen, runGifSearch]);
 
@@ -372,6 +381,16 @@ export function CommentDiscussionComposer({
                   </li>
                 ))}
               </ul>
+              {gifConfigured && gifItems.length >= 12 ? (
+                <button
+                  type="button"
+                  className="mt-2 w-full rounded-lg py-2 text-xs font-semibold text-[var(--gn-accent)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                  disabled={gifLoading}
+                  onClick={() => void runGifSearch(gifQuery, true)}
+                >
+                  {gifLoading ? "Loading…" : "Load more GIFs"}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>

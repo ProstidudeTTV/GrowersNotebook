@@ -104,6 +104,8 @@ export default async function NotebooksDirectoryPage({
     hotVoteItems.length > 0 ? hotVoteItems : hotRecentItems;
   const hotNotebooksSource: "votes" | "recent" =
     hotVoteItems.length > 0 ? "votes" : "recent";
+  const listedIds = new Set(data.items.map((n) => n.id));
+  const hotSidebarNotebooks = hotNotebooks.filter((n) => !listedIds.has(n.id));
 
   const filterBase = {
     status,
@@ -115,7 +117,7 @@ export default async function NotebooksDirectoryPage({
 
   return (
     <main className="mx-auto max-w-[88rem] px-4 py-8">
-      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start lg:gap-8">
+      <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-8">
         {/* Main: directory */}
         <div className="order-1 min-w-0">
           {/* Hero header */}
@@ -230,7 +232,7 @@ export default async function NotebooksDirectoryPage({
             </div>
           </form>
 
-          <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-4xl lg:grid-cols-2">
             {data.items.map((n) => (
               <li key={n.id} className="min-h-0">
                 <NotebookDirectoryCard n={n} />
@@ -289,7 +291,7 @@ export default async function NotebooksDirectoryPage({
         </div>
 
         {/* Right sidebar: hot notebooks + explainer */}
-        <aside className="order-2 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:border-t-0 lg:pt-0 lg:sticky lg:top-20">
+        <aside className="order-2 min-w-0 space-y-6 border-t border-[var(--gn-border)] pt-10 lg:sticky lg:top-20 lg:self-start lg:border-t-0 lg:pt-0">
           {/* Hot notebooks */}
           <div className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
@@ -300,14 +302,18 @@ export default async function NotebooksDirectoryPage({
                 ? "Top by community votes, then recently updated."
                 : "Recently updated—vote ranking unavailable on this build."}
             </p>
-            {hotNotebooks.length > 0 ? (
+            {hotSidebarNotebooks.length > 0 ? (
               <ul className="grid gap-3">
-                {hotNotebooks.map((n) => (
+                {hotSidebarNotebooks.map((n) => (
                   <li key={n.id}>
                     <NotebookDirectoryCard n={n} />
                   </li>
                 ))}
               </ul>
+            ) : hotNotebooks.length > 0 ? (
+              <p className="text-sm text-[var(--gn-text-muted)]">
+                Hot picks are already in your results.
+              </p>
             ) : (
               <p className="text-sm text-[var(--gn-text-muted)]">
                 No public notebooks yet.

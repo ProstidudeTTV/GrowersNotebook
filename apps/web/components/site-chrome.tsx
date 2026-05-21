@@ -180,13 +180,13 @@ export function SiteChrome({
               : "overflow-y-auto overflow-x-hidden overscroll-contain"
           }`}
         >
-          <div
-            className={`flex min-h-0 flex-1 flex-col ${
-              viewportLocked ? "h-full min-h-0 overflow-hidden" : ""
-            }`}
-          >
-            {children}
-          </div>
+          {viewportLocked ? (
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              {children}
+            </div>
+          ) : (
+            children
+          )}
           {hideFooter ? null : <SiteFooter />}
         </div>
       </div>

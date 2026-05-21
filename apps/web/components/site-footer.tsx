@@ -9,7 +9,7 @@ const footerLinkClass =
 export function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-auto border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-4">
+    <footer className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-4">
       <div className="mx-auto flex max-w-[var(--gn-container-max)] flex-col items-center justify-between gap-3 text-center text-xs text-[var(--gn-text-muted)] sm:flex-row sm:text-left">
         <p>
           © {year} {SITE_NAME}

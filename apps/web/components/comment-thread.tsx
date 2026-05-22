@@ -74,7 +74,7 @@ function CommentAvatar({
   avatarUrl?: string | null;
   size?: "md" | "sm";
 }) {
-  const dim = size === "sm" ? "h-7 w-7 text-[10px]" : "h-9 w-9 text-[11px]";
+  const dim = size === "sm" ? "h-8 w-8 text-[11px]" : "h-10 w-10 text-xs";
   if (avatarUrl?.trim()) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -250,9 +250,9 @@ export function CommentThread({
             avatarUrl={c.author.avatarUrl}
             size={depth === 0 ? "md" : "sm"}
           />
-          <div className="min-w-0 flex-1 rounded-2xl bg-[var(--gn-surface-elevated)] px-3.5 py-3 shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)]">
+          <div className="min-w-0 flex-1 rounded-2xl bg-[var(--gn-surface-elevated)] px-4 py-3.5 shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)] sm:px-5 sm:py-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="text-xs text-[var(--gn-text-muted)]">
+              <div className="gn-discussion-meta min-w-0">
                 <UserProfileLink
                   userId={c.author.id}
                   className="font-semibold text-[var(--gn-text)] transition hover:text-[var(--gn-accent)] hover:underline"
@@ -363,7 +363,7 @@ export function CommentThread({
             ) : (
               <>
                 {c.body.trim() ? (
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text)]">
+                  <p className="gn-discussion-body mt-2 whitespace-pre-wrap text-[var(--gn-text)]">
                     {c.body}
                   </p>
                 ) : null}
@@ -436,7 +436,7 @@ export function CommentThread({
               {canReply ? (
                 <button
                   type="button"
-                  className="text-xs font-medium text-[var(--gn-accent)] transition hover:underline"
+                  className="gn-discussion-action font-medium text-[var(--gn-accent)] transition hover:underline"
                   onClick={() =>
                     setReplyingToId((id) => (id === c.id ? null : c.id))
                   }
@@ -447,7 +447,7 @@ export function CommentThread({
               {canReport && viewerId ? (
                 <button
                   type="button"
-                  className="text-xs font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-accent)] hover:underline"
+                  className="gn-discussion-action font-medium text-[var(--gn-text-muted)] transition hover:text-[var(--gn-accent)] hover:underline"
                   onClick={() => {
                     setReportingId((id) => (id === c.id ? null : c.id));
                     setReportDraft("");
@@ -461,7 +461,7 @@ export function CommentThread({
               {!viewerId && onReport ? (
                 <Link
                   href={signInToReportHref}
-                  className="text-xs font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
+                  className="gn-discussion-action font-medium text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
                 >
                   Sign in to report
                 </Link>
@@ -497,5 +497,9 @@ export function CommentThread({
   const roots = byParent.get(null) ?? [];
   if (roots.length === 0) return null;
 
-  return <ul className="list-none pl-0">{roots.map((c) => renderComment(c, 0))}</ul>;
+  return (
+    <ul className="gn-discussion-thread list-none pl-0">
+      {roots.map((c) => renderComment(c, 0))}
+    </ul>
+  );
 }

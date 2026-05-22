@@ -262,6 +262,58 @@ html.dark body {
     }
   }
 
+  /** Post/notebook comment threads — readable type, full-width composer */
+  .gn-discussion-composer {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .gn-discussion-composer .gn-discussion-input {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-discussion-composer .gn-discussion-input {
+      font-size: 1.0625rem;
+      line-height: 1.55;
+    }
+  }
+
+  .gn-discussion-thread .gn-discussion-meta {
+    color: var(--gn-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-discussion-thread .gn-discussion-meta {
+      font-size: 0.875rem;
+    }
+  }
+
+  .gn-discussion-thread .gn-discussion-body {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-discussion-thread .gn-discussion-body {
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+  }
+
+  .gn-discussion-thread .gn-discussion-action {
+    font-size: 0.8125rem;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-discussion-thread .gn-discussion-action {
+      font-size: 0.875rem;
+    }
+  }
+
   /**
    * Themed scrollbars for modals and nested panels (avoids default light/white
    * tracks on Windows/WebKit in dark mode).

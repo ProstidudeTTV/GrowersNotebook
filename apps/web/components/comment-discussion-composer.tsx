@@ -277,7 +277,7 @@ export function CommentDiscussionComposer({
     !pendingCommentImages.some((a) => a.uploading || a.error);
 
   return (
-    <div className="space-y-2">
+    <div className="gn-discussion-composer flex w-full min-w-0 flex-col gap-3">
       <input
         id={commentPhotoInputId}
         type="file"
@@ -288,149 +288,13 @@ export function CommentDiscussionComposer({
         onChange={onCommentImageFiles}
       />
       <textarea
-        className="gn-input min-h-[5.5rem] w-full rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-3 text-sm sm:min-h-[6rem]"
+        className="gn-input gn-discussion-input min-h-[5.5rem] w-full rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-3 sm:min-h-[6rem]"
         rows={4}
         placeholder={placeholder}
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={!viewerId || busy}
       />
-      <ComposerQuickReactionsToolbar
-        disabled={!viewerId || busy}
-        onEmojiAppend={(emoji) => setText((t) => t + emoji)}
-        gifSlot={
-          <button
-            type="button"
-            disabled={
-              !viewerId ||
-              busy ||
-              pendingHasUploads ||
-              pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX
-            }
-            className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
-            onClick={() => setGifPickerOpen((o) => !o)}
-          >
-            GIF
-          </button>
-        }
-      />
-      {gifPickerOpen && viewerId ? (
-        <div className="rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
-          <div className="flex flex-wrap gap-2">
-            <input
-              className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
-              placeholder="Search Giphy…"
-              value={gifQuery}
-              aria-busy={gifLoading}
-              onChange={(e) => setGifQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void runGifSearch(gifQuery);
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
-              onClick={() => void runGifSearch(gifQuery)}
-            >
-              {gifLoading ? "…" : "Search now"}
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-            One GIF per comment, and not with photos. Powered by Giphy.
-          </p>
-          {!gifConfigured ? (
-            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-              GIF search is not configured on this server. Ask an admin to set
-              GIPHY_API_KEY.
-            </p>
-          ) : null}
-          {gifConfigured &&
-          !gifLoading &&
-          gifItems.length === 0 &&
-          debouncedGifQuery.trim().length < 2 ? (
-            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
-              Trending GIFs appear here. Type to search.
-            </p>
-          ) : null}
-          {gifItems.length > 0 ? (
-            <div
-              className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-40 overflow-y-auto overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
-              role="region"
-              aria-label="Giphy search results"
-            >
-              <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {gifItems.map((g, gi) => (
-                  <li key={g.id ?? `${g.url}-${gi}`}>
-                    <button
-                      type="button"
-                      className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
-                      title={g.title}
-                      onClick={() => addGifToComment(g.url)}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={g.preview}
-                        alt=""
-                        className="h-16 w-full object-cover sm:h-20"
-                        loading="lazy"
-                      />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {gifConfigured && gifItems.length >= 12 ? (
-                <button
-                  type="button"
-                  className="mt-2 w-full rounded-lg py-2 text-xs font-semibold text-[var(--gn-accent)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-                  disabled={gifLoading}
-                  onClick={() => void runGifSearch(gifQuery, true)}
-                >
-                  {gifLoading ? "Loading…" : "Load more GIFs"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="flex flex-wrap items-center gap-2">
-        {busy ||
-        pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX ||
-        !viewerId ? (
-          <span
-            className="inline-flex rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] opacity-50"
-            aria-disabled
-          >
-            Add photos ({pendingCommentImages.length}/
-            {COMMENT_DISCUSSION_ATTACH_MAX})
-          </span>
-        ) : (
-          <label
-            htmlFor={commentPhotoInputId}
-            className="inline-flex cursor-pointer touch-manipulation select-none rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
-          >
-            Add photos ({pendingCommentImages.length}/
-            {COMMENT_DISCUSSION_ATTACH_MAX})
-          </label>
-        )}
-        {pendingCommentImages.length > 0 ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              setPendingCommentImages((prev) => {
-                for (const a of prev) revokePendingCommentImage(a);
-                return [];
-              })
-            }
-            className="text-xs font-semibold text-[var(--gn-accent)] hover:underline disabled:opacity-50"
-          >
-            Clear photos
-          </button>
-        ) : null}
-      </div>
       {pendingCommentImages.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {pendingCommentImages.map((att) => {
@@ -438,7 +302,7 @@ export function CommentDiscussionComposer({
             return (
               <div
                 key={att.id}
-                className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-16 sm:w-16"
+                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] sm:h-20 sm:w-20"
               >
                 {src ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -485,12 +349,152 @@ export function CommentDiscussionComposer({
           })}
         </div>
       ) : null}
+      {gifPickerOpen && viewerId ? (
+        <div className="rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-md)] ring-1 ring-[var(--gn-divide)]">
+          <div className="flex flex-wrap gap-2">
+            <input
+              className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
+              placeholder="Search Giphy…"
+              value={gifQuery}
+              aria-busy={gifLoading}
+              onChange={(e) => setGifQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void runGifSearch(gifQuery);
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="rounded-full bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)]"
+              onClick={() => void runGifSearch(gifQuery)}
+            >
+              {gifLoading ? "…" : "Search now"}
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+            One GIF per comment (not with photos). Powered by Giphy.
+          </p>
+          {!gifConfigured ? (
+            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+              GIF search is not configured on this server. Ask an admin to set
+              GIPHY_API_KEY.
+            </p>
+          ) : null}
+          {gifConfigured &&
+          !gifLoading &&
+          gifItems.length === 0 &&
+          debouncedGifQuery.trim().length < 2 ? (
+            <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
+              Trending GIFs appear here. Type to search.
+            </p>
+          ) : null}
+          {gifItems.length > 0 ? (
+            <div
+              className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-52 overflow-y-auto overscroll-contain rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] py-3 pl-2 pr-3 lg:max-h-64"
+              role="region"
+              aria-label="Giphy search results"
+            >
+              <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {gifItems.map((g, gi) => (
+                  <li key={g.id ?? `${g.url}-${gi}`}>
+                    <button
+                      type="button"
+                      className="relative block w-full touch-manipulation overflow-hidden rounded-lg ring-1 ring-[var(--gn-divide)] hover:ring-[var(--gn-accent)]"
+                      title={g.title}
+                      onClick={() => addGifToComment(g.url)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={g.preview}
+                        alt=""
+                        className="h-20 w-full object-cover sm:h-24 lg:h-28"
+                        loading="lazy"
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {gifConfigured && gifItems.length >= 12 ? (
+                <button
+                  type="button"
+                  className="mt-2 w-full rounded-lg py-2 text-xs font-semibold text-[var(--gn-accent)] ring-1 ring-[var(--gn-divide)] hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
+                  disabled={gifLoading}
+                  onClick={() => void runGifSearch(gifQuery, true)}
+                >
+                  {gifLoading ? "Loading…" : "Load more GIFs"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <ComposerQuickReactionsToolbar
+        disabled={!viewerId || busy}
+        onEmojiAppend={(emoji) => setText((t) => t + emoji)}
+        gifSlot={
+          <button
+            type="button"
+            disabled={
+              !viewerId ||
+              busy ||
+              pendingHasUploads ||
+              pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX
+            }
+            className={`inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-sm font-semibold shadow-[var(--gn-shadow-sm)] transition disabled:pointer-events-none disabled:opacity-35 ${
+              gifPickerOpen
+                ? "border-[var(--gn-accent)] bg-[color-mix(in_srgb,var(--gn-accent)_18%,var(--gn-surface-elevated))] text-[var(--gn-accent)]"
+                : "border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+            }`}
+            onClick={() => setGifPickerOpen((o) => !o)}
+          >
+            GIF
+          </button>
+        }
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        {busy ||
+        pendingCommentImages.length >= COMMENT_DISCUSSION_ATTACH_MAX ||
+        !viewerId ? (
+          <span
+            className="inline-flex rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] opacity-50"
+            aria-disabled
+          >
+            Add photos ({pendingCommentImages.length}/
+            {COMMENT_DISCUSSION_ATTACH_MAX})
+          </span>
+        ) : (
+          <label
+            htmlFor={commentPhotoInputId}
+            className="inline-flex cursor-pointer touch-manipulation select-none rounded-full border border-[var(--gn-ring)] bg-[var(--gn-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)]"
+          >
+            Add photos ({pendingCommentImages.length}/
+            {COMMENT_DISCUSSION_ATTACH_MAX})
+          </label>
+        )}
+        {pendingCommentImages.length > 0 ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              setPendingCommentImages((prev) => {
+                for (const a of prev) revokePendingCommentImage(a);
+                return [];
+              })
+            }
+            className="text-sm font-semibold text-[var(--gn-accent)] hover:underline disabled:opacity-50"
+          >
+            Clear photos
+          </button>
+        ) : null}
+      </div>
       {replyBanner}
       <button
         type="button"
         onClick={() => void submit()}
         disabled={!viewerId || busy || !canSend}
-        className="self-end rounded-full bg-[var(--gn-accent)] px-4 py-2.5 text-sm font-medium text-[var(--gn-on-accent)] transition hover:brightness-110 disabled:opacity-50"
+        className="self-end rounded-full bg-[var(--gn-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--gn-on-accent)] transition hover:brightness-110 disabled:opacity-50"
       >
         {submitting ? "Posting…" : submitLabel}
       </button>

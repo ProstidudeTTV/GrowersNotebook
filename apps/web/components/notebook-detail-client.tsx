@@ -1280,7 +1280,7 @@ export function NotebookDetailClient({
           />
         ) : null}
         <SectionHeading>Comments</SectionHeading>
-        <div className="mt-4 rounded-2xl bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-sm)]">
+        <div className="mt-4 rounded-2xl bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-sm)] sm:p-5">
           {commentComposerError ? (
             <p className="mb-2 text-sm text-red-600 dark:text-red-400">
               {commentComposerError}
@@ -1299,7 +1299,7 @@ export function NotebookDetailClient({
             onSubmitError={(msg) => setCommentComposerError(msg)}
           />
         </div>
-        <div className="mt-4">
+        <div className="mt-5 min-w-0">
           <CommentThread
             comments={comments}
             viewerId={viewerId}

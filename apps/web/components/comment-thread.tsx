@@ -14,7 +14,8 @@ import {
 import { StackedDmStyleImages } from "@/components/stacked-dm-style-images";
 import { VoteScoreRail } from "@/components/vote-score-rail";
 import { UserProfileLink } from "@/components/user-profile-link";
-import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
+import { AuthorMetaBadges } from "@/components/author-meta-badges";
+import { formatSeeds } from "@/lib/grower-display";
 import { dedupeUrlsPreserveOrder } from "@/lib/dm-media-url";
 
 const COMMENT_AVATAR_COLORS = [
@@ -40,6 +41,7 @@ export type CommentThreadAuthor = {
   avatarUrl?: string | null;
   seeds?: number | null;
   growerLevel?: string | null;
+  role?: string | null;
 };
 
 export type CommentThreadItem = {
@@ -225,7 +227,6 @@ export function CommentThread({
     const cImgs = commentImageUrls(c);
     const isAuthor = viewerId != null && viewerId === c.authorId;
     const canDelete = isAuthor && Boolean(onDeleteComment);
-    const tier = c.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
     const upvotes = c.upvotes ?? 0;
     const downvotes = c.downvotes ?? 0;
     const score = c.score ?? upvotes - downvotes;
@@ -273,7 +274,11 @@ export function CommentThread({
                   </>
                 ) : null}
                 <span> · </span>
-                <span title="Grower tier">{tier}</span>
+                <AuthorMetaBadges
+                  growerLevel={c.author.growerLevel}
+                  role={c.author.role}
+                  compact
+                />
                 {c.author.seeds != null ? (
                   <>
                     <span> · </span>

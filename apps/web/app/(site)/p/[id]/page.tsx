@@ -29,6 +29,7 @@ type PostDetail = {
     avatarUrl?: string | null;
     seeds: number;
     growerLevel: string;
+    role?: string | null;
     viewerFollowing?: boolean;
   };
 };
@@ -50,6 +51,7 @@ type CommentRow = {
     displayName: string | null;
     seeds: number;
     growerLevel: string;
+    role?: string | null;
   };
 };
 

@@ -189,6 +189,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         communitySlug: communities.slug,
         communityName: communities.name,
@@ -285,6 +286,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         community: {
           slug: communities.slug,
@@ -415,6 +417,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         community: {
           slug: communities.slug,
@@ -749,6 +752,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         communitySlug: communities.slug,
         communityName: communities.name,
@@ -866,6 +870,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         pinnedAt: communityPins.pinnedAt,
         authorSeeds: authorSeedsExpr.as('author_seeds'),
@@ -976,6 +981,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         community: {
           slug: communities.slug,
@@ -1067,6 +1073,7 @@ export class PostsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         community: {
           slug: communities.slug,

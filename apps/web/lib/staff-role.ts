@@ -8,3 +8,10 @@ export function isStaffRole(role: string | null | undefined): role is StaffRole 
 export function isAdminRole(role: string | null | undefined): boolean {
   return role === "owner" || role === "admin";
 }
+
+export function staffRoleLabel(role: string | null | undefined): string | null {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  if (role === "moderator") return "Mod";
+  return null;
+}

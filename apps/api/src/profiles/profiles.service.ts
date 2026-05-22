@@ -46,8 +46,12 @@ import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
+const LAST_SEEN_TOUCH_MS = 120_000;
+
 @Injectable()
 export class ProfilesService {
+  private readonly lastSeenTouchAt = new Map<string, number>();
+
   constructor(
     private readonly blocks: BlocksService,
     private readonly follows: FollowsService,
@@ -61,6 +65,18 @@ export class ProfilesService {
     const db = getDb();
     const [row] = await db.select().from(profiles).where(eq(profiles.id, id));
     return row ?? null;
+  }
+
+  /** Rolling activity for `growers_online_count()` — throttled to reduce write load. */
+  async touchLastSeen(userId: string): Promise<void> {
+    const now = Date.now();
+    const prev = this.lastSeenTouchAt.get(userId) ?? 0;
+    if (now - prev < LAST_SEEN_TOUCH_MS) return;
+    this.lastSeenTouchAt.set(userId, now);
+    await getDb()
+      .update(profiles)
+      .set({ lastSeen: new Date() })
+      .where(eq(profiles.id, userId));
   }
 
   /** Admin Refine edit forms — ISO date strings + ban/suspend flags. */
@@ -263,6 +279,11 @@ export class ProfilesService {
         .where(eq(userFollows.followerId, profileId)),
     ]);
 
+    const staffRole =
+      row.role === 'owner' || row.role === 'admin' || row.role === 'moderator'
+        ? row.role
+        : null;
+
     return {
       id: row.id,
       displayName: row.displayName,
@@ -270,6 +291,7 @@ export class ProfilesService {
       avatarUrl: row.avatarUrl,
       bannerUrl: row.bannerUrl,
       createdAt: row.createdAt,
+      role: staffRole,
       seeds: statsPublic ? seeds : null,
       growerLevel: statsPublic ? growerLevelFromSeeds(seeds) : null,
       followerCount: Number(followerCount ?? 0),

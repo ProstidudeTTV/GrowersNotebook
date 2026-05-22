@@ -8,6 +8,7 @@ import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
 import { createClient } from "@/lib/supabase/server";
+import { fetchGrowersOnlineCount } from "@/lib/growers-online";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { SITE_NAME, SITE_TAGLINE, canonicalPath } from "@/lib/site-config";
 
@@ -105,7 +106,10 @@ export default async function HotWeekPage({
   const config = RANGE_CONFIG[range];
 
   const supabase = await createClient();
-  const token = await getAccessTokenForApi(supabase);
+  const [token, growersOnline] = await Promise.all([
+    getAccessTokenForApi(supabase),
+    fetchGrowersOnlineCount(supabase),
+  ]);
 
   let feed: FeedResponse = {
     items: [],
@@ -168,8 +172,8 @@ export default async function HotWeekPage({
   );
 
   return (
-    <SitePageShell banner={banner} className="pb-12 pt-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+    <SitePageShell banner={banner} className="pb-12">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 space-y-6">
           <PostComposerPrompt />
           {feed.items.length === 0 ? (
@@ -200,7 +204,7 @@ export default async function HotWeekPage({
           ) : null}
         </div>
         <aside className="w-full shrink-0 lg:w-72">
-          <FeedSidebar hideHotPosts />
+          <FeedSidebar hideHotPosts growersOnline={growersOnline} />
         </aside>
       </div>
     </SitePageShell>

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CommunityIcon } from "@/components/community-icon";
+import { AuthorMetaBadges } from "@/components/author-meta-badges";
 import type { FeedPost } from "@/lib/feed-post";
 
 function timeAgo(iso: string): string {
@@ -85,10 +86,17 @@ function HotPostRow({
             {post.score} seeds
           </span>
         </div>
-        <p className="mt-1.5 text-[11px] text-[var(--gn-text-muted)]">
-          {post.author.displayName?.trim() || "Grower"}
-          <span aria-hidden> · </span>
-          {timeAgo(post.createdAt)}
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-[var(--gn-text-muted)]">
+          <span className="font-medium text-[var(--gn-text)]">
+            {post.author.displayName?.trim() || "Grower"}
+          </span>
+          <AuthorMetaBadges
+            growerLevel={post.author.growerLevel}
+            role={post.author.role}
+            compact
+          />
+          <span aria-hidden>·</span>
+          <span>{timeAgo(post.createdAt)}</span>
           {typeof post.commentCount === "number" && post.commentCount > 0 ? (
             <>
               <span aria-hidden> · </span>

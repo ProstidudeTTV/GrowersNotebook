@@ -17,6 +17,7 @@ type PublicProfile = {
   avatarUrl: string | null;
   seeds: number | null;
   growerLevel: string | null;
+  role?: string | null;
   viewerFollowing: boolean;
   viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;

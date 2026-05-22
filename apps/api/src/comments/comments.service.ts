@@ -418,6 +418,7 @@ export class CommentsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         parentAuthor: {
           id: parentAuthor.id,
@@ -473,6 +474,7 @@ export class CommentsService {
           id: profiles.id,
           displayName: profiles.displayName,
           avatarUrl: profiles.avatarUrl,
+          role: profiles.role,
         },
         upvotes: commentUpVotesExpr.as('upvotes'),
         downvotes: commentDownVotesExpr.as('downvotes'),

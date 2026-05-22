@@ -12,6 +12,7 @@ import {
 } from "@/components/comment-action-menu";
 import { CommunityIcon } from "@/components/community-icon";
 import { PostShareButton } from "@/components/post-share-button";
+import { AuthorMetaBadges } from "@/components/author-meta-badges";
 import { VoteScoreRail } from "@/components/vote-score-rail";
 import { apiFetch } from "@/lib/api-public";
 import { formatFeedExcerpt } from "@/lib/feed-excerpt";
@@ -291,13 +292,18 @@ export function FeedPostCard({
         >
           {local.author.displayName ?? "member"}
         </Link>
+        <AuthorMetaBadges
+          growerLevel={local.author.growerLevel}
+          role={local.author.role}
+          compact
+        />
         <span aria-hidden className="opacity-40">·</span>
         <span title={new Date(local.createdAt).toLocaleString()}>
           {timeAgo(local.createdAt)}
         </span>
       </div>
     ) : (
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[var(--gn-text-muted)]">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-[var(--gn-text-muted)]">
         <Link
           href={`/u/${local.author.id}`}
           className="font-semibold text-[var(--gn-text)] hover:underline"
@@ -306,6 +312,11 @@ export function FeedPostCard({
         >
           {local.author.displayName ?? "member"}
         </Link>
+        <AuthorMetaBadges
+          growerLevel={local.author.growerLevel}
+          role={local.author.role}
+          compact
+        />
         <span aria-hidden className="opacity-40">·</span>
         <span title={new Date(local.createdAt).toLocaleString()}>
           {timeAgo(local.createdAt)}

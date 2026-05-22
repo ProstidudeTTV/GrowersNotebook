@@ -20,7 +20,9 @@ import {
 } from "@/components/profile-comments-list";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
+import { StaffRoleBadge } from "@/components/staff-role-badge";
 import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
+import { isStaffRole } from "@/lib/staff-role";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 
@@ -32,6 +34,7 @@ type PublicProfile = {
   bannerUrl?: string | null;
   seeds: number | null;
   growerLevel: string | null;
+  role?: string | null;
   viewerFollowing: boolean;
   viewerHasBlocked?: boolean;
   profileFeedHiddenFromViewer?: boolean;
@@ -261,12 +264,13 @@ export function ProfileView({
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
-      {/* Profile header — clean card (no full-bleed banner) */}
+      {/* Profile header */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] sm:mt-6">
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+        <div className="h-1.5 bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_55%,transparent)] via-[var(--gn-accent)] to-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)]" />
+        <div className="p-5 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
             <span
-              className={`flex h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-2 ring-[var(--gn-divide)] bg-gradient-to-br sm:h-24 sm:w-24 ${avatarGrad}`}
+              className={`mx-auto flex h-24 w-24 shrink-0 overflow-hidden rounded-2xl ring-2 ring-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-divide))] bg-gradient-to-br sm:mx-0 sm:h-28 sm:w-28 ${avatarGrad}`}
             >
               {profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -330,12 +334,15 @@ export function ProfileView({
                   </Link>
                 ) : null}
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 {!statsHidden && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/10 px-3 py-0.5 text-xs font-semibold text-[var(--gn-accent)]">
                     {tierEmoji} {tierLabel}
                   </span>
                 )}
+                {isStaffRole(profile.role) ? (
+                  <StaffRoleBadge role={profile.role} />
+                ) : null}
                 {!statsHidden && profile.seeds != null && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gn-surface-elevated)] px-3 py-0.5 text-xs font-semibold text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]">
                     🌱 {formatSeeds(profile.seeds)} Seeds
@@ -444,66 +451,58 @@ export function ProfileView({
           </p>
         ) : null}
 
-        {/* ── Stats strip ──────────────────────────────────────────────── */}
-        <div className="border-t border-[var(--gn-divide)] py-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
-            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-              {postsTotal}
-            </strong>
-            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">posts</span>
-          </span>
-          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-          <span className="flex flex-col items-center sm:flex-row sm:gap-1">
-            <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-              {commentsTotal}
-            </strong>
-            <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">comments</span>
-          </span>
-          <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
+        {/* Stats strip */}
+        <div className="grid grid-cols-2 gap-3 border-t border-[var(--gn-divide)] py-4 sm:grid-cols-4">
+          <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
+            <p className="text-lg font-bold text-[var(--gn-text)]">{postsTotal}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+              Posts
+            </p>
+          </div>
+          <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
+            <p className="text-lg font-bold text-[var(--gn-text)]">{commentsTotal}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+              Comments
+            </p>
+          </div>
           {profile.followListsHiddenFromViewer && !isOwn ? (
             <>
-              <span className="flex flex-col items-center sm:flex-row sm:gap-1">
-                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-                  —
-                </strong>
-                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
-                  followers
-                </span>
-              </span>
-              <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
-              <span className="flex flex-col items-center sm:flex-row sm:gap-1">
-                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
-                  —
-                </strong>
-                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
-                  following
-                </span>
-              </span>
+              <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
+                <p className="text-lg font-bold text-[var(--gn-text)]">—</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  Followers
+                </p>
+              </div>
+              <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
+                <p className="text-lg font-bold text-[var(--gn-text)]">—</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  Following
+                </p>
+              </div>
             </>
           ) : (
             <>
               <Link
                 href={`${base}/followers`}
-                className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+                className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center transition hover:bg-[var(--gn-surface-hover)]"
               >
-                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                <p className="text-lg font-bold text-[var(--gn-text)]">
                   {profile.followerCount ?? 0}
-                </strong>
-                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
-                  followers
-                </span>
+                </p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  Followers
+                </p>
               </Link>
-              <span className="text-[var(--gn-divide)] hidden sm:block">·</span>
               <Link
                 href={`${base}/following`}
-                className="flex flex-col items-center sm:flex-row sm:gap-1 transition hover:text-[var(--gn-accent)]"
+                className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center transition hover:bg-[var(--gn-surface-hover)]"
               >
-                <strong className="font-bold text-[var(--gn-text)] text-base leading-none">
+                <p className="text-lg font-bold text-[var(--gn-text)]">
                   {profile.followingCount ?? 0}
-                </strong>
-                <span className="text-[var(--gn-text-muted)] text-xs sm:text-sm">
-                  following
-                </span>
+                </p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                  Following
+                </p>
               </Link>
             </>
           )}
@@ -518,7 +517,7 @@ export function ProfileView({
       </div>
 
       {/* ── Tab navigation ───────────────────────────────────────────── */}
-      <div className="sticky top-14 z-10 -mx-4 mt-4 border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 sm:-mx-6 sm:px-6">
+      <div className="sticky top-14 z-10 -mx-4 mt-6 border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/95 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
         <div className="-mb-px flex gap-0.5">
           {tabItems.map((t) => {
             const isActive = activeTab === t.id;

@@ -22,7 +22,8 @@ import {
   bodyHtmlIsSubmittable,
   MAX_POST_MEDIA,
 } from "@/lib/post-draft-validation";
-import { DEFAULT_GROWER_RANK, formatSeeds } from "@/lib/grower-display";
+import { AuthorMetaBadges } from "@/components/author-meta-badges";
+import { formatSeeds } from "@/lib/grower-display";
 import {
   normalizedViewerVote,
   parseVoteMutationResponse,
@@ -43,6 +44,7 @@ type Author = {
   avatarUrl?: string | null;
   seeds?: number | null;
   growerLevel?: string | null;
+  role?: string | null;
   viewerFollowing?: boolean;
 };
 
@@ -668,7 +670,6 @@ export function PostView({
     }
   };
 
-  const authorTier = post.author.growerLevel?.trim() || DEFAULT_GROWER_RANK;
   const isOp = Boolean(viewerId && viewerId === post.author.id);
   const showPostBody = postBodyHtmlIsMeaningful(post.bodyHtml);
   const carouselMedia = !editingPost ? (post.media ?? []) : [];
@@ -741,9 +742,11 @@ export function PostView({
               >
                 {post.author.displayName ?? "member"}
               </UserProfileLink>
-              <span className="rounded-full bg-[var(--gn-accent)]/15 px-2 py-0.5 text-[10px] text-[var(--gn-accent)]">
-                {authorTier}
-              </span>
+              <AuthorMetaBadges
+                growerLevel={post.author.growerLevel}
+                role={post.author.role}
+                compact
+              />
               <span className="text-[var(--gn-text-muted)]" title="Net seeds from this grower">
                 {formatSeeds(post.author.seeds)} seeds
               </span>

@@ -19,6 +19,7 @@ export type FeedPost = {
     avatarUrl?: string | null;
     seeds: number;
     growerLevel: string;
+    role?: string | null;
     viewerFollowing?: boolean;
   };
   /** Comment count (community / list feeds). */

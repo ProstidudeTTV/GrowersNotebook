@@ -66,11 +66,18 @@ export async function FeedSidebar({
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--gn-text)]">
-              {growersOnline > 0 ? growersOnline.toLocaleString() : "—"}{" "}
-              growers growing right now
+              {growersOnline > 0 ? (
+                <>
+                  {growersOnline.toLocaleString()} growers active now
+                </>
+              ) : (
+                "No growers active right now"
+              )}
             </p>
-            <p className="text-xs text-[var(--gn-text-muted)]">
-              Share your grow with the community
+            <p className="text-xs leading-relaxed text-[var(--gn-text-muted)]">
+              {growersOnline > 0
+                ? "Active in the last 15 minutes on Growers Notebook."
+                : "Counts update when signed-in growers browse, post, or comment."}
             </p>
           </div>
         </div>

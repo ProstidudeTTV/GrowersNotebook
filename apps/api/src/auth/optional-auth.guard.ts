@@ -39,6 +39,7 @@ export class OptionalAuthGuard implements CanActivate {
           mailingListOptInFromJwt(payload),
         );
         await this.profiles.enforceActiveAccountOrThrow(payload.sub);
+        void this.profiles.touchLastSeen(payload.sub);
         request.user = payload;
       }
     } catch (e) {

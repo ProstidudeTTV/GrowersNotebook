@@ -15,7 +15,7 @@ export function SitePageShell({ banner, children, className }: Props) {
   return (
     <div className={className}>
       {banner ? <div className="w-full shrink-0">{banner}</div> : null}
-      <div className="mx-auto w-full max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] pt-6 sm:px-[var(--gn-gutter)] sm:pt-8">
+      <div className="mx-auto w-full max-w-[var(--gn-container-max)] px-[var(--gn-gutter-mobile)] pt-8 sm:px-[var(--gn-gutter)] sm:pt-10">
         {children}
       </div>
     </div>

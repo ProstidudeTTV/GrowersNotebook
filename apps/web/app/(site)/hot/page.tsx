@@ -118,6 +118,7 @@ export default async function HotWeekPage({
     page: 1,
     pageSize,
   };
+  let usedRecentFallback = false;
   try {
     const qs = new URLSearchParams({
       page: String(page),
@@ -129,6 +130,13 @@ export default async function HotWeekPage({
         token: token ?? undefined,
       },
     );
+    if (feed.items.length === 0 && page === 1) {
+      feed = await apiFetch<FeedResponse>(
+        `/posts/recent?${qs.toString()}`,
+        { token: token ?? undefined },
+      );
+      usedRecentFallback = feed.items.length > 0;
+    }
   } catch {
     /* API offline */
   }
@@ -173,12 +181,22 @@ export default async function HotWeekPage({
   return (
     <SitePageShell banner={banner} className="pb-12">
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1 space-y-6">
-          <PostComposerPrompt />
+        <div className="min-w-0 flex-1 space-y-8">
+          <div className="pt-1">
+            <PostComposerPrompt />
+          </div>
           {feed.items.length === 0 ? (
             <HotEmptyState range={range} signedIn={!!token} />
           ) : (
-            <HotWeekPageLeaderboard items={feed.items} />
+            <>
+              {usedRecentFallback ? (
+                <p className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-4 py-3 text-sm text-[var(--gn-text-muted)]">
+                  No trending posts in this window yet — showing the latest
+                  from the community instead.
+                </p>
+              ) : null}
+              <HotWeekPageLeaderboard items={feed.items} />
+            </>
           )}
 
           {feed.total > feed.pageSize ? (

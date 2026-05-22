@@ -13,7 +13,7 @@ import { CommunityIcon } from "@/components/community-icon";
 import { formatVoteScore } from "@/lib/grower-display";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth-provider";
-import { SidebarMessagesLink } from "@/components/sidebar-messages-link";
+import { MessagesUnreadDot } from "@/components/sidebar-messages-link";
 import { isStaffRole } from "@/lib/staff-role";
 
 export type SidebarCommunity = {
@@ -259,15 +259,20 @@ export function AppSidebar({
           </Link>
 
           {authed ? (
-            <SidebarMessagesLink
+            <Link
+              href="/messages"
               className={navClass("/messages")}
-              onNavigate={afterNav}
+              onClick={afterNav}
+              aria-current={navAriaCurrent("/messages")}
             >
-              <NavIcon color="bg-sky-500/15 text-sky-500 dark:text-sky-400">
-                <IconMessage />
-              </NavIcon>
+              <span className="relative shrink-0">
+                <NavIcon color="bg-sky-500/15 text-sky-500 dark:text-sky-400">
+                  <IconMessage />
+                </NavIcon>
+                <MessagesUnreadDot />
+              </span>
               Messages
-            </SidebarMessagesLink>
+            </Link>
           ) : null}
 
           {isStaff ? (

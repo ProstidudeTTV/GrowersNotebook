@@ -55,8 +55,10 @@ export default async function FollowingPage({
   return (
     <SitePageShell banner={banner} className="pb-16">
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
-          <PostComposerPrompt />
+        <div className="min-w-0 flex-1 space-y-8">
+          <div className="pt-1">
+            <PostComposerPrompt />
+          </div>
           <FollowingFeed sort={sort} page={page} />
         </div>
         <div className="w-full shrink-0 lg:w-72">

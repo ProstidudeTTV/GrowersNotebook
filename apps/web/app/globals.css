@@ -89,7 +89,6 @@ html:not(.dark) .gn-app-canvas {
     );
   background-size: 140px 140px, auto, auto, auto;
   background-attachment: scroll;
-  min-height: 100%;
 }
 
 html:not(.dark) body {
@@ -187,7 +186,6 @@ html.dark .gn-app-canvas {
     );
   background-size: auto;
   background-attachment: scroll;
-  min-height: 100%;
 }
 
 html.dark body {

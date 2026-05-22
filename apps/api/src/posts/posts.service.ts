@@ -821,13 +821,17 @@ export class PostsService {
 
   async list(query: {
     communityId: string;
-    sort: 'new' | 'top';
+    sort: 'new' | 'top' | 'hot';
     page: number;
     pageSize: number;
     viewerId?: string;
   }) {
     const db = getDb();
     const offset = (query.page - 1) * query.pageSize;
+    const hotSince =
+      query.sort === 'hot'
+        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        : null;
 
     const blockAuthors = await this.authorNotBlockedClause(query.viewerId);
     const authorVisible = or(
@@ -840,6 +844,7 @@ export class PostsService {
       eq(posts.communityId, query.communityId),
       authorVisible,
       blockAuthors ?? sql`true`,
+      hotSince ? gte(posts.createdAt, hotSince) : sql`true`,
     );
 
     const [{ total }] = await db
@@ -850,7 +855,7 @@ export class PostsService {
 
     const pinThenExpr = sql`(case when ${communityPins.pinnedAt} is null then 1 else 0 end)`;
     const orderBy =
-      query.sort === 'top'
+      query.sort === 'top' || query.sort === 'hot'
         ? [
             pinThenExpr,
             asc(communityPins.pinnedAt),

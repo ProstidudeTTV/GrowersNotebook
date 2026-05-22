@@ -96,7 +96,8 @@ export default async function CommunityPage({
 }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const sort = sp.sort === "top" ? "top" : "new";
+  const sort =
+    sp.sort === "top" ? "top" : sp.sort === "hot" ? "hot" : "new";
   const page = Number(sp.page ?? 1) || 1;
 
   let community: Community;
@@ -131,14 +132,14 @@ export default async function CommunityPage({
     feed = { items: [], total: 0, page: 1, pageSize: 20 };
   }
 
-  const sortLink = (s: "new" | "top") => {
+  const sortLink = (s: "new" | "top" | "hot") => {
     const p = new URLSearchParams({ sort: s, page: "1" });
     return `/community/${slug}?${p.toString()}`;
   };
 
   const hasBanner = Boolean(community.bannerUrl);
   const hasMemberCount =
-    typeof community.memberCount === "number" && community.memberCount >= 0;
+    typeof community.memberCount === "number" && community.memberCount > 0;
   const hasRules =
     Array.isArray(community.rules) && community.rules.length > 0;
   const createdFormatted = formatDate(community.createdAt);
@@ -272,6 +273,19 @@ export default async function CommunityPage({
               }
             >
               Top
+            </Link>
+            <Link
+              href={sortLink("hot")}
+              className={
+                sort === "hot"
+                  ? "rounded-full bg-[var(--gn-accent)] px-4 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-sm"
+                  : "rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-1.5 text-sm font-medium text-[var(--gn-text)] transition hover:border-[var(--gn-text-muted)]"
+              }
+            >
+              <span className="text-[var(--gn-hot)]" aria-hidden>
+                🔥{" "}
+              </span>
+              Hot
             </Link>
           </div>
 

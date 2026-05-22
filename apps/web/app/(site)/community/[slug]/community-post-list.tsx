@@ -30,7 +30,7 @@ export function CommunityPostList({
   communityId: string;
   communityName: string;
   communityIconKey?: string | null;
-  sort: "new" | "top";
+  sort: "new" | "top" | "hot";
   page: number;
   initialItems: FeedPost[];
 }) {

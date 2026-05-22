@@ -1054,7 +1054,7 @@ export function MessagesPanel() {
             </button>
           </div>
 
-          <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <ul className="gn-scrollbar-themed min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {threads.length === 0 ? (
               <li className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
                 <span
@@ -1200,11 +1200,7 @@ export function MessagesPanel() {
                   >
                     {displayNameFor(activePeer.id, selfId, activePeer)}
                   </Link>
-                  <p className="flex items-center gap-1.5 text-[10px] text-[var(--gn-text-muted)]">
-                    <span
-                      className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--gn-accent)]"
-                      aria-hidden
-                    />
+                  <p className="text-[10px] text-[var(--gn-text-muted)]">
                     Direct message
                   </p>
                 </div>
@@ -1228,7 +1224,7 @@ export function MessagesPanel() {
           <div
             ref={timelineRef}
             onScroll={onTimelineScroll}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
+            className="gn-scrollbar-themed min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
           >
             <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 py-4">
             {!activeThreadId ? (
@@ -1302,8 +1298,8 @@ export function MessagesPanel() {
                         <div
                           className={`max-w-[min(85%,18rem)] text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "rounded-2xl rounded-br-sm bg-[var(--gn-accent)] px-3 py-2 text-[var(--gn-on-accent)] shadow-sm"
-                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-elevated)] px-3 py-2 text-[var(--gn-text)]"
+                              ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-3 py-2 text-[var(--gn-text)] shadow-sm"
+                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-3 py-2 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]"
                           }`}
                         >
                           {hasText ? (

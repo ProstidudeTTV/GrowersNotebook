@@ -609,6 +609,7 @@ export class ProfilesService {
         displayName: profiles.displayName,
         description: profiles.description,
         avatarUrl: profiles.avatarUrl,
+        role: profiles.role,
       })
       .from(profiles)
       .where(whereClause)
@@ -616,13 +617,32 @@ export class ProfilesService {
       .limit(pageSize)
       .offset(skip);
 
+    const ids = rows.map((r) => r.id);
+    const [seedsMap, followed] = await Promise.all([
+      this.getSeedsByUserIds(ids),
+      query.viewerId
+        ? this.follows.getFollowingUserIds(query.viewerId, ids)
+        : Promise.resolve(null),
+    ]);
+
     return {
-      items: rows.map((r) => ({
-        id: r.id,
-        displayName: r.displayName,
-        description: r.description,
-        avatarUrl: r.avatarUrl,
-      })),
+      items: rows.map((r) => {
+        const seeds = seedsMap.get(r.id) ?? 0;
+        const staffRole =
+          r.role === 'owner' || r.role === 'admin' || r.role === 'moderator'
+            ? r.role
+            : null;
+        return {
+          id: r.id,
+          displayName: r.displayName,
+          description: r.description,
+          avatarUrl: r.avatarUrl,
+          seeds,
+          growerLevel: growerLevelFromSeeds(seeds),
+          role: staffRole,
+          isFollowing: followed?.has(r.id) ?? false,
+        };
+      }),
       total: Number(total),
       page,
       pageSize,

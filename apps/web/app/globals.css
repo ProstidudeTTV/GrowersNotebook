@@ -135,22 +135,22 @@ html.dark {
   --gn-container-max: 68.75rem;
   --gn-rail-width: 18rem;
   --gn-gutter-mobile: 1rem;
-  /* Neutral near-black — Reddit-style dark, not a green terminal */
-  --gn-page-top: #141414;
-  --gn-page-mid: #111111;
-  --gn-page-bottom: #0d0d0d;
-  --gn-surface: #1a1a1a;
-  --gn-surface-raised: #1e1e1e;
-  --gn-surface-elevated: #252525;
-  --gn-surface-muted: #171717;
-  --gn-surface-hover: rgba(255, 255, 255, 0.06);
-  --gn-ring: rgba(255, 255, 255, 0.08);
+  /* Deep forest dark — brand canvas (design-system.mdc) */
+  --gn-page-top: #0d1610;
+  --gn-page-mid: #0a1209;
+  --gn-page-bottom: #070e06;
+  --gn-surface: #111a12;
+  --gn-surface-raised: #162118;
+  --gn-surface-elevated: #1b2a1d;
+  --gn-surface-muted: #0f1810;
+  --gn-surface-hover: rgba(74, 222, 128, 0.08);
+  --gn-ring: rgba(74, 222, 128, 0.12);
   --gn-ring-focus: rgba(74, 222, 128, 0.5);
-  --gn-divide: rgba(255, 255, 255, 0.07);
-  --gn-border: rgba(255, 255, 255, 0.10);
-  --gn-text: #f0f0f0;
-  --gn-text-muted: #9ca3af;
-  --gn-text-excerpt: #9ca3af;
+  --gn-divide: rgba(127, 168, 135, 0.12);
+  --gn-border: rgba(127, 168, 135, 0.16);
+  --gn-text: #e8f5ea;
+  --gn-text-muted: #7fa887;
+  --gn-text-excerpt: #7fa887;
   --gn-shadow-sm: 0 1px 0 rgb(255 255 255 / 0.04) inset,
     0 1px 3px rgb(0 0 0 / 0.5);
   --gn-shadow-md:
@@ -162,8 +162,8 @@ html.dark {
   --gn-shadow-hover:
     0 12px 32px -12px rgb(0 0 0 / 0.5),
     0 0 0 1px rgb(74 222 128 / 0.25);
-  --gn-header-bg: rgba(20, 20, 20, 0.92);
-  --gn-menu-bg: rgba(26, 26, 26, 0.97);
+  --gn-header-bg: rgba(13, 22, 16, 0.92);
+  --gn-menu-bg: rgba(17, 26, 18, 0.97);
   --gn-radius: 1rem;
   --gn-radius-lg: 1.25rem;
   --gn-mobile-drawer-top: calc(7.75rem + env(safe-area-inset-top, 0px));
@@ -268,18 +268,19 @@ html.dark body {
     background: rgba(180, 150, 100, 0.55);
   }
 
-  /** GIF search grids: dark track + accent-tinted thumb (Firefox + WebKit). */
+  /** GIF search grids: accent-tinted thumb (not hot orange). */
   html.dark .gn-scrollbar-themed.gn-scrollbar-giphy {
-    scrollbar-color: rgba(255, 106, 56, 0.42) rgba(19, 21, 27, 0.85);
+    scrollbar-color: color-mix(in srgb, var(--gn-accent) 42%, transparent)
+      rgba(15, 24, 16, 0.85);
   }
 
   html.dark .gn-scrollbar-themed.gn-scrollbar-giphy::-webkit-scrollbar-thumb {
-    background: rgba(255, 106, 56, 0.32);
-    border-color: rgba(19, 21, 27, 0.72);
+    background: color-mix(in srgb, var(--gn-accent) 38%, transparent);
+    border-color: rgba(15, 24, 16, 0.72);
   }
 
   html.dark .gn-scrollbar-themed.gn-scrollbar-giphy::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 122, 76, 0.5);
+    background: color-mix(in srgb, var(--gn-accent) 55%, transparent);
   }
 
   html:not(.dark) .gn-scrollbar-themed::-webkit-scrollbar {

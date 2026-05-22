@@ -6,8 +6,8 @@ export class ListPostsQueryDto {
   communityId!: string;
 
   @IsOptional()
-  @IsIn(['new', 'top'])
-  sort: 'new' | 'top' = 'new';
+  @IsIn(['new', 'top', 'hot'])
+  sort: 'new' | 'top' | 'hot' = 'new';
 
   @IsOptional()
   @Type(() => Number)

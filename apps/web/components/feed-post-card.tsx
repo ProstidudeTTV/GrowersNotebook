@@ -25,6 +25,7 @@ import {
   parseVoteMutationResponse,
   talliesAfterVoteClick,
 } from "@/lib/vote-ui";
+import { FeedPostMediaHero } from "@/components/feed-post-media-hero";
 import { collectYouTubeIdsForFeedPreview } from "@/lib/youtube-embed";
 
 function timeAgo(iso: string): string {
@@ -233,9 +234,9 @@ export function FeedPostCard({
     return ids[0] ?? null;
   }, [local.bodyHtml, local.excerpt]);
 
-  const media = local.media?.[0];
-  const heroImage = media?.type === "image" ? media : null;
-  const videoMedia = media?.type === "video" ? media : null;
+  const imageMedia =
+    local.media?.filter((m) => m.type === "image" && m.url?.trim()) ?? [];
+  const videoMedia = local.media?.find((m) => m.type === "video") ?? null;
 
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
@@ -326,33 +327,25 @@ export function FeedPostCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-[border-color,box-shadow] duration-200 hover:border-[var(--gn-accent)]/40 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-amber-400/25" : ""}`}
+      className={`relative overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] transition-[border-color,box-shadow] duration-200 hover:border-[var(--gn-accent)]/40 hover:shadow-[var(--gn-shadow-md)] ${local.pinnedAt ? "ring-1 ring-[color-mix(in_srgb,var(--gn-accent)_35%,transparent)]" : ""}`}
     >
+      {local.pinnedAt ? (
+        <span className="absolute right-3 top-3 z-10 rounded-full border border-[var(--gn-accent)]/40 bg-[color-mix(in_srgb,var(--gn-accent)_18%,var(--gn-surface-raised))] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--gn-accent)]">
+          Pinned
+        </span>
+      ) : null}
       {rank != null && rank >= 1 && rank <= 5 && (
         <span className="absolute top-3 left-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--gn-accent)]/90 text-xs font-bold text-[var(--gn-on-accent)] pointer-events-none">
           {rank}
         </span>
       )}
 
-      {heroImage ? (
-        <div
-          className="cursor-pointer"
-          onClick={(e) => {
-            const t = e.target as HTMLElement;
-            if (t.closest("[data-interactive]")) return;
-            openPost();
-          }}
-        >
-          <div className="relative h-56 w-full sm:h-72 md:h-80">
-            <Image
-              src={heroImage.url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
-            />
-          </div>
-        </div>
+      {imageMedia.length > 0 ? (
+        <FeedPostMediaHero
+          items={imageMedia}
+          title={local.title}
+          onOpenPost={openPost}
+        />
       ) : youTubePreviewId ? (
         <div
           className="cursor-pointer"

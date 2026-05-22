@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthorMetaBadges } from "@/components/author-meta-badges";
 import { EmptyState } from "@/components/empty-state";
+import type { NotebookDirectoryItem } from "@/components/notebook-directory-card";
 import { apiFetch } from "@/lib/api-public";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import { createClient } from "@/lib/supabase/server";
@@ -19,7 +21,15 @@ type ProfileHit = {
   description: string | null;
   avatarUrl: string | null;
   growerLevel?: string | null;
+  role?: string | null;
   isFollowing?: boolean;
+};
+
+type NotebookList = {
+  items: NotebookDirectoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 type PostHit = {
@@ -129,10 +139,12 @@ export default async function SearchPage({
   let profiles: ListProfiles = { items: [], total: 0, page: 1, pageSize };
   let posts: ListPosts = { items: [], total: 0, page: 1, pageSize };
   let strains: ListStrains = { items: [], total: 0, page: 1, pageSize };
+  let notebooks: NotebookList = { items: [], total: 0, page: 1, pageSize };
 
   const showGrowers = activeType === "all" || activeType === "growers";
   const showPosts = activeType === "all" || activeType === "posts";
   const showStrains = activeType === "all" || activeType === "strains";
+  const showNotebooks = activeType === "all" || activeType === "notebooks";
 
   if (q.length >= 2) {
     try {
@@ -163,6 +175,16 @@ export default async function SearchPage({
             timeoutMs: 15_000,
           }).then((r) => {
             strains = r;
+          }),
+        );
+      }
+      if (showNotebooks) {
+        fetches.push(
+          apiFetch<NotebookList>(`/notebooks?${qs}`, {
+            token: token ?? undefined,
+            timeoutMs: 15_000,
+          }).then((r) => {
+            notebooks = r;
           }),
         );
       }
@@ -250,17 +272,47 @@ export default async function SearchPage({
         />
       ) : q.length >= 2 ? (
         <>
-          {/* Notebooks tab — coming soon */}
-          {activeType === "notebooks" ? (
-            <div className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] px-6 py-10 text-center">
-              <p className="text-2xl mb-3">📓</p>
-              <p className="font-semibold text-[var(--gn-text)]">
-                Notebook search coming soon
-              </p>
-              <p className="mt-1 text-sm text-[var(--gn-text-muted)]">
-                You can browse notebooks from a grower&apos;s profile page.
-              </p>
-            </div>
+          {showNotebooks ? (
+            <section className={activeType === "all" ? "mb-10" : undefined}>
+              <h2 className="mb-4 text-lg font-semibold text-[var(--gn-text)]">
+                Notebooks
+                <span className="ml-2 text-sm font-normal text-[var(--gn-text-muted)]">
+                  ({notebooks.total})
+                </span>
+              </h2>
+              {notebooks.items.length === 0 ? (
+                <p className="text-sm text-[var(--gn-text-muted)]">
+                  No public grow diaries matched.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {notebooks.items.map((nb) => (
+                    <li key={nb.id}>
+                      <Link
+                        href={`/notebooks/${nb.id}`}
+                        className="gn-card flex items-center gap-3 p-3 transition hover:bg-[var(--gn-surface-hover)]"
+                      >
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--gn-surface-muted)] text-lg ring-1 ring-[var(--gn-divide)]">
+                          📓
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-[var(--gn-text)]">
+                            {nb.title}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--gn-text-muted)]">
+                            {nb.owner.displayName?.trim() || "Grower"}
+                            {nb.strain?.name ? ` · ${nb.strain.name}` : ""}
+                            {typeof nb.weekCount === "number" && nb.weekCount > 0
+                              ? ` · ${nb.weekCount} wk`
+                              : ""}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           ) : null}
 
           {/* G3.3 — Growers section */}
@@ -300,11 +352,11 @@ export default async function SearchPage({
                             >
                               {p.displayName?.trim() || "Grower"}
                             </Link>
-                            {p.growerLevel?.trim() ? (
-                              <span className="inline-flex items-center rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--gn-accent)]">
-                                {p.growerLevel.trim()}
-                              </span>
-                            ) : null}
+                            <AuthorMetaBadges
+                              growerLevel={p.growerLevel}
+                              role={p.role}
+                              compact
+                            />
                           </div>
                           {p.description?.trim() ? (
                             <p className="mt-0.5 line-clamp-1 text-sm text-[var(--gn-text-muted)]">

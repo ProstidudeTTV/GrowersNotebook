@@ -3,6 +3,11 @@
 import { useCallback, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import {
+  POST_IMAGE_INPUT_LABEL,
+  POST_IMAGE_STORED_LABEL,
+  POST_VIDEO_MAX_LABEL,
+} from "@/lib/media-upload-limits";
 import { stripUploadedVideoMetadata } from "@/lib/strip-uploaded-video-metadata";
 import { MAX_POST_MEDIA } from "@/lib/post-draft-validation";
 import {
@@ -18,6 +23,12 @@ type PostMediaDropzoneProps = {
   onError?: (message: string) => void;
   /** hero = full dropzone; compact = bar under single preview; tile = grid add cell */
   size?: "hero" | "compact" | "tile";
+  /** Notebook week/harvest — no video picker or upload. */
+  photosOnly?: boolean;
+  /** Cap multi-select uploads (e.g. remaining notebook photo slots). */
+  maxFilesPerPick?: number;
+  /** Override hero helper line (file count / limits). */
+  hint?: string;
 };
 
 export function PostMediaDropzone({
@@ -25,21 +36,34 @@ export function PostMediaDropzone({
   onMediaReady,
   onError,
   size = "hero",
+  photosOnly = false,
+  maxFilesPerPick,
+  hint,
 }: PostMediaDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progressLabel, setProgressLabel] = useState<string | null>(null);
+
+  const accept = photosOnly
+    ? "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+    : "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov";
 
   const processFile = useCallback(
-    async (file: File): Promise<boolean> => {
-      const asVideo = isProcessablePostVideo(file);
+    async (file: File, index: number, total: number): Promise<boolean> => {
+      const asVideo = !photosOnly && isProcessablePostVideo(file);
       const asImage = !asVideo && isProcessablePostImage(file);
       if (!asImage && !asVideo) {
         onError?.(
-          "Use a JPEG, PNG, WebP, GIF image or MP4/WebM/MOV video. If you picked a photo and nothing happened, try another gallery or save as JPEG—some phones use formats we cannot read in the browser yet.",
+          photosOnly
+            ? "Use a JPEG, PNG, WebP, or GIF photo. iPhone HEIC: save as JPEG in Photos, then upload again."
+            : "Use a JPEG, PNG, WebP, GIF image or MP4/WebM/MOV video. If a photo fails, save as JPEG and retry.",
         );
         return false;
+      }
+      if (total > 1) {
+        setProgressLabel(`Uploading ${index + 1} of ${total}…`);
       }
       try {
         const supabase = createClient();
@@ -83,23 +107,33 @@ export function PostMediaDropzone({
         return false;
       }
     },
-    [onError, onMediaReady],
+    [onError, onMediaReady, photosOnly],
   );
 
   const processFiles = useCallback(
     async (files: File[]) => {
       if (disabled || files.length === 0) return;
+      const cap =
+        typeof maxFilesPerPick === "number" && maxFilesPerPick > 0
+          ? maxFilesPerPick
+          : files.length;
+      const batch = files.slice(0, cap);
+      if (files.length > batch.length) {
+        onError?.(`Only ${batch.length} more file${batch.length === 1 ? "" : "s"} can be added.`);
+      }
       setBusy(true);
+      setProgressLabel(null);
       try {
-        for (const file of files) {
+        for (let i = 0; i < batch.length; i++) {
           if (disabled) break;
-          await processFile(file);
+          await processFile(batch[i]!, i, batch.length);
         }
       } finally {
         setBusy(false);
+        setProgressLabel(null);
       }
     },
-    [disabled, processFile],
+    [disabled, maxFilesPerPick, onError, processFile],
   );
 
   const onDrop = useCallback(
@@ -138,11 +172,19 @@ export function PostMediaDropzone({
         ? "relative flex min-h-[52px] cursor-pointer flex-row items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3"
         : "relative flex min-h-[220px] cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-8 sm:min-h-[240px]";
 
+  const defaultHint = photosOnly
+    ? `Tap to choose photos · up to ${POST_IMAGE_INPUT_LABEL} each (saved ~${POST_IMAGE_STORED_LABEL})`
+    : `Photos up to ${POST_IMAGE_INPUT_LABEL} · videos up to ${POST_VIDEO_MAX_LABEL} · up to ${MAX_POST_MEDIA} per post`;
+
   return (
     <div
       role="button"
       tabIndex={disabled || busy ? -1 : 0}
-      aria-label="Upload images or video. Choose files or drag and drop media."
+      aria-label={
+        photosOnly
+          ? "Upload photos. Choose files or drag and drop."
+          : "Upload images or video. Choose files or drag and drop media."
+      }
       className={[
         sizeClasses,
         "transition select-none",
@@ -176,7 +218,8 @@ export function PostMediaDropzone({
         id={inputId}
         type="file"
         multiple
-        accept="image/*,video/*,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov"
+        accept={accept}
+        capture={photosOnly ? "environment" : undefined}
         className="sr-only"
         tabIndex={-1}
         aria-hidden
@@ -221,17 +264,20 @@ export function PostMediaDropzone({
         }
       >
         {busy
-          ? "Uploading…"
+          ? progressLabel ?? "Uploading…"
           : size === "tile"
             ? "Add"
             : size === "compact"
-              ? "Add more photos or video"
-              : "Add grow photos or video"}
+              ? photosOnly
+                ? "Add more photos"
+                : "Add more photos or video"
+              : photosOnly
+                ? "Add grow photos"
+                : "Add grow photos or video"}
       </p>
       {size === "hero" ? (
-        <p className="pointer-events-none text-center text-xs text-[var(--gn-text-muted)]">
-          Drag and drop or tap · JPEG, PNG, WebP, GIF · MP4, WebM, MOV · up to{" "}
-          {MAX_POST_MEDIA} files
+        <p className="pointer-events-none max-w-sm text-center text-xs leading-relaxed text-[var(--gn-text-muted)]">
+          {hint ?? defaultHint}
         </p>
       ) : null}
     </div>

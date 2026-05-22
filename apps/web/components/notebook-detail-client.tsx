@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -665,6 +666,31 @@ export function NotebookDetailClient({
         </aside>
 
         <div className="order-1 min-w-0 flex-1 lg:order-2">
+              {nb.coverImageUrl?.trim() ? (
+                <div className="relative mb-4 h-48 overflow-hidden rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] sm:h-56">
+                  <Image
+                    src={nb.coverImageUrl.trim()}
+                    alt=""
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 1024px) 100vw, 900px"
+                    priority
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[color-mix(in_srgb,var(--gn-surface)_92%,transparent)] via-transparent to-transparent" />
+                  {nb.growthStage ? (
+                    <span
+                      className={`absolute bottom-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-bold ${weekPhaseBadgeClass(nb.growthStage)}`}
+                    >
+                      {GROWTH_STAGE_LABEL[nb.growthStage] ?? nb.growthStage}
+                    </span>
+                  ) : null}
+                  {nb.weeks?.length ? (
+                    <span className="absolute bottom-3 right-3 rounded-full bg-[color-mix(in_srgb,var(--gn-surface)_88%,transparent)] px-2.5 py-0.5 text-xs font-semibold text-[var(--gn-text)] backdrop-blur-sm">
+                      {nb.weeks.length} week{nb.weeks.length === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="w-full rounded-2xl border border-[var(--gn-border)] bg-gradient-to-br from-[var(--gn-surface-muted)] to-[var(--gn-surface)] p-3 shadow-sm ring-1 ring-black/5 dark:ring-white/5 sm:p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
                   <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">

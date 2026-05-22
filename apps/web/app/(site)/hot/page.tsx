@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { FeedSidebar } from "@/components/feed-sidebar";
 import { HotWeekPageLeaderboard } from "@/components/hot-week-page-leaderboard";
 import { PostComposerPrompt } from "@/components/post-composer-prompt";
+import { FeedPageBanner } from "@/components/feed-page-banner";
 import { SitePageShell } from "@/components/site-page-shell";
 import { apiFetch } from "@/lib/api-public";
 import type { FeedPost } from "@/lib/feed-post";
@@ -132,43 +133,41 @@ export default async function HotWeekPage({
     /* API offline */
   }
 
-  const banner = (
-    <div className="relative overflow-hidden border-b border-[var(--gn-divide)] bg-gradient-to-br from-[color-mix(in_srgb,var(--gn-hot)_12%,var(--gn-surface-muted))] via-[var(--gn-surface-raised)] to-[var(--gn-surface-muted)]">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[color-mix(in_srgb,var(--gn-hot)_18%,transparent)] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 left-1/4 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--gn-accent)_15%,transparent)] blur-3xl" />
-      <div className="relative mx-auto flex max-w-[var(--gn-container-max)] flex-col gap-4 px-[var(--gn-gutter-mobile)] py-8 sm:flex-row sm:items-end sm:justify-between sm:px-[var(--gn-gutter)] sm:py-10">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--gn-hot)]">
-            Trending
-          </p>
-          <h1 className="mt-1 flex items-center gap-2 text-3xl font-black tracking-tight text-[var(--gn-text)] sm:text-4xl">
-            <span aria-hidden>🔥</span>
-            {config.heading}
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--gn-text-muted)]">
-            {config.subheading}
-          </p>
-        </div>
-        <div className="flex w-fit flex-wrap gap-2 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1.5 shadow-[var(--gn-shadow-sm)]">
-          {(Object.entries(RANGE_CONFIG) as [
-            ValidRange,
-            (typeof RANGE_CONFIG)[ValidRange],
-          ][]).map(([key, { label }]) => (
-            <Link
-              key={key}
-              href={`/hot?range=${key}`}
-              className={
-                range === key
-                  ? "rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm"
-                  : "rounded-xl px-4 py-2 text-sm font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
-              }
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </div>
+  const rangePills = (
+    <div className="flex w-fit flex-wrap gap-2 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] p-1.5 shadow-[var(--gn-shadow-sm)]">
+      {(Object.entries(RANGE_CONFIG) as [
+        ValidRange,
+        (typeof RANGE_CONFIG)[ValidRange],
+      ][]).map(([key, { label }]) => (
+        <Link
+          key={key}
+          href={`/hot?range=${key}`}
+          className={
+            range === key
+              ? "rounded-xl bg-[var(--gn-accent)] px-4 py-2 text-sm font-bold text-[var(--gn-on-accent)] shadow-sm"
+              : "rounded-xl px-4 py-2 text-sm font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+          }
+        >
+          {label}
+        </Link>
+      ))}
     </div>
+  );
+
+  const banner = (
+    <FeedPageBanner
+      variant="hot"
+      eyebrow="Trending"
+      eyebrowClassName="text-xs font-bold uppercase tracking-widest text-[var(--gn-hot)]"
+      title={
+        <>
+          <span aria-hidden>🔥 </span>
+          {config.heading}
+        </>
+      }
+      description={config.subheading}
+      actions={rangePills}
+    />
   );
 
   return (

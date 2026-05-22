@@ -381,20 +381,26 @@ export function GuestLanding({
               {/* LIVE badge */}
               <div className="mb-4 flex items-center justify-between">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--gn-accent)]/30 bg-[var(--gn-accent)]/8 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--gn-accent)]">
-                  <span className="relative flex h-2 w-2" aria-hidden>
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--gn-accent)] opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--gn-accent)]" />
-                  </span>
-                  Live Grows
+                  {previewCards.length > 0 ? (
+                    <>
+                      <span className="relative flex h-2 w-2" aria-hidden>
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--gn-accent)] opacity-60" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--gn-accent)]" />
+                      </span>
+                      From the community
+                    </>
+                  ) : (
+                    "Community feed"
+                  )}
                 </span>
-                {growersOnline > 0 && (
+                {growersOnline > 0 ? (
                   <span className="text-xs text-[var(--gn-text-muted)]">
                     <span className="font-semibold text-[var(--gn-text)]">
                       {formatCount(growersOnline)}
                     </span>{" "}
-                    online now
+                    growers active now
                   </span>
-                )}
+                ) : null}
               </div>
               {previewCards.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -411,10 +417,10 @@ export function GuestLanding({
                     🔥
                   </span>
                   <p className="mt-3 text-sm font-semibold text-[var(--gn-text)]">
-                    Hot posts loading soon
+                    No posts to preview yet
                   </p>
                   <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-                    Browse what growers are sharing this week →
+                    Be the first to share a grow, or browse communities →
                   </p>
                 </Link>
               )}

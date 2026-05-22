@@ -205,7 +205,7 @@ export function NotebookWeekWizard({
   const [nutrientLines, setNutrientLines] = useState<NutLine[]>([
     { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
   ]);
-  const [imageUrls, setImageUrls] = useState<string[]>([""]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const filledImageSlots = useMemo(
@@ -216,14 +216,17 @@ export function NotebookWeekWizard({
 
   const appendUploadedImage = useCallback((url: string) => {
     const t = url.trim();
-    if (!t) return;
+    if (!t || !isHttpsImageUrl(t)) return;
     setImageUrls((prev) => {
       const core = prev.map((s) => s.trim()).filter(Boolean);
       if (core.includes(t) || core.length >= MAX_IMAGES) return prev;
-      const next = [...core, t];
-      return next.length < MAX_IMAGES ? [...next, ""] : next;
+      return [...core, t];
     });
     setUploadError(null);
+  }, []);
+
+  const removeUploadedImage = useCallback((url: string) => {
+    setImageUrls((prev) => prev.filter((u) => u.trim() !== url.trim()));
   }, []);
 
   useEffect(() => {
@@ -272,8 +275,7 @@ export function NotebookWeekWizard({
         ]);
       }
       setNutrientLines(linesFromWeek(w));
-      const urls = (w.imageUrls ?? []).filter(Boolean);
-      setImageUrls(urls.length ? urls : [""]);
+      setImageUrls((w.imageUrls ?? []).filter(Boolean));
     } else {
       setWeekIndex(nextWeekIndex);
       setNoteSlots(emptyNoteSlots());
@@ -288,7 +290,7 @@ export function NotebookWeekWizard({
       setNutrientLines([
         { productId: "", customLabel: "", dosageAmount: "", dosageUnit: "ml/L" },
       ]);
-      setImageUrls([""]);
+      setImageUrls([]);
     }
   }, [
     open,
@@ -350,18 +352,6 @@ export function NotebookWeekWizard({
               dosageUnit: "ml/L",
             },
           ];
-    });
-  }
-
-  function addImageField() {
-    if (imageUrls.length >= MAX_IMAGES) return;
-    setImageUrls((prev) => [...prev, ""]);
-  }
-
-  function removeImageField(i: number) {
-    setImageUrls((prev) => {
-      const next = prev.filter((_, j) => j !== i);
-      return next.length === 0 ? [""] : next;
     });
   }
 
@@ -859,64 +849,51 @@ export function NotebookWeekWizard({
           <div>
             <label className={labelClass}>Add photos</label>
             <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-              Drag and drop, click to browse, or paste image links below. Up to {MAX_IMAGES} photos per week.
+              Tap or drag photos from your phone or computer. Up to {MAX_IMAGES}{" "}
+              per week — large files are resized automatically before upload.
             </p>
             <div className="mt-4">
               <PostMediaDropzone
+                photosOnly
+                maxFilesPerPick={remainingImageSlots}
                 disabled={saving || remainingImageSlots <= 0}
-                onMediaReady={(url, kind) => {
-                  if (kind === "video") {
-                    setUploadError(
-                      "Weekly entries support photos only. Add a video link in notes if needed.",
-                    );
-                    return;
-                  }
-                  appendUploadedImage(url);
-                }}
+                hint={`${remainingImageSlots} slot${remainingImageSlots === 1 ? "" : "s"} left this week`}
+                onMediaReady={(url) => appendUploadedImage(url)}
                 onError={(msg) => setUploadError(msg)}
               />
               {uploadError ? (
-                <p className="mt-2 text-xs text-red-400">{uploadError}</p>
+                <p className="mt-2 text-xs text-rose-400">
+                  {uploadError}
+                </p>
               ) : null}
             </div>
-            <div className="mt-4 flex justify-end">
-              {imageUrls.length < MAX_IMAGES ? (
-                <button
-                  type="button"
-                  onClick={addImageField}
-                  className="text-xs font-medium text-[var(--gn-accent)] hover:underline"
-                >
-                  Add URL
-                </button>
-              ) : null}
-            </div>
-            <ul className="mt-2 space-y-2">
-              {imageUrls.map((url, i) => (
-                <li key={i} className="flex gap-2">
-                  <input
-                    type="url"
-                    inputMode="url"
-                    placeholder="https://…"
-                    value={url}
-                    onChange={(e) =>
-                      setImageUrls((prev) =>
-                        prev.map((v, j) => (j === i ? e.target.value : v)),
-                      )
-                    }
-                    className={`min-w-0 flex-1 ${inputClass}`}
-                  />
-                  {imageUrls.length > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => removeImageField(i)}
-                      className="shrink-0 rounded border border-[var(--gn-divide)] px-2 py-1 text-xs text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
+            {filledImageSlots > 0 ? (
+              <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {imageUrls
+                  .map((u) => u.trim())
+                  .filter(Boolean)
+                  .map((url) => (
+                    <li
+                      key={url}
+                      className="relative aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-[var(--gn-divide)]"
                     >
-                      Remove
-                    </button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeUploadedImage(url)}
+                        className="absolute right-1.5 top-1.5 rounded-md bg-[color-mix(in_srgb,var(--gn-surface)_85%,transparent)] px-2 py-0.5 text-[10px] font-semibold text-[var(--gn-text)] backdrop-blur-sm hover:bg-[var(--gn-surface-hover)]"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            ) : null}
           </div>
         ) : null}
 

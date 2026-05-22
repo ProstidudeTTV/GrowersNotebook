@@ -1,11 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fileToScrubbedJpegBlob } from "@/lib/image-scrubbed-jpeg";
+import {
+  POST_IMAGE_INPUT_MAX_BYTES,
+  POST_IMAGE_INPUT_LABEL,
+  POST_IMAGE_MAX_EDGE,
+  POST_IMAGE_STORED_MAX_BYTES,
+  POST_VIDEO_MAX_BYTES,
+  POST_VIDEO_MAX_LABEL,
+} from "@/lib/media-upload-limits";
 
 export const POST_MEDIA_BUCKET = "post-media";
 
-const IMAGE_MAX = 8 * 1024 * 1024;
-const VIDEO_MAX = 50 * 1024 * 1024;
-const IMAGE_MAX_EDGE = 1600;
+export {
+  POST_IMAGE_INPUT_MAX_BYTES,
+  POST_IMAGE_MAX_EDGE,
+  POST_IMAGE_STORED_MAX_BYTES,
+  POST_VIDEO_MAX_BYTES,
+} from "@/lib/media-upload-limits";
+
 /** Samsung / Android often send `image/jpg`, generic `image/*`, or empty `type`. */
 const IMAGE_TYPES =
   /^image\/(jpeg|jpg|pjpeg|png|webp|gif)$/i;
@@ -31,7 +43,7 @@ function inferredImageMime(file: File): string | null {
   if (n.endsWith(".png")) return "image/png";
   if (n.endsWith(".webp")) return "image/webp";
   if (n.endsWith(".gif")) return "image/gif";
-  if (!t && file.size > 0) {
+  if (!t && file.size > 0 && /\.(jpe?g|png|webp|gif)$/i.test(n)) {
     return "image/jpeg";
   }
   return null;
@@ -81,18 +93,21 @@ export async function uploadPostImage(
     return {
       ok: false,
       message:
-        "Use a JPEG, PNG, WebP, or GIF image. (HEIC from some phone cameras is not supported yet—convert or re-save as JPEG in your gallery.)",
+        "Use a JPEG, PNG, WebP, or GIF image. (HEIC from some phone cameras is not supported yet—open the photo in your gallery and save as JPEG, then upload again.)",
     };
   }
-  if (file.size > IMAGE_MAX) {
-    return { ok: false, message: "Image must be 8 MB or smaller." };
+  if (file.size > POST_IMAGE_INPUT_MAX_BYTES) {
+    return {
+      ok: false,
+      message: `Image must be ${POST_IMAGE_INPUT_LABEL} or smaller before upload.`,
+    };
   }
 
   let blob: Blob;
   try {
     blob = await fileToScrubbedJpegBlob(file, {
-      maxEdge: IMAGE_MAX_EDGE,
-      maxBytes: IMAGE_MAX,
+      maxEdge: POST_IMAGE_MAX_EDGE,
+      maxBytes: POST_IMAGE_STORED_MAX_BYTES,
     });
   } catch (e) {
     return {
@@ -138,8 +153,11 @@ export async function uploadPostVideo(
       message: "Use an MP4, WebM, or MOV video.",
     };
   }
-  if (file.size > VIDEO_MAX) {
-    return { ok: false, message: "Video must be 50 MB or smaller." };
+  if (file.size > POST_VIDEO_MAX_BYTES) {
+    return {
+      ok: false,
+      message: `Video must be ${POST_VIDEO_MAX_LABEL} or smaller.`,
+    };
   }
 
   const id =
@@ -183,6 +201,9 @@ function uploadErrorMessage(msg: string): string {
   }
   if (/policy|denied|403|row-level security/i.test(m)) {
     return "Upload was blocked. Sign out and back in, or check storage policies for `post-media`.";
+  }
+  if (/maximum|size|too large|413/i.test(m)) {
+    return "File is too large for storage. Try a shorter video or let photos compress on upload.";
   }
   return m;
 }

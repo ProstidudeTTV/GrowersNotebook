@@ -65,12 +65,17 @@ export async function generateMetadata({
   try {
     const post = await apiFetch<{
       title: string;
+      excerpt?: string | null;
       media?: PostMediaItem[];
     }>(`/posts/${id}`, {
       timeoutMs: 10_000,
     });
     const title = post.title?.trim() || "Post";
-    const description = `${title} — cannabis home grow discussion on ${SITE_NAME}.`;
+    const excerpt = post.excerpt?.trim();
+    const description =
+      excerpt && excerpt.length > 0
+        ? excerpt.slice(0, 160)
+        : `${title} — cannabis home grow discussion on ${SITE_NAME}.`;
     const firstImage = (post.media ?? []).find((m) => m.type === "image");
     const ogImage = firstImage?.url;
     return {
@@ -92,7 +97,7 @@ export async function generateMetadata({
       alternates: { canonical: canonicalPath(`/p/${id}`) },
     };
   } catch {
-    return { title: "Post" };
+    return { title: "Post", robots: { index: false, follow: false } };
   }
 }
 
@@ -107,14 +112,7 @@ export default async function PostPage({
   try {
     post = await apiFetch<PostDetail>(`/posts/${id}`);
   } catch {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <p className="text-[var(--gn-text-muted)]">Post not found.</p>
-        <Link href="/" className="text-[var(--gn-accent)] hover:underline">
-          Home
-        </Link>
-      </main>
-    );
+    notFound();
   }
 
   let comments: CommentRow[] = [];

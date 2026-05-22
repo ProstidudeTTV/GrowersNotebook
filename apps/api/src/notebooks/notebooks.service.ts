@@ -714,6 +714,15 @@ export class NotebooksService {
         break;
       }
     }
+    if (!coverImageUrl) {
+      const harvest = Array.isArray(row.notebook.harvestImageUrls)
+        ? (row.notebook.harvestImageUrls as string[])
+        : [];
+      const fromHarvest = harvest
+        .filter((u) => typeof u === 'string' && /^https:\/\//i.test(u.trim()))
+        .map((u) => u.trim());
+      coverImageUrl = fromHarvest[fromHarvest.length - 1] ?? null;
+    }
 
     return {
       ...row.notebook,

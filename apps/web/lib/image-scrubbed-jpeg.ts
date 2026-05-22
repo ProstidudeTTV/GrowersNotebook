@@ -93,14 +93,24 @@ export async function fileToScrubbedJpegBlob(
   file: File,
   opts: ScrubbedJpegOptions,
 ): Promise<Blob> {
-  const q = opts.jpegQuality ?? 0.88;
-  const blob = await decodeFileToJpegBlob(file, opts.maxEdge, q);
+  let quality = opts.jpegQuality ?? 0.88;
+  let blob = await decodeFileToJpegBlob(file, opts.maxEdge, quality);
+  while (blob.size > opts.maxBytes && quality > 0.45) {
+    quality -= 0.08;
+    blob = await decodeFileToJpegBlob(file, opts.maxEdge, quality);
+  }
+  if (blob.size > opts.maxBytes) {
+    const smallerEdge = Math.max(720, Math.round(opts.maxEdge * 0.75));
+    if (smallerEdge < opts.maxEdge) {
+      blob = await decodeFileToJpegBlob(file, smallerEdge, 0.82);
+    }
+  }
   if (blob.size > opts.maxBytes) {
     const isAvatar = opts.maxBytes <= 2 * 1024 * 1024 && opts.maxEdge <= 512;
     throw new Error(
       isAvatar
         ? "Processed image is still too large. Try a smaller original."
-        : "Processed image is still too large. Try a smaller file.",
+        : "Processed image is still too large. Try a smaller file or fewer photos at once.",
     );
   }
   return blob;

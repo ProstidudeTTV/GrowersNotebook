@@ -444,8 +444,15 @@ export function FeedPostCard({
           </div>
 
           {/* Title */}
-          <h2 className="mt-1.5 text-base font-bold leading-snug text-[var(--gn-text)] sm:text-[17px]">
-            {local.title}
+          <h2 className="mt-1.5 text-base font-semibold leading-snug sm:text-base">
+            <Link
+              href={`/p/${local.id}`}
+              prefetch
+              className="font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {local.title}
+            </Link>
           </h2>
 
           {/* Strain pill */}

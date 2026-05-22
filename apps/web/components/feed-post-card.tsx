@@ -25,7 +25,6 @@ import {
   parseVoteMutationResponse,
   talliesAfterVoteClick,
 } from "@/lib/vote-ui";
-import { FeedPostMediaHero } from "@/components/feed-post-media-hero";
 import { collectYouTubeIdsForFeedPreview } from "@/lib/youtube-embed";
 
 function timeAgo(iso: string): string {
@@ -234,9 +233,13 @@ export function FeedPostCard({
     return ids[0] ?? null;
   }, [local.bodyHtml, local.excerpt]);
 
-  const imageMedia =
-    local.media?.filter((m) => m.type === "image" && m.url?.trim()) ?? [];
-  const videoMedia = local.media?.find((m) => m.type === "video") ?? null;
+  const heroImage =
+    local.media?.find((m) => m.type === "image" && m.url?.trim()) ?? null;
+  const videoMedia =
+    local.media?.find((m) => m.type === "video") ?? null;
+  const extraImageCount =
+    (local.media?.filter((m) => m.type === "image" && m.url?.trim()).length ??
+      0) - (heroImage ? 1 : 0);
 
   const commentsN =
     typeof local.commentCount === "number" ? local.commentCount : 0;
@@ -340,12 +343,30 @@ export function FeedPostCard({
         </span>
       )}
 
-      {imageMedia.length > 0 ? (
-        <FeedPostMediaHero
-          items={imageMedia}
-          title={local.title}
-          onOpenPost={openPost}
-        />
+      {heroImage ? (
+        <div
+          className="cursor-pointer"
+          onClick={(e) => {
+            const t = e.target as HTMLElement;
+            if (t.closest("[data-interactive]")) return;
+            openPost();
+          }}
+        >
+          <div className="relative h-56 w-full sm:h-72 md:h-80">
+            <Image
+              src={heroImage.url}
+              alt={local.title.trim() || "Post image"}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 1100px"
+            />
+            {extraImageCount > 0 ? (
+              <span className="absolute bottom-3 right-3 rounded-full bg-[color-mix(in_srgb,var(--gn-surface)_88%,transparent)] px-2.5 py-1 text-xs font-bold text-[var(--gn-text)] backdrop-blur-sm">
+                +{extraImageCount} more
+              </span>
+            ) : null}
+          </div>
+        </div>
       ) : youTubePreviewId ? (
         <div
           className="cursor-pointer"

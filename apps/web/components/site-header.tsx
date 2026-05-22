@@ -46,7 +46,10 @@ function DiscordNavLink() {
 function HeaderNavActions() {
   return (
     <>
-      <MessagesNavLink />
+      {/* Desktop: Messages lives in the sidebar only (avoids duplicate icon). */}
+      <span className="lg:hidden">
+        <MessagesNavLink />
+      </span>
       <NotificationsNavLink />
       <DiscordNavLink />
       <AuthNav />

@@ -1020,7 +1020,7 @@ export function MessagesPanel() {
       ) : null}
 
       {/* Two-panel messenger — one scroll per column; row layout on desktop */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
 
         {/* Left: conversation list */}
         <aside
@@ -1226,7 +1226,7 @@ export function MessagesPanel() {
             onScroll={onTimelineScroll}
             className="gn-scrollbar-themed min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
           >
-            <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 py-4">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-4 lg:max-w-4xl lg:px-6 xl:max-w-5xl">
             {!activeThreadId ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div
@@ -1296,7 +1296,7 @@ export function MessagesPanel() {
                           <MiniAvatar name={peerDisplay} size={26} />
                         )}
                         <div
-                          className={`max-w-[min(85%,18rem)] text-sm ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                          className={`max-w-[min(88%,20rem)] text-sm sm:max-w-[min(82%,24rem)] lg:max-w-[min(75%,32rem)] ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
                               ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-3 py-2 text-[var(--gn-text)] shadow-sm"
                               : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-3 py-2 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]"

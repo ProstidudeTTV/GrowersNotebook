@@ -14,6 +14,50 @@ export type UploadProfileAvatarResult =
 /**
  * Uploads to `avatars/{userId}/avatar.jpg` (replaces previous). Returns public object URL for PATCH /profiles/me.
  */
+/** Upload a pre-cropped JPEG blob (e.g. from `AvatarCropModal`). */
+export async function uploadProfileAvatarBlob(
+  supabase: SupabaseClient,
+  userId: string,
+  blob: Blob,
+): Promise<UploadProfileAvatarResult> {
+  if (blob.size > MAX_BYTES) {
+    return { ok: false, message: "Image must be 2 MB or smaller." };
+  }
+  const path = `${userId}/avatar.jpg`;
+  const { error: upErr } = await supabase.storage
+    .from(PROFILE_AVATAR_BUCKET)
+    .upload(path, blob, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+  if (upErr) {
+    const msg = upErr.message ?? "Upload failed";
+    if (/bucket|not found|404/i.test(msg)) {
+      return {
+        ok: false,
+        message:
+          "Avatar storage is not set up yet. Ask an admin to run the Supabase migration for the `avatars` storage bucket.",
+      };
+    }
+    if (/policy|denied|403|row-level security/i.test(msg)) {
+      return {
+        ok: false,
+        message:
+          "Upload was blocked. Sign out and back in, or check storage policies for the `avatars` bucket.",
+      };
+    }
+    return { ok: false, message: msg };
+  }
+  const { data } = supabase.storage
+    .from(PROFILE_AVATAR_BUCKET)
+    .getPublicUrl(path);
+  const publicUrl = data.publicUrl;
+  if (!publicUrl?.startsWith("https://")) {
+    return { ok: false, message: "Could not get public URL for upload." };
+  }
+  return { ok: true, publicUrl };
+}
+
 export async function uploadProfileAvatar(
   supabase: SupabaseClient,
   userId: string,

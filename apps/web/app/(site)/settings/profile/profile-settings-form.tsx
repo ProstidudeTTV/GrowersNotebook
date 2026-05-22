@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
-import { uploadProfileAvatar } from "@/lib/upload-profile-avatar";
+import { AvatarCropModal } from "@/components/avatar-crop-modal";
+import { uploadProfileAvatarBlob } from "@/lib/upload-profile-avatar";
 import { uploadProfileBanner } from "@/lib/upload-profile-banner";
 import { setPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 
@@ -46,6 +47,7 @@ export function ProfileSettingsForm() {
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [resetSending, setResetSending] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -207,12 +209,26 @@ export function ProfileSettingsForm() {
     }
   };
 
-  const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !userId) return;
+    if (!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)) {
+      setError("Use a JPEG, PNG, WebP, or GIF image.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be 2 MB or smaller.");
+      return;
+    }
     setError(null);
+    setAvatarCropFile(file);
+  };
+
+  const saveCroppedAvatar = async (blob: Blob) => {
+    if (!userId) return;
     setAvatarUploading(true);
+    setError(null);
     try {
       const supabase = createClient();
       const token = await getAccessTokenForApi(supabase);
@@ -220,7 +236,7 @@ export function ProfileSettingsForm() {
         router.replace("/login");
         return;
       }
-      const result = await uploadProfileAvatar(supabase, userId, file);
+      const result = await uploadProfileAvatarBlob(supabase, userId, blob);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -231,7 +247,9 @@ export function ProfileSettingsForm() {
         body: JSON.stringify({ avatarUrl: result.publicUrl }),
       });
       setAvatarUrl(result.publicUrl);
+      setAvatarCropFile(null);
       router.refresh();
+      toast.success("Profile photo updated");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -247,6 +265,13 @@ export function ProfileSettingsForm() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
+      {avatarCropFile ? (
+        <AvatarCropModal
+          file={avatarCropFile}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={saveCroppedAvatar}
+        />
+      ) : null}
       <section className="rounded-2xl border border-[var(--gn-border)] bg-[var(--gn-surface-raised)] p-5 shadow-[var(--gn-shadow-sm)]">
         <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
           Profile preview
@@ -323,7 +348,7 @@ export function ProfileSettingsForm() {
               {avatarUploading ? "Uploading…" : "Upload from device"}
             </button>
             <p className="text-xs text-[var(--gn-text-muted)]">
-              JPEG, PNG, WebP, or GIF · up to 2 MB · saved as a small JPEG
+              JPEG, PNG, WebP, or GIF · up to 2 MB · drag to center, then crop
             </p>
           </div>
         </div>

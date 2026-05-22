@@ -23,6 +23,9 @@ type PublicProfile = {
   profileFeedHiddenFromViewer?: boolean;
   followerCount?: number;
   followingCount?: number;
+  postCount?: number | null;
+  commentCount?: number | null;
+  notebookCount?: number | null;
 };
 
 type FeedResponse = {

@@ -33,6 +33,8 @@ import { getDb } from '../db';
 import {
   commentVotes,
   comments,
+  notebookComments,
+  notebooks,
   postVotes,
   posts,
   profileReports,
@@ -279,6 +281,44 @@ export class ProfilesService {
         .where(eq(userFollows.followerId, profileId)),
     ]);
 
+    const feedVisible = !profileFeedHiddenFromViewer;
+    const notebooksVisible =
+      isOwner ||
+      (row.profilePublic !== false && row.showNotebooksPublic !== false);
+
+    let postCount: number | null = null;
+    let commentCount: number | null = null;
+    let notebookCount: number | null = null;
+
+    if (feedVisible) {
+      const [[{ postCt }], [{ commentPostCt }], [{ commentNbCt }]] =
+        await Promise.all([
+          db
+            .select({ postCt: count() })
+            .from(posts)
+            .where(eq(posts.authorId, profileId)),
+          db
+            .select({ commentPostCt: count() })
+            .from(comments)
+            .where(eq(comments.authorId, profileId)),
+          db
+            .select({ commentNbCt: count() })
+            .from(notebookComments)
+            .where(eq(notebookComments.authorId, profileId)),
+        ]);
+      postCount = Number(postCt ?? 0);
+      commentCount =
+        Number(commentPostCt ?? 0) + Number(commentNbCt ?? 0);
+    }
+
+    if (notebooksVisible) {
+      const [{ nbCt }] = await db
+        .select({ nbCt: count() })
+        .from(notebooks)
+        .where(eq(notebooks.ownerId, profileId));
+      notebookCount = Number(nbCt ?? 0);
+    }
+
     const staffRole =
       row.role === 'owner' || row.role === 'admin' || row.role === 'moderator'
         ? row.role
@@ -296,6 +336,9 @@ export class ProfilesService {
       growerLevel: statsPublic ? growerLevelFromSeeds(seeds) : null,
       followerCount: Number(followerCount ?? 0),
       followingCount: Number(followingCount ?? 0),
+      postCount,
+      commentCount,
+      notebookCount,
       viewerFollowing,
       viewerHasBlocked,
       showFollowListsPublic: row.showFollowListsPublic !== false,

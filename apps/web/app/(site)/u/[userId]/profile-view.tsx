@@ -43,6 +43,9 @@ type PublicProfile = {
   /** Social graph counts — populated by API when available */
   followerCount?: number | null;
   followingCount?: number | null;
+  postCount?: number | null;
+  commentCount?: number | null;
+  notebookCount?: number | null;
 };
 
 type FeedResponse = {
@@ -93,6 +96,11 @@ const AVATAR_COLORS = [
 function avatarGradient(name: string): string {
   const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx] ?? "from-teal-700 to-cyan-600";
+}
+
+function formatProfileStat(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return String(n);
 }
 
 export function ProfileView({
@@ -225,16 +233,19 @@ export function ProfileView({
 
   const posts = postsPayload?.items ?? [];
   const commentItems = commentsPayload?.items ?? [];
-  const postsTotal = postsPayload?.total ?? 0;
+  const postsTotal =
+    profile.postCount ?? postsPayload?.total ?? 0;
   const postsPageSize = postsPayload?.pageSize ?? 20;
   const postsPage = postsPayload?.page ?? 1;
 
-  const commentsTotal = commentsPayload?.total ?? 0;
+  const commentsTotal =
+    profile.commentCount ?? commentsPayload?.total ?? 0;
   const commentsPageSize = commentsPayload?.pageSize ?? 20;
   const commentsPage = commentsPayload?.page ?? 1;
 
   const notebookItems = notebooksPayload?.items ?? [];
-  const notebooksTotal = notebooksPayload?.total ?? 0;
+  const notebooksTotal =
+    profile.notebookCount ?? notebooksPayload?.total ?? 0;
   const notebooksPageSize = notebooksPayload?.pageSize ?? 20;
   const notebooksPage = notebooksPayload?.page ?? 1;
 
@@ -256,16 +267,36 @@ export function ProfileView({
   const avatarGrad = avatarGradient(profileLabel);
 
   const tabItems = [
-    { id: "posts", label: "Posts", count: postsTotal },
-    { id: "comments", label: "Comments", count: null },
-    { id: "notebooks", label: "Journals", count: notebooksTotal },
+    {
+      id: "posts",
+      label: "Posts",
+      count:
+        profile.postCount ??
+        (activeTab === "posts" || activeTab === "media"
+          ? postsTotal
+          : null),
+    },
+    {
+      id: "comments",
+      label: "Comments",
+      count:
+        profile.commentCount ??
+        (activeTab === "comments" ? commentsTotal : null),
+    },
+    {
+      id: "notebooks",
+      label: "Journals",
+      count:
+        profile.notebookCount ??
+        (activeTab === "notebooks" ? notebooksTotal : null),
+    },
     { id: "media", label: "Media", count: null },
   ] as const;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
       {/* Profile header */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] sm:mt-6">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)]/80 bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] sm:mt-6">
         <div className="h-1.5 bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_55%,transparent)] via-[var(--gn-accent)] to-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)]" />
         <div className="p-5 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
@@ -451,31 +482,37 @@ export function ProfileView({
           </p>
         ) : null}
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-2 gap-3 border-t border-[var(--gn-divide)] py-4 sm:grid-cols-4">
-          <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
-            <p className="text-lg font-bold text-[var(--gn-text)]">{postsTotal}</p>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+        {/* Stats strip — soft tiles; counts from profile API (stable across tabs) */}
+        <div className="grid grid-cols-2 gap-2.5 border-t border-[var(--gn-divide)] py-5 sm:grid-cols-4 sm:gap-3">
+          <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
+            <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
+              {formatProfileStat(profile.postCount ?? (feedHidden ? null : postsTotal))}
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
               Posts
             </p>
           </div>
-          <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
-            <p className="text-lg font-bold text-[var(--gn-text)]">{commentsTotal}</p>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+          <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
+            <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
+              {formatProfileStat(
+                profile.commentCount ?? (feedHidden ? null : commentsTotal),
+              )}
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
               Comments
             </p>
           </div>
           {profile.followListsHiddenFromViewer && !isOwn ? (
             <>
-              <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
-                <p className="text-lg font-bold text-[var(--gn-text)]">—</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+              <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
+                <p className="text-xl font-bold text-[var(--gn-text)]">—</p>
+                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
                   Followers
                 </p>
               </div>
-              <div className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center">
-                <p className="text-lg font-bold text-[var(--gn-text)]">—</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+              <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
+                <p className="text-xl font-bold text-[var(--gn-text)]">—</p>
+                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
                   Following
                 </p>
               </div>
@@ -484,23 +521,23 @@ export function ProfileView({
             <>
               <Link
                 href={`${base}/followers`}
-                className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center transition hover:bg-[var(--gn-surface-hover)]"
+                className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
               >
-                <p className="text-lg font-bold text-[var(--gn-text)]">
+                <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
                   {profile.followerCount ?? 0}
                 </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
                   Followers
                 </p>
               </Link>
               <Link
                 href={`${base}/following`}
-                className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center transition hover:bg-[var(--gn-surface-hover)]"
+                className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
               >
-                <p className="text-lg font-bold text-[var(--gn-text)]">
+                <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
                   {profile.followingCount ?? 0}
                 </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--gn-text-muted)]">
+                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
                   Following
                 </p>
               </Link>
@@ -532,7 +569,7 @@ export function ProfileView({
                 }`}
               >
                 {t.label}
-                {t.count != null && t.count > 0 && (
+                {typeof t.count === "number" && t.count > 0 && (
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold leading-none ${
                       isActive

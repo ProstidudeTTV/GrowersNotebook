@@ -7,6 +7,8 @@ import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
 import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
+import { NotebookWizardLeaveDialog } from "@/components/notebook-wizard-leave-dialog";
+import { useNotebookWizardLeaveGuard } from "@/lib/use-notebook-wizard-leave-guard";
 
 const STEPS = 3;
 const MAX_IMAGES = 8;
@@ -44,7 +46,10 @@ export function NotebookHarvestWizard({
 }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { leaveOpen, requestClose, confirmLeave, dismissLeave } =
+    useNotebookWizardLeaveGuard(open, dirty);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [harvestDryWeightG, setHarvestDryWeightG] = useState("");
@@ -76,6 +81,7 @@ export function NotebookHarvestWizard({
 
   useEffect(() => {
     if (!open) return;
+    setDirty(false);
     setStep(1);
     setError(null);
     setUploadError(null);
@@ -137,13 +143,18 @@ export function NotebookHarvestWizard({
   const stepTitle = ["Harvest details", "Harvest photos", "Review"][step - 1];
 
   return (
+    <>
     <NotebookCenteredModal
       open={open}
       title="Harvest log"
-      onClose={() => (!saving ? onClose() : undefined)}
+      onClose={() => requestClose(onClose, { saving })}
       maxWidthClassName="max-w-[min(40rem,calc(100vw-1.5rem))]"
     >
-      <div className="px-5 py-5 sm:px-6 sm:py-6">
+      <div
+        className="px-5 py-5 sm:px-6 sm:py-6"
+        onInputCapture={() => setDirty(true)}
+        onChangeCapture={() => setDirty(true)}
+      >
         <div className="mb-5">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
@@ -327,5 +338,11 @@ export function NotebookHarvestWizard({
         </div>
       </div>
     </NotebookCenteredModal>
+    <NotebookWizardLeaveDialog
+      open={leaveOpen}
+      onStay={dismissLeave}
+      onLeave={() => confirmLeave(onClose)}
+    />
+    </>
   );
 }

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
+import { NotebookWizardLeaveDialog } from "@/components/notebook-wizard-leave-dialog";
+import { useNotebookWizardLeaveGuard } from "@/lib/use-notebook-wizard-leave-guard";
 import {
   normalizeTempUnit,
   normalizeVolumeUnit,
@@ -69,7 +71,10 @@ export function NotebookSetupWizard({
   const isCreate = notebook === null;
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { leaveOpen, requestClose, confirmLeave, dismissLeave } =
+    useNotebookWizardLeaveGuard(open, dirty);
 
   const [title, setTitle] = useState("");
   const [strainLabel, setStrainLabel] = useState("");
@@ -86,6 +91,7 @@ export function NotebookSetupWizard({
 
   useEffect(() => {
     if (!open) return;
+    setDirty(false);
     setStep(1);
     setError(null);
     if (!notebook) {
@@ -186,12 +192,17 @@ export function NotebookSetupWizard({
   const canGoNext = step === 1 ? title.trim().length > 0 : true;
 
   return (
+    <>
     <NotebookCenteredModal
       open={open}
-      onClose={() => (!saving ? onClose() : undefined)}
+      onClose={() => requestClose(onClose, { saving })}
       title="Set up your notebook"
     >
-      <div className="px-5 py-5 sm:px-6 sm:py-6">
+      <div
+        className="px-5 py-5 sm:px-6 sm:py-6"
+        onInputCapture={() => setDirty(true)}
+        onChangeCapture={() => setDirty(true)}
+      >
         <div className="mx-auto w-full max-w-3xl">
 
           {/* Progress */}
@@ -514,5 +525,11 @@ export function NotebookSetupWizard({
         </div>
       </div>
     </NotebookCenteredModal>
+    <NotebookWizardLeaveDialog
+      open={leaveOpen}
+      onStay={dismissLeave}
+      onLeave={() => confirmLeave(onClose)}
+    />
+    </>
   );
 }

@@ -31,7 +31,6 @@ type PublicProfile = {
   displayName: string | null;
   description: string | null;
   avatarUrl: string | null;
-  bannerUrl?: string | null;
   seeds: number | null;
   growerLevel: string | null;
   role?: string | null;
@@ -293,15 +292,44 @@ export function ProfileView({
     { id: "media", label: "Media", count: null },
   ] as const;
 
+  const statItems: { label: string; value: string; href?: string }[] = [
+    {
+      label: "Posts",
+      value: formatProfileStat(
+        profile.postCount ?? (feedHidden ? null : postsTotal),
+      ),
+    },
+    {
+      label: "Comments",
+      value: formatProfileStat(
+        profile.commentCount ?? (feedHidden ? null : commentsTotal),
+      ),
+    },
+    {
+      label: "Followers",
+      value:
+        profile.followListsHiddenFromViewer && !isOwn
+          ? "—"
+          : String(profile.followerCount ?? 0),
+      href: profile.followListsHiddenFromViewer && !isOwn ? undefined : `${base}/followers`,
+    },
+    {
+      label: "Following",
+      value:
+        profile.followListsHiddenFromViewer && !isOwn
+          ? "—"
+          : String(profile.followingCount ?? 0),
+      href: profile.followListsHiddenFromViewer && !isOwn ? undefined : `${base}/following`,
+    },
+  ];
+
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
-      {/* Profile header */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--gn-divide)]/80 bg-[var(--gn-surface-raised)] shadow-[var(--gn-shadow-sm)] sm:mt-6">
-        <div className="h-1.5 bg-gradient-to-r from-[color-mix(in_srgb,var(--gn-accent)_55%,transparent)] via-[var(--gn-accent)] to-[color-mix(in_srgb,var(--gn-accent)_25%,transparent)]" />
-        <div className="p-5 sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+      <section className="mt-4 rounded-2xl bg-[var(--gn-surface-raised)] p-6 shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-divide)] sm:mt-6 sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start lg:flex-col lg:items-center">
             <span
-              className={`mx-auto flex h-24 w-24 shrink-0 overflow-hidden rounded-2xl ring-2 ring-[color-mix(in_srgb,var(--gn-accent)_35%,var(--gn-divide))] bg-gradient-to-br sm:mx-0 sm:h-28 sm:w-28 ${avatarGrad}`}
+              className={`flex h-28 w-28 shrink-0 overflow-hidden rounded-full ring-4 ring-[color-mix(in_srgb,var(--gn-accent)_28%,var(--gn-divide))] bg-gradient-to-br sm:h-32 sm:w-32 ${avatarGrad}`}
             >
               {profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -318,9 +346,39 @@ export function ProfileView({
               )}
             </span>
 
-            <div className="min-w-0 flex-1">
+            <dl className="grid w-full max-w-xs grid-cols-2 gap-3 sm:max-w-none sm:grid-cols-4 lg:max-w-xs lg:grid-cols-2">
+              {statItems.map((s) => (
+                <div
+                  key={s.label}
+                  className="rounded-xl bg-[var(--gn-surface-muted)] px-3 py-2.5 text-center ring-1 ring-[var(--gn-divide)]"
+                >
+                  {s.href ? (
+                    <Link href={s.href} className="block transition hover:opacity-90">
+                      <dd className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
+                        {s.value}
+                      </dd>
+                      <dt className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
+                        {s.label}
+                      </dt>
+                    </Link>
+                  ) : (
+                    <>
+                      <dd className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
+                        {s.value}
+                      </dd>
+                      <dt className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
+                        {s.label}
+                      </dt>
+                    </>
+                  )}
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-xl font-extrabold tracking-tight text-[var(--gn-text)] sm:text-2xl">
+                <h1 className="text-2xl font-extrabold tracking-tight text-[var(--gn-text)] sm:text-3xl">
                   {profileLabel}
                 </h1>
                 {viewerId ? (
@@ -381,11 +439,11 @@ export function ProfileView({
                 )}
               </div>
               {bio ? (
-                <p className="mt-3 max-w-prose whitespace-pre-wrap text-sm leading-relaxed text-[var(--gn-text-muted)]">
+                <p className="mt-3 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-[var(--gn-text-muted)]">
                   {bio}
                 </p>
               ) : null}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-2.5">
           {!isOwn ? (
             <>
               {viewerId && profile.viewerHasBlocked !== true ? (
@@ -432,8 +490,8 @@ export function ProfileView({
             </>
           )}
               </div>
-            </div>
           </div>
+        </div>
 
         {/* Report form */}
         {!isOwn && reportOpen ? (
@@ -482,109 +540,46 @@ export function ProfileView({
           </p>
         ) : null}
 
-        {/* Stats strip — soft tiles; counts from profile API (stable across tabs) */}
-        <div className="grid grid-cols-2 gap-2.5 border-t border-[var(--gn-divide)] py-5 sm:grid-cols-4 sm:gap-3">
-          <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
-            <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
-              {formatProfileStat(profile.postCount ?? (feedHidden ? null : postsTotal))}
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-              Posts
-            </p>
-          </div>
-          <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
-            <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
-              {formatProfileStat(
-                profile.commentCount ?? (feedHidden ? null : commentsTotal),
-              )}
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-              Comments
-            </p>
-          </div>
-          {profile.followListsHiddenFromViewer && !isOwn ? (
-            <>
-              <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
-                <p className="text-xl font-bold text-[var(--gn-text)]">—</p>
-                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-                  Followers
-                </p>
-              </div>
-              <div className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)]">
-                <p className="text-xl font-bold text-[var(--gn-text)]">—</p>
-                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-                  Following
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                href={`${base}/followers`}
-                className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
-              >
-                <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
-                  {profile.followerCount ?? 0}
-                </p>
-                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-                  Followers
-                </p>
-              </Link>
-              <Link
-                href={`${base}/following`}
-                className="rounded-2xl bg-[var(--gn-surface-elevated)]/70 px-3 py-3 text-center shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)]"
-              >
-                <p className="text-xl font-bold tabular-nums text-[var(--gn-text)]">
-                  {profile.followingCount ?? 0}
-                </p>
-                <p className="mt-0.5 text-xs font-medium text-[var(--gn-text-muted)]">
-                  Following
-                </p>
-              </Link>
-            </>
-          )}
-        </div>
         {isOwn && profile.showFollowListsPublic === false ? (
-          <p className="border-t border-[var(--gn-divide)] py-2 text-xs text-[var(--gn-text-muted)]">
+          <p className="mt-4 text-xs text-[var(--gn-text-muted)]">
             Follower and following lists are hidden from others — only you can
             see them.
           </p>
         ) : null}
-        </div>
-      </div>
+      </section>
 
-      {/* ── Tab navigation ───────────────────────────────────────────── */}
-      <div className="sticky top-14 z-10 -mx-4 mt-6 border-y border-[var(--gn-divide)] bg-[var(--gn-surface-raised)]/95 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
-        <div className="-mb-px flex gap-0.5">
-          {tabItems.map((t) => {
-            const isActive = activeTab === t.id;
-            return (
-              <Link
-                key={t.id}
-                href={buildPostsHref({ tab: t.id, sort: activeSort })}
-                className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-colors ${
-                  isActive
-                    ? "text-[var(--gn-accent)] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-[var(--gn-accent)]"
-                    : "text-[var(--gn-text-muted)] hover:text-[var(--gn-text)]"
-                }`}
-              >
-                {t.label}
-                {typeof t.count === "number" && t.count > 0 && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold leading-none ${
-                      isActive
-                        ? "bg-[var(--gn-accent)]/15 text-[var(--gn-accent)]"
-                        : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)]"
-                    }`}
-                  >
-                    {t.count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <nav
+        className="sticky top-14 z-10 mt-6 flex flex-wrap gap-2 rounded-2xl bg-[var(--gn-surface-muted)] p-2 ring-1 ring-[var(--gn-divide)] backdrop-blur-md"
+        aria-label="Profile sections"
+      >
+        {tabItems.map((t) => {
+          const isActive = activeTab === t.id;
+          return (
+            <Link
+              key={t.id}
+              href={buildPostsHref({ tab: t.id, sort: activeSort })}
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                isActive
+                  ? "bg-[var(--gn-accent)] text-[var(--gn-on-accent)] shadow-sm"
+                  : "text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)] hover:text-[var(--gn-text)]"
+              }`}
+            >
+              {t.label}
+              {typeof t.count === "number" && t.count > 0 ? (
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold leading-none ${
+                    isActive
+                      ? "bg-[color-mix(in_srgb,var(--gn-on-accent)_18%,transparent)] text-[var(--gn-on-accent)]"
+                      : "bg-[var(--gn-surface-raised)] text-[var(--gn-text-muted)]"
+                  }`}
+                >
+                  {t.count}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* ── Two-column content area ───────────────────────────────────── */}
       <div className="px-4 pt-5 lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">

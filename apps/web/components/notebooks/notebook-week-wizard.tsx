@@ -7,6 +7,8 @@ import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import type { NotebookDetailPayload } from "@/components/notebook-detail-client";
 import { PostMediaDropzone } from "@/components/post-media-dropzone";
 import { NotebookCenteredModal } from "@/components/notebooks/notebook-centered-modal";
+import { NotebookWizardLeaveDialog } from "@/components/notebook-wizard-leave-dialog";
+import { useNotebookWizardLeaveGuard } from "@/lib/use-notebook-wizard-leave-guard";
 import type { DosageUnit, TempUnit, VolumeUnit } from "@/lib/notebook-units";
 import {
   DOSAGE_UNITS,
@@ -188,7 +190,10 @@ export function NotebookWeekWizard({
 }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { leaveOpen, requestClose, confirmLeave, dismissLeave } =
+    useNotebookWizardLeaveGuard(open, dirty);
 
   const [weekIndex, setWeekIndex] = useState(nextWeekIndex);
   const [noteSlots, setNoteSlots] = useState<NoteSlot[]>(emptyNoteSlots);
@@ -231,6 +236,7 @@ export function NotebookWeekWizard({
 
   useEffect(() => {
     if (!open) return;
+    setDirty(false);
     setStep(1);
     setError(null);
     setUploadError(null);
@@ -450,12 +456,17 @@ export function NotebookWeekWizard({
       : `Add week ${weekIndex}`;
 
   return (
+    <>
     <NotebookCenteredModal
       open={open}
       title={title}
-      onClose={() => (!saving ? onClose() : undefined)}
+      onClose={() => requestClose(onClose, { saving })}
     >
-      <div className="px-5 py-5 sm:px-6 sm:py-6">
+      <div
+        className="px-5 py-5 sm:px-6 sm:py-6"
+        onInputCapture={() => setDirty(true)}
+        onChangeCapture={() => setDirty(true)}
+      >
         <div className="mb-4 border-b border-[var(--gn-divide)] pb-4">
           <div className="flex gap-1">
             {Array.from({ length: STEPS }, (_, i) => (
@@ -997,5 +1008,11 @@ export function NotebookWeekWizard({
         </div>
       </div>
     </NotebookCenteredModal>
+    <NotebookWizardLeaveDialog
+      open={leaveOpen}
+      onStay={dismissLeave}
+      onLeave={() => confirmLeave(onClose)}
+    />
+    </>
   );
 }

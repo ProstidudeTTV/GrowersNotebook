@@ -1369,7 +1369,7 @@ export function MessagesPanel() {
 
           {/* Compose area — fixed footer; only the GIF list scrolls internally */}
           <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-4 lg:px-8 lg:py-5">
-            <div className="w-full max-w-none">
+            <div className="flex w-full max-w-none flex-col gap-3">
             <input
               id={dmAttachInputId}
               type="file"
@@ -1462,29 +1462,8 @@ export function MessagesPanel() {
                 </div>
               </div>
             ) : null}
-            <ComposerQuickReactionsToolbar
-              disabled={!activeThreadId}
-              onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
-              emojiPlacement="above"
-              emojiUsePortal
-              gifSlot={
-                <button
-                  type="button"
-                  disabled={
-                    !selfId ||
-                    !activeThreadId ||
-                    pendingAttachments.length >= DM_ATTACH_MAX ||
-                    pendingHasUploads
-                  }
-                  className="inline-flex h-8 shrink-0 items-center rounded-full border border-[var(--gn-border)] bg-[var(--gn-surface-elevated)]/90 px-3 text-xs font-semibold text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition hover:bg-[var(--gn-surface-hover)] disabled:pointer-events-none disabled:opacity-35"
-                  onClick={() => setGifPickerOpen((o) => !o)}
-                >
-                  GIF
-                </button>
-              }
-            />
             {gifPickerOpen && selfId && activeThreadId ? (
-              <div className="mt-2 rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] p-3">
+              <div className="rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] p-4 shadow-[var(--gn-shadow-md)] ring-1 ring-[var(--gn-divide)]">
                 <div className="flex flex-wrap gap-2">
                   <input
                     className="gn-input min-w-[12rem] flex-1 px-2 py-1.5 text-sm"
@@ -1507,9 +1486,9 @@ export function MessagesPanel() {
                     {gifLoading ? "…" : "Search now"}
                   </button>
                 </div>
-                <p className="mt-2 text-[10px] text-[var(--gn-text-muted)]">
-                  One GIF per message, and not with photos or videos. Powered by
-                  Giphy. Results update as you type (after a short pause).
+                <p className="mt-2 text-sm text-[var(--gn-text-muted)]">
+                  One GIF per message (not with photos or videos). Powered by
+                  Giphy — results update as you type.
                 </p>
                 {!gifConfigured ? (
                   <p className="mt-2 text-xs text-[var(--gn-text-muted)]">
@@ -1527,7 +1506,7 @@ export function MessagesPanel() {
                 ) : null}
                 {gifItems.length > 0 ? (
                   <div
-                    className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-40 overflow-y-auto overscroll-contain rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)]/40 py-2 pl-1 pr-2"
+                    className="gn-scrollbar-themed gn-scrollbar-giphy mt-3 max-h-52 overflow-y-auto overscroll-contain rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] py-3 pl-2 pr-3 lg:max-h-64"
                     role="region"
                     aria-label="Giphy search results"
                   >
@@ -1544,7 +1523,7 @@ export function MessagesPanel() {
                             <img
                               src={g.preview}
                               alt=""
-                              className="h-16 w-full object-cover sm:h-20"
+                              className="h-20 w-full object-cover sm:h-24 lg:h-28"
                               loading="lazy"
                             />
                           </button>
@@ -1565,7 +1544,32 @@ export function MessagesPanel() {
                 ) : null}
               </div>
             ) : null}
-            <div className="mt-2 flex items-center gap-2">
+            <ComposerQuickReactionsToolbar
+              disabled={!activeThreadId}
+              onEmojiAppend={(emoji) => setDraft((t) => t + emoji)}
+              emojiPlacement="above"
+              emojiUsePortal
+              gifSlot={
+                <button
+                  type="button"
+                  disabled={
+                    !selfId ||
+                    !activeThreadId ||
+                    pendingAttachments.length >= DM_ATTACH_MAX ||
+                    pendingHasUploads
+                  }
+                  className={`inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-sm font-semibold shadow-[var(--gn-shadow-sm)] transition disabled:pointer-events-none disabled:opacity-35 ${
+                    gifPickerOpen
+                      ? "border-[var(--gn-accent)] bg-[color-mix(in_srgb,var(--gn-accent)_18%,var(--gn-surface-elevated))] text-[var(--gn-accent)]"
+                      : "border-[var(--gn-border)] bg-[var(--gn-surface-elevated)] text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)]"
+                  }`}
+                  onClick={() => setGifPickerOpen((o) => !o)}
+                >
+                  GIF
+                </button>
+              }
+            />
+            <div className="flex items-center gap-2">
               {/* Media attach button */}
               {!activeThreadId ||
               pendingAttachments.length >= DM_ATTACH_MAX ? (

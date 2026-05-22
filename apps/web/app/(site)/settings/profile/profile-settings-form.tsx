@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { AvatarCropModal } from "@/components/avatar-crop-modal";
 import { uploadProfileAvatarBlob } from "@/lib/upload-profile-avatar";
-import { uploadProfileBanner } from "@/lib/upload-profile-banner";
 import { setPasswordRecoveryPending } from "@/lib/auth-recovery-client";
 
 type MeProfile = {
@@ -17,7 +16,6 @@ type MeProfile = {
   displayName: string | null;
   description: string | null;
   avatarUrl: string | null;
-  bannerUrl?: string | null;
   profilePublic: boolean;
   showGrowerStatsPublic: boolean;
   showNotebooksPublic: boolean;
@@ -28,17 +26,14 @@ type MeProfile = {
 export function ProfileSettingsForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [bannerUploading, setBannerUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
   const [profilePublic, setProfilePublic] = useState(true);
   const [showGrowerStatsPublic, setShowGrowerStatsPublic] = useState(true);
   const [showNotebooksPublic, setShowNotebooksPublic] = useState(true);
@@ -67,7 +62,6 @@ export function ProfileSettingsForm() {
       setDisplayName(me.displayName?.trim() ?? "");
       setDescription(me.description?.trim() ?? "");
       setAvatarUrl(me.avatarUrl?.trim() ?? "");
-      setBannerUrl(me.bannerUrl?.trim() ?? "");
       setProfilePublic(me.profilePublic !== false);
       setShowGrowerStatsPublic(me.showGrowerStatsPublic !== false);
       setShowNotebooksPublic(me.showNotebooksPublic !== false);
@@ -101,6 +95,7 @@ export function ProfileSettingsForm() {
           displayName: displayName.trim() || null,
           description: description.trim() || null,
           avatarUrl: avatarUrl.trim() || null,
+          bannerUrl: null,
           profilePublic,
           showGrowerStatsPublic,
           showNotebooksPublic,
@@ -149,63 +144,6 @@ export function ProfileSettingsForm() {
       );
     } finally {
       setResetSending(false);
-    }
-  };
-
-  const onBannerFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !userId) return;
-    setError(null);
-    setBannerUploading(true);
-    try {
-      const supabase = createClient();
-      const token = await getAccessTokenForApi(supabase);
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-      const result = await uploadProfileBanner(supabase, userId, file);
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-      await apiFetch("/profiles/me", {
-        method: "PATCH",
-        token,
-        body: JSON.stringify({ bannerUrl: result.publicUrl }),
-      });
-      setBannerUrl(result.publicUrl);
-      router.refresh();
-      toast.success("Cover photo updated");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setBannerUploading(false);
-    }
-  };
-
-  const clearBanner = async () => {
-    setError(null);
-    setBannerUploading(true);
-    try {
-      const supabase = createClient();
-      const token = await getAccessTokenForApi(supabase);
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-      await apiFetch("/profiles/me", {
-        method: "PATCH",
-        token,
-        body: JSON.stringify({ bannerUrl: null }),
-      });
-      setBannerUrl("");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove cover");
-    } finally {
-      setBannerUploading(false);
     }
   };
 
@@ -352,57 +290,6 @@ export function ProfileSettingsForm() {
             </p>
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 block">
-        <span className="mb-2 block text-sm font-medium text-[var(--gn-text)]">
-          Profile cover
-        </span>
-        <div className="overflow-hidden rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)]">
-          {bannerUrl.trim() ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={bannerUrl.trim()}
-              alt=""
-              className="aspect-[3/1] w-full object-cover"
-            />
-          ) : (
-            <div className="flex aspect-[3/1] w-full items-center justify-center text-xs text-[var(--gn-text-muted)]">
-              Wide banner shown on your public profile
-            </div>
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            ref={bannerInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="sr-only"
-            onChange={(ev) => void onBannerFile(ev)}
-            aria-label="Upload profile cover from device"
-          />
-          <button
-            type="button"
-            disabled={bannerUploading || !userId}
-            onClick={() => bannerInputRef.current?.click()}
-            className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] px-4 py-2 text-sm font-medium text-[var(--gn-text)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-          >
-            {bannerUploading ? "Uploading…" : "Upload cover"}
-          </button>
-          {bannerUrl.trim() ? (
-            <button
-              type="button"
-              disabled={bannerUploading}
-              onClick={() => void clearBanner()}
-              className="inline-flex items-center justify-center rounded-full border border-[var(--gn-border)] px-4 py-2 text-sm font-medium text-[var(--gn-text-muted)] transition hover:bg-[var(--gn-surface-hover)] disabled:opacity-50"
-            >
-              Remove
-            </button>
-          ) : null}
-        </div>
-        <p className="mt-1 text-xs text-[var(--gn-text-muted)]">
-          JPEG, PNG, WebP, or GIF · up to 3 MB · recommended wide crop
-        </p>
       </div>
 
       <label className="block">

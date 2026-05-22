@@ -268,13 +268,21 @@ export default function AdminSiteSettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="mb-6 flex items-center justify-between">
-        <Typography.Title level={3} className="!mb-0">
-          Site Settings
-        </Typography.Title>
-        <Typography.Text type="secondary" className="text-sm">
-          Admin-only &mdash; changes take effect immediately on the public site.
-        </Typography.Text>
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Typography.Title level={3} className="!mb-0">
+            Site Settings
+          </Typography.Title>
+          <Typography.Text type="secondary" className="text-sm">
+            Admin-only &mdash; saved to the live database, not placeholders.
+          </Typography.Text>
+        </div>
+        <Alert
+          type="info"
+          showIcon
+          message="These controls are wired to production"
+          description="MOTD, announcements, maintenance mode, and SEO fields update site_config immediately on growersnotebook.com. The reference card below is documentation only — it does not change the site until you save the form."
+        />
       </div>
 
       <Form

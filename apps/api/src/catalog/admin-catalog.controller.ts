@@ -78,6 +78,10 @@ export class AdminCatalogController {
       effects?: string[];
       effectsNotes?: string | null;
       published?: boolean;
+      chemotype?: string | null;
+      genetics?: string | null;
+      isAutoflower?: boolean;
+      parentStrainIds?: string[];
     },
   ) {
     return this.strains.createAdmin(body);
@@ -106,6 +110,7 @@ export class AdminCatalogController {
       chemotype?: string | null;
       genetics?: string | null;
       isAutoflower?: boolean;
+      parentStrainIds?: string[];
     }>,
   ) {
     const actor = await this.profiles.findById(user.sub);

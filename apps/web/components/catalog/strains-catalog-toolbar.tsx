@@ -9,18 +9,7 @@ type BreederHit = { slug: string; name: string };
 
 type BreedersListJson = { items: BreederHit[] };
 
-const EFFECT_OPTIONS = [
-  "Relaxed",
-  "Happy",
-  "Euphoric",
-  "Uplifted",
-  "Creative",
-  "Energetic",
-  "Sleepy",
-  "Hungry",
-  "Focused",
-  "Tingly",
-];
+import { CATALOG_EFFECT_TAGS } from "@/lib/catalog-effect-options";
 
 function buildStrainsQueryFromInputs(s: {
   q: string;
@@ -483,7 +472,7 @@ export function StrainsCatalogToolbar({
               Effects (select any)
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {EFFECT_OPTIONS.map((eff) => {
+              {CATALOG_EFFECT_TAGS.map((eff) => {
                 const selected = effects
                   .split(",")
                   .map((s) => s.trim())

@@ -1296,14 +1296,14 @@ export function MessagesPanel() {
                           <MiniAvatar name={peerDisplay} size={26} />
                         )}
                         <div
-                          className={`max-w-[min(88%,20rem)] text-sm sm:max-w-[min(82%,24rem)] lg:max-w-[min(75%,32rem)] ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                          className={`max-w-[min(92%,22rem)] text-base leading-relaxed sm:max-w-[min(88%,26rem)] lg:max-w-[min(80%,36rem)] lg:text-[1.0625rem] lg:leading-[1.55] ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-3 py-2 text-[var(--gn-text)] shadow-sm"
-                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-3 py-2 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)]"
+                              ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-3.5 py-2.5 text-[var(--gn-text)] shadow-sm lg:px-4 lg:py-3"
+                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-3.5 py-2.5 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] lg:px-4 lg:py-3"
                           }`}
                         >
                           {hasText ? (
-                            <p className="whitespace-pre-wrap break-words">
+                            <p className="whitespace-pre-wrap break-words text-[length:inherit] leading-[inherit]">
                               {caption}
                             </p>
                           ) : null}
@@ -1369,7 +1369,7 @@ export function MessagesPanel() {
 
           {/* Compose area — fixed footer; only the GIF list scrolls internally */}
           <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3">
-            <div className="mx-auto w-full max-w-2xl">
+            <div className="mx-auto w-full max-w-3xl lg:max-w-4xl">
             <input
               id={dmAttachInputId}
               type="file"
@@ -1615,7 +1615,7 @@ export function MessagesPanel() {
               )}
               {/* Pill text input */}
               <input
-                className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-sm text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-base text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 lg:py-3 lg:text-[1.0625rem]"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={

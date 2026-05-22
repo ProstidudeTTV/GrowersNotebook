@@ -497,6 +497,7 @@ export class StrainsService {
     genetics?: string | null;
     isAutoflower?: boolean;
     reportedEffectPcts?: Record<string, number>;
+    parentStrainIds?: string[];
   }) {
     await this.nameBlocklist.assertAllowed(values.name);
     const db = getDb();
@@ -515,6 +516,7 @@ export class StrainsService {
           genetics: values.genetics ?? null,
           isAutoflower: values.isAutoflower ?? false,
           reportedEffectPcts: values.reportedEffectPcts ?? {},
+          parentStrainIds: values.parentStrainIds ?? [],
         })
         .returning();
       return row;
@@ -539,6 +541,7 @@ export class StrainsService {
       chemotype?: string | null;
       genetics?: string | null;
       isAutoflower?: boolean;
+      parentStrainIds?: string[];
     }>,
   ) {
     if (body.name) await this.nameBlocklist.assertAllowed(body.name);
@@ -581,6 +584,7 @@ export class StrainsService {
       isAutoflower: row.isAutoflower,
       chemotype: row.chemotype,
       genetics: row.genetics,
+      parentStrainIds: (row.parentStrainIds ?? []) as string[],
       published: row.published,
       reviewCount: row.reviewCount,
       avgRating: row.avgRating != null ? String(row.avgRating) : null,

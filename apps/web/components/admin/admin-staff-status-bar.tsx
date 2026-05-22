@@ -47,7 +47,12 @@ export function AdminStaffStatusBar() {
     );
   }
 
-  const roleLabel = role === "admin" ? "Site admin" : "Moderator";
+  const roleLabel =
+    role === "owner"
+      ? "Owner"
+      : role === "admin"
+        ? "Site admin"
+        : "Moderator";
   const name = displayName?.trim() || "Staff";
 
   return (

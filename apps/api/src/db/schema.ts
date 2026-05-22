@@ -596,6 +596,11 @@ export const strains = pgTable(
     chemotype: text('chemotype'),
     /** Short lineage / cross sentence when known */
     genetics: text('genetics'),
+    /** Catalog strain UUIDs for documented parents (crosses). */
+    parentStrainIds: uuid('parent_strain_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
     /** Leafly-style survey percentages keyed by effect id (relaxed, happy, …). */
     reportedEffectPcts: jsonb('reported_effect_pcts')
       .notNull()

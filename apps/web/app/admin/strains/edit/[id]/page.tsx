@@ -5,7 +5,10 @@ import { useInvalidate, useList } from "@refinedev/core";
 import { App as AntdApp, Button, Form, Input, Select, Switch, Typography } from "antd";
 import Link from "next/link";
 import { useMemo } from "react";
+import { AdminParentStrainsSelect } from "@/components/admin/admin-parent-strains-select";
+import { EffectsTagsSelect } from "@/components/catalog/effects-tags-select";
 import { adminAxios } from "@/lib/admin-axios";
+import { adminSelectPopupProps } from "@/lib/admin-select-props";
 import { useAdminStaff } from "../../../admin-staff-context";
 
 const { Paragraph } = Typography;
@@ -120,19 +123,31 @@ export default function AdminStrainEditPage() {
                 options={breederOptions}
                 showSearch
                 optionFilterProp="label"
+                {...adminSelectPopupProps()}
               />
             </Form.Item>
             <Form.Item
-              label="Tags"
-              name="effects"
-              extra="Type and press Enter to add each tag"
+              label="Parent strains"
+              name="parentStrainIds"
+              extra="Link to catalog cultivars used as parents for this strain."
             >
-              <Select mode="tags" placeholder="Tags" />
+              <AdminParentStrainsSelect excludeStrainId={strainId} />
             </Form.Item>
-            <Form.Item label="Tag notes" name="effectsNotes">
+            <Form.Item
+              label="Effect tags"
+              name="effects"
+              extra="Pick standard tags or type your own, then Enter."
+            >
+              <EffectsTagsSelect />
+            </Form.Item>
+            <Form.Item label="Effect notes" name="effectsNotes">
               <Input.TextArea rows={2} maxLength={2000} />
             </Form.Item>
-            <Form.Item label="Genetics" name="genetics">
+            <Form.Item
+              label="Genetics (free text)"
+              name="genetics"
+              extra="Optional when parents are not catalogued yet."
+            >
               <Input placeholder="e.g. OG Kush × Durban Poison" maxLength={500} />
             </Form.Item>
             <Form.Item label="Chemotype" name="chemotype">
@@ -144,6 +159,7 @@ export default function AdminStrainEditPage() {
                   { value: "sativa", label: "Sativa" },
                   { value: "hybrid", label: "Hybrid" },
                 ]}
+                {...adminSelectPopupProps()}
               />
             </Form.Item>
             <Form.Item label="Autoflower" name="isAutoflower" valuePropName="checked">

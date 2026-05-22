@@ -3,6 +3,8 @@
 import { Create, useForm } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
 import { Button, Form, Input, Select, Switch } from "antd";
+import { AdminParentStrainsSelect } from "@/components/admin/admin-parent-strains-select";
+import { EffectsTagsSelect } from "@/components/catalog/effects-tags-select";
 import { adminSelectPopupProps } from "@/lib/admin-select-props";
 
 export default function AdminStrainCreatePage() {
@@ -26,7 +28,7 @@ export default function AdminStrainCreatePage() {
         {...formProps}
         form={form}
         layout="vertical"
-        initialValues={{ published: true, effects: [] }}
+        initialValues={{ published: true, effects: [], parentStrainIds: [] }}
       >
         <Form.Item
           label="Slug"
@@ -63,20 +65,27 @@ export default function AdminStrainCreatePage() {
           />
         </Form.Item>
         <Form.Item
-          label="Tags"
-          name="effects"
-          extra="Type and press Enter to add each tag"
+          label="Parent strains"
+          name="parentStrainIds"
+          extra="Link to other cultivars already in the catalog (e.g. both parents of a cross)."
         >
-          <Select
-            mode="tags"
-            placeholder="e.g. citrus, calming"
-            {...adminSelectPopupProps()}
-          />
+          <AdminParentStrainsSelect />
         </Form.Item>
-        <Form.Item label="Tag notes" name="effectsNotes">
+        <Form.Item
+          label="Effect tags"
+          name="effects"
+          extra="Pick standard tags or type your own, then Enter."
+        >
+          <EffectsTagsSelect />
+        </Form.Item>
+        <Form.Item label="Effect notes" name="effectsNotes">
           <Input.TextArea rows={2} maxLength={2000} />
         </Form.Item>
-        <Form.Item label="Genetics" name="genetics">
+        <Form.Item
+          label="Genetics (free text)"
+          name="genetics"
+          extra="Optional lineage sentence if parents are not in the catalog yet."
+        >
           <Input placeholder="e.g. OG Kush × Durban Poison" maxLength={500} />
         </Form.Item>
         <Form.Item label="Chemotype" name="chemotype">

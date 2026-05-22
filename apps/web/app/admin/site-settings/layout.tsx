@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicApiUrl } from "@/lib/public-api-url";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
+import { isAdminRole } from "@/lib/staff-role";
 
 /** Site settings (including SEO) are admin-only; moderators must not open this route. */
 export default async function AdminSiteSettingsLayout({
@@ -26,7 +27,7 @@ export default async function AdminSiteSettingsLayout({
   if (!meRes.ok) redirect("/admin");
 
   const profile = (await meRes.json()) as { role: string };
-  if (profile.role !== "admin") redirect("/admin");
+  if (!isAdminRole(profile.role)) redirect("/admin");
 
   return <>{children}</>;
 }

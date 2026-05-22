@@ -61,8 +61,6 @@ export function SiteChrome({
   const pathname = usePathname();
   const viewportLocked = isViewportLockedPath(pathname);
   const hideFooter = viewportLocked;
-  /** Messenger uses full main-column width on desktop (Facebook-style). */
-  const hideAppSidebarOnDesktop = viewportLocked;
 
   useEffect(() => {
     setFollowed(initialFollowedCommunities);
@@ -169,7 +167,6 @@ export function SiteChrome({
           onNavigate={() => setMobileOpen(false)}
           className={
             "fixed bottom-0 left-0 z-[45] max-lg:top-[var(--gn-mobile-drawer-top)] max-lg:h-[calc(100dvh-var(--gn-mobile-drawer-top))] max-lg:max-h-[calc(100dvh-var(--gn-mobile-drawer-top))] w-[var(--gn-rail-width)] max-w-[85vw] shrink-0 border-r transition-transform duration-200 ease-out lg:sticky lg:top-[var(--gn-sidebar-sticky-top)] lg:z-auto lg:h-[calc(100dvh-var(--gn-sidebar-sticky-top))] lg:max-h-[calc(100dvh-var(--gn-sidebar-sticky-top))] lg:max-w-none lg:overflow-hidden lg:border-r lg:transition-none " +
-            (hideAppSidebarOnDesktop ? "lg:hidden " : "") +
             (mobileOpen
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0")

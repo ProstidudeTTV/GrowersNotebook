@@ -1,12 +1,16 @@
 "use client";
 
 import { Select } from "antd";
+import { CATALOG_EFFECT_TAGS } from "@/lib/catalog-effect-options";
+import { adminSelectPopupProps } from "@/lib/admin-select-props";
 
 type Props = {
-  value: string[];
-  onChange: (next: string[]) => void;
+  value?: string[];
+  onChange?: (next: string[]) => void;
   placeholder?: string;
   id?: string;
+  /** Preset effect tags (catalog filter list). Custom tags still allowed. */
+  presetOptions?: readonly string[];
 };
 
 /**
@@ -30,18 +34,22 @@ function normalizeTags(next: unknown): string[] {
 export function EffectsTagsSelect({
   value,
   onChange,
-  placeholder = "Type a tag and press Enter",
+  placeholder = "Choose or type effect tags",
   id,
+  presetOptions = CATALOG_EFFECT_TAGS,
 }: Props) {
+  const options = presetOptions.map((tag) => ({ value: tag, label: tag }));
   return (
     <Select
       id={id}
       mode="tags"
       className="w-full gn-effects-tags-select"
       placeholder={placeholder}
-      value={value}
-      onChange={(next) => onChange(normalizeTags(next))}
+      value={value ?? []}
+      options={options}
+      onChange={(next) => onChange?.(normalizeTags(next))}
       tokenSeparators={[","]}
+      {...adminSelectPopupProps()}
     />
   );
 }

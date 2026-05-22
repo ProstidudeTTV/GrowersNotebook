@@ -224,6 +224,38 @@ html.dark body {
     scroll-padding-bottom: 0.5rem;
   }
 
+  /**
+   * Desktop DMs: use full column width, readable type, high-contrast meta.
+   * (--gn-on-accent is near-black and must NOT be used on dark message bubbles.)
+   */
+  .gn-messages-panel .gn-messages-timeline-inner {
+    width: 100%;
+    max-width: none;
+  }
+
+  .gn-messages-panel .gn-messages-bubble {
+    font-size: 1.0625rem;
+    line-height: 1.55;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-messages-panel .gn-messages-bubble {
+      font-size: 1.125rem;
+      line-height: 1.6;
+    }
+  }
+
+  .gn-messages-panel .gn-messages-meta {
+    color: var(--gn-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  @media (min-width: 1024px) {
+    .gn-messages-panel .gn-messages-meta {
+      font-size: 0.875rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .gn-messages-timeline {
       scroll-behavior: auto;

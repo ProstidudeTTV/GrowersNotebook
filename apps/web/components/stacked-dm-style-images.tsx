@@ -10,11 +10,16 @@ const DM_STACK_OVERLAP_Y = 6;
 const DM_STACK_JITTER_X = 2;
 const DM_STACK_ROTATION_PAD = 20;
 
+const CARD_LG = 168;
 const CARD_MD = 108;
 const CARD_SM = 76;
 
-function cardSizePx(compact: boolean): number {
-  return compact ? CARD_SM : CARD_MD;
+export type DmStackImageSize = "compact" | "default" | "large";
+
+function cardSizePx(size: DmStackImageSize): number {
+  if (size === "compact") return CARD_SM;
+  if (size === "large") return CARD_LG;
+  return CARD_MD;
 }
 
 function dmStackCardLeft(
@@ -66,19 +71,24 @@ export function StackedDmStyleImages({
   pileLabel,
   onOpen,
   compact = false,
+  size,
   className = "",
 }: {
   urls: string[];
   stackKey: string;
   pileLabel?: string | null;
   onOpen: (index: number) => void;
+  /** @deprecated Prefer `size` */
   compact?: boolean;
+  size?: DmStackImageSize;
   className?: string;
 }) {
   const imgs = urls.filter(Boolean);
   if (imgs.length === 0) return null;
 
-  const card = cardSizePx(compact);
+  const resolvedSize: DmStackImageSize =
+    size ?? (compact ? "compact" : "default");
+  const card = cardSizePx(resolvedSize);
   const n = imgs.length;
   const stackW =
     n <= 1
@@ -93,26 +103,24 @@ export function StackedDmStyleImages({
   return (
     <div className={[`overflow-visible`, className].filter(Boolean).join(" ")}>
       {pileLabel && n > 1 ? (
-        <p className="mb-1 text-[0.7rem] font-medium text-[var(--gn-text-muted)]">
+        <p className="mb-1.5 text-sm font-medium text-[var(--gn-text-muted)]">
           {pileLabel}
         </p>
       ) : null}
       {n === 1 ? (
         <button
           type="button"
-          className={
-            compact
-              ? "max-w-[min(4.5rem,85%)] border-0 bg-transparent p-0"
-              : "max-w-[min(9rem,85%)] border-0 bg-transparent p-0"
-          }
+          className="max-w-full border-0 bg-transparent p-0"
           onClick={() => onOpen(0)}
         >
           <MediaThumb
             url={imgs[0]}
             className={
-              compact
-                ? "h-20 w-20 cursor-zoom-in rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md"
-                : "h-24 w-24 cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md sm:h-28 sm:w-28"
+              resolvedSize === "large"
+                ? "h-44 w-44 max-w-full cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md sm:h-52 sm:w-52 lg:h-56 lg:w-56"
+                : resolvedSize === "compact"
+                  ? "h-20 w-20 cursor-zoom-in rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md"
+                  : "h-28 w-28 cursor-zoom-in rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface-muted)] object-cover shadow-md sm:h-32 sm:w-32"
             }
           />
         </button>

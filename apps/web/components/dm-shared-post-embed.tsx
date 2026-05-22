@@ -33,15 +33,15 @@ export function DmSharedPostEmbed({ postId }: { postId: string }) {
     <Link
       href={`/p/${postId}`}
       prefetch={false}
-      className="mt-2 block max-w-[min(100%,20rem)] rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-3 py-2.5 shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_28%,var(--gn-border))] hover:bg-[var(--gn-surface-hover)]"
+      className="gn-dm-post-embed mt-2 block w-full max-w-full rounded-xl border border-[var(--gn-border)] bg-[var(--gn-surface-muted)] px-4 py-3 shadow-[var(--gn-shadow-sm)] ring-1 ring-[var(--gn-ring)] transition hover:border-[color-mix(in_srgb,var(--gn-accent)_28%,var(--gn-border))] hover:bg-[var(--gn-surface-hover)] sm:max-w-md lg:max-w-lg"
     >
-      <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
+      <p className="text-xs font-bold uppercase tracking-widest text-[var(--gn-text-muted)]">
         Post
       </p>
-      <p className="mt-1 line-clamp-3 text-sm font-medium leading-snug text-[var(--gn-text)]">
+      <p className="mt-1 line-clamp-3 text-base font-medium leading-snug text-[var(--gn-text)] lg:text-lg">
         {loading ? "Loading…" : title ?? "View post"}
       </p>
-      <p className="mt-1.5 text-xs font-medium text-[var(--gn-accent)]">Open →</p>
+      <p className="mt-2 text-sm font-semibold text-[var(--gn-accent)]">Open →</p>
     </Link>
   );
 }

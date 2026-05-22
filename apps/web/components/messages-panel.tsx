@@ -940,7 +940,7 @@ export function MessagesPanel() {
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="gn-messages-panel flex min-h-0 flex-1 flex-col overflow-hidden">
       {lightbox ? (
         <DmImageLightbox
           urls={lightbox.urls}
@@ -1020,7 +1020,7 @@ export function MessagesPanel() {
       ) : null}
 
       {/* Two-panel messenger — one scroll per column; row layout on desktop */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)] xl:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)]">
 
         {/* Left: conversation list */}
         <aside
@@ -1029,7 +1029,7 @@ export function MessagesPanel() {
           }`}
         >
           <div className="flex items-center justify-between border-b border-[var(--gn-divide)] px-4 py-3">
-            <h2 className="text-lg font-bold text-[var(--gn-text)]">Messages</h2>
+            <h2 className="text-lg font-bold text-[var(--gn-text)] lg:text-xl">Messages</h2>
             <button
               type="button"
               onClick={() => setShowNewMessageModal(true)}
@@ -1112,7 +1112,7 @@ export function MessagesPanel() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-1">
                           <span
-                            className={`truncate text-sm ${
+                            className={`truncate text-base ${
                               t.unread
                                 ? "font-semibold text-[var(--gn-text)]"
                                 : "font-medium text-[var(--gn-text)]"
@@ -1127,7 +1127,7 @@ export function MessagesPanel() {
                             </Link>
                           </span>
                           {t.lastMessageAt ? (
-                            <span className="shrink-0 text-[10px] text-[var(--gn-text-muted)]">
+                            <span className="shrink-0 text-xs text-[var(--gn-text-muted)]">
                               {new Date(t.lastMessageAt).toLocaleDateString(
                                 undefined,
                                 { month: "short", day: "numeric" },
@@ -1137,7 +1137,7 @@ export function MessagesPanel() {
                         </div>
                         {preview ? (
                           <p
-                            className={`mt-0.5 truncate text-xs ${
+                            className={`mt-0.5 truncate text-sm ${
                               t.unread
                                 ? "font-medium text-[var(--gn-text)]"
                                 : "text-[var(--gn-text-muted)]"
@@ -1162,7 +1162,7 @@ export function MessagesPanel() {
           }`}
         >
           {/* Chat header */}
-          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4">
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 lg:h-16 lg:px-6">
             {/* Back button — mobile only */}
             <button
               type="button"
@@ -1191,22 +1191,22 @@ export function MessagesPanel() {
               <>
                 <MiniAvatar
                   name={displayNameFor(activePeer.id, selfId, activePeer)}
-                  size={32}
+                  size={40}
                 />
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/u/${activePeer.id}`}
-                    className="block truncate text-sm font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline"
+                    className="block truncate text-base font-bold text-[var(--gn-text)] hover:text-[var(--gn-accent)] hover:underline lg:text-lg"
                   >
                     {displayNameFor(activePeer.id, selfId, activePeer)}
                   </Link>
-                  <p className="text-[10px] text-[var(--gn-text-muted)]">
+                  <p className="text-sm text-[var(--gn-text-muted)]">
                     Direct message
                   </p>
                 </div>
                 <Link
                   href={`/u/${activePeer.id}`}
-                  className="shrink-0 text-xs text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
+                  className="shrink-0 text-sm text-[var(--gn-text-muted)] hover:text-[var(--gn-accent)] hover:underline"
                 >
                   View profile
                 </Link>
@@ -1224,9 +1224,9 @@ export function MessagesPanel() {
           <div
             ref={timelineRef}
             onScroll={onTimelineScroll}
-            className="gn-scrollbar-themed min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
+            className="gn-messages-timeline gn-scrollbar-themed min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--gn-surface-muted)]"
           >
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-4 lg:max-w-4xl lg:px-6 xl:max-w-5xl">
+            <div className="gn-messages-timeline-inner flex w-full flex-col gap-4 px-4 py-5 sm:px-6 lg:gap-5 lg:px-8 lg:py-6">
             {!activeThreadId ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div
@@ -1290,16 +1290,18 @@ export function MessagesPanel() {
                     return (
                       <div
                         key={ln.id}
-                        className={`flex items-end gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
+                        className={`flex items-end gap-2.5 lg:gap-3 ${isSelf ? "justify-end" : "justify-start"}`}
                       >
-                        {!isSelf && (
-                          <MiniAvatar name={peerDisplay} size={26} />
-                        )}
+                        {!isSelf ? (
+                          <span className="hidden shrink-0 sm:inline-flex">
+                            <MiniAvatar name={peerDisplay} size={40} />
+                          </span>
+                        ) : null}
                         <div
-                          className={`max-w-[min(92%,22rem)] text-base leading-relaxed sm:max-w-[min(88%,26rem)] lg:max-w-[min(80%,36rem)] lg:text-[1.0625rem] lg:leading-[1.55] ${imgs.length > 1 ? "overflow-visible" : ""} ${
+                          className={`gn-messages-bubble max-w-[min(94%,100%)] sm:max-w-[min(88%,42rem)] lg:max-w-[min(78%,48rem)] xl:max-w-[min(72%,52rem)] ${imgs.length > 1 ? "overflow-visible" : ""} ${
                             isSelf
-                              ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-3.5 py-2.5 text-[var(--gn-text)] shadow-sm lg:px-4 lg:py-3"
-                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-3.5 py-2.5 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] lg:px-4 lg:py-3"
+                              ? "rounded-2xl rounded-br-sm border-l-[3px] border-[var(--gn-accent)] bg-[var(--gn-surface-elevated)] px-4 py-3 text-[var(--gn-text)] shadow-sm lg:px-5 lg:py-4"
+                              : "rounded-2xl rounded-bl-sm bg-[var(--gn-surface-raised)] px-4 py-3 text-[var(--gn-text)] ring-1 ring-[var(--gn-divide)] lg:px-5 lg:py-4"
                           }`}
                         >
                           {hasText ? (
@@ -1312,7 +1314,7 @@ export function MessagesPanel() {
                           ) : null}
                           {(hasText || showPostEmbed) && hasMedia ? (
                             <div
-                              className={`my-2 border-t ${isSelf ? "border-black/20" : "border-[var(--gn-divide)]"}`}
+                              className="my-2 border-t border-[var(--gn-divide)]"
                               role="separator"
                             />
                           ) : null}
@@ -1321,7 +1323,7 @@ export function MessagesPanel() {
                               <StackedDmStyleImages
                                 urls={imgs}
                                 stackKey={ln.id}
-                                compact
+                                size="large"
                                 pileLabel={dmAttachmentPileLabel(
                                   imgs,
                                   isSelf,
@@ -1334,11 +1336,9 @@ export function MessagesPanel() {
                             </div>
                           ) : null}
                           <div
-                            className={`mt-1 flex items-center gap-2 ${isSelf ? "justify-end" : "justify-start"}`}
+                            className={`mt-2 flex items-center gap-3 ${isSelf ? "justify-end" : "justify-start"}`}
                           >
-                            <span
-                              className={`text-[10px] ${isSelf ? "text-[var(--gn-on-accent)]/70" : "text-[var(--gn-text-muted)]"}`}
-                            >
+                            <span className="gn-messages-meta">
                               {new Date(ln.createdAt).toLocaleTimeString(
                                 undefined,
                                 { hour: "2-digit", minute: "2-digit" },
@@ -1349,7 +1349,7 @@ export function MessagesPanel() {
                                 type="button"
                                 disabled={messageDeletingId === ln.id}
                                 onClick={() => void removeOwnMessage(ln.id)}
-                                className="text-[10px] text-[var(--gn-on-accent)]/60 hover:text-[var(--gn-on-accent)] hover:underline disabled:opacity-45"
+                                className="gn-messages-meta font-semibold text-[var(--gn-text-muted)] underline-offset-2 hover:text-[var(--gn-accent)] hover:underline disabled:opacity-45"
                               >
                                 {messageDeletingId === ln.id
                                   ? "Removing…"
@@ -1368,8 +1368,8 @@ export function MessagesPanel() {
           </div>
 
           {/* Compose area — fixed footer; only the GIF list scrolls internally */}
-          <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-3">
-            <div className="mx-auto w-full max-w-3xl lg:max-w-4xl">
+          <div className="shrink-0 border-t border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-4 py-4 lg:px-8 lg:py-5">
+            <div className="w-full max-w-none">
             <input
               id={dmAttachInputId}
               type="file"
@@ -1615,7 +1615,7 @@ export function MessagesPanel() {
               )}
               {/* Pill text input */}
               <input
-                className="flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-4 py-2.5 text-base text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 lg:py-3 lg:text-[1.0625rem]"
+                className="min-h-11 flex-1 rounded-full border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-5 py-3 text-base text-[var(--gn-text)] placeholder:text-[var(--gn-text-muted)] focus:border-[var(--gn-accent)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 lg:min-h-12 lg:px-6 lg:text-lg"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={
@@ -1634,7 +1634,7 @@ export function MessagesPanel() {
               {/* Circle send button */}
               <button
                 type="button"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)] text-black shadow-sm transition hover:brightness-110 disabled:opacity-40"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--gn-accent)] text-[var(--gn-on-accent)] shadow-sm transition hover:brightness-110 disabled:opacity-40 lg:h-12 lg:w-12"
                 disabled={(() => {
                   if (!activeThreadId) return true;
                   const uploading = pendingAttachments.some((a) => a.uploading);

@@ -157,7 +157,7 @@ export function NewPostForm({
             <p className="truncate text-xs text-[var(--gn-text-muted)]">
               Posting to{" "}
               <span className="font-semibold text-[var(--gn-accent)]">
-                {communitySlug ? `r/${communitySlug}` : destinationLabel}
+                {communityName?.trim() || communitySlug || destinationLabel}
               </span>
             </p>
           </div>

@@ -188,7 +188,7 @@ export default async function CommunityPage({
               {community.name}
             </h1>
             <p className="text-sm font-medium text-white/70">
-              r/{community.slug}
+              /{community.slug}
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ export default async function CommunityPage({
               href={`/community/${slug}/new`}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gn-accent)] px-4 py-3 text-sm font-bold text-[var(--gn-on-accent)] shadow transition hover:brightness-110 active:scale-[0.98]"
             >
-              ✏️ New Post in r/{community.slug}
+              ✏️ New Post in {community.name}
             </Link>
 
             {/* About card */}

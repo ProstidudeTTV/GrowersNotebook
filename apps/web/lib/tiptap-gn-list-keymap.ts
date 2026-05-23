@@ -1,12 +1,12 @@
 import { Extension } from "@tiptap/core";
 
 /**
- * Word-like list keys: Enter splits items, Tab/Shift+Tab nest, Backspace merges/lifts.
- * Complements StarterKit list nodes when default key handling is inconsistent.
+ * Word-like list keys. Blocks default Enter from splitting paragraphs inside a
+ * single <li> (which looks like "only the first line has a bullet").
  */
 export const GnListKeymap = Extension.create({
   name: "gnListKeymap",
-  priority: 200,
+  priority: 1000,
   addKeyboardShortcuts() {
     return {
       Tab: ({ editor }) => {
@@ -28,16 +28,17 @@ export const GnListKeymap = Extension.create({
         if (editor.can().splitListItem("listItem")) {
           return editor.chain().splitListItem("listItem").run();
         }
-        return false;
+        if (editor.can().liftListItem("listItem")) {
+          return editor.chain().liftListItem("listItem").run();
+        }
+        return true;
       },
       Backspace: ({ editor }) => {
         if (!editor.isActive("listItem")) return false;
         const { empty, $from } = editor.state.selection;
         if (!empty) return false;
-        const atItemStart = $from.parentOffset === 0;
-        if (!atItemStart) return false;
-        const parentText = $from.parent.textContent;
-        if (parentText.length === 0) {
+        if ($from.parentOffset !== 0) return false;
+        if ($from.parent.textContent.length === 0) {
           if (editor.can().liftListItem("listItem")) {
             return editor.chain().liftListItem("listItem").run();
           }

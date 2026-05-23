@@ -292,7 +292,7 @@ export function GuestLanding({
     gradient: gradientForPost(post.id),
     title: post.title,
     author: `u/${post.authorName}`,
-    community: post.communityName ? `r/${post.communityName}` : "r/growers",
+    community: post.communityName?.trim() || "Growers",
     score: post.score,
     imageUrl: post.imageUrl,
     href: `/p/${post.id}`,

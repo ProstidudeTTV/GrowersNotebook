@@ -621,6 +621,11 @@ html.dark body {
   .gn-post-editor-prose .ProseMirror li,
   .ProseMirror.gn-post-editor-prose li {
     display: list-item;
+    list-style-position: outside;
+  }
+  .gn-post-editor-prose .ProseMirror li + li,
+  .ProseMirror.gn-post-editor-prose li + li {
+    margin-top: 0.2rem;
   }
   .gn-post-editor-prose .ProseMirror li > p,
   .ProseMirror.gn-post-editor-prose li > p {
@@ -659,6 +664,29 @@ html.dark body {
     max-width: 100%;
     min-width: 0;
     overflow-x: clip;
+  }
+
+  .gn-post-body ul,
+  .gn-post-body ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+    list-style-position: outside;
+  }
+
+  .gn-post-body ul {
+    list-style-type: disc;
+  }
+
+  .gn-post-body ol {
+    list-style-type: decimal;
+  }
+
+  .gn-post-body li {
+    display: list-item;
+  }
+
+  .gn-post-body li > p {
+    margin: 0;
   }
 
   @supports not (overflow: clip) {

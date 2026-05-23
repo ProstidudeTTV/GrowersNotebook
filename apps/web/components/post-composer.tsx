@@ -96,7 +96,7 @@ export function PostComposer({
             (strain, week, medium, issues)
           </span>
         </label>
-        <div className="overflow-hidden rounded-xl ring-1 ring-[var(--gn-ring)] focus-within:ring-2 focus-within:ring-[var(--gn-ring-focus)]">
+        <div className="rounded-xl ring-1 ring-[var(--gn-ring)] focus-within:ring-2 focus-within:ring-[var(--gn-ring-focus)]">
           <PostEditor
             key={editorKey}
             embedded={Boolean(initialJson)}

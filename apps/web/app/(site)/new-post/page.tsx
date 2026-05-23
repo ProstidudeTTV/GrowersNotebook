@@ -40,7 +40,7 @@ export default async function NewProfilePostPage({
       communityIconKey = community.iconKey ?? null;
       cancelHref = `/community/${community.slug}`;
       headline = `Post in ${community.name}`;
-      subheadline = `This goes to r/${community.slug} and followers' feeds.`;
+      subheadline = `This goes to ${community.name} and followers' feeds.`;
     } catch {
       /* profile post fallback */
     }

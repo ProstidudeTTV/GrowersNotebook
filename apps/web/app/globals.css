@@ -308,6 +308,22 @@ html.dark body {
     font-size: 0.8125rem;
   }
 
+  /** Immersive media viewer — contain on stage, no inner card */
+  .gn-media-viewer-image,
+  .gn-media-viewer-video {
+    display: block;
+    height: auto;
+    width: auto;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gn-media-viewer {
+      transition: none !important;
+    }
+  }
+
   @media (min-width: 1024px) {
     .gn-discussion-thread .gn-discussion-action {
       font-size: 0.875rem;

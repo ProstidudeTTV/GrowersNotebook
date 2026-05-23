@@ -68,7 +68,6 @@ export function MediaViewer({
   const [index, setIndex] = useState(() =>
     clampIndex(initialIndex, safe.length),
   );
-  const [chromeVisible, setChromeVisible] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dismissOffset, setDismissOffset] = useState(0);
@@ -141,10 +140,6 @@ export function MediaViewer({
     };
   }, [onClose, goNext, goPrev, hasNav, resetZoom]);
 
-  const toggleChrome = useCallback(() => {
-    setChromeVisible((v) => !v);
-  }, []);
-
   const onWheel = (e: ReactWheelEvent) => {
     if (isVideo) return;
     if (e.ctrlKey || e.metaKey) {
@@ -203,10 +198,6 @@ export function MediaViewer({
 
   if (!src || typeof document === "undefined") return null;
 
-  const chromeClass = chromeVisible
-    ? "opacity-100"
-    : "pointer-events-none opacity-0";
-
   const shell = (
     <div
       ref={stageRef}
@@ -223,7 +214,7 @@ export function MediaViewer({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-[color-mix(in_srgb,var(--gn-page-top)_94%,transparent)]"
+        className="absolute inset-0 z-[500] bg-[color-mix(in_srgb,var(--gn-page-top)_94%,transparent)]"
         aria-label="Close viewer"
         onClick={onClose}
       />
@@ -232,7 +223,7 @@ export function MediaViewer({
         <>
           <button
             type="button"
-            className={`gn-media-viewer-nav gn-media-viewer-nav--prev absolute left-0 top-0 z-[510] hidden h-full w-[min(22vw,8rem)] items-center justify-start pl-2 sm:flex ${chromeClass}`}
+            className="gn-media-viewer-nav gn-media-viewer-nav--prev absolute left-0 top-0 z-[510] hidden h-full w-[min(22vw,8rem)] items-center justify-start pl-2 sm:flex"
             aria-label="Previous"
             onClick={(e) => {
               e.stopPropagation();
@@ -245,7 +236,7 @@ export function MediaViewer({
           </button>
           <button
             type="button"
-            className={`gn-media-viewer-nav gn-media-viewer-nav--next absolute right-0 top-0 z-[510] hidden h-full w-[min(22vw,8rem)] items-center justify-end pr-2 sm:flex ${chromeClass}`}
+            className="gn-media-viewer-nav gn-media-viewer-nav--next absolute right-0 top-0 z-[510] hidden h-full w-[min(22vw,8rem)] items-center justify-end pr-2 sm:flex"
             aria-label="Next"
             onClick={(e) => {
               e.stopPropagation();
@@ -261,7 +252,7 @@ export function MediaViewer({
 
       <button
         type="button"
-        className={`absolute right-3 top-3 z-[520] flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--gn-surface-elevated)_90%,transparent)] text-[var(--gn-text)] shadow-lg backdrop-blur-md ring-1 ring-[var(--gn-divide)] transition sm:right-5 sm:top-5 ${chromeClass}`}
+        className="absolute right-3 top-3 z-[520] flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--gn-surface-elevated)_90%,transparent)] text-[var(--gn-text)] shadow-lg backdrop-blur-md ring-1 ring-[var(--gn-divide)] transition sm:right-5 sm:top-5"
         aria-label="Close"
         onClick={(e) => {
           e.stopPropagation();
@@ -273,34 +264,30 @@ export function MediaViewer({
 
       {hasNav ? (
         <p
-          className={`pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[520] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--gn-page-top)_75%,transparent)] px-4 py-1.5 text-sm font-semibold tabular-nums text-[var(--gn-text)] shadow-md backdrop-blur-md transition ${chromeClass}`}
+          className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[520] -translate-x-1/2 rounded-full bg-[color-mix(in_srgb,var(--gn-page-top)_75%,transparent)] px-4 py-1.5 text-sm font-semibold tabular-nums text-[var(--gn-text)] shadow-md backdrop-blur-md"
         >
           {i + 1} / {safe.length}
         </p>
       ) : null}
 
       <div
-        className="relative z-[505] flex min-h-0 flex-1 items-center justify-center px-2 pb-14 pt-14 sm:px-6"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleChrome();
-        }}
-        onWheel={onWheel}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          onDoubleClick();
-        }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        style={{ touchAction: isVideo ? "auto" : "none" }}
+        className="pointer-events-none relative z-[505] flex min-h-0 flex-1 items-center justify-center px-2 pb-14 pt-14 sm:px-6"
       >
         <div
-          className="flex max-h-[min(92dvh,100%)] max-w-[min(96vw,1200px)] items-center justify-center"
+          className="pointer-events-auto flex max-h-[min(92dvh,100%)] max-w-[min(96vw,1200px)] items-center justify-center"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           }}
+          onWheel={onWheel}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            onDoubleClick();
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          style={{ touchAction: isVideo ? "auto" : "none" }}
           onClick={(e) => e.stopPropagation()}
         >
           {isVideo ? (
@@ -330,7 +317,7 @@ export function MediaViewer({
 
       {hasNav ? (
         <div
-          className={`absolute bottom-20 left-1/2 z-[510] flex -translate-x-1/2 gap-2 sm:hidden ${chromeClass}`}
+          className="absolute bottom-20 left-1/2 z-[510] flex -translate-x-1/2 gap-2 sm:hidden"
         >
           <button
             type="button"

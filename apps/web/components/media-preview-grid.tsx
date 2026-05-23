@@ -36,7 +36,7 @@ function MediaCell({
       <button
         type="button"
         onClick={onOpen}
-        className={`relative block h-full w-full overflow-hidden rounded-lg bg-[var(--gn-surface-muted)] ${className}`}
+        className={`relative block h-full w-full overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] ring-1 ring-[var(--gn-divide)] ${className}`}
       >
         {inner}
       </button>
@@ -45,7 +45,7 @@ function MediaCell({
 
   return (
     <div
-      className={`relative block w-full overflow-hidden rounded-lg bg-[var(--gn-surface-muted)] ${className}`}
+      className={`relative block w-full overflow-hidden rounded-xl bg-[var(--gn-surface-muted)] ring-1 ring-[var(--gn-divide)] ${className}`}
     >
       {inner}
     </div>

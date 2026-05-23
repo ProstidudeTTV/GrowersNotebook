@@ -13,13 +13,16 @@ export function PostMediaCarousel({
   embedded?: boolean;
 }) {
   const [index, setIndex] = useState(0);
-  const [viewer, setViewer] = useState<{
+  const [lightbox, setLightbox] = useState<{
     urls: string[];
     index: number;
   } | null>(null);
   const n = items.length;
 
-  const allUrls = useMemo(() => items.map((m) => m.url), [items]);
+  const imageUrls = useMemo(
+    () => items.filter((m) => m.type === "image").map((m) => m.url),
+    [items],
+  );
 
   useEffect(() => {
     if (n === 0) return;
@@ -39,17 +42,22 @@ export function PostMediaCarousel({
     ? "gn-post-media-attachments gn-post-media-attachments--embedded relative overflow-hidden p-3 sm:p-4"
     : "gn-post-media-attachments gn-card-subtle relative overflow-hidden p-3 sm:p-4";
 
-  const openViewerAt = (idx: number) => {
-    setViewer({ urls: allUrls, index: idx });
+  const openLightboxForUrl = (url: string) => {
+    if (imageUrls.length === 0) return;
+    const i = imageUrls.indexOf(url);
+    setLightbox({
+      urls: imageUrls,
+      index: i >= 0 ? i : 0,
+    });
   };
 
   return (
     <div className={shell}>
-      {viewer ? (
+      {lightbox ? (
         <MediaViewer
-          urls={viewer.urls}
-          initialIndex={viewer.index}
-          onClose={() => setViewer(null)}
+          urls={lightbox.urls}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
           ariaLabel="Post media"
         />
       ) : null}
@@ -73,54 +81,32 @@ export function PostMediaCarousel({
           </svg>
         </button>
       ) : null}
-      <div className="relative min-h-[11rem] w-full overflow-hidden rounded-xl bg-[var(--gn-surface-muted)]">
+      <div className="relative aspect-[16/10] max-h-[min(75dvh,44rem)] min-h-[11rem] w-full overflow-hidden rounded-xl bg-black/25 ring-1 ring-[var(--gn-ring)]">
         {cur.type === "image" ? (
           <button
             type="button"
-            className="absolute inset-0 block h-full min-h-[11rem] w-full cursor-zoom-in border-0 bg-transparent p-0"
+            className="absolute inset-0 block h-full w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
             aria-label={`View image ${safeIndex + 1} larger`}
-            onClick={() => openViewerAt(safeIndex)}
+            onClick={() => openLightboxForUrl(cur.url)}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={cur.url}
               src={cur.url}
               alt=""
-              className="pointer-events-none h-full min-h-[11rem] w-full max-h-[min(75dvh,44rem)] object-contain object-center select-none"
+              className="pointer-events-none h-full w-full object-cover object-center select-none"
               loading={safeIndex === 0 ? "eager" : "lazy"}
             />
           </button>
         ) : (
-          <div className="relative flex min-h-[11rem] max-h-[min(75dvh,44rem)] w-full items-center justify-center">
-            <video
-              key={cur.url}
-              src={cur.url}
-              controls
-              playsInline
-              preload="metadata"
-              className="max-h-[min(75dvh,44rem)] w-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <button
-              type="button"
-              className="absolute right-2 top-2 z-[2] flex h-9 items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--gn-page-top)_80%,transparent)] px-3 text-xs font-semibold text-[var(--gn-text)] shadow-md backdrop-blur-md ring-1 ring-[var(--gn-divide)]"
-              aria-label="Open video fullscreen"
-              onClick={() => openViewerAt(safeIndex)}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
-              </svg>
-              Fullscreen
-            </button>
-          </div>
+          <video
+            key={cur.url}
+            src={cur.url}
+            controls
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 h-full w-full object-contain"
+          />
         )}
       </div>
       {hasMany ? (
@@ -144,14 +130,9 @@ export function PostMediaCarousel({
         </button>
       ) : null}
       {hasMany ? (
-        <button
-          type="button"
-          className="absolute inset-x-0 bottom-2.5 z-[1] mx-auto w-fit cursor-zoom-in rounded-full bg-[color-mix(in_srgb,var(--gn-page-top)_70%,transparent)] px-2.5 py-1 text-xs font-medium tabular-nums text-[var(--gn-text)] backdrop-blur-sm sm:bottom-3"
-          aria-label={`View media ${safeIndex + 1} in fullscreen`}
-          onClick={() => openViewerAt(safeIndex)}
-        >
-          {safeIndex + 1} / {n} · tap to expand
-        </button>
+        <div className="pointer-events-none absolute bottom-2.5 left-1/2 z-[1] -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white tabular-nums sm:bottom-3">
+          {safeIndex + 1} / {n}
+        </div>
       ) : null}
     </div>
   );

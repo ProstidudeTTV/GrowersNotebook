@@ -277,6 +277,7 @@ export function MediaViewer({
           className="pointer-events-auto flex max-h-[min(92dvh,100%)] max-w-[min(96vw,1200px)] items-center justify-center"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            touchAction: isVideo ? "auto" : "none",
           }}
           onWheel={onWheel}
           onDoubleClick={(e) => {
@@ -287,7 +288,6 @@ export function MediaViewer({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          style={{ touchAction: isVideo ? "auto" : "none" }}
           onClick={(e) => e.stopPropagation()}
         >
           {isVideo ? (

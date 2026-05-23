@@ -13,7 +13,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { GnListKeymap } from "@/lib/tiptap-gn-list-keymap";
 import { Spoiler } from "@/lib/tiptap-spoiler";
+import type { Editor } from "@tiptap/core";
 
 type PostEditorProps = {
   disabled?: boolean;
@@ -74,11 +76,24 @@ function ToolbarDivider() {
   );
 }
 
-/** Keep editor selection/caret when clicking toolbar (avoids lists jumping to doc start). */
-function toolbarMouseDown(run: () => void) {
+/**
+ * Run a toolbar command without losing caret position (lists/formatting at cursor,
+ * not at document start). Matches Word-style: selection is restored before the command.
+ */
+function toolbarMouseDown(
+  editor: Editor | null,
+  run: (chain: ReturnType<Editor["chain"]>) => ReturnType<Editor["chain"]>,
+) {
   return (ev: React.MouseEvent) => {
     ev.preventDefault();
-    run();
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    run(
+      editor
+        .chain()
+        .setTextSelection({ from, to })
+        .focus(undefined, { scrollIntoView: false }),
+    ).run();
   };
 }
 
@@ -185,7 +200,16 @@ export function PostEditor({
       StarterKit.configure({
         heading: false,
         codeBlock: false,
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
       }),
+      GnListKeymap,
       Superscript,
       Spoiler,
       Link.configure({
@@ -307,7 +331,7 @@ export function PostEditor({
               aria-label="Undo"
               disabled={!can || !e?.can().undo()}
               className={toolClass(false, !!(can && e?.can().undo()))}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().undo().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.undo())}
             >
               <IconUndo />
             </button>
@@ -317,7 +341,7 @@ export function PostEditor({
               aria-label="Redo"
               disabled={!can || !e?.can().redo()}
               className={toolClass(false, !!(can && e?.can().redo()))}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().redo().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.redo())}
             >
               <IconRedo />
             </button>
@@ -329,7 +353,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("bold") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("bold") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleBold().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleBold())}
             >
               <strong className="text-xs">B</strong>
             </button>
@@ -340,7 +364,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("italic") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("italic") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleItalic().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleItalic())}
             >
               <em className="text-xs">I</em>
             </button>
@@ -351,7 +375,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("strike") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("strike") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleStrike().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleStrike())}
             >
               <s className="text-xs">S</s>
             </button>
@@ -362,9 +386,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("superscript") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("superscript") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() =>
-                e?.chain().focus().toggleSuperscript().run(),
-              )}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleSuperscript())}
             >
               <span className="text-xs font-medium">x²</span>
             </button>
@@ -375,7 +397,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("code") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("code") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() => e?.chain().focus().toggleCode().run())}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleCode())}
             >
               <code className="text-[11px]">&lt;/&gt;</code>
             </button>
@@ -387,9 +409,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("bulletList") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("bulletList") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() =>
-                e?.chain().focus().toggleBulletList().run(),
-              )}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleBulletList())}
             >
               <IconListBullet />
             </button>
@@ -400,9 +420,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("orderedList") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("orderedList") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() =>
-                e?.chain().focus().toggleOrderedList().run(),
-              )}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleOrderedList())}
             >
               <IconListOrdered />
             </button>
@@ -414,9 +432,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("blockquote") ?? false}
               disabled={!can}
               className={toolClass(e?.isActive("blockquote") ?? false, can)}
-              onMouseDown={toolbarMouseDown(() =>
-                e?.chain().focus().toggleBlockquote().run(),
-              )}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleBlockquote())}
             >
               <IconQuote />
             </button>
@@ -427,9 +443,7 @@ export function PostEditor({
               aria-pressed={e?.isActive("spoiler") ?? false}
               disabled={!can}
               className={`${toolClass(e?.isActive("spoiler") ?? false, can)} px-2.5 font-semibold tracking-widest`}
-              onMouseDown={toolbarMouseDown(() =>
-                e?.chain().focus().toggleMark("spoiler").run(),
-              )}
+              onMouseDown={toolbarMouseDown(e, (c) => c.toggleMark("spoiler"))}
             >
               <span className="text-[10px]">···</span>
             </button>
@@ -449,10 +463,11 @@ export function PostEditor({
                 !!(linkOpen || e?.isActive("link")),
                 can,
               )}
-              onMouseDown={toolbarMouseDown(() => {
+              onMouseDown={(ev) => {
+                ev.preventDefault();
                 if (linkOpen) closeLinkPanel();
                 else openLinkPanel();
-              })}
+              }}
             >
               <IconLink />
             </button>

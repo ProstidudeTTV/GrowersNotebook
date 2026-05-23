@@ -622,6 +622,16 @@ html.dark body {
   .ProseMirror.gn-post-editor-prose li {
     display: list-item;
   }
+  .gn-post-editor-prose .ProseMirror li > p,
+  .ProseMirror.gn-post-editor-prose li > p {
+    margin: 0;
+  }
+  .gn-post-editor-prose .ProseMirror li > ul,
+  .gn-post-editor-prose .ProseMirror li > ol,
+  .ProseMirror.gn-post-editor-prose li > ul,
+  .ProseMirror.gn-post-editor-prose li > ol {
+    margin: 0.35rem 0 0.15rem;
+  }
 
   .gn-post-editor-prose .ProseMirror blockquote,
   .ProseMirror.gn-post-editor-prose blockquote {

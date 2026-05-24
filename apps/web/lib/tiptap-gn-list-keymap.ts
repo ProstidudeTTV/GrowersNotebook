@@ -1,12 +1,22 @@
 import { Extension } from "@tiptap/core";
 
+function inListItem(editor: {
+  isActive: (name: string) => boolean;
+}): boolean {
+  return (
+    editor.isActive("listItem") ||
+    editor.isActive("bulletList") ||
+    editor.isActive("orderedList")
+  );
+}
+
 /**
- * Word-like list keys. Blocks default Enter from splitting paragraphs inside a
- * single <li> (which looks like "only the first line has a bullet").
+ * Word-like list keys. Runs above TipTap's default Keymap (splitBlock on Enter)
+ * so Enter creates a new list item, not another paragraph in the same <li>.
  */
 export const GnListKeymap = Extension.create({
   name: "gnListKeymap",
-  priority: 1000,
+  priority: 1001,
   addKeyboardShortcuts() {
     return {
       Tab: ({ editor }) => {
@@ -24,13 +34,10 @@ export const GnListKeymap = Extension.create({
         return true;
       },
       Enter: ({ editor }) => {
-        if (!editor.isActive("listItem")) return false;
-        if (editor.can().splitListItem("listItem")) {
-          return editor.chain().splitListItem("listItem").run();
-        }
-        if (editor.can().liftListItem("listItem")) {
-          return editor.chain().liftListItem("listItem").run();
-        }
+        if (!inListItem(editor)) return false;
+        if (editor.commands.splitListItem("listItem")) return true;
+        if (editor.commands.liftListItem("listItem")) return true;
+        // Block splitBlock from adding paragraphs inside one <li>.
         return true;
       },
       Backspace: ({ editor }) => {

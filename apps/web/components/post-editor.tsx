@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { GnListKeymap } from "@/lib/tiptap-gn-list-keymap";
+import { GnListItem } from "@/lib/tiptap-gn-list-item";
 import { Spoiler } from "@/lib/tiptap-spoiler";
 import type { Editor } from "@tiptap/core";
 
@@ -200,6 +201,7 @@ export function PostEditor({
       StarterKit.configure({
         heading: false,
         codeBlock: false,
+        listItem: false,
         bulletList: {
           keepMarks: true,
           keepAttributes: false,
@@ -209,6 +211,7 @@ export function PostEditor({
           keepAttributes: false,
         },
       }),
+      GnListItem,
       GnListKeymap,
       Superscript,
       Spoiler,

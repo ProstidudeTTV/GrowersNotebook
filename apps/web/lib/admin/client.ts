@@ -39,7 +39,7 @@ export type AdminRequestInit = {
   signal?: AbortSignal;
 };
 
-const ADMIN_PROXY_PATH = "/api/gn-proxy/admin";
+const ADMIN_PROXY_PATH = "/api/gn-admin";
 
 function buildUrl(base: string, path: string, query: AdminRequestInit["query"]): string {
   const clean = path.startsWith("/") ? path : `/${path}`;

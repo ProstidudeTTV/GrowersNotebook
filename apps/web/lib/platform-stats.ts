@@ -1,4 +1,5 @@
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { getSiteUrl } from "@/lib/site-config";
 
 export type PlatformStats = {
   postCount: number;
@@ -16,6 +17,7 @@ export async function fetchPlatformStats(): Promise<PlatformStats> {
   try {
     const res = await fetch(`${base}/site/platform-stats`, {
       next: { revalidate: 300 },
+      headers: { Origin: getSiteUrl() },
     });
     if (!res.ok) return { postCount: 0, growerCount: 0 };
     const data = (await res.json()) as Partial<PlatformStats>;

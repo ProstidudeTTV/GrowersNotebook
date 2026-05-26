@@ -1,12 +1,36 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
   MaxLength,
+  ValidateNested,
   ValidateIf,
 } from 'class-validator';
+
+class NotificationPreferencesDto {
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  new_comment?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  new_follower?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  vote_milestone?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  direct_message?: boolean;
+}
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -55,4 +79,10 @@ export class UpdateProfileDto {
   @IsBoolean()
   @Type(() => Boolean)
   mailingListOptIn?: boolean;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => NotificationPreferencesDto)
+  notificationPreferences?: NotificationPreferencesDto;
 }

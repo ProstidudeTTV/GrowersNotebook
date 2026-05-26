@@ -9,13 +9,14 @@ async function collectCatalogPaths(
   api: string,
   path: string,
 ): Promise<string[]> {
+  const origin = getSiteUrl();
   const slugs: string[] = [];
   let page = 1;
   for (;;) {
     try {
       const res = await fetch(
         `${api}${path}?page=${page}&pageSize=100&sort=name`,
-        { next: { revalidate: 3600 } },
+        { next: { revalidate: 3600 }, headers: { Origin: origin } },
       );
       if (!res.ok) break;
       const j = (await res.json()) as CatalogListJson;
@@ -36,6 +37,7 @@ async function collectCatalogPaths(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   const api = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+  const origin = getSiteUrl();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: base, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
@@ -113,6 +115,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     try {
       const hot = await fetch(`${api}/posts/hot/week?page=1&pageSize=50`, {
         next: { revalidate: 3600 },
+        headers: { Origin: origin },
       });
       if (hot.ok) {
         const j = (await hot.json()) as HotWeekJson;
@@ -131,6 +134,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     try {
       const comm = await fetch(`${api}/communities`, {
         next: { revalidate: 3600 },
+        headers: { Origin: origin },
       });
       if (comm.ok) {
         const rows = (await comm.json()) as CommunityRow[];

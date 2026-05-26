@@ -31,6 +31,7 @@ import type { ProfileRole } from '../auth/roles.decorator';
 import { AuditService } from '../audit/audit.service';
 import { getDb } from '../db';
 import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
   commentVotes,
   comments,
   notebookComments,
@@ -49,6 +50,25 @@ import type { UpdateProfileDto } from './dto/update-profile.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const LAST_SEEN_TOUCH_MS = 120_000;
+
+function normalizeNotificationPreferences(
+  raw: UpdateProfileDto['notificationPreferences'],
+) {
+  if (!raw) return DEFAULT_NOTIFICATION_PREFERENCES;
+  return {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...(raw.new_comment !== undefined ? { new_comment: raw.new_comment } : {}),
+    ...(raw.new_follower !== undefined
+      ? { new_follower: raw.new_follower }
+      : {}),
+    ...(raw.vote_milestone !== undefined
+      ? { vote_milestone: raw.vote_milestone }
+      : {}),
+    ...(raw.direct_message !== undefined
+      ? { direct_message: raw.direct_message }
+      : {}),
+  };
+}
 
 @Injectable()
 export class ProfilesService {
@@ -169,6 +189,8 @@ export class ProfilesService {
       showNotebooksPublic: row.showNotebooksPublic,
       showFollowListsPublic: row.showFollowListsPublic,
       mailingListOptIn: row.mailingListOptIn,
+      notificationPreferences:
+        row.notificationPreferences ?? DEFAULT_NOTIFICATION_PREFERENCES,
       role: row.role,
       createdAt: row.createdAt,
       seeds,
@@ -356,6 +378,7 @@ export class ProfilesService {
     const patch: Partial<typeof profiles.$inferInsert> = {};
     if (dto.displayName !== undefined) {
       const v = dto.displayName?.trim();
+      if (v) await this.nameBlocklist.assertAllowed(v);
       patch.displayName = !v ? null : v;
     }
     if (dto.description !== undefined) {
@@ -390,6 +413,11 @@ export class ProfilesService {
     }
     if (dto.mailingListOptIn !== undefined) {
       patch.mailingListOptIn = dto.mailingListOptIn;
+    }
+    if (dto.notificationPreferences !== undefined) {
+      patch.notificationPreferences = normalizeNotificationPreferences(
+        dto.notificationPreferences,
+      );
     }
     if (Object.keys(patch).length > 0) {
       await db.update(profiles).set(patch).where(eq(profiles.id, userId));

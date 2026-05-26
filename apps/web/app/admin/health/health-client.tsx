@@ -26,7 +26,7 @@ export function AdminHealthClient({
 
       const me = await adminFetch<{ id: string; role: string; storageConfigured: boolean }>("/me");
       out.push({
-        label: "Browser → /api/gn-proxy/admin/me (auth + proxy)",
+        label: "Browser → /api/gn-admin/me (auth + proxy)",
         status: me.status,
         ok: me.ok,
         message: me.ok ? `role=${me.data.role}, storage=${me.data.storageConfigured}` : me.message,
@@ -35,7 +35,7 @@ export function AdminHealthClient({
 
       const stats = await adminFetch<{ openPostReports: number }>("/moderation-stats");
       out.push({
-        label: "Browser → /api/gn-proxy/admin/moderation-stats",
+        label: "Browser → /api/gn-admin/moderation-stats",
         status: stats.status,
         ok: stats.ok,
         message: stats.ok ? `openPostReports=${stats.data.openPostReports}` : stats.message,
@@ -100,7 +100,7 @@ export function AdminHealthClient({
     <section className="rounded-2xl border border-[var(--gn-ring)] bg-[var(--gn-surface-raised)] p-5">
       <h2 className="mb-3 text-lg font-bold">Browser-side tests</h2>
       <p className="mb-4 text-sm text-[var(--gn-text-muted)]">
-        Hits the same paths the admin pages use (through <code>/api/gn-proxy/admin/*</code>) with
+        Hits the same paths the admin pages use (through <code>/api/gn-admin/*</code>) with
         your real session token. Confirms the proxy + auth + API chain works in this exact tab.
       </p>
       <div className="flex flex-wrap gap-3">

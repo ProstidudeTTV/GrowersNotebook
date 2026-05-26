@@ -2,6 +2,7 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
 import { CatalogModule } from './catalog/catalog.module';
@@ -38,6 +39,7 @@ const repoRoot = join(apiRoot, '..', '..');
         join(apiRoot, '.env.local'),
       ],
     }),
+    SentryModule.forRoot(),
     ThrottlerModule.forRoot({
       throttlers: [
         {

@@ -50,6 +50,10 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
 
   - type: web
     name: growers-notebook-web
@@ -88,6 +92,10 @@ services:
       # Optional: shared analytics URL to embed on /admin/analytics
       - key: NEXT_PUBLIC_ANALYTICS_DASHBOARD_URL
         sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_ENVIRONMENT
+        value: production
       # Optional: Google Search Console HTML tag verification value
       - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
         sync: false

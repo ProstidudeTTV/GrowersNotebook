@@ -1,6 +1,13 @@
 import { getPublicSiteConfigCached } from "@/lib/public-site-config-server";
 import { SITE_NAME, SITE_TAGLINE, getSiteUrl } from "@/lib/site-config";
 
+function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
 /** Organization + WebSite structured data for rich results. */
 export async function SeoJsonLd() {
   const url = getSiteUrl();
@@ -32,7 +39,7 @@ export async function SeoJsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }}
     />
   );
 }
@@ -68,7 +75,7 @@ export function ArticleJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }}
     />
   );
 }

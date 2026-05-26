@@ -43,6 +43,7 @@ export function isAllowedPostMediaPublicUrl(
 }
 
 const AVATAR_PATH = '/storage/v1/object/public/avatars/';
+const COMMUNITY_BANNERS_PATH = '/storage/v1/object/public/community-banners/';
 
 /** Profile avatars: our Supabase `avatars` bucket or embedded GIF hosts (same as post-media). */
 export function isAllowedAvatarPublicUrl(
@@ -70,6 +71,34 @@ export function isAllowedAvatarPublicUrl(
   }
 
   if (!parsed.pathname.startsWith(AVATAR_PATH)) return false;
+
+  const origins = new Set<string>();
+  for (const key of ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'] as const) {
+    const raw = config.get<string>(key)?.trim().replace(/\/+$/, '');
+    if (!raw) continue;
+    try {
+      origins.add(new URL(raw).origin);
+    } catch {
+      continue;
+    }
+  }
+  if (origins.size === 0) return false;
+  return origins.has(parsed.origin);
+}
+
+/** Community icons/banners: only our Supabase `community-banners` public bucket. */
+export function isAllowedCommunityBannerPublicUrl(
+  config: ConfigService,
+  url: string,
+): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+  if (!parsed.pathname.startsWith(COMMUNITY_BANNERS_PATH)) return false;
 
   const origins = new Set<string>();
   for (const key of ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'] as const) {

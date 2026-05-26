@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-public";
 import { createClient } from "@/lib/supabase/client";
 
 type PrefKey =
@@ -81,13 +82,11 @@ export function NotificationsSettingsForm() {
     }
     setUserId(session.user.id);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("id", session.user.id)
-        .maybeSingle();
-      if (fetchError) throw fetchError;
-      setPrefs(normalize(data?.notification_preferences));
+      const token = session.access_token;
+      const me = await apiFetch<{ notificationPreferences?: unknown }>("/profiles/me", {
+        token,
+      });
+      setPrefs(normalize(me.notificationPreferences));
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Could not load notification settings",
@@ -115,11 +114,16 @@ export function NotificationsSettingsForm() {
     setError(null);
     try {
       const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ notification_preferences: next })
-        .eq("id", userId);
-      if (updateError) throw updateError;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token ?? null;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+      await apiFetch("/profiles/me", {
+        method: "PATCH",
+        token,
+        body: JSON.stringify({ notificationPreferences: next }),
+      });
       setSavedAt(Date.now());
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSavedAt(null), 2200);

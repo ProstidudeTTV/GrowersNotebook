@@ -1,4 +1,5 @@
 import { getPublicApiUrl } from "./public-api-url";
+import { getSiteUrl } from "./site-config";
 
 /** Browser: same-origin `/api/gn-proxy/...` (no CORS). Server: direct API URL. */
 function resolveClientApiUrl(path: string): string {
@@ -19,6 +20,9 @@ export async function clientApiJson<T>(
   const url = resolveClientApiUrl(path);
   const headers = new Headers();
   headers.set("Accept", "application/json");
+  if (typeof window === "undefined") {
+    headers.set("Origin", getSiteUrl());
+  }
   if (init?.token) {
     headers.set("Authorization", `Bearer ${init.token}`);
   }

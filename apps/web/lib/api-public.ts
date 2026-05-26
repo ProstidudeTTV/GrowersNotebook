@@ -1,4 +1,5 @@
 import { getPublicApiUrl } from "./public-api-url";
+import { getSiteUrl } from "./site-config";
 
 /**
  * Browser calls go through the Next.js `/api/gn-proxy` route so requests are same-origin
@@ -36,6 +37,9 @@ export async function apiFetch<T>(
   const url = `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
+  if (typeof window === "undefined" && !headers.has("Origin")) {
+    headers.set("Origin", getSiteUrl());
+  }
   if (init?.token) {
     headers.set("Authorization", `Bearer ${init.token}`);
   }

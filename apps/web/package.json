@@ -16,6 +16,7 @@
     "@refinedev/core": "^5.0.12",
     "@refinedev/nextjs-router": "^7.0.5",
     "@refinedev/simple-rest": "^6.0.1",
+    "@sentry/nextjs": "^10.53.1",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "@tiptap/core": "^2",

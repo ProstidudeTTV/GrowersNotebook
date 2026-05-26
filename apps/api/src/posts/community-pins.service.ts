@@ -18,7 +18,7 @@ import { ProfilesService } from '../profiles/profiles.service';
 export class CommunityPinsService {
   constructor(private readonly profiles: ProfilesService) {}
 
-  /** Site admins, or users listed for this community, may pin. */
+  /** Site staff with full admin powers, or users listed for this community, may pin. */
   async assertCanModerateCommunity(
     communityId: string,
     userId: string,
@@ -26,7 +26,7 @@ export class CommunityPinsService {
     const profile = await this.profiles.findById(userId);
     if (!profile) throw new ForbiddenException();
 
-    if (profile.role === 'admin') return;
+    if (profile.role === 'owner' || profile.role === 'admin') return;
 
     const db = getDb();
     const [row] = await db

@@ -17,6 +17,7 @@ import {
   SITE_TAGLINE,
   canonicalPath,
   defaultSiteMetadata,
+  getSiteUrl,
   mergeMetadataWithPublicConfig,
 } from "@/lib/site-config";
 import { fetchGrowersOnlineCount } from "@/lib/growers-online";
@@ -53,7 +54,10 @@ async function fetchGuestHeroPostsFromPath(
   base: string,
   path: string,
 ): Promise<GuestLandingHotPost[]> {
-  const res = await fetch(`${base}${path}`, { next: { revalidate: 3600 } });
+  const res = await fetch(`${base}${path}`, {
+    next: { revalidate: 3600 },
+    headers: { Origin: getSiteUrl() },
+  });
   if (!res.ok) return [];
   const payload = (await res.json()) as { items?: HotPostApiItem[] };
   const items = Array.isArray(payload?.items) ? payload.items : [];

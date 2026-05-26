@@ -6,6 +6,7 @@ import { loginHref } from "@/lib/login-return-path";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -37,6 +38,7 @@ import {
 } from "@/components/comment-discussion-composer";
 import type { PostMediaItem } from "@/lib/feed-post";
 import { displayPostBodyHtml, extractYouTubeVideoId } from "@/lib/youtube-embed";
+import { sanitizeDisplayedPostHtml } from "@/lib/sanitize-displayed-post-html";
 
 type Author = {
   id: string;
@@ -232,6 +234,7 @@ export function PostView({
   }, [viewerId, post.id]);
 
   useEffect(() => {
+    if (!viewerId) return;
     const supabase = createClient();
     const id = post.id;
     const syncAll = () => {
@@ -299,7 +302,7 @@ export function PostView({
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [post.id]);
+  }, [post.id, viewerId]);
 
   const votePost = async (value: 1 | -1) => {
     setError(null);
@@ -672,6 +675,10 @@ export function PostView({
 
   const isOp = Boolean(viewerId && viewerId === post.author.id);
   const showPostBody = postBodyHtmlIsMeaningful(post.bodyHtml);
+  const safePostBodyHtml = useMemo(
+    () => sanitizeDisplayedPostHtml(post.bodyHtml),
+    [post.bodyHtml],
+  );
   const carouselMedia = !editingPost ? (post.media ?? []) : [];
   const showPostMedia = carouselMedia.length > 0;
   const commentsTotal =
@@ -907,7 +914,7 @@ export function PostView({
               <div
                 className="gn-post-body prose prose-zinc max-w-none px-4 py-5 text-base prose-p:text-base prose-p:leading-relaxed dark:prose-invert sm:px-6 sm:py-6"
                 dangerouslySetInnerHTML={{
-                  __html: displayPostBodyHtml(post.bodyHtml),
+                  __html: safePostBodyHtml,
                 }}
                 onClick={(e) => {
                   const el = (e.target as HTMLElement).closest?.(

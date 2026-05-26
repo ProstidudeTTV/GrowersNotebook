@@ -7,6 +7,8 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import type { JwtUser } from '../auth/jwt-user';
 import { OptionalAuthGuard } from '../auth/optional-auth.guard';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
@@ -38,7 +40,8 @@ export class CommunitiesController {
   }
 
   @Post()
-  @UseGuards(SupabaseAuthGuard)
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('admin', 'moderator')
   create(@Body() dto: CreateCommunityDto) {
     return this.communities.create(dto);
   }

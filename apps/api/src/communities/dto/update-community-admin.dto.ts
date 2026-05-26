@@ -37,12 +37,14 @@ export class UpdateCommunityAdminDto {
   iconKey?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
   @ValidateIf((_, v) => v != null)
   @IsUrl({ require_tld: true })
   @MaxLength(2000)
   iconUrl?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
   @ValidateIf((_, v) => v != null)
   @IsUrl({ require_tld: true })
   @MaxLength(2000)

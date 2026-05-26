@@ -38,10 +38,13 @@ import { CommunityPinsService } from '../posts/community-pins.service';
 import { PostsService } from '../posts/posts.service';
 import { ProfilesService } from '../profiles/profiles.service';
 import { AdminDismissReportDto } from './dto/admin-dismiss-report.dto';
+import { AdminUpdateProfileDto } from './dto/admin-update-profile.dto';
 import { AdminRemovePostDto } from './dto/admin-remove-post.dto';
+import { CommunityModeratorDto } from './dto/community-moderator.dto';
 import { CreateCommunityDto } from '../communities/dto/create-community.dto';
 import { UpdateCommunityAdminDto } from '../communities/dto/update-community-admin.dto';
 import { StorageService } from '../media/storage.service';
+import { UpdatePostDto } from '../posts/dto/update-post.dto';
 
 function range(skip: string | undefined, take: string | undefined) {
   const start = Math.max(0, Number(skip ?? 0));
@@ -198,8 +201,7 @@ export class AdminController {
   @Patch('posts/:id')
   patchPost(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body()
-    body: Partial<{ title: string; bodyHtml: string; bodyJson: object }>,
+    @Body() body: UpdatePostDto,
   ) {
     return this.posts.updateAdmin(id, body);
   }
@@ -301,7 +303,7 @@ export class AdminController {
   @Roles('admin')
   addCommunityModerator(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { moderatorId: string },
+    @Body() body: CommunityModeratorDto,
   ) {
     return this.communities.addCommunityModerator(id, body.moderatorId);
   }
@@ -369,16 +371,7 @@ export class AdminController {
   async patchProfile(
     @CurrentUser() user: JwtUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body()
-    body: Partial<{
-      displayName: string | null;
-      description: string | null;
-      role: ProfileRole;
-      avatarUrl: string | null;
-      bannedAt: string | null;
-      banExpiresAt: string | null;
-      suspendedUntil: string | null;
-    }>,
+    @Body() body: AdminUpdateProfileDto,
   ) {
     const actor = await this.profiles.findById(user.sub);
     if (!actor) throw new ForbiddenException();

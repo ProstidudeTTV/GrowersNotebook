@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { getSiteUrl } from "@/lib/site-config";
 import { isStaffRole, type StaffRole } from "@/lib/staff-role";
 import { RefineAdminLayout } from "./refine-admin-layout";
 
@@ -29,7 +30,10 @@ export default async function AdminRootLayout({
   let meRes: Response;
   try {
     meRes = await fetch(`${api}/profiles/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Origin: getSiteUrl(),
+      },
       cache: "no-store",
     });
   } catch {

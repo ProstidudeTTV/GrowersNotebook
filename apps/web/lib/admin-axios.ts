@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getPublicApiUrl } from "@/lib/public-api-url";
 
 /** Same-origin path segment for Nest admin routes (browser only; see refine-admin-layout). */
-export const ADMIN_PROXY_PATH = "/api/gn-proxy/admin";
+export const ADMIN_PROXY_PATH = "/api/gn-admin";
 
 export const adminAxios = axios.create();
 

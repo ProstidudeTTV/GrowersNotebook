@@ -4,13 +4,17 @@ import {
   emptyPublicSiteConfig,
   type PublicSiteConfigPayload,
 } from "@/lib/public-site-config";
+import { getSiteUrl } from "@/lib/site-config";
 
 /** One cached fetch per request for metadata + JSON-LD (no Data Cache — admin SEO must apply immediately). */
 export const getPublicSiteConfigCached = cache(
   async (): Promise<PublicSiteConfigPayload> => {
     const api = getPublicApiUrl().replace(/\/+$/, "");
     try {
-      const res = await fetch(`${api}/site/public-config`, { cache: "no-store" });
+      const res = await fetch(`${api}/site/public-config`, {
+        cache: "no-store",
+        headers: { Origin: getSiteUrl() },
+      });
       if (!res.ok) return emptyPublicSiteConfig;
       const j = (await res.json()) as Partial<PublicSiteConfigPayload>;
       return {

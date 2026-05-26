@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { Response } from 'express';
 
 function errorChainMessage(err: unknown): string {
@@ -31,6 +32,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
+      if (status >= 500) {
+        Sentry.captureException(exception);
+      }
       if (isProd && status >= 500) {
         response.status(status).json({
           statusCode: status,
@@ -55,6 +59,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const msg = errorChainMessage(exception);
     this.logger.error(msg, exception instanceof Error ? exception.stack : undefined);
+    Sentry.captureException(exception);
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

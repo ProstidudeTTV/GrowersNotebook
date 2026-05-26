@@ -38,12 +38,14 @@ export class CreateCommunityDto {
   iconKey?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
   @ValidateIf((_, v) => v != null && v !== '')
   @IsUrl({ require_tld: true })
   @MaxLength(2000)
   iconUrl?: string | null;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
   @ValidateIf((_, v) => v != null && v !== '')
   @IsUrl({ require_tld: true })
   @MaxLength(2000)

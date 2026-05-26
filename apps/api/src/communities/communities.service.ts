@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { and, asc, count, eq, ilike, inArray, or } from 'drizzle-orm';
 import { getDb } from '../db';
 import {
@@ -13,6 +15,7 @@ import {
 } from '../db/schema';
 import { FollowsService } from '../follows/follows.service';
 import { NameBlocklistService } from '../name-blocklist/name-blocklist.service';
+import { isAllowedCommunityBannerPublicUrl } from '../common/post-media-public-url';
 import { assertCommunityIconKey } from './community-icon-keys';
 import type { CreateCommunityDto } from './dto/create-community.dto';
 
@@ -21,7 +24,20 @@ export class CommunitiesService {
   constructor(
     private readonly follows: FollowsService,
     private readonly nameBlocklist: NameBlocklistService,
+    private readonly config: ConfigService,
   ) {}
+
+  private normalizeCommunityImageUrl(
+    url: string | null | undefined,
+    label: 'icon' | 'banner',
+  ): string | null {
+    const value = url?.trim();
+    if (!value) return null;
+    if (!isAllowedCommunityBannerPublicUrl(this.config, value)) {
+      throw new BadRequestException(`Invalid community ${label} URL.`);
+    }
+    return value;
+  }
 
   private async memberCountsByCommunityIds(
     ids: string[],
@@ -63,8 +79,8 @@ export class CommunitiesService {
           name: dto.name,
           description: dto.description ?? null,
           iconKey: assertCommunityIconKey(dto.iconKey ?? null),
-          iconUrl: dto.iconUrl?.trim() || null,
-          bannerUrl: dto.bannerUrl?.trim() || null,
+          iconUrl: this.normalizeCommunityImageUrl(dto.iconUrl, 'icon'),
+          bannerUrl: this.normalizeCommunityImageUrl(dto.bannerUrl, 'banner'),
         })
         .returning();
       return row;
@@ -196,9 +212,16 @@ export class CommunitiesService {
     if (partial.iconKey !== undefined) {
       toSet.iconKey = assertCommunityIconKey(partial.iconKey);
     }
-    if (partial.iconUrl !== undefined) toSet.iconUrl = partial.iconUrl;
+    if (partial.iconUrl !== undefined) {
+      toSet.iconUrl = this.normalizeCommunityImageUrl(partial.iconUrl, 'icon');
+    }
     // Omitting bannerUrl from the patch preserves the existing value; pass null to clear.
-    if (partial.bannerUrl !== undefined) toSet.bannerUrl = partial.bannerUrl;
+    if (partial.bannerUrl !== undefined) {
+      toSet.bannerUrl = this.normalizeCommunityImageUrl(
+        partial.bannerUrl,
+        'banner',
+      );
+    }
     const [row] = await db
       .update(communities)
       .set(toSet)

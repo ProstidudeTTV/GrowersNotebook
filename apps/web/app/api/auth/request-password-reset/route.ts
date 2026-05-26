@@ -6,6 +6,7 @@ import {
   PASSWORD_RECOVERY_FLOW_VALUE,
 } from "@/lib/auth-recovery-cookie";
 import { getAuthRedirectOriginServer } from "@/lib/auth-redirect-origin";
+import { getClientIp, takeRateLimit } from "@/lib/server-rate-limit";
 import { getSupabasePublicKey, getSupabaseUrl } from "@/lib/supabase/public-env";
 
 /**
@@ -28,6 +29,24 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email required" }, { status: 400 });
   }
+  const limit = takeRateLimit({
+    bucket: "password-reset",
+    key: `${getClientIp(request)}:${email.toLowerCase()}`,
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many reset requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limit.retryAfterSec),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
 
   const origin = getAuthRedirectOriginServer();
   // Use /auth/callback/recovery — Supabase adds ?code= and strips other query params from redirectTo.
@@ -46,6 +65,7 @@ export async function POST(request: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
+  res.headers.set("X-RateLimit-Remaining", String(limit.remaining));
   res.cookies.set(PASSWORD_RECOVERY_FLOW_COOKIE, PASSWORD_RECOVERY_FLOW_VALUE, {
     path: "/",
     maxAge: PASSWORD_RECOVERY_FLOW_MAX_AGE,

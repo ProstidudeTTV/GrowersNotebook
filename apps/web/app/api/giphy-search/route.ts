@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { getClientIp, takeRateLimit } from "@/lib/server-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -118,13 +119,35 @@ function mergeFuzzyResults(chunks: GiphyItem[][], cap: number): GiphyItem[] {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = takeRateLimit({
+    bucket: "giphy-search",
+    key: getClientIp(req),
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.ok) {
+    return Response.json(
+      { items: [] as GiphyItem[], configured: true, error: "Too many GIF searches" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSec),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const key = process.env.GIPHY_API_KEY?.trim();
   if (!key) {
-    return Response.json({
-      items: [] as GiphyItem[],
-      configured: false,
-      totalCount: null,
-    });
+    return Response.json(
+      {
+        items: [] as GiphyItem[],
+        configured: false,
+        totalCount: null,
+      },
+      { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining) } },
+    );
   }
 
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -143,14 +166,17 @@ export async function GET(req: NextRequest) {
       limit,
       offset,
     });
-    return Response.json({
-      items,
-      configured: true,
-      mode: "trending",
-      totalCount,
-      offset,
-      limit,
-    });
+    return Response.json(
+      {
+        items,
+        configured: true,
+        mode: "trending",
+        totalCount,
+        offset,
+        limit,
+      },
+      { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining) } },
+    );
   }
 
   const qTrim = q.trim();
@@ -162,11 +188,14 @@ export async function GET(req: NextRequest) {
     altQueries.map((sub) => searchOnce(key, sub, 16, 0)),
   );
   const items = mergeFuzzyResults([primaryChunk, ...altChunks], 56);
-  return Response.json({
-    items,
-    configured: true,
-    mode: "search",
-    offset,
-    limit,
-  });
+  return Response.json(
+    {
+      items,
+      configured: true,
+      mode: "search",
+      offset,
+      limit,
+    },
+    { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining) } },
+  );
 }

@@ -6,6 +6,7 @@
 import "server-only";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { getSiteUrl } from "@/lib/site-config";
 import type { AdminRequestInit, AdminResult } from "./client";
 
 function classifyStatus(status: number) {
@@ -87,6 +88,7 @@ export async function adminFetchServer<T = unknown>(
 
   const headers = new Headers();
   headers.set("Accept", "application/json");
+  headers.set("Origin", getSiteUrl());
   if (auth) headers.set("Authorization", auth);
 
   let body: BodyInit | undefined;

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicApiUrl } from "@/lib/public-api-url";
+import { getSiteUrl } from "@/lib/site-config";
 import { getAccessTokenForApi } from "@/lib/supabase/get-access-token-for-api";
 import { isAdminRole } from "@/lib/staff-role";
 
@@ -18,7 +19,10 @@ export default async function AdminSiteSettingsLayout({
   let meRes: Response;
   try {
     meRes = await fetch(`${api}/profiles/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Origin: getSiteUrl(),
+      },
       cache: "no-store",
     });
   } catch {

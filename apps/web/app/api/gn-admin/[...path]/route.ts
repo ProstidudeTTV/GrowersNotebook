@@ -1,22 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getClientIp, takeRateLimit } from "@/lib/server-rate-limit";
 
-/** Same-origin proxy to Nest — browser `apiFetch` targets this to avoid CORS. */
 export const dynamic = "force-dynamic";
-
-const PUBLIC_PROXY_PREFIXES = new Set([
-  "blocks",
-  "catalog",
-  "comments",
-  "communities",
-  "direct-messages",
-  "follows",
-  "media",
-  "notebooks",
-  "notifications",
-  "posts",
-  "profiles",
-]);
 
 function upstreamBase(): string | null {
   const base =
@@ -26,7 +11,7 @@ function upstreamBase(): string | null {
   return base.replace(/\/+$/, "");
 }
 
-async function proxyToApi(req: NextRequest, segments: string[] | undefined) {
+async function proxyAdmin(req: NextRequest, segments: string[] | undefined) {
   const apiRoot = upstreamBase();
   if (!apiRoot) {
     return Response.json(
@@ -34,26 +19,21 @@ async function proxyToApi(req: NextRequest, segments: string[] | undefined) {
       { status: 503 },
     );
   }
-  const topLevel = segments?.[0]?.trim().toLowerCase() ?? "";
-  if (!topLevel || topLevel === "admin") {
-    return Response.json({ message: "Not found" }, { status: 404 });
-  }
-  if (!PUBLIC_PROXY_PREFIXES.has(topLevel)) {
-    return Response.json(
-      { message: "This proxy path is not allowed" },
-      { status: 404 },
-    );
+
+  const auth = req.headers.get("authorization");
+  if (!auth?.startsWith("Bearer ")) {
+    return Response.json({ message: "Authorization required" }, { status: 401 });
   }
 
   const limit = takeRateLimit({
-    bucket: "gn-proxy",
+    bucket: "gn-admin",
     key: getClientIp(req),
-    limit: 180,
+    limit: 90,
     windowMs: 60_000,
   });
   if (!limit.ok) {
     return Response.json(
-      { message: "Too many API requests. Please slow down." },
+      { message: "Too many admin requests. Please slow down." },
       {
         status: 429,
         headers: {
@@ -67,15 +47,14 @@ async function proxyToApi(req: NextRequest, segments: string[] | undefined) {
   const subpath = (segments ?? []).join("/");
   const search = req.nextUrl.search;
   const url = subpath
-    ? `${apiRoot}/${subpath}${search}`
-    : `${apiRoot}/${search}`;
+    ? `${apiRoot}/admin/${subpath}${search}`
+    : `${apiRoot}/admin${search}`;
 
   const headers = new Headers();
   const accept = req.headers.get("accept");
   if (accept) headers.set("Accept", accept);
   else headers.set("Accept", "application/json");
-  const auth = req.headers.get("authorization");
-  if (auth) headers.set("Authorization", auth);
+  headers.set("Authorization", auth);
   const origin = req.headers.get("origin");
   if (origin) headers.set("Origin", origin);
   const ct = req.headers.get("content-type");
@@ -116,7 +95,7 @@ export async function GET(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const { path: segments } = await context.params;
-  return proxyToApi(req, segments);
+  return proxyAdmin(req, segments);
 }
 
 export async function POST(
@@ -124,7 +103,7 @@ export async function POST(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const { path: segments } = await context.params;
-  return proxyToApi(req, segments);
+  return proxyAdmin(req, segments);
 }
 
 export async function PATCH(
@@ -132,7 +111,7 @@ export async function PATCH(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const { path: segments } = await context.params;
-  return proxyToApi(req, segments);
+  return proxyAdmin(req, segments);
 }
 
 export async function PUT(
@@ -140,7 +119,7 @@ export async function PUT(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const { path: segments } = await context.params;
-  return proxyToApi(req, segments);
+  return proxyAdmin(req, segments);
 }
 
 export async function DELETE(
@@ -148,5 +127,5 @@ export async function DELETE(
   context: { params: Promise<{ path?: string[] }> },
 ) {
   const { path: segments } = await context.params;
-  return proxyToApi(req, segments);
+  return proxyAdmin(req, segments);
 }

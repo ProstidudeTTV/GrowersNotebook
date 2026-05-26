@@ -1,4 +1,6 @@
+import '../instrument';
 import './load-env';
+import type { NextFunction, Request, Response } from 'express';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -41,6 +43,18 @@ async function bootstrap() {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!isProd || req.path === '/health') {
+      next();
+      return;
+    }
+    const origin = req.headers.origin?.trim();
+    if (origin) {
+      next();
+      return;
+    }
+    res.status(403).json({ message: 'Origin header required.' });
+  });
   app.enableCors({
     origin: dev
       ? true

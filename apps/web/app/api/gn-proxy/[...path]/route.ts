@@ -76,8 +76,8 @@ async function proxyToApi(req: NextRequest, segments: string[] | undefined) {
   else headers.set("Accept", "application/json");
   const auth = req.headers.get("authorization");
   if (auth) headers.set("Authorization", auth);
-  const origin = req.headers.get("origin");
-  if (origin) headers.set("Origin", origin);
+  const origin = req.headers.get("origin")?.trim() || req.nextUrl.origin;
+  headers.set("Origin", origin);
   const ct = req.headers.get("content-type");
   if (ct) headers.set("Content-Type", ct);
 

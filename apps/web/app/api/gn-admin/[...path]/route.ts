@@ -55,8 +55,8 @@ async function proxyAdmin(req: NextRequest, segments: string[] | undefined) {
   if (accept) headers.set("Accept", accept);
   else headers.set("Accept", "application/json");
   headers.set("Authorization", auth);
-  const origin = req.headers.get("origin");
-  if (origin) headers.set("Origin", origin);
+  const origin = req.headers.get("origin")?.trim() || req.nextUrl.origin;
+  headers.set("Origin", origin);
   const ct = req.headers.get("content-type");
   if (ct) headers.set("Content-Type", ct);
 

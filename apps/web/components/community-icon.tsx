@@ -1,5 +1,6 @@
 import type { CommunityIconKey } from "@/lib/community-icon-keys";
 import { isCommunityIconKey } from "@/lib/community-icon-keys";
+import { getSafeCommunityImageUrl } from "@/lib/safe-community-image-url";
 
 /** Deterministic color palette for community letter avatars. */
 const PALETTE = [
@@ -166,7 +167,7 @@ export function CommunityIcon({
   className?: string;
   frameClassName?: string;
 }) {
-  const url = iconUrl?.trim();
+  const url = getSafeCommunityImageUrl(iconUrl);
   if (url) {
     return (
       <span className={`${frameClassName} overflow-hidden p-0`}>

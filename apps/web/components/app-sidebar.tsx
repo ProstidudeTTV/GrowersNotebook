@@ -428,21 +428,13 @@ export function AppSidebar({
               {followedCommunities.map((c) => (
                 <li key={c.id}>
                   <Link href={`/community/${c.slug}`} className={`${navItem} min-w-0`} title={c.name} onClick={afterNav}>
-                    {c.iconUrl?.trim() ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={c.iconUrl}
-                        alt=""
-                        className="h-7 w-7 shrink-0 rounded-lg object-cover ring-1 ring-[var(--gn-ring)]"
-                      />
-                    ) : (
-                      <CommunityIcon
-                        iconKey={c.iconKey}
-                        nameFallback={c.name}
-                        slugFallback={c.slug}
-                        frameClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
-                      />
-                    )}
+                    <CommunityIcon
+                      iconKey={c.iconKey}
+                      iconUrl={c.iconUrl}
+                      nameFallback={c.name}
+                      slugFallback={c.slug}
+                      frameClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--gn-text)] ring-1 ring-[var(--gn-ring)]"
+                    />
                     <span className="min-w-0 truncate text-sm">{c.name}</span>
                   </Link>
                 </li>

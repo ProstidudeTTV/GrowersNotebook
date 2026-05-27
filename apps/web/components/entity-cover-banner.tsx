@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { getSafeCommunityImageUrl } from "@/lib/safe-community-image-url";
 
 type Props = {
   imageUrl?: string | null;
@@ -27,7 +28,8 @@ export function EntityCoverBanner({
   className = "",
   priority = false,
 }: Props) {
-  const hasImage = Boolean(imageUrl?.trim());
+  const safeImageUrl = getSafeCommunityImageUrl(imageUrl);
+  const hasImage = Boolean(safeImageUrl);
 
   return (
     <div
@@ -36,7 +38,7 @@ export function EntityCoverBanner({
       {hasImage ? (
         variant === "hero" ? (
           <Image
-            src={imageUrl!.trim()}
+            src={safeImageUrl!}
             alt={alt}
             fill
             className="object-cover object-center"
@@ -47,7 +49,7 @@ export function EntityCoverBanner({
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl!.trim()}
+            src={safeImageUrl!}
             alt={alt}
             className="absolute inset-0 h-full w-full object-cover object-center"
           />

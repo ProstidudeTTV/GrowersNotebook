@@ -7,6 +7,7 @@ import { FollowCommunityButton } from "@/components/follow-buttons";
 import { RecentCommunitiesTracker } from "@/components/recent-communities-tracker";
 import { CommunityIcon } from "@/components/community-icon";
 import { apiFetch } from "@/lib/api-public";
+import { getSafeCommunityImageUrl } from "@/lib/safe-community-image-url";
 import { SITE_NAME, canonicalPath } from "@/lib/site-config";
 import {
   CommunityPostList,
@@ -137,7 +138,9 @@ export default async function CommunityPage({
     return `/community/${slug}?${p.toString()}`;
   };
 
-  const hasBanner = Boolean(community.bannerUrl);
+  const safeIconUrl = getSafeCommunityImageUrl(community.iconUrl);
+  const safeBannerUrl = getSafeCommunityImageUrl(community.bannerUrl);
+  const hasBanner = Boolean(safeBannerUrl);
   const hasMemberCount =
     typeof community.memberCount === "number" && community.memberCount > 0;
   const hasRules =
@@ -162,16 +165,16 @@ export default async function CommunityPage({
       />
 
       <EntityCoverBanner
-        imageUrl={hasBanner ? community.bannerUrl : null}
+        imageUrl={safeBannerUrl}
         alt=""
         variant="hero"
         priority
       >
         <div className="absolute bottom-0 left-0 flex items-end gap-4 px-5 pb-5">
-          {community.iconUrl ? (
+          {safeIconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={community.iconUrl}
+              src={safeIconUrl}
               alt={community.name}
               className="h-16 w-16 shrink-0 rounded-2xl border-4 border-white/20 bg-black/30 object-cover shadow-xl sm:h-20 sm:w-20"
             />
@@ -337,7 +340,7 @@ export default async function CommunityPage({
               <div className="relative h-14 w-full overflow-hidden">
                 {hasBanner ? (
                   <Image
-                    src={community.bannerUrl!}
+                    src={safeBannerUrl!}
                     alt=""
                     fill
                     className="object-cover"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CommunityIcon } from "@/components/community-icon";
+import { getSafeCommunityImageUrl } from "@/lib/safe-community-image-url";
 
 export type CommunityDirectoryItem = {
   id: string;
@@ -50,6 +51,7 @@ function CommunityCard({ community: c }: { community: CommunityDirectoryItem }) 
   const grad = stripGradient(c.slug);
   const hasMemberCount =
     typeof c.memberCount === "number" && c.memberCount > 0;
+  const safeBannerUrl = getSafeCommunityImageUrl(c.bannerUrl);
 
   return (
     <Link
@@ -57,10 +59,10 @@ function CommunityCard({ community: c }: { community: CommunityDirectoryItem }) 
       className="group gn-card relative flex flex-col overflow-visible transition-all duration-200 hover:-translate-y-1 hover:shadow-[var(--gn-shadow-md)]"
     >
       <div className={`relative z-0 h-16 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r ${grad}`}>
-        {c.bannerUrl ? (
+        {safeBannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={c.bannerUrl}
+            src={safeBannerUrl}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -89,21 +91,13 @@ function CommunityCard({ community: c }: { community: CommunityDirectoryItem }) 
 
       <div className="relative z-10 flex flex-1 flex-col rounded-b-2xl bg-[var(--gn-surface-raised)] px-4 pb-4 pt-1">
         <div className="-mt-6 mb-2 w-fit">
-          {c.iconUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={c.iconUrl}
-              alt=""
-              className="relative z-10 h-11 w-11 rounded-xl object-cover ring-2 ring-[var(--gn-surface-raised)] shadow-lg"
-            />
-          ) : (
-            <CommunityIcon
-              iconKey={c.iconKey}
-              nameFallback={c.name}
-              slugFallback={c.slug}
-              frameClassName="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ring-[var(--gn-surface-raised)] shadow-lg text-base font-bold"
-            />
-          )}
+          <CommunityIcon
+            iconKey={c.iconKey}
+            iconUrl={c.iconUrl}
+            nameFallback={c.name}
+            slugFallback={c.slug}
+            frameClassName="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ring-[var(--gn-surface-raised)] shadow-lg text-base font-bold"
+          />
         </div>
 
         <h2 className="text-sm font-bold leading-snug text-[var(--gn-text)]">

@@ -3,11 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import {
-  CatalogFilterChipButton,
-  CatalogToolbarActionButton,
-  CatalogToolbarLabel,
-} from "@/components/catalog/catalog-toolbar-controls";
 import { StrainsListSearchField } from "@/components/catalog/strains-list-search-field";
 import { clientApiJson } from "@/lib/client-api";
 type BreederHit = { slug: string; name: string };
@@ -43,6 +38,18 @@ function buildStrainsQueryFromInputs(s: {
   if (s.effects.trim()) p.set("effects", s.effects.trim());
   return p;
 }
+
+const toolbarSecondaryButtonClass =
+  "shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-[transform,box-shadow,background-color,border-color] duration-150 hover:-translate-y-px hover:bg-[var(--gn-surface-hover)] hover:shadow-[var(--gn-shadow-md)] active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)] sm:mt-5 sm:px-4 sm:py-2";
+
+const toolbarPrimaryButtonClass =
+  "shrink-0 rounded-lg bg-[var(--gn-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--gn-on-accent)] shadow-[0_12px_24px_-16px_color-mix(in_srgb,var(--gn-accent)_80%,transparent)] transition-[transform,box-shadow,filter] duration-150 hover:-translate-y-px hover:brightness-110 hover:shadow-[0_16px_30px_-18px_color-mix(in_srgb,var(--gn-accent)_85%,transparent)] active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gn-accent)_30%,transparent)] sm:mt-5 sm:px-4 sm:py-2";
+
+const inlineActionClass =
+  "transition-[transform,color,opacity] duration-150 hover:-translate-y-px active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]";
+
+const tagButtonBaseClass =
+  "rounded-full px-2.5 py-1 text-xs font-medium shadow-[var(--gn-shadow-sm)] transition-[transform,box-shadow,background-color,color] duration-150 hover:-translate-y-px hover:shadow-[var(--gn-shadow-md)] active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]";
 
 function BreederFilterCombobox({
   breederSlug,
@@ -108,7 +115,9 @@ function BreederFilterCombobox({
 
   return (
     <div ref={rootRef} className="relative min-w-[10rem] max-w-[14rem] flex-1">
-      <CatalogToolbarLabel>Breeder</CatalogToolbarLabel>
+      <label htmlFor={id} className="mb-1 block text-xs text-[var(--gn-text-muted)]">
+        Breeder
+      </label>
       <div className="flex gap-1">
         <input
           id={id}
@@ -122,23 +131,25 @@ function BreederFilterCombobox({
             e.preventDefault();
             void fetchHits();
           }}
-          className="min-w-0 flex-1 rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-all duration-150 placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_40%,var(--gn-divide))] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
         />
-        <CatalogToolbarActionButton onClick={() => void fetchHits()}>
-          <span aria-hidden>🔎</span>
+        <button
+          type="button"
+          className="shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-2 py-1.5 text-xs font-medium text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-[transform,box-shadow,background-color,border-color] duration-150 hover:-translate-y-px hover:bg-[var(--gn-surface-hover)] hover:shadow-[var(--gn-shadow-md)] active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]"
+          onClick={() => void fetchHits()}
+        >
           Find
-        </CatalogToolbarActionButton>
+        </button>
       </div>
       {breederSlug ? (
         <button
           type="button"
-          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--gn-accent)] hover:underline"
+          className={`mt-1 text-xs text-[var(--gn-accent)] hover:underline ${inlineActionClass}`}
           onClick={() => {
             setInput("");
             onCommittedSlug("", "");
           }}
         >
-          <span aria-hidden>✕</span>
           Clear breeder
         </button>
       ) : null}
@@ -197,11 +208,7 @@ export function StrainsCatalogToolbar({
 
   const [q, setQ] = useState(() => sp.get("q") ?? "");
   const [sort, setSort] = useState(() =>
-    sp.get("sort") === "rating"
-      ? "rating"
-      : sp.get("sort") === "reviews"
-        ? "reviews"
-        : "name",
+    sp.get("sort") === "rating" ? "rating" : "name",
   );
   const [breederSlug, setBreederSlug] = useState(
     () => sp.get("breederSlug")?.trim() ?? "",
@@ -298,18 +305,10 @@ export function StrainsCatalogToolbar({
     },
     [pathname, router, totalPages],
   );
-  const extraFilterCount =
-    (genetics.trim() ? 1 : 0) +
-    (effects
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean).length > 0
-      ? 1
-      : 0);
 
   return (
-    <fieldset className="flex w-full min-w-0 flex-col gap-4 rounded-2xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_78%,transparent)] p-3 shadow-[var(--gn-shadow-sm)] sm:p-4 lg:max-w-4xl lg:flex-1">
-      <legend className="px-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--gn-text-muted)]">
+    <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
+      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
         Strain catalog
       </legend>
       <div className="flex flex-wrap items-end gap-2 sm:gap-3">
@@ -320,7 +319,12 @@ export function StrainsCatalogToolbar({
         />
         {totalPages > 1 ? (
           <div className="shrink-0">
-            <CatalogToolbarLabel>Page</CatalogToolbarLabel>
+            <label
+              htmlFor="strain-catalog-page"
+              className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+            >
+              Page
+            </label>
             <select
               id="strain-catalog-page"
               value={String(Math.min(currentPage, totalPages))}
@@ -328,7 +332,7 @@ export function StrainsCatalogToolbar({
                 const n = Number(e.target.value);
                 if (Number.isFinite(n)) navigateToPage(n);
               }}
-              className="rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-all duration-150 focus:border-[color-mix(in_srgb,var(--gn-accent)_40%,var(--gn-divide))] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]"
+              className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
             >
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
@@ -339,59 +343,55 @@ export function StrainsCatalogToolbar({
           </div>
         ) : null}
         <div className="shrink-0">
-          <CatalogToolbarLabel>Sort</CatalogToolbarLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { value: "name", label: "A-Z Name" },
-              { value: "rating", label: "⭐ Rating" },
-              { value: "reviews", label: "💬 Most reviewed" },
-            ].map((option) => (
-              <CatalogFilterChipButton
-                key={option.value}
-                active={sort === option.value}
-                onClick={() => setSort(option.value)}
-              >
-                {option.label}
-              </CatalogFilterChipButton>
-            ))}
-          </div>
+          <label htmlFor="strain-sort" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
+            Sort
+          </label>
+          <select
+            id="strain-sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="name">Name</option>
+            <option value="rating">Rating</option>
+            <option value="reviews">Most reviewed</option>
+          </select>
         </div>
         <div className="shrink-0">
-          <CatalogToolbarLabel>Type</CatalogToolbarLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { value: "", label: "Any" },
-              { value: "indica", label: "🌙 Indica" },
-              { value: "sativa", label: "☀️ Sativa" },
-              { value: "hybrid", label: "🧬 Hybrid" },
-            ].map((option) => (
-              <CatalogFilterChipButton
-                key={option.value || "any"}
-                active={chemotype === option.value}
-                onClick={() => setChemotype(option.value)}
-              >
-                {option.label}
-              </CatalogFilterChipButton>
-            ))}
-          </div>
+          <label
+            htmlFor="strain-chemotype"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+          >
+            Type
+          </label>
+          <select
+            id="strain-chemotype"
+            value={chemotype}
+            onChange={(e) => setChemotype(e.target.value)}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="indica">Indica</option>
+            <option value="sativa">Sativa</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
         </div>
         <div className="shrink-0">
-          <CatalogToolbarLabel>Autoflower</CatalogToolbarLabel>
-          <div className="flex flex-wrap gap-1.5">
-            <CatalogFilterChipButton
-              active={autoflower === ""}
-              onClick={() => setAutoflower("")}
-            >
-              Any
-            </CatalogFilterChipButton>
-            <CatalogFilterChipButton
-              active={autoflower === "1"}
-              onClick={() => setAutoflower("1")}
-            >
-              <span aria-hidden>🌱</span>
-              Autoflowers only
-            </CatalogFilterChipButton>
-          </div>
+          <label
+            htmlFor="strain-autoflower"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+          >
+            Autoflower
+          </label>
+          <select
+            id="strain-autoflower"
+            value={autoflower}
+            onChange={(e) => setAutoflower(e.target.value)}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="1">Autoflowers only</option>
+          </select>
         </div>
         <BreederFilterCombobox
           breederSlug={breederSlug}
@@ -402,78 +402,73 @@ export function StrainsCatalogToolbar({
           }}
         />
         <div className="shrink-0">
-          <CatalogToolbarLabel>Min rating</CatalogToolbarLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { value: "", label: "Any" },
-              { value: "3", label: "3+ ★" },
-              { value: "4", label: "4+ ★" },
-              { value: "4.5", label: "4.5+ ★" },
-              { value: "5", label: "5 ★" },
-            ].map((option) => (
-              <CatalogFilterChipButton
-                key={option.value || "any"}
-                active={minRating === option.value}
-                onClick={() => setMinRating(option.value)}
-              >
-                {option.label}
-              </CatalogFilterChipButton>
-            ))}
-          </div>
+          <label
+            htmlFor="strain-min-rating"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
+          >
+            Min rating
+          </label>
+          <select
+            id="strain-min-rating"
+            value={minRating}
+            onChange={(e) => setMinRating(e.target.value)}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="3">3+ ★</option>
+            <option value="4">4+ ★</option>
+            <option value="4.5">4.5+ ★</option>
+            <option value="5">5 ★</option>
+          </select>
         </div>
         <div className="shrink-0">
-          <CatalogToolbarLabel>Reviews</CatalogToolbarLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { value: "", label: "Any" },
-              { value: "1", label: "1+" },
-              { value: "3", label: "3+" },
-              { value: "5", label: "5+" },
-              { value: "10", label: "10+" },
-            ].map((option) => (
-              <CatalogFilterChipButton
-                key={option.value || "any"}
-                active={minReviews === option.value}
-                onClick={() => setMinReviews(option.value)}
-              >
-                <span aria-hidden>💬</span>
-                {option.label}
-              </CatalogFilterChipButton>
-            ))}
-          </div>
-        </div>
-        <div className="flex shrink-0 gap-2 sm:mt-6">
-          <CatalogToolbarActionButton
-            variant="primary"
-            onClick={() => navigateWith({})}
+          <label
+            htmlFor="strain-min-reviews"
+            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
           >
-            <span aria-hidden>✨</span>
-            Apply
-          </CatalogToolbarActionButton>
-          <CatalogToolbarActionButton onClick={() => router.refresh()}>
-            <span aria-hidden>↻</span>
-            Reload
-          </CatalogToolbarActionButton>
+            Reviews
+          </label>
+          <select
+            id="strain-min-reviews"
+            value={minReviews}
+            onChange={(e) => setMinReviews(e.target.value)}
+            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+          >
+            <option value="">Any</option>
+            <option value="1">1+</option>
+            <option value="3">3+</option>
+            <option value="5">5+</option>
+            <option value="10">10+</option>
+          </select>
         </div>
+        <button
+          type="button"
+          className={toolbarPrimaryButtonClass}
+          onClick={() => navigateWith({})}
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          className={toolbarSecondaryButtonClass}
+          onClick={() => router.refresh()}
+        >
+          Reload
+        </button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <CatalogFilterChipButton
-          active={moreOpen || extraFilterCount > 0}
+        <button
+          type="button"
+          className={`text-xs font-semibold text-[var(--gn-accent)] hover:underline ${inlineActionClass}`}
           onClick={() => setMoreOpen((o) => !o)}
         >
-          <span aria-hidden>{moreOpen ? "🪴" : "🧪"}</span>
-          {moreOpen ? "Hide extras" : "More filters"}
-          {extraFilterCount > 0 ? (
-            <span className="rounded-full bg-black/15 px-1.5 py-0.5 text-[10px] font-bold text-current">
-              {extraFilterCount}
-            </span>
-          ) : null}
-        </CatalogFilterChipButton>
+          {moreOpen ? "Hide" : "More"} filters
+        </button>
       </div>
       {moreOpen ? (
-        <div className="flex flex-col gap-3 rounded-2xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3 shadow-[var(--gn-shadow-sm)]">
+        <div className="flex flex-col gap-3 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] p-3">
           <label className="block">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--gn-text-muted)]">
+            <span className="mb-1 block text-xs text-[var(--gn-text-muted)]">
               Genetics (lineage)
             </span>
             <input
@@ -481,11 +476,11 @@ export function StrainsCatalogToolbar({
               value={genetics}
               onChange={(e) => setGenetics(e.target.value)}
               placeholder="e.g. OG Kush, Gelato"
-              className="w-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-3 py-2 text-sm text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-all duration-150 placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_40%,var(--gn-divide))] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]"
+              className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-raised)] px-2.5 py-1.5 text-sm text-[var(--gn-text)]"
             />
           </label>
           <div>
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--gn-text-muted)]">
+            <span className="mb-1 block text-xs text-[var(--gn-text-muted)]">
               Effects (select any)
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -496,9 +491,9 @@ export function StrainsCatalogToolbar({
                   .filter(Boolean)
                   .includes(eff);
                 return (
-                  <CatalogFilterChipButton
+                  <button
                     key={eff}
-                    active={selected}
+                    type="button"
                     onClick={() => {
                       const cur = effects
                         .split(",")
@@ -509,9 +504,14 @@ export function StrainsCatalogToolbar({
                         : [...cur, eff];
                       setEffects(next.join(","));
                     }}
+                    className={`${tagButtonBaseClass} ${
+                      selected
+                        ? "bg-[var(--gn-accent)] text-[var(--gn-on-accent)]"
+                        : "bg-[var(--gn-surface-muted)] text-[var(--gn-text-muted)] hover:bg-[var(--gn-surface-hover)]"
+                    }`}
                   >
                     {eff}
-                  </CatalogFilterChipButton>
+                  </button>
                 );
               })}
             </div>

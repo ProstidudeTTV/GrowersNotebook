@@ -4,6 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BreedersListSearchField } from "@/components/catalog/breeders-list-search-field";
+import {
+  CatalogFilterChipButton,
+  CatalogToolbarActionButton,
+  CatalogToolbarLabel,
+} from "@/components/catalog/catalog-toolbar-controls";
 
 function buildBreedersQueryFromInputs(s: {
   q: string;
@@ -63,8 +68,8 @@ export function BreedersCatalogToolbar() {
   );
 
   return (
-    <fieldset className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_65%,transparent)] p-3 sm:p-4 lg:max-w-4xl lg:flex-1">
-      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--gn-text-muted)]">
+    <fieldset className="flex w-full min-w-0 flex-col gap-4 rounded-2xl border border-[var(--gn-divide)] bg-[color-mix(in_srgb,var(--gn-surface-muted)_78%,transparent)] p-3 shadow-[var(--gn-shadow-sm)] sm:p-4 lg:max-w-4xl lg:flex-1">
+      <legend className="px-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--gn-text-muted)]">
         Breeder catalog
       </legend>
       <div className="flex flex-wrap items-end gap-2 sm:gap-3">
@@ -74,9 +79,7 @@ export function BreedersCatalogToolbar() {
           onEnterCommit={() => navigateWith({ q })}
         />
         <div className="min-w-[8rem] shrink-0">
-          <label htmlFor="breeder-country" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
-            Country / region
-          </label>
+          <CatalogToolbarLabel>Country / region</CatalogToolbarLabel>
           <input
             id="breeder-country"
             type="search"
@@ -94,82 +97,87 @@ export function BreedersCatalogToolbar() {
               if (country.trim() === urlC.trim()) return;
               navigateWith({ country: country.trim() });
             }}
-            className="w-full rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2.5 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
+            className="w-full rounded-xl border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-3 py-2 text-sm text-[var(--gn-text)] shadow-[var(--gn-shadow-sm)] transition-all duration-150 placeholder:text-[var(--gn-text-muted)] focus:border-[color-mix(in_srgb,var(--gn-accent)_40%,var(--gn-divide))] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--gn-accent)_28%,transparent)]"
           />
         </div>
         <div className="shrink-0">
-          <label htmlFor="breeder-sort" className="mb-1 block text-xs text-[var(--gn-text-muted)]">
-            Sort
-          </label>
-          <select
-            id="breeder-sort"
-            value={sort}
-            onChange={(e) => {
-              const v = e.target.value === "rating" ? "rating" : "name";
-              setSort(v);
-              navigateWith({ sort: v });
-            }}
-            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-          >
-            <option value="name">Name</option>
-            <option value="rating">Rating</option>
-          </select>
+          <CatalogToolbarLabel>Sort</CatalogToolbarLabel>
+          <div className="flex flex-wrap gap-1.5">
+            <CatalogFilterChipButton
+              active={sort === "name"}
+              onClick={() => {
+                setSort("name");
+                navigateWith({ sort: "name" });
+              }}
+            >
+              <span aria-hidden>A-Z</span>
+              Name
+            </CatalogFilterChipButton>
+            <CatalogFilterChipButton
+              active={sort === "rating"}
+              onClick={() => {
+                setSort("rating");
+                navigateWith({ sort: "rating" });
+              }}
+            >
+              <span aria-hidden>⭐</span>
+              Top rated
+            </CatalogFilterChipButton>
+          </div>
         </div>
         <div className="shrink-0">
-          <label
-            htmlFor="breeder-min-rating"
-            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
-          >
-            Min rating
-          </label>
-          <select
-            id="breeder-min-rating"
-            value={minRating}
-            onChange={(e) => {
-              const v = e.target.value;
-              setMinRating(v);
-              navigateWith({ minRating: v });
-            }}
-            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-          >
-            <option value="">Any</option>
-            <option value="3">3+ ★</option>
-            <option value="4">4+ ★</option>
-            <option value="4.5">4.5+ ★</option>
-            <option value="5">5 ★</option>
-          </select>
+          <CatalogToolbarLabel>Min rating</CatalogToolbarLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { value: "", label: "Any" },
+              { value: "3", label: "3+ ★" },
+              { value: "4", label: "4+ ★" },
+              { value: "4.5", label: "4.5+ ★" },
+              { value: "5", label: "5 ★" },
+            ].map((option) => (
+              <CatalogFilterChipButton
+                key={option.value || "any"}
+                active={minRating === option.value}
+                onClick={() => {
+                  setMinRating(option.value);
+                  navigateWith({ minRating: option.value });
+                }}
+              >
+                {option.label}
+              </CatalogFilterChipButton>
+            ))}
+          </div>
         </div>
         <div className="shrink-0">
-          <label
-            htmlFor="breeder-min-reviews"
-            className="mb-1 block text-xs text-[var(--gn-text-muted)]"
-          >
-            Reviews
-          </label>
-          <select
-            id="breeder-min-reviews"
-            value={minReviews}
-            onChange={(e) => {
-              const v = e.target.value;
-              setMinReviews(v);
-              navigateWith({ minReviews: v });
-            }}
-            className="rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface)] px-2 py-1.5 text-sm text-[var(--gn-text)] sm:px-3 sm:py-2"
-          >
-            <option value="">Any</option>
-            <option value="1">1+</option>
-            <option value="3">3+</option>
-            <option value="5">5+</option>
-            <option value="10">10+</option>
-          </select>
+          <CatalogToolbarLabel>Reviews</CatalogToolbarLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { value: "", label: "Any" },
+              { value: "1", label: "1+" },
+              { value: "3", label: "3+" },
+              { value: "5", label: "5+" },
+              { value: "10", label: "10+" },
+            ].map((option) => (
+              <CatalogFilterChipButton
+                key={option.value || "any"}
+                active={minReviews === option.value}
+                onClick={() => {
+                  setMinReviews(option.value);
+                  navigateWith({ minReviews: option.value });
+                }}
+              >
+                <span aria-hidden>💬</span>
+                {option.label}
+              </CatalogFilterChipButton>
+            ))}
+          </div>
         </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-lg border border-[var(--gn-divide)] bg-[var(--gn-surface-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--gn-text)] hover:bg-[var(--gn-surface-hover)] sm:mt-5 sm:px-4 sm:py-2"
-          onClick={() => navigateWith({})}
-        >
-          Refresh
-        </button>
+        <div className="flex shrink-0 gap-2 sm:mt-6">
+          <CatalogToolbarActionButton onClick={() => navigateWith({})}>
+            <span aria-hidden>↻</span>
+            Refresh
+          </CatalogToolbarActionButton>
+        </div>
       </div>
       <p className="text-xs text-[var(--gn-text-muted)]">
         Breeder name updates when you press Enter. Country applies on Enter or
